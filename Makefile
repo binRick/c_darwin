@@ -56,6 +56,9 @@ CC_CMD=$(CC) \
 		$(SOURCES) \
 		-o $(BIN)/$(EXECUTABLE)
 
+cc-websocket:
+	gcc -Wall -O2 -g -o bin/websocket-server src/websocket-server.c -L./wslay/lib/.libs -I./wslay/lib/includes -lwslay -lnettle
+
 cc:
 	@$(PASSH) $(CC_CMD)
 
@@ -135,6 +138,14 @@ deps-clib:
 deps-c_string_buffer:
 	@[[ -d deps/c_string_buffer ]] || git clone https://github.com/sagiegurari/c_string_buffer deps/c_string_buffer
 
+deps-wslay:
+	@[[ -d deps/wslay ]] || git clone \
+			https://github.com/tatsuhiro-t/wslay \
+			deps/wslay
+	@cd deps/wslay && cmake .
+	@cd deps/wslay && make -j
+
+
 deps-c_fsio:
 	@[[ -d deps/c_fsio ]] || git clone https://github.com/sagiegurari/c_fsio deps/c_fsio
 	@cd deps/c_fsio && ./build.sh
@@ -143,6 +154,7 @@ DEPS = \
 	   deps-clib deps-c_fsio deps-c_string_buffer deps-confuse deps-c_scriptexec deps-httpserver \
 	   deps-uv deps-timequick \
 	   deps-parson \
+	   deps-wslay \
 	   deps-str-truncate
 
 commit:
@@ -154,4 +166,7 @@ push:
 git: tidy commit push
 
 deps-install: $(DEPS)
+
+webserver-test:
+	@curl -s http://localhost:8085/t
 
