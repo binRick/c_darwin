@@ -5,3 +5,4 @@ deps/*
 .*.log
 logs
 etc/*.out
+*-orig.*
