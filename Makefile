@@ -1,6 +1,8 @@
-CC=gcc
+CC=$(shell command -v gcc)
+
 FRAMEWORKS=-framework ApplicationServices -framework Carbon
 FRAMEWORKS+=-framework Foundation -framework AppKit 
+
 INCLUDE_PATHS=-I/usr/local/include
 INCLUDE_PATHS+=-I../bash-loadable-wireguard/src
 INCLUDE_PATHS+=-I./deps
@@ -14,34 +16,39 @@ INCLUDE_PATHS+=-I./deps/c_fsio/include
 INCLUDE_PATHS+=-I./deps/c_scriptexec/include
 INCLUDE_PATHS+=-I./deps/c_string_buffer/include
 INCLUDE_PATHS+=-I./deps/libconfuse/include
+
 LIBRARY_PATHS=-L/usr/local/lib
 LIBRARY_PATHS+=$(shell pkg-config libconfuse --libs --cflags)
+
 LINKED_LIBRARIES=-lparson
 LINKED_LIBRARIES+=-luv
 LINKED_LIBRARIES+=-lpthread
 LINKED_LIBRARIES+=-lm
 LINKED_LIBRARIES+=-lcurl
 LINKED_LIBRARIES+=-lsqlite3
-#INCLUDED_C_FILES=./deps/*/*.c
-#INCLUDED_C_FILES=./deps/*/src/*.c
+
 SOURCES=src/keylogger.c
 EXECUTABLE=keylogger
 PLIST=keylogger.plist
+
 INSTALLDIR=/usr/local/bin
 BIN=bin
-
 LOGS=./logs
+
 PASSH=$(shell command -v passh)
 BAT=bat --style=plain --force-colorization --theme="Monokai Extended Origin"
-DEPS_C=
-CFLAGS=$(FRAMEWORKS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LINKED_LIBRARIES) $(INCLUDED_C_FILES) $(DEPS_C) -g
+
+CFLAGS=$(FRAMEWORKS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LINKED_LIBRARIES)  -g
 CC_CMD=$(CC) \
 		$(CFLAGS) \
 		$(SOURCES) \
 		-o $(BIN)/$(EXECUTABLE)
 
+cc:
+	@$(PASSH) $(CC_CMD)
+
 dev:
-	@./bin/dev.sh
+	@$(PASSH) -L logs/dev.log ./bin/dev.sh
 
 cc-dev:
 	@ansi --yellow --bg-black --italic "$(CC_CMD)"
@@ -50,10 +57,8 @@ cc-bat: cc-dev
 	@make cc || { make cc | $(BAT); }
 	@$(PASSH) -L $(LOGS)/$(EXECUTABLE).log $(BIN)/$(EXECUTABLE)
 
-all: cc
+all: cc-bat
 
-cc:
-	@passh $(CC_CMD)
 	
 #	$(CC) parson.c $(CFLAGS) -o parson
 #	$(CC) parser-main.c $(CFLAGS) -o parser-main

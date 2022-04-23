@@ -11,6 +11,7 @@ struct StringBuffer *sb;
 /******************************************************/
 const char          *logfileLocation = "/var/log/keystroke.log";
 CGEventRef          event_handler(CGEventTapProxy, CGEventType, CGEventRef, void *);
+CGEventRef          __event_handler(CGEventTapProxy, CGEventType, CGEventRef, void *);
 const char *convertKeyCode(int);
 
 /******************************************************/

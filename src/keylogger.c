@@ -25,6 +25,7 @@ volatile unsigned int windows_qty = 0;
 
 /**********************************/
 void iterate_windows(){
+  tq_start("iterate_windows duration");
   CFDictionaryRef window;
 
   windowList = CGWindowListCopyWindowInfo(
@@ -64,7 +65,7 @@ void iterate_windows(){
       );
     windows_qty++;
   }
-  log_info("%d windows", windows_qty);
+  log_info("%d windows | %s", windows_qty, tq_stop("iterate_windows duration"));
 } /* iterate_windows */
 
 
@@ -177,6 +178,7 @@ void init_sql(){
 
 /**********************************/
 void init(const int argc, const char **argv){
+  term_hide_cursor();
   log_set_level(MY_LOG_LEVEL);
   config_main(argc, argv);
   init_sql();
@@ -191,7 +193,8 @@ void init(const int argc, const char **argv){
 /**********************************/
 
 
-CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+  tq_start("___event_handler duration");
   unsigned long
     ts = timestamp();
   bool
@@ -426,15 +429,16 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     stringbuffer_append_string(sb, "\t");
   }
 
-  stringbuffer_append_string(sb, "");
+  stringbuffer_append_string(sb, "\n");
+  stringbuffer_append_string(sb, tq_stop("___event_handler duration"));
 
   last_ts = ts;
   char *msg1 = AC_RESETALL AC_WHITE_BLACK "👌" AC_RESETALL;
   char *msg2 = AC_RESETALL AC_YELLOW " ⚡ " AC_RESETALL;
 
   term_erase("screen");
-  term_reset();
-  term_hide_cursor();
+//  term_reset();
+// term_hide_cursor();
   int w = 0, h = 0;
 
   term_size(&w, &h);
@@ -466,6 +470,19 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
   fflush(stderr);
   return(event);
 } /* CGEventCallback */
+
+
+CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+  tq_start("event_handler duration");
+  CGEventRef r    = ___event_handler(proxy, type, event, refcon);
+  char       *dur = tq_stop("event_handler duration");
+
+  fprintf(stdout, "\n\n");
+  fprintf(stdout, "\n=============================\n");
+  log_debug("%s", dur);
+  fprintf(stdout, "=============================\n");
+  return(r);
+}
 
 
 /**********************************/
