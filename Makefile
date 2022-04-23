@@ -92,6 +92,10 @@ deps-timequick:
 			https://github.com/mbarbar/timequick \
 			deps/timequick
 
+deps-str-truncate:
+	@[[ -d deps/str-truncate.c ]] || git clone \
+			https://github.com/stephenmathieson/str-truncate.c \
+			deps/str-truncate.c
 deps-uv:
 	@[[ -d deps/libuv ]] || git clone \
 			https://github.com/libuv/libuv \
@@ -121,7 +125,16 @@ deps-c_fsio:
 DEPS = \
 	   deps-clib deps-c_fsio deps-c_string_buffer deps-confuse deps-c_scriptexec deps-httpserver \
 	   deps-uv deps-timequick \
-	   deps-parson
+	   deps-parson \
+	   deps-str-truncate
+
+commit:
+	@git commit -am 'Automated Commit'
+
+push:
+	@git push
+
+git: commit push
 
 deps-install: $(DEPS)
 

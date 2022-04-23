@@ -26,6 +26,7 @@
 #include <uv.h>
 //#include "../deps/libuv/include/uv.h"
 /**********************************/
+#include "../deps/str-truncate.c/src/str-truncate.h"
 #include "../deps/timestamp/timestamp.h"
 /**********************************/
 #include "../deps/bytes/bytes.h"

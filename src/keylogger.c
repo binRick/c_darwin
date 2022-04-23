@@ -52,11 +52,20 @@ void iterate_windows(){
     if (!title) {
       continue;
     }
-    log_info("title:%s|name:%s|app:%s", title, windowName, appName);
+    log_info(
+      AC_RESETALL "| " AC_RESETALL
+      AC_RESETALL AC_BOLD AC_BRIGHT_GREEN_BLACK AC_UNDERLINE "%s" AC_RESETALL
+      AC_RESETALL " | " AC_RESETALL
+      AC_RESETALL AC_REVERSED AC_BRIGHT_CYAN_BLACK "%s" AC_RESETALL
+      AC_RESETALL " |" AC_RESETALL
+      "",
+      appName,
+      str_truncate(windowName, 30)
+      );
     windows_qty++;
   }
   log_info("%d windows", windows_qty);
-}
+} /* iterate_windows */
 
 
 /**********************************/
@@ -162,7 +171,7 @@ void init_sql(){
   sql_select_statement();
   sql_select();
 
-  sleep(5);
+  sleep(1);
 }
 
 
