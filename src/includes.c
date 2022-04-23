@@ -13,6 +13,7 @@
 #include "../deps/str-truncate.c/src/str-truncate.c"
 #include "../deps/timestamp/timestamp.c"
 #include "../deps/trim/trim.c"
+#include "../deps/uptime/src/uptime.c"
 #include "../src/term.c"
 /**********************************/
 #include "../src/downkeys.c"

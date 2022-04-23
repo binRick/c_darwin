@@ -1,16 +1,16 @@
 #ifndef WEBSERVER_C
 #define WEBSERVER_C
 /**********************************************/
-#define DEFAULT_WEBSERVER_PORT 8085
+#define DEFAULT_WEBSERVER_PORT    8085
 #define HTTPSERVER_IMPL
 /**********************************************/
-#include "../include/includes.h"
 #include "../deps/httpserver.h/httpserver.h"
+#include "../include/includes.h"
 /**********************************************/
 #define RESPONSE    "Hello, World!"
 /**********************************************/
-uv_thread_t          webserver_tid;
-struct http_server_s *server;
+uv_thread_t           webserver_tid;
+struct http_server_s  *server;
 volatile unsigned int chunk_count = 0;
 /**********************************************/
 
@@ -19,9 +19,8 @@ int request_target_is(struct http_request_s *request, char const *target) {
   http_string_t url = http_request_target(request);
   int           len = strlen(target);
 
- return (len == url.len && memcmp(url.buf, target, url.len) == 0);
+  return(len == url.len && memcmp(url.buf, target, url.len) == 0);
 }
-
 
 
 void chunk_cb(struct http_request_s *request) {
@@ -132,6 +131,7 @@ static void webserver(void *dat) {
 
 int webserver_thread(){
   int port = DEFAULT_WEBSERVER_PORT;
+
   uv_thread_create(&webserver_tid, webserver, (void *)&port);
 }
 

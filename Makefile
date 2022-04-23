@@ -1,4 +1,8 @@
 CC=$(shell command -v gcc)
+PASSH=$(shell command -v passh)
+BAT=$(shell command -v bat)--style=plain --force-colorization --theme="Monokai Extended Origin"
+
+WEBSOCKET_PORT=8088
 
 CC_OPTIONS=
 CC_OPTIONS+=-O0
@@ -21,12 +25,10 @@ INCLUDE_PATHS+=-I./include/string
 INCLUDE_PATHS+=-I./c_scriptexec/include
 INCLUDE_PATHS+=-I./c_scriptexec/src
 INCLUDE_PATHS+=-I./deps/c_fsio/include
-#INCLUDE_PATHS+=-I./deps/libuv/include
-#INCLUDE_PATHS+=-I./deps/libuv/
-#INCLUDE_PATHS+=-I./deps/libuv/src
 INCLUDE_PATHS+=-I./deps/c_scriptexec/include
 INCLUDE_PATHS+=-I./deps/c_string_buffer/include
 INCLUDE_PATHS+=-I./deps/libconfuse/include
+INCLUDE_PATHS+=-I./deps/uptime/include
 
 LIBRARY_PATHS=-L/usr/local/lib
 LIBRARY_PATHS+=$(shell pkg-config libconfuse --libs --cflags)
@@ -46,8 +48,6 @@ INSTALLDIR=/usr/local/bin
 BIN=bin
 LOGS=./logs
 
-PASSH=$(shell command -v passh)
-BAT=bat --style=plain --force-colorization --theme="Monokai Extended Origin"
 
 CFLAGS=$(FRAMEWORKS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LINKED_LIBRARIES)  -g
 CC_CMD=$(CC) \
@@ -56,8 +56,26 @@ CC_CMD=$(CC) \
 		$(SOURCES) \
 		-o $(BIN)/$(EXECUTABLE)
 
+DEPS = \
+	   deps-clib deps-c_fsio deps-c_string_buffer deps-confuse deps-c_scriptexec deps-httpserver \
+	   deps-uv deps-timequick \
+	   deps-parson \
+	   deps-uptime \
+	   deps-wslay \
+	   deps-nettle \
+	   deps-str-truncate
+
+websocket: cc-websocket websocket-server
+
+websocket-client:
+	@ws ws://127.0.0.1:8088
+
 cc-websocket:
-	gcc -Wall -O2 -g -o bin/websocket-server src/websocket-server.c -L./wslay/lib/.libs -I./wslay/lib/includes -lwslay -lnettle
+	@[[ -f bin/websocket-server ]] && unlink bin/websocket-server
+	@$(CC) -Wall -O2 -g -o $(BIN)/websocket-server src/websocket-server.c -L./deps/wslay/lib/.libs -I./deps/wslay/lib/includes -lwslay -lnettle
+
+websocket-server:
+	@$(BIN)/websocket-server $(WEBSOCKET_PORT)
 
 cc:
 	@$(PASSH) $(CC_CMD)
@@ -73,10 +91,6 @@ cc-bat: cc-dev
 	@$(PASSH) -L $(LOGS)/$(EXECUTABLE).log $(BIN)/$(EXECUTABLE)
 
 all: cc-bat
-
-	
-#	$(CC) parson.c $(CFLAGS) -o parson
-#	$(CC) parser-main.c $(CFLAGS) -o parser-main
 
 init:
 	@mkdir -p deps bin
@@ -138,6 +152,16 @@ deps-clib:
 deps-c_string_buffer:
 	@[[ -d deps/c_string_buffer ]] || git clone https://github.com/sagiegurari/c_string_buffer deps/c_string_buffer
 
+deps-nettle:
+	@[[ -d deps/nettle ]] || git clone \
+			https://github.com/breadwallet/nettle \
+			deps/nettle
+	@cd deps/wslay && autoreconf -i && ./configure && make -j && make check
+
+deps-uptime:
+	@[[ -d deps/uptime ]] || git clone \
+			https://github.com/qwercik/uptime \
+			deps/uptime
 deps-wslay:
 	@[[ -d deps/wslay ]] || git clone \
 			https://github.com/tatsuhiro-t/wslay \
@@ -150,12 +174,6 @@ deps-c_fsio:
 	@[[ -d deps/c_fsio ]] || git clone https://github.com/sagiegurari/c_fsio deps/c_fsio
 	@cd deps/c_fsio && ./build.sh
 
-DEPS = \
-	   deps-clib deps-c_fsio deps-c_string_buffer deps-confuse deps-c_scriptexec deps-httpserver \
-	   deps-uv deps-timequick \
-	   deps-parson \
-	   deps-wslay \
-	   deps-str-truncate
 
 commit:
 	@git commit -am 'Automated Commit'

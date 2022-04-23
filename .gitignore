@@ -6,3 +6,4 @@ deps/*
 logs
 etc/*.out
 *-orig.*
+tmp
