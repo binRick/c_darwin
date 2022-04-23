@@ -1,0 +1,15 @@
+{
+    "name": "osx",
+    "version": "x",
+    "repo": "binRick/c_darwin",
+    "description": "C Darwin Automation",
+    "keywords": [
+        "c",
+        "darwin"
+    ],
+    "license": "MIT",
+    "makefile": "Makefile",
+    "install": "make install",
+    "files": [],
+    "dependencies": {}
+}

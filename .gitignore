@@ -1,0 +1,7 @@
+db1.sqlite3
+*.swp
+bin/*
+deps/*
+.*.log
+logs
+etc/*.out
