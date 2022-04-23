@@ -134,7 +134,7 @@ commit:
 push:
 	@git push
 
-git: commit push
+git: tidy commit push
 
 deps-install: $(DEPS)
 
