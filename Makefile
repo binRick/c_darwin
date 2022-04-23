@@ -1,5 +1,13 @@
 CC=$(shell command -v gcc)
 
+CC_OPTIONS=
+CC_OPTIONS+=-O0
+CC_OPTIONS+=-std=c99
+CC_OPTIONS+=-Wdeprecated-declarations
+#CC_OPTIONS+=-Werror
+#CC_OPTIONS+=-Wall
+CC_OPTIONS+=-Wextra
+
 FRAMEWORKS=-framework ApplicationServices -framework Carbon
 FRAMEWORKS+=-framework Foundation -framework AppKit 
 
@@ -13,6 +21,9 @@ INCLUDE_PATHS+=-I./include/string
 INCLUDE_PATHS+=-I./c_scriptexec/include
 INCLUDE_PATHS+=-I./c_scriptexec/src
 INCLUDE_PATHS+=-I./deps/c_fsio/include
+#INCLUDE_PATHS+=-I./deps/libuv/include
+#INCLUDE_PATHS+=-I./deps/libuv/
+#INCLUDE_PATHS+=-I./deps/libuv/src
 INCLUDE_PATHS+=-I./deps/c_scriptexec/include
 INCLUDE_PATHS+=-I./deps/c_string_buffer/include
 INCLUDE_PATHS+=-I./deps/libconfuse/include
@@ -40,6 +51,7 @@ BAT=bat --style=plain --force-colorization --theme="Monokai Extended Origin"
 
 CFLAGS=$(FRAMEWORKS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LINKED_LIBRARIES)  -g
 CC_CMD=$(CC) \
+	    $(CC_OPTIONS) \
 		$(CFLAGS) \
 		$(SOURCES) \
 		-o $(BIN)/$(EXECUTABLE)

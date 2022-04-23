@@ -21,7 +21,7 @@ void model(){
   if (!sysctlbyname("hw.model", NULL, &len, NULL, 0) && len) {
     char *model = malloc(len * sizeof(char));
     if (!sysctlbyname("hw.model", model, &len, NULL, 0)) {
-      fprintf(stderr, "\nlen:%d\n", len);
+      fprintf(stderr, "\nlen:%zu\n", len);
       fprintf(stderr, "\nmodel:%s\n", model);
     }
     free(model);

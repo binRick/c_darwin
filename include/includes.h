@@ -23,8 +23,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 /**********************************/
-#include <uv.h>
-//#include "../deps/libuv/include/uv.h"
+#include "../deps/httpserver.h/httpserver.h"
+/**********************************/
+//#include "../deps/libuv/include/uv/threadpool.h"
+#include "../deps/libuv/include/uv.h"
+//#include "../deps/libuv/src/uv-common.h"
 /**********************************/
 #include "../deps/str-truncate.c/src/str-truncate.h"
 #include "../deps/timestamp/timestamp.h"
@@ -35,7 +38,6 @@
 #include "../deps/parson/parson.h"
 #include "../include/timequick.h"
 /**********************************/
-#include "../deps/httpserver.h/httpserver.h"
 #include "../deps/libconfuse/src/confuse.h"
 #include "../deps/list/list.h"
 /**********************************/

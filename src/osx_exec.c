@@ -35,7 +35,7 @@ static void exec_cmd(void *cmd){
 }
 
 
-int test_thread1(){
+void test_thread1(){
   char *cmd = "pwd";
 
   uv_thread_create(&tid, exec_cmd, (void *)cmd);

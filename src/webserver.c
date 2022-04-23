@@ -1,7 +1,28 @@
 #ifndef WEBSERVER_C
 #define WEBSERVER_C
+/**********************************************/
+#define DEFAULT_WEBSERVER_PORT 8085
 #define HTTPSERVER_IMPL
-#include "../include/includes.h"
+/**********************************************/
+#include <assert.h>
+#include <fnmatch.h>
+#include <libproc.h>
+#include <ncurses.h>
+#include <pthread.h>
+#include <signal.h>
+#include <sqlite3.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/proc_info.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "../deps/libuv/include/uv.h"
+#include "../deps/httpserver.h/httpserver.h"
 /**********************************************/
 #define RESPONSE    "Hello, World!"
 /**********************************************/
@@ -13,7 +34,7 @@ int request_target_is(struct http_request_s *request, char const *target) {
   http_string_t url = http_request_target(request);
   int           len = strlen(target);
 
-  return(len == url.len && memcmp(url.buf, target, url.len) == 0);
+ return (len == url.len && memcmp(url.buf, target, url.len) == 0);
 }
 
 int chunk_count = 0;
@@ -118,15 +139,16 @@ void handle_sigterm(int signum) {
 }
 
 
-static void webserver(void *port) {
+static void webserver(void *dat) {
+  int port = (int)dat;
   signal(SIGTERM, handle_sigterm);
-  server = http_server_init((int)port, handle_request);
+  server = http_server_init(port, handle_request);
   http_server_listen(server);
 }
 
 
 int webserver_thread(){
-  int port = 8085;
+  int port = DEFAULT_WEBSERVER_PORT;
 
   uv_thread_create(&webserver_tid, webserver, (void *)port);
 }

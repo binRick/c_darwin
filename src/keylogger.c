@@ -1,6 +1,6 @@
 /**********************************/
 #define WRITE_LOG_FILE          false
-#define DELETE_DATABASE_FILE    false
+#define DELETE_DATABASE_FILE    true
 #define LOG_TIME_ENABLED        false
 #define LOG_PATH_ENABLED        true
 /**********************************/
@@ -8,14 +8,10 @@
 #include "../src/includes.c"
 /**********************************/
 #include "config.c"
-#include "keylogger.h"
 #include "mouse.c"
 #include "osx_exec.c"
 #include "sql.c"
-//#include "webserver.c"
 #include "window_utils.c"
-/**********************************/
-#include "../include/types.h"
 /**********************************/
 CFArrayRef windowList;
 volatile unsigned int windows_qty = 0;
@@ -23,6 +19,7 @@ volatile unsigned int windows_qty = 0;
 #include "keybinds.c"
 #include "osx_utils.c"
 /**********************************/
+//#include "webserver.c"
 
 
 /**********************************/
