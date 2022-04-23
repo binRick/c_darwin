@@ -28,6 +28,7 @@
 /**********************************/
 #include "../deps/str-truncate.c/src/str-truncate.h"
 #include "../deps/timestamp/timestamp.h"
+#include "../include/ansicodes.h"
 /**********************************/
 #include "../deps/bytes/bytes.h"
 /**********************************/

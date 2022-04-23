@@ -1,4 +1,4 @@
-#include "types.h"
+#include "../include/types.h"
 #include <libproc.h>
 #include <stdio.h>
 #include <stdlib.h>

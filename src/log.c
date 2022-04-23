@@ -1,7 +1,18 @@
-#ifndef LOG_C
-#define LOG_C
+//////////////////////////////////////
+#ifndef LOG_LOADED
+#define LOG_LOADED    1
 //////////////////////////////////////
 #include "../include/includes.h"
+//////////////////////////////////////
+#ifndef SKIP_LIST_C
+//#include "../list/src/list.c"
+//#include "../list/src/list_iterator.c"
+#endif
+//#include "../human/bytes.c"
+//#include "../libbool/src/bool.c"
+//#include "../time/timestamp.c"
+//#include "../time/timequick.h"
+//#include "../dict.c/src/dict.c"
 //////////////////////////////////////
 #define MAX_CALLBACKS           32
 //////////////////////////////////////
@@ -13,6 +24,12 @@
 #endif
 #ifndef DEFAULT_LOG_LOG_PATH
 #define DEFAULT_LOG_LOG_PATH    stderr
+#endif
+#ifndef LOG_PATH_ENABLED
+#define LOG_PATH_ENABLED        true
+#endif
+#ifndef LOG_TIME_ENABLED
+#define LOG_TIME_ENABLED        true
 #endif
 //////////////////////////////////////
 char *LOG_LOG_PATH;
@@ -29,56 +46,34 @@ static struct {
   log_LockFn lock;
   int        level;
   bool       quiet;
+  bool       return_str;
   Callback   callbacks[MAX_CALLBACKS];
-}                 L;
-static const char *level_strings[] = {
-  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
-};
-
-static const char *level_colors[] = {
-  "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m"
-};
+} L;
 
 
-void setup_logs(){
-//  DEFAULT_STDOUT = strdup(env_get_or("LOG_OUT", "stdout"));
-//  LOG_LOG_PATH  = DEFAULT_LOG_LOG_PATH;
-//strdup(env_get_or("LOG_PATH", DEFAULT_LOG_LOG_PATH));
-//  LOG_OUT        = DEFAULT_STDOUT;
+static char * char_callback(log_Event *ev) {
+  char buf[16];
+  char buf1[1024];
+
+  buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
+  fprintf(
+    &buf1, "%s %s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
+    level_icons[ev->level], GET_LOG_TIME_STRING(buf), level_colors[ev->level], level_strings[ev->level],
+    GET_LOG_PATH_STRING(ev->file), ev->line
+    );
+  return(strdup(&buf1));
 }
 
 
-/*
- * char *time_text(log_Event *ev){
- * char buf[16];
- * buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
- * return buf;
- * }
- *
- * char *log_text(log_Event *ev){
- * char lt[1024];
- * sprintf(&lt, "%s %s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
- *  level_icons[ev->level], time_text(ev), level_colors[ev->level], level_strings[ev->level],
- *  ev->file, ev->line);
- * return lt;
- * }
- * static void stdout_callback(log_Event *ev) {
- * char *lt = log_text(ev);
- * fprintf(ev->udata,"%s", lt);
- * vfprintf(ev->udata, ev->fmt, ev->ap);
- * fprintf(ev->udata, "\n");
- * fflush(ev->udata);
- *
- * }
- */
 static void stdout_callback(log_Event *ev) {
   char buf[16];
 
   buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
   fprintf(
-    ev->udata, "%s %s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
-    level_icons[ev->level], buf, level_colors[ev->level], level_strings[ev->level],
-    ev->file, ev->line);
+    ev->udata, LOG_FMT,
+    level_icons[ev->level], GET_LOG_TIME_STRING(buf), level_colors[ev->level], level_strings[ev->level],
+    GET_LOG_PATH_STRING(ev->file), ev->line
+    );
   vfprintf(ev->udata, ev->fmt, ev->ap);
   fprintf(ev->udata, "\n");
   fflush(ev->udata);
@@ -138,6 +133,11 @@ void log_set_level(int level) {
 }
 
 
+void log_set_return_str(bool enable) {
+  L.return_str = enable;
+}
+
+
 void log_set_quiet(bool enable) {
   L.quiet = enable;
 }
@@ -165,6 +165,25 @@ static void init_event(log_Event *ev, void *udata) {
     ev->time = localtime(&t);
   }
   ev->udata = udata;
+}
+
+
+char * str_log(int level, const char *fmt, ...) {
+  log_Event ev = {
+    .fmt   = fmt,
+    .file  = "",
+    .line  = 0,
+    .level = level,
+  };
+
+  lock();
+  init_event(&ev, stderr);
+  va_start(ev.ap, fmt);
+  char *r = char_callback(&ev);
+
+  va_end(ev.ap);
+  unlock();
+  return(strdup(r));
 }
 
 

