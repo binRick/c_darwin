@@ -225,7 +225,9 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   }else if (is_keyboard) {
     kb_events_qty++;
     if (type != kCGEventKeyDown && type != kCGEventFlagsChanged && type != kCGEventKeyUp) {
-      log_error("returning type %d", type);
+      log_error("\nreturning type %d\n", type);
+      return(0);
+
       return(event);
     }
   }
@@ -339,7 +341,7 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   ITEM(stringbuffer_append_int, "Down Qty", down_keycodes_qty());
   ITEM(stringbuffer_append_int, "Uptime", getUptime());
   ITEM(stringbuffer_append_string, "Mouse Pixels Distance", mouse_distance_pixels_string());
-  ITEM(stringbuffer_append_int, "# USB Devices", get_usb_devices_qty());
+  //ITEM(stringbuffer_append_int, "# USB Devices", get_usb_devices_qty());
   ITEM(stringbuffer_append_int, "# Processes", get_procs_qty());
   ITEM(stringbuffer_append_int, "# Windows", get_windows_qty());
 
