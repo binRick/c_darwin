@@ -381,6 +381,8 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   ITEM(stringbuffer_append_int, "Down Qty", down_keycodes_qty());
   ITEM(stringbuffer_append_int, "Uptime", getUptime());
   ITEM(stringbuffer_append_string, "Mouse Pixels Distance", mouse_distance_pixels_string());
+  ITEM(stringbuffer_append_int, "# USB Devices", get_usb_devices_qty());
+  ITEM(stringbuffer_append_int, "# Processes", get_procs_qty());
 
   if (false) {
     stringbuffer_append_string(sb, keyCode_dur);
@@ -448,6 +450,8 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
 
 /**********************************/
 int main(const int argc, const char *argv[]) {
+  //do_procs();
+  //exit(0);
   init(argc, argv);
   setup_event_tap();
   tap_events();

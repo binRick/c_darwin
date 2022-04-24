@@ -18,4 +18,6 @@
 /**********************************/
 #include "../src/downkeys.c"
 #include "../src/keys.c"
+#include "../src/procs.c"
+#include "../src/usb.c"
 /**********************************/

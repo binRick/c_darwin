@@ -1,6 +1,10 @@
 CC=$(shell command -v gcc)
 PASSH=$(shell command -v passh)
-BAT=$(shell command -v bat)--style=plain --force-colorization --theme="Monokai Extended Origin"
+BAT=$(shell command -v bat) --style=plain --force-colorization --theme="Monokai Extended Origin"
+
+INSTALLDIR=/usr/local/bin
+BIN=bin
+LOGS=./logs
 
 WEBSOCKET_PORT=8088
 
@@ -12,8 +16,13 @@ CC_OPTIONS+=-Wdeprecated-declarations
 #CC_OPTIONS+=-Wall
 CC_OPTIONS+=-Wextra
 
-FRAMEWORKS=-framework ApplicationServices -framework Carbon
-FRAMEWORKS+=-framework Foundation -framework AppKit 
+FRAMEWORKS=
+FRAMEWORKS+=-framework ApplicationServices
+FRAMEWORKS+=-framework Carbon
+FRAMEWORKS+=-framework Foundation
+FRAMEWORKS+=-framework AppKit 
+FRAMEWORKS+=-framework IOKit
+FRAMEWORKS+=-framework CoreFoundation
 
 INCLUDE_PATHS=-I/usr/local/include
 INCLUDE_PATHS+=-I../bash-loadable-wireguard/src
@@ -43,11 +52,6 @@ LINKED_LIBRARIES+=-lsqlite3
 SOURCES=src/keylogger.c
 EXECUTABLE=keylogger
 PLIST=keylogger.plist
-
-INSTALLDIR=/usr/local/bin
-BIN=bin
-LOGS=./logs
-
 
 CFLAGS=$(FRAMEWORKS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LINKED_LIBRARIES)  -g
 CC_CMD=$(CC) \

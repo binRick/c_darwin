@@ -6,8 +6,10 @@
 #include <assert.h>
 #include <Carbon/Carbon.h>
 #include <fnmatch.h>
+#include <libgen.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
+#include <mach/machine.h>
 #include <ncurses.h>
 #include <pthread.h>
 #include <signal.h>
@@ -22,6 +24,11 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+/**********************************/
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/hid/IOHIDKeys.h>
+#include <IOKit/hid/IOHIDManager.h>
+#include <IOKit/IOKitLib.h>
 /**********************************/
 /**********************************/
 //#include "../deps/libuv/include/uv/threadpool.h"
