@@ -361,7 +361,7 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   char *msg2 = AC_RESETALL AC_YELLOW " ⚡ " AC_RESETALL;
 
   term_erase("screen");
-//  term_reset();
+  term_reset();
 // term_hide_cursor();
   int w = 0, h = 0;
 

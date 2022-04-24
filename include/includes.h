@@ -5,6 +5,7 @@
 /**********************************/
 #include <assert.h>
 #include <Carbon/Carbon.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <libproc.h>
@@ -13,6 +14,7 @@
 #include <ncurses.h>
 #include <pthread.h>
 #include <signal.h>
+#include <spawn.h>
 #include <sqlite3.h>
 #include <stdbool.h>
 #include <stdio.h>
