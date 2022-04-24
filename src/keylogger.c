@@ -14,9 +14,9 @@
 #include "osx_exec.c"
 #include "sql.c"
 #include "window_utils.c"
+#include "windows.c"
 /**********************************/
 CFArrayRef windowList;
-volatile unsigned int windows_qty = 0;
 /**********************************/
 #include "keybinds.c"
 #include "osx_utils.c"
@@ -56,49 +56,19 @@ char *mouse_distance_pixels_string(){
 
 
 /**********************************/
-void iterate_windows(){
-  tq_start("iterate_windows duration");
-  CFDictionaryRef window;
+/**********************************/
+#define ITEM(TYPE, LABEL, VALUE)    {                            \
+    stringbuffer_append_string(sb, "\n");                        \
+    stringbuffer_append_string(sb, AC_RESETALL);                 \
+    stringbuffer_append_string(sb, LABEL ":");                   \
+    stringbuffer_append_string(sb, AC_RESETALL AC_BLUE AC_BOLD); \
+    TYPE(sb, VALUE);                                             \
+    stringbuffer_append_string(sb, AC_RESETALL);                 \
+    stringbuffer_append_string(sb, "\t");                        \
+}
 
-  windowList = CGWindowListCopyWindowInfo(
-    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
-    kCGNullWindowID
-    );
-  windows_qty = 0;
-  int layer;
 
-  for (int i = 0; i < CFArrayGetCount(windowList); i++) {
-    window = CFArrayGetValueAtIndex(windowList, i);
-    layer  = CFDictionaryGetInt(window, kCGWindowLayer);
-    if (layer > 0) {
-      continue;
-    }
-    char *appName = CFDictionaryCopyCString(window, kCGWindowOwnerName);
-    if (!appName || !*appName) {
-      continue;
-    }
-    char *windowName = CFDictionaryCopyCString(window, kCGWindowName);
-    if (!windowName) {
-      continue;
-    }
-    char *title = windowTitle(appName, windowName);
-    if (!title) {
-      continue;
-    }
-    log_info(
-      AC_RESETALL "| " AC_RESETALL
-      AC_RESETALL AC_BOLD AC_BRIGHT_GREEN_BLACK AC_UNDERLINE "%s" AC_RESETALL
-      AC_RESETALL " | " AC_RESETALL
-      AC_RESETALL AC_REVERSED AC_BRIGHT_CYAN_BLACK "%s" AC_RESETALL
-      AC_RESETALL " |" AC_RESETALL
-      "",
-      appName,
-      str_truncate(windowName, 30)
-      );
-    windows_qty++;
-  }
-  log_info("%d windows | %s", windows_qty, tq_stop("iterate_windows duration"));
-} /* iterate_windows */
+/**********************************/
 
 
 /**********************************/
@@ -217,17 +187,6 @@ void init(const int argc, const char **argv){
   downkeys_history = list_new();
   sb               = stringbuffer_new_with_options(1024, true);
 }
-/**********************************/
-#define ITEM(TYPE, LABEL, VALUE)    {                            \
-    stringbuffer_append_string(sb, "\n");                        \
-    stringbuffer_append_string(sb, AC_RESETALL);                 \
-    stringbuffer_append_string(sb, LABEL ":");                   \
-    stringbuffer_append_string(sb, AC_RESETALL AC_BLUE AC_BOLD); \
-    TYPE(sb, VALUE);                                             \
-    stringbuffer_append_string(sb, AC_RESETALL);                 \
-    stringbuffer_append_string(sb, "\t");                        \
-}
-/**********************************/
 
 
 CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
@@ -373,7 +332,6 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   ITEM(stringbuffer_append_string, "Action", (char *)action);
   ITEM(stringbuffer_append_int, "Handled", handled);
   ITEM(stringbuffer_append_int, "Type", type);
-  ITEM(stringbuffer_append_int, "Windows Qty", windows_qty);
   ITEM(stringbuffer_append_int, "Code", keyCode);
   ITEM(stringbuffer_append_string, "Key", (char *)ckc);
   ITEM(stringbuffer_append_string, "Keys", (char *)get_key_with_downkeys((char *)ckc));
@@ -383,6 +341,7 @@ CGEventRef ___event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef 
   ITEM(stringbuffer_append_string, "Mouse Pixels Distance", mouse_distance_pixels_string());
   ITEM(stringbuffer_append_int, "# USB Devices", get_usb_devices_qty());
   ITEM(stringbuffer_append_int, "# Processes", get_procs_qty());
+  ITEM(stringbuffer_append_int, "# Windows", get_windows_qty());
 
   if (false) {
     stringbuffer_append_string(sb, keyCode_dur);
