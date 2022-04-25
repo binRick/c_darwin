@@ -67,6 +67,7 @@ DEPS = \
 	   deps-uptime \
 	   deps-wslay \
 	   deps-nettle \
+	   deps-tercontrol \
 	   deps-str-truncate
 
 websocket: cc-websocket websocket-server
@@ -119,6 +120,11 @@ rm:
 
 tidy:
 	./bin/tidy.sh
+
+deps-tercontrol:
+	@[[ -d deps/tercontrol ]] || git clone \
+			https://github.com/ZackeryRSmith/tercontrol \
+			deps/tercontrol
 
 deps-parson:
 	@[[ -d deps/parson ]] || git clone \

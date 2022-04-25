@@ -7,3 +7,4 @@ logs
 etc/*.out
 *-orig.*
 tmp
+bin/keylogger

