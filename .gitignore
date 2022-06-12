@@ -1,10 +1,7 @@
-db1.sqlite3
 *.swp
-bin/*
-deps/*
-.*.log
-logs
-etc/*.out
-*-orig.*
-tmp
-bin/keylogger
+build
+.cache
+.nodemon.log
+.LEGACY
+.attic/
+subprojects/cargs

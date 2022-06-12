@@ -1,200 +1,94 @@
-CC=$(shell command -v gcc)
+default: all
+##############################################################
 PASSH=$(shell command -v passh)
-BAT=$(shell command -v bat) --style=plain --force-colorization --theme="Monokai Extended Origin"
+GIT=$(shell command -v git)
+SED=$(shell command -v gsed||command -v sed)
+NODEMON=$(shell command -v nodemon)
+FZF=$(shell command -v fzf)
+BLINE=$(shell command -v bline)
+UNCRUSTIFY=$(shell command -v uncrustify)
+PWD=$(shell command -v pwd)
+FIND=$(shell command -v find)
+EMBED_BINARY=$(shell command -v embed)
+JQ_BIN=$(shell command -v jq)
+##############################################################
+DIR=$(shell $(PWD))
+M1_DIR=$(DIR)
+LOADER_DIR=$(DIR)/loader
+EMBEDS_DIR=$(DIR)/embeds
+VENDOR_DIR=$(DIR)/vendor
+PROJECT_DIR=$(DIR)
+MESON_DEPS_DIR=$(DIR)/meson/deps
+VENDOR_DIR=$(DIR)/vendor
+DEPS_DIR=$(DIR)/deps
+BUILD_DIR=$(DIR)/build
+ETC_DIR=$(DIR)/etc
+MENU_DIR=$(DIR)/menu
+DOCKER_DIR=$(DIR)/docker
+LIST_DIR=$(DIR)/list
+SOURCE_VENV_CMD=$(DIR)/scripts
+VENV_DIR=$(DIR)/.venv
+SCRIPTS_DIR=$(DIR)/scripts
+ACTIVE_APP_DIR=$(DIR)/active-window
+SOURCE_VENV_CMD = source $(VENV_DIR)/bin/activate
+##############################################################
+TIDIED_FILES = \
+			   */*.h */*.c
+##############################################################
+all: build test
+test-libs: 
+	./build/window-utils-test/window-utils-test
+	./build/app-utils-test/app-utils-test
 
-INSTALLDIR=/usr/local/bin
-BIN=bin
-LOGS=./logs
+clean:
+	@rm -rf build
+test: do-test
+do-test: 
+	@cd build && meson test --no-rebuild --print-errorlogs -v
+test-module:
+	@echo TESTING MDDULE
+	@./build/active-window-module-test/active-window-module-test -v | ./submodules/greatest/contrib/greenest
+	@gtimeout .3 ./build/active-window-module-test/active-window-module-test --watch 2>/dev/null ||true
+	@echo TESTING MDDULE OK; echo
 
-WEBSOCKET_PORT=8088
+test-bin:
+	@echo TESTING
+	@./build/active-window-test/active-window-test -v | ./submodules/greatest/contrib/greenest
+	@gtimeout .3 ./build/active-window-test/active-window-test --watch 2>/dev/null ||true
+	@echo TESTING OK; echo
 
-CC_OPTIONS=
-CC_OPTIONS+=-O0
-CC_OPTIONS+=-std=c99
-CC_OPTIONS+=-Wdeprecated-declarations
-#CC_OPTIONS+=-Werror
-#CC_OPTIONS+=-Wall
-CC_OPTIONS+=-Wextra
+do-meson: 
+	@eval cd . && {  meson build || { meson build --reconfigure || { meson build --wipe; } && meson build; }; }
 
-FRAMEWORKS=
-FRAMEWORKS+=-framework ApplicationServices
-FRAMEWORKS+=-framework Carbon
-FRAMEWORKS+=-framework Foundation
-FRAMEWORKS+=-framework AppKit 
-FRAMEWORKS+=-framework IOKit
-FRAMEWORKS+=-framework CoreFoundation
+do-build:
+	@eval cd . && { ninja -C build; }
+	@eval cd . && { ninja test -C build -v; }
 
-INCLUDE_PATHS=-I/usr/local/include
-INCLUDE_PATHS+=-I../bash-loadable-wireguard/src
-INCLUDE_PATHS+=-I./deps
-INCLUDE_PATHS+=-I./include
-INCLUDE_PATHS+=-I./src
-INCLUDE_PATHS+=-I./include/fs
-INCLUDE_PATHS+=-I./include/string
-INCLUDE_PATHS+=-I./c_scriptexec/include
-INCLUDE_PATHS+=-I./c_scriptexec/src
-INCLUDE_PATHS+=-I./deps/c_fsio/include
-INCLUDE_PATHS+=-I./deps/c_scriptexec/include
-INCLUDE_PATHS+=-I./deps/c_string_buffer/include
-INCLUDE_PATHS+=-I./deps/libconfuse/include
-INCLUDE_PATHS+=-I./deps/uptime/include
+build: do-meson do-build
 
-LIBRARY_PATHS=-L/usr/local/lib
-LIBRARY_PATHS+=$(shell pkg-config libconfuse --libs --cflags)
+uncrustify:
+	@$(UNCRUSTIFY) -c submodules/meson_deps/etc/uncrustify.cfg --replace $(TIDIED_FILES) 
+#	@shfmt -w scripts/*.sh
 
-LINKED_LIBRARIES=-lparson
-LINKED_LIBRARIES+=-luv
-LINKED_LIBRARIES+=-lpthread
-LINKED_LIBRARIES+=-lm
-LINKED_LIBRARIES+=-lcurl
-LINKED_LIBRARIES+=-lsqlite3
+uncrustify-clean:
+	@find  . -type f -name "*unc-back*"|xargs -I % unlink %
 
-SOURCES=src/keylogger.c
-EXECUTABLE=keylogger
-PLIST=keylogger.plist
+fix-dbg:
+	@$(SED) 's|, % s);|, %s);|g' -i $(TIDIED_FILES)
+	@$(SED) 's|, % lu);|, %lu);|g' -i $(TIDIED_FILES)
+	@$(SED) 's|, % d);|, %d);|g' -i $(TIDIED_FILES)
+	@$(SED) 's|, % zu);|, %zu);|g' -i $(TIDIED_FILES)
 
-CFLAGS=$(FRAMEWORKS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LINKED_LIBRARIES)  -g
-CC_CMD=$(CC) \
-	    $(CC_OPTIONS) \
-		$(CFLAGS) \
-		$(SOURCES) \
-		-o $(BIN)/$(EXECUTABLE)
+tidy: uncrustify uncrustify-clean fix-dbg
 
-DEPS = \
-	   deps-clib deps-c_fsio deps-c_string_buffer deps-confuse deps-c_scriptexec deps-httpserver \
-	   deps-uv deps-timequick \
-	   deps-parson \
-	   deps-uptime \
-	   deps-wslay \
-	   deps-nettle \
-	   deps-tercontrol \
-	   deps-str-truncate
+dev-all: all
 
-websocket: cc-websocket websocket-server
-
-websocket-client:
-	@ws ws://127.0.0.1:8088
-
-cc-websocket:
-	@[[ -f bin/websocket-server ]] && unlink bin/websocket-server
-	@$(CC) -Wall -O2 -g -o $(BIN)/websocket-server src/websocket-server.c -L./deps/wslay/lib/.libs -I./deps/wslay/lib/includes -lwslay -lnettle
-
-websocket-server:
-	@$(BIN)/websocket-server $(WEBSOCKET_PORT)
-
-cc:
-	@$(PASSH) $(CC_CMD)
-
-dev:
-	@$(PASSH) -L logs/dev.log ./bin/dev.sh
-
-cc-dev:
-	@ansi --yellow --bg-black --italic "$(CC_CMD)"
-
-cc-bat: cc-dev
-	@make cc || { make cc | $(BAT); }
-	@$(PASSH) -L $(LOGS)/$(EXECUTABLE).log $(BIN)/$(EXECUTABLE)
-
-all: cc-bat
-
-init:
-	@mkdir -p deps bin
-
-setup: init deps-install
-
-install:
-	mkdir -p $(INSTALLDIR)
-	cp $(EXECUTABLE) $(INSTALLDIR)
-
-uninstall:
-	rm $(INSTALLDIR)/$(EXECUTABLE)
-	rm /Library/LaunchDaemons/$(PLIST)
-
-startup:
-	cp $(PLIST) /Library/LaunchDaemons
-
-clean: rm init
-
-rm:
-	rm -rf deps bin
-
-tidy:
-	./bin/tidy.sh
-
-deps-tercontrol:
-	@[[ -d deps/tercontrol ]] || git clone \
-			https://github.com/ZackeryRSmith/tercontrol \
-			deps/tercontrol
-
-deps-parson:
-	@[[ -d deps/parson ]] || git clone \
-			https://github.com/kgabis/parson \
-			deps/parson
-
-deps-timequick:
-	@[[ -d deps/timequick ]] || git clone \
-			https://github.com/mbarbar/timequick \
-			deps/timequick
-
-deps-str-truncate:
-	@[[ -d deps/str-truncate.c ]] || git clone \
-			https://github.com/stephenmathieson/str-truncate.c \
-			deps/str-truncate.c
-deps-uv:
-	@[[ -d deps/libuv ]] || git clone \
-			https://github.com/libuv/libuv \
-			deps/libuv
-	@cd deps/libuv && cmake .
-	@cd deps/libuv && make
-
-deps-httpserver:
-	@[[ -d deps/httpserver.h ]] || git clone https://github.com/jeremycw/httpserver.h deps/httpserver.h
-
-deps-c_scriptexec:
-	@[[ -d deps/c_scriptexec ]] || git clone https://github.com/sagiegurari/c_scriptexec deps/c_scriptexec
-
-deps-confuse:
-	@[[ -d deps/libconfuse ]] || git clone https://github.com/libconfuse/libconfuse deps/libconfuse
-
-deps-clib:
-	@clib install 
-
-deps-c_string_buffer:
-	@[[ -d deps/c_string_buffer ]] || git clone https://github.com/sagiegurari/c_string_buffer deps/c_string_buffer
-
-deps-nettle:
-	@[[ -d deps/nettle ]] || git clone \
-			https://github.com/breadwallet/nettle \
-			deps/nettle
-	@cd deps/wslay && autoreconf -i && ./configure && make -j && make check
-
-deps-uptime:
-	@[[ -d deps/uptime ]] || git clone \
-			https://github.com/qwercik/uptime \
-			deps/uptime
-deps-wslay:
-	@[[ -d deps/wslay ]] || git clone \
-			https://github.com/tatsuhiro-t/wslay \
-			deps/wslay
-	@cd deps/wslay && cmake .
-	@cd deps/wslay && make -j
+pull:
+	@git pull
 
 
-deps-c_fsio:
-	@[[ -d deps/c_fsio ]] || git clone https://github.com/sagiegurari/c_fsio deps/c_fsio
-	@cd deps/c_fsio && ./build.sh
+dev: nodemon
+nodemon:
+	@$(PASSH) -L .nodemon.log $(NODEMON) -V -i build -w . -w '*/meson.build' --delay 1 -i '*/subprojects' -I  -w 'include/*.h' -w meson.build -w src -w Makefile -w loader/meson.build -w loader/src -w loader/include -i '*/embeds/*' -e tpl,build,sh,c,h,Makefile -x env -- bash -c 'make||true'
 
-
-commit:
-	@git commit -am 'Automated Commit'
-
-push:
-	@git push
-
-git: tidy commit push
-
-deps-install: $(DEPS)
-
-webserver-test:
-	@curl -s http://localhost:8085/t
 
