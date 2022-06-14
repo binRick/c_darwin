@@ -1,6 +1,6 @@
 #pragma once
 #ifndef DEFAULT_LOGLEVEL
-#define DEFAULT_LOGLEVEL    4
+#define DEFAULT_LOGLEVEL    2
 #endif
 #include "submodules/c_stringfn/include/stringfn.h"
 #include "window-utils.h"
@@ -46,13 +46,3 @@ bool isAuthorizedForAccessibility();
     RUN_TEST(t_isAuthorizedForScreenRecording);                                 \
     PASS();                                                                     \
   }                                                                             \
-  GREATEST_MAIN_DEFS();                                                         \
-///////////////////////////////////////////////////////////////////////
-#define RUN_APP_AUTHORIZATION_TESTS \
-  GREATEST_MAIN_BEGIN();            \
-  RUN_SUITE(s_authorized);          \
-///////////////////////////////////////////////////////////////////////
-#define END_APP_AUTHORIZATION_TESTS \
-  GREATEST_MAIN_END();              \
-///////////////////////////////////////////////////////////////////////
-

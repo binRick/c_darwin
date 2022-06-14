@@ -191,6 +191,20 @@ void AXWindowSetSize(AXUIElementRef window, CGSize size) {
 }
 
 
+int GetWindowsQty(void){
+  int        qty        = -1;
+  CFArrayRef windowList = CGWindowListCopyWindowInfo(
+    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    kCGNullWindowID
+    );
+
+  qty = CFArrayGetCount(windowList);
+
+  CFRelease(windowList);
+  return(qty);
+}
+
+
 int EnumerateWindows(char *pattern,
                      void ( *callback )(CFDictionaryRef window, void *callback_data),
                      void *callback_data) {
@@ -298,7 +312,6 @@ void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
   JSON_Object *root_object              = json_value_get_object(root_value);
   char        *serialized_string        = NULL;
   char        *pretty_serialized_string = NULL;
-  log_debug("appname:%s", appName);
 
   json_object_set_string(root_object, "appName", appName);
   json_object_set_string(root_object, "windowName", windowName);
@@ -310,21 +323,21 @@ void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
   json_object_dotset_number(root_object, "position.y", (int)position.y);
   pretty_serialized_string = json_serialize_to_string_pretty(root_value);
   serialized_string        = json_serialize_to_string(root_value);
-  log_info(
+  log_debug(
     AC_RESETALL AC_REVERSED AC_YELLOW_BLACK "%s" AC_RESETALL,
     pretty_serialized_string
     );
   if (ctx->id == -1 || ctx->id == windowId) {
     if (ctx->jsonMode) {
-      printf("%s", serialized_string);
+      log_debug("%s", serialized_string);
     }else if (ctx->longDisplay) {
-      printf(
-        "%s - %s %d %d %d %d %d\n", title,
-        appName,
-        (int)windowId,
-        (int)position.x, (int)position.y,
-        (int)size.width, (int)size.height
-        );
+      fprintf(stderr,
+              "%s - %s %d %d %d %d %d\n", title,
+              appName,
+              (int)windowId,
+              (int)position.x, (int)position.y,
+              (int)size.width, (int)size.height
+              );
     }else {
       printf("%d\n", windowId);
     }

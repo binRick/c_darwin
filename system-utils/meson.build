@@ -4,6 +4,9 @@ system_utils_srcs = [
 system_utils_deps = [
   c_stringfn_dep,
 ]
+
+system_utils_link_args = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
+
 system_utils_lib = static_library('system-utils',
   system_utils_srcs,
   install: false,
@@ -19,4 +22,5 @@ system_utils_dep = declare_dependency(
     inc,
   ],
   link_with: system_utils_lib,
+  link_args: system_utils_link_args,
 )

@@ -11,6 +11,7 @@ window_utils_deps = [
   logh_dep,
   ansicodes_dep,
 ]
+window_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 window_utils_lib = static_library('window-utils',
   window_utils_srcs,
   install: false,
@@ -29,4 +30,5 @@ window_utils_dep = declare_dependency(
     inc,
   ],
   link_with: window_utils_lib,
+  link_args: window_utils_link_flags,
 )

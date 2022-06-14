@@ -9,6 +9,7 @@ app_utils_deps = [
   c_stringfn_dep,
   logh_dep,
 ]
+app_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 app_utils_lib = static_library('app-utils',
   app_utils_srcs,
   install: false,
@@ -27,4 +28,5 @@ app_utils_dep = declare_dependency(
     '../window-utils',
   ],
   link_with: app_utils_lib,
+  link_args: app_utils_link_flags,
 )

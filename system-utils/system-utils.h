@@ -21,7 +21,10 @@
 #include <time.h>
 #include <unistd.h>
 
-typedef struct DarwinDisplaySize DarwinDisplaySize;
+///////////////////////////
+typedef struct DarwinDisplaySize       DarwinDisplaySize;
+typedef struct DarwinMouseLocation_t   DarwinMouseLocation_t;
+///////////////////////////
 enum sysctls {
   MODEL = 0,
   CPU,
@@ -30,16 +33,18 @@ enum sysctls {
   OSREL,
   HOSTNAME
 };
-
 struct DarwinDisplayResolution {
   size_t x, y;
   CGSize size;
   int    pixels;
 };
-
 struct DarwinDisplaySize {
   double width; double height;
 };
+struct DarwinMouseLocation_t {
+  int x; int y;
+};
+///////////////////////////
 
 static void get_sysctl(enum sysctls);
 static void disk(void);

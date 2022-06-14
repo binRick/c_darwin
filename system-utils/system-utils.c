@@ -11,23 +11,71 @@
 static const struct {
   const char *ctls;
   const char *names;
-} values[] = {
-  { "hw.model",                 "Model"     }, /* MODEL    */
-  { "machdep.cpu.brand_string", "Processor" }, /* CPU       */
-  { "hw.memsize",               "Memory"    }, /* MEM       */
-  { "kern.ostype",              "OS"        }, /* OSTYPE   */
-  { "kern.osrelease",           "Release"   }, /* OSREL    */
-  { "kern.hostname",            "Hostname"  }, /* HOSTNAME */
+} SYSCTL_VALUES[] = {
+  { "hw.model",                 "Model"     },
+  { "machdep.cpu.brand_string", "Processor" },
+  { "hw.memsize",               "Memory"    },
+  { "kern.ostype",              "OS"        },
+  { "kern.osrelease",           "Release"   },
+  { "kern.hostname",            "Hostname"  },
 };
 
+
+static void get_sysctl(enum sysctls ctl) {
+  size_t len;
+
+  if (ctl == MEM) {
+    mem();
+  } else {
+    sysctlbyname(SYSCTL_VALUES[ctl].ctls, NULL, &len, NULL, 0);
+    char *type = malloc(len);
+    sysctlbyname(SYSCTL_VALUES[ctl].ctls, type, &len, NULL, 0);
+    printf("%-10s: " "%s\n", SYSCTL_VALUES[ctl].names, type);
+    free(type);
+  }
+}
+
+
+static inline CGPoint get_darwin_mouse_point() {
+//  return(CGEventGetLocation(dml_r->event));
+}
+
+
+DarwinMouseLocation_t * get_darwin_mouse_location(){
+  /*
+   *   exports->location = malloc(sizeof(DarwinMouseLocation_t));
+   * assert(exports->location != NULL);
+   * exports->event = CGEventCreate(nil);
+   * assert(exports->event != NULL);
+   * dml_r->point = get_darwin_mouse_point();
+   *
+   * dml_r->location->x = dml_r->point.x;
+   * dml_r->location->y = dml_r->point.y;
+   *
+   * dml_r->x = dml_r->point.x;
+   * dml_r->y = dml_r->point.y;
+   * DarwinMouseLocation *dml = InitDarwinMouseLocation();
+   *
+   * assert(dml->get() == 1);
+   * assert(dml->x > -1 && dml->y > -1);
+   * DarwinMouseLocation_t *l = malloc(sizeof(DarwinMouseLocation_t));
+   *
+   * l->x = dml->x;
+   * l->y = dml->y;
+   * FreeDarwinMouseLocation(dml);
+   */
+  //return(l);
+}
+
+
 struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID display_id){
-  CGDisplayModeRef mode, current_mode; CFArrayRef mode_list;
+  struct DarwinDisplayResolution *res = malloc(sizeof(struct DarwinDisplayResolution));
+
+  CGDisplayModeRef               mode, current_mode; CFArrayRef mode_list;
 
   mode_list    = CGDisplayCopyAllDisplayModes(display_id, NULL);
   current_mode = CGDisplayCopyDisplayMode(display_id);
   mode         = (CGDisplayModeRef)CFArrayGetValueAtIndex(mode_list, 0);
-
-  struct DarwinDisplayResolution *res = malloc(sizeof(struct DarwinDisplayResolution));
 
   res->x      = CGDisplayModeGetWidth(mode);
   res->y      = CGDisplayModeGetHeight(mode);
@@ -36,29 +84,33 @@ struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID displa
 
   CFRelease(current_mode);
   CFRelease(mode_list);
+
   return(res);
 }
 
 
 uint32_t get_display_count(){
   uint32_t          displays_count;
+
   CGDirectDisplayID displays[8];
 
   CGGetActiveDisplayList(8, displays, &displays_count);
+
   return(displays_count);
 }
 
 
 CGDirectDisplayID get_display_id(uint32_t id){
   uint32_t          displays_count;
+
   CGDirectDisplayID display_id;
   CGDisplayModeRef  display_mode = NULL;
-
   CGDirectDisplayID displays[8];
 
   CGGetActiveDisplayList(8, displays, &displays_count);
   display_id = displays[id];
   CGDisplayModeRelease(display_mode);
+
   return(display_id);
 }
 
@@ -71,19 +123,9 @@ static void disk(void) {
     unsigned long total = (info.f_blocks * info.f_frsize);
     unsigned long used  = total - left;
     float         perc  = (float)used / (float)total;
-
     printf("Disk      : " "%.2f%% of %.2f GB\n",
            perc * 100, (float)total / 1e+09);
   }
-}
-
-
-static void curtime(void) {
-  time_t t;
-
-  t = time(NULL);
-
-  printf("Time:     : " "%s", ctime(&t));
 }
 
 
@@ -100,32 +142,17 @@ static void mem(void) {
 
   len = sizeof(value64);
 
-  sysctlbyname(values[2].ctls, &value64, &len, NULL, 0);
+  sysctlbyname(SYSCTL_VALUES[2].ctls, &value64, &len, NULL, 0);
   if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS) {
     if ((ret = host_statistics64(myHost, HOST_VM_INFO64, (host_info64_t)&
                                  vm_stat, &count) == KERN_SUCCESS)) {
       printf("%s    : " "%llu MB of %.f MB\n",
-             values[2].names,
+             SYSCTL_VALUES[2].names,
              (uint64_t)(vm_stat.active_count +
                         vm_stat.inactive_count +
                         vm_stat.wire_count) * pageSize >> 20,
              value64 / 1e+06);
     }
-  }
-}
-
-
-static void get_sysctl(enum sysctls ctl) {
-  size_t len;
-
-  if (ctl == MEM) {
-    mem();
-  } else {
-    sysctlbyname(values[ctl].ctls, NULL, &len, NULL, 0);
-    char *type = malloc(len);
-    sysctlbyname(values[ctl].ctls, type, &len, NULL, 0);
-    printf("%-10s: " "%s\n", values[ctl].names, type);
-    free(type);
   }
 }
 
@@ -202,29 +229,6 @@ static void gpu(void) {
     }
   }
 } /* gpu */
-#define DBDIR    "/opt/pkg/var"
-
-
-static void get_pkg_count(void) {
-  int           pkgs = 0;
-  struct dirent **namelist;
-
-  printf("Packages  : ");
-  pkgs = scandir(DBDIR, &namelist, NULL, NULL);
-
-  if (pkgs < 0) {
-    printf("no packages found\n");
-    return;
-  }
-
-  for (int i = 0; i < pkgs; i++) {
-    free(namelist[i]);
-  }
-  free(namelist);
-
-  /* amount of directories found excluding . .. and the pkg.byfile.db */
-  printf("%d\n", pkgs - 3);
-}
 
 
 static void uptime(time_t *nowp) {
@@ -301,9 +305,6 @@ int uv_resident_set_memory(size_t *rss) {
                     (task_info_t)&info,
                     &count);
   (void)&err;
-  /* task_info(TASK_BASIC_INFO) cannot really fail. Anything other than
-   * KERN_SUCCESS implies a libuv bug.
-   */
   assert(err == KERN_SUCCESS);
   *rss = info.resident_size;
 

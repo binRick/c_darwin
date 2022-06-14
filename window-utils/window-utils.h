@@ -1,6 +1,6 @@
 #pragma once
 #ifndef DEFAULT_LOGLEVEL
-#define DEFAULT_LOGLEVEL    2
+#define DEFAULT_LOGLEVEL    1
 #endif
 #include "ansicodes/ansicodes.h"
 #include "app-utils.h"
@@ -51,5 +51,6 @@ void AXWindowSetPosition(AXUIElementRef window, CGPoint position);
 CGSize AXWindowGetSize(AXUIElementRef window);
 void AXWindowSetSize(AXUIElementRef window, CGSize size);
 void MoveWindow(CFDictionaryRef window, void *ctxPtr);
+int GetWindowsQty(void);
 
 ///////////////////////////////////////////////////
