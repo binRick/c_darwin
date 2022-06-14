@@ -24,6 +24,7 @@ subdir('submodules/meson_deps/meson/deps/bytes')
 subdir('submodules/meson_deps/meson/deps/greatest')
 subdir('submodules/meson_deps/meson/deps/ansicodes')
 subdir('submodules/meson_deps/meson/deps/log.h')
+subdir('submodules/meson_deps/meson/deps/subprocess')
 #//////////////////////////////////////////////////////////////////////
 subdir('active-app')
 subdir('app-utils')
@@ -37,5 +38,8 @@ subdir('system-utils')
 subdir('system-utils-test')
 #//////////////////////////////////////////////////////////////////////
 subdir('active-app-test')
-subdir('active-app-module-test')
+#subdir('active-app-module-test')
+#//////////////////////////////////////////////////////////////////////
+subdir('pbpaste')
+subdir('pbpaste-test')
 #//////////////////////////////////////////////////////////////////////
