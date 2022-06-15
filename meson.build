@@ -9,6 +9,7 @@ inc = [include_directories(
 )]
 #############################################################################
 subdir('submodules/meson_deps/meson/osx')
+add_project_link_arguments(osx_ldflags, language : ['objc', 'c'])
 subdir('submodules/meson_deps/meson/args')
 subdir('submodules/meson_deps/meson/inc')
 #//***********************************************************/
@@ -21,10 +22,12 @@ subdir('submodules/meson_deps/meson/deps/djbhash')
 subdir('submodules/meson_deps/meson/deps/parson')
 subdir('submodules/meson_deps/meson/deps/b64')
 subdir('submodules/meson_deps/meson/deps/bytes')
+subdir('submodules/meson_deps/meson/deps/list')
 subdir('submodules/meson_deps/meson/deps/greatest')
 subdir('submodules/meson_deps/meson/deps/ansicodes')
 subdir('submodules/meson_deps/meson/deps/log.h')
 subdir('submodules/meson_deps/meson/deps/subprocess')
+subdir('submodules/meson_deps/meson/deps/timestamp')
 #//////////////////////////////////////////////////////////////////////
 subdir('active-app')
 subdir('app-utils')
@@ -42,4 +45,7 @@ subdir('active-app-test')
 #//////////////////////////////////////////////////////////////////////
 subdir('pbpaste')
 subdir('pbpaste-test')
+#//////////////////////////////////////////////////////////////////////
+subdir('keylogger')
+subdir('keylogger-test')
 #//////////////////////////////////////////////////////////////////////
