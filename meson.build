@@ -3,9 +3,10 @@ cc = meson.get_compiler('c')
 pwd = meson.current_source_dir()
 meson_deps_dir = join_paths(meson.current_source_dir(),'submodules/meson_deps')
 inc = [include_directories(
-  './',
+  './submodules','./submodules/meson_deps','./submodules/meson_deps/submodules',
   './app-utils',
   './window-utils',
+  './',
 )]
 #############################################################################
 subdir('submodules/meson_deps/meson/osx')
