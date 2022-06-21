@@ -12,6 +12,14 @@
 
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
 
+uint32_t getWindowId(AXUIElementRef window) {
+    CGWindowID _windowId;
+    if (_AXUIElementGetWindow(window, &_windowId) == kAXErrorSuccess) {
+        return _windowId;
+    }
+    return -1;
+}
+
 
 void MoveWindow(CFDictionaryRef window, void *ctxPtr) {
   MoveWinCtx     *ctx = (MoveWinCtx *)ctxPtr;

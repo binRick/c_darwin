@@ -19,7 +19,25 @@ void show_focus(){
 }
 
 
-TEST test_currently_focused_app(void) {
+TEST t_set_currently_focused_app(void) {
+  int pid = get_focused_pid();
+
+  printf("setting focused process to pid %d.....\n", pid);
+  size_t limit = 3, on = 0;
+
+  while (on < limit) {
+    bool ok = set_focused_pid(pid);
+    ASSERT_EQm("failed to focus process", true, ok);
+    printf("set focused process. to '%d'....\n", pid);
+    sleep(1);
+    on++;
+  }
+
+  PASS();
+}
+
+
+TEST t_get_currently_focused_app(void) {
   focused_t *fp = get_focused_process();
 
   ASSERT_NEQm("focused process seems invalid", NULL, fp);
@@ -31,8 +49,13 @@ TEST test_currently_focused_app(void) {
 }
 
 
-SUITE(the_suite) {
-  RUN_TEST(test_currently_focused_app);
+SUITE(s_get_currently_focused) {
+  RUN_TEST(t_get_currently_focused_app);
+  PASS();
+}
+SUITE(s_set_currently_focused) {
+  RUN_TEST(t_set_currently_focused_app);
+  PASS();
 }
 
 
@@ -41,9 +64,8 @@ GREATEST_MAIN_DEFS();
 
 int do_test(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
-  for (int i = 0; i < TEST_ITERATIONS; i++) {
-    RUN_SUITE(the_suite);
-  }
+  RUN_SUITE(s_get_currently_focused);
+  RUN_SUITE(s_set_currently_focused);
   GREATEST_MAIN_END();
   return(0);
 }

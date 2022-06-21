@@ -20,6 +20,6 @@ if get_option('enable-binaries')
      include_directories: keylogger_test_inc,
   )
   if get_option('enable-binary-tests')
-    test('keylogger-test', keylogger_test, args: [])
+    #    test('keylogger-test', keylogger_test, args: [])
   endif
 endif

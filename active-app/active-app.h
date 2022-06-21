@@ -40,3 +40,10 @@ struct focused_t {
 
 
 focused_t * get_focused_process();
+bool set_focused_process(focused_t *);
+bool set_focused_pid(int pid);
+int get_focused_pid();
+ProcessSerialNumber get_focused_ProcessSerialNumber();
+bool set_focused_ProcessSerialNumber(ProcessSerialNumber PSN);
+ProcessSerialNumber PID2PSN(pid_t pid);
+pid_t PSN2PID(ProcessSerialNumber psn);
