@@ -4,6 +4,7 @@ pwd = meson.current_source_dir()
 meson_deps_dir = join_paths(meson.current_source_dir(),'submodules/meson_deps')
 inc = [include_directories(
   './submodules','./submodules/meson_deps','./submodules/meson_deps/submodules',
+  './submodules/meson_deps/submodules/c_ansi',
   './app-utils',
   './window-utils',
   './',
