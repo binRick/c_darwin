@@ -6,3 +6,6 @@ build
 .attic/
 subprojects/cargs
 submodules
+.make-log-*
+.DU
+.make-*log*
