@@ -9,7 +9,7 @@ window_utils_deps = [
   c_stringfn_dep,
   parson_dep,
   logh_dep,
-  ansicodes_dep,
+  ansi_codes_dep,
 ]
 window_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 window_utils_lib = static_library('window-utils',
