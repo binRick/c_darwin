@@ -26,7 +26,7 @@ struct focused_t {
   pid_t pid;
 };
 
-#include "submodules/c_stringfn/include/stringfn.h"
+#include "stringfn.h"
 #include <fnmatch.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
