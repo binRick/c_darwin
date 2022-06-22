@@ -54,7 +54,6 @@ test-bin:
 	@./build/active-window-test/active-window-test -v | ./submodules/greatest/contrib/greenest
 	@gtimeout .3 ./build/active-window-test/active-window-test --watch 2>/dev/null ||true
 	@echo TESTING OK; echo
-
 do-meson: 
 	@eval cd . && {  meson build || { meson build --reconfigure || { meson build --wipe; } && meson build; }; }
 do-install: all
