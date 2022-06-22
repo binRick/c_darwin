@@ -7,8 +7,6 @@ active_app_deps = [
 active_app_dirs = [
     inc,
     '../',
-    '../submodules/meson_deps',
-    '../submodules/meson_deps/submodules',
   ]
 active_app_lib = static_library('active-app',
   active_app_srcs,
