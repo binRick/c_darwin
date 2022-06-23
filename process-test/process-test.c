@@ -23,14 +23,64 @@ TEST t_get_pid_cmdline(void){
     char *CMD = (char *)vector_get(cmdline_v, i);
     ASSERT_NEQ(CMD, NULL);
     ASSERT_GTE(strlen(CMD), 0);
-    if (DEBUG_MODE) {
-      dbg(CMD, %s);
-    }
     dbg(CMD, %s);
   }
   dbg(CMDS_QTY, %lu);
+  vector_release(cmdline_v);
   PASS();
 }
+
+
+TEST t_pids_iterate(void){
+  struct Vector *pids_v = get_all_pids();
+
+  ASSERT_NEQ(pids_v, NULL);
+  size_t PIDS_QTY = vector_size(pids_v);
+
+  for (size_t i = 0; i < PIDS_QTY; i++) {
+    int pid = (int)(long long)vector_get(pids_v, i);
+    if (DEBUG_MODE) {
+      dbg(pid, %d);
+    }
+    if (pid <= 1) {
+      continue;
+    }
+    char *cwd = get_pid_cwd(pid);
+    if (cwd == NULL) {
+      continue;
+    }
+    struct Vector *cmdline_v = get_pid_cmdline(pid);
+    if (cmdline_v == NULL) {
+      continue;
+    }
+    struct Vector *PE = get_pid_env(pid);
+    if (PE == NULL) {
+      continue;
+    }
+    size_t CMDS_QTY = vector_size(cmdline_v);
+    size_t ENV_QTY  = vector_size(PE);
+    if (DEBUG_MODE) {
+      dbg(CMDS_QTY, %lu);
+      dbg(ENV_QTY, %lu);
+      dbg(cwd, %s);
+    }
+    for (size_t i = 0; i < ENV_QTY; i++) {
+      char *ENV_KEY = ((process_env_t *)vector_get(PE, i))->key,
+           *ENV_VAL = ((process_env_t *)vector_get(PE, i))->val;
+      if (DEBUG_MODE) {
+        dbg(ENV_KEY, %s);
+        dbg(ENV_VAL, %s);
+      }
+      free(ENV_KEY);
+      free(ENV_VAL);
+      free(((process_env_t *)vector_get(PE, i)));
+    }
+    continue;
+    vector_release(cmdline_v);
+    vector_release(PE);
+  }
+  vector_release(pids_v);
+} /* t_pids_iterate */
 
 
 TEST t_pids(void){
@@ -55,7 +105,7 @@ TEST t_pids(void){
 
 
 TEST t_process_env(void){
-  struct Vector *PE = get_process((int)getpid());
+  struct Vector *PE = get_pid_env((int)getpid());
 
   ASSERT_NEQ(PE, NULL);
   size_t ENV_QTY = vector_size(PE);
@@ -85,6 +135,7 @@ SUITE(s_process){
   RUN_TEST(t_pids);
   RUN_TEST(t_pid_cwd);
   RUN_TEST(t_get_pid_cmdline);
+  RUN_TEST(t_pids_iterate);
   PASS();
 }
 

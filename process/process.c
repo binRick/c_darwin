@@ -1,4 +1,5 @@
 #pragma once
+#define DEBUG_PID_ENV    true
 #include "process.h"
 #include <sys/sysctl.h>
 typedef void *rusage_info_t;  // needed for libproc.h
@@ -100,10 +101,14 @@ struct Vector *get_all_pids(){
   return(pids_v);
 }
 
-struct Vector *get_process(int pid){
+struct Vector *get_pid_env(int pid){
   struct Vector
-                         *vector = vector_new(),
-  *pid_env_v                     = vector_new();
+  *vector    = vector_new(),
+  *pid_env_v = vector_new();
+
+  if (pid == 1) {
+    return(pid_env_v);
+  }
   struct StringFNStrings EnvSplit;
   int                    env_res = -1, nargs;
   char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *arg_start, *env_start, *s;
@@ -153,6 +158,7 @@ struct Vector *get_process(int pid){
     }
   }
 
+
   for (size_t i = 0; i < vector_size(vector); i++) {
     EnvSplit = stringfn_split(vector_get(vector, i), '=');
     process_env_t *pe = malloc(sizeof(process_env_t));
@@ -182,9 +188,15 @@ struct Vector *get_process(int pid){
             vector_size(pid_env_v)
             );
   }
-  free(procargs);
-  free(procenv);
+  if (procargs != NULL) {
+    free(procargs);
+  }
+  if (procenv != NULL) {
+    free(procenv);
+  }
+  if (vector_size(vector) > 0) {
+    stringfn_release_strings_struct(EnvSplit);
+  }
   vector_release(vector);
-  stringfn_release_strings_struct(EnvSplit);
   return(pid_env_v);
-} /* get_process */
+} /* get_pid_env */
