@@ -32,3 +32,5 @@ subdir('pbpaste-test')
 subdir('keylogger')
 subdir('keylogger-test')
 #//////////////////////////////////////////////////////////////////////
+subdir('process-environment')
+subdir('process-environment-test')

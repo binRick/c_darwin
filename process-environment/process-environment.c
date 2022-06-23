@@ -1,15 +1,7 @@
-#include <stdbool.h>
-#define DEBUG_PID_ENV    false
-//////////////////////////////////////////
-#include "submodules/log.h/log.h"
-#include "system-utils-test.h"
-typedef struct {
-  char *key;
-  char *val;
-} process_env_t;
+#pragma once
+#include "process-environment.h"
 
 
-//////////////////////////////////////////
 static int get_argmax() {
   int    argmax;
   int    mib[] = { CTL_KERN, KERN_ARGMAX };
@@ -21,16 +13,15 @@ static int get_argmax() {
   return(0);
 }
 
-static struct Vector *get_pid_env(int pid){
+struct Vector *get_process_environment(int pid){
   struct Vector
                          *vector = vector_new(),
   *pid_env_v                     = vector_new();
   struct StringFNStrings EnvSplit;
   int                    env_res = -1, nargs;
-  char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *arg_start, *env_start;
+  char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *arg_start, *env_start, *s;
   size_t                 argmax, size;
 
-  pid = 7465;
   int
     mib_env[]    = { CTL_KERN, KERN_PROCARGS2, (pid_t)pid },
     mib_argmax[] = { CTL_KERN, KERN_ARGMAX }
@@ -58,7 +49,6 @@ static struct Vector *get_pid_env(int pid){
   env_start = arg_ptr;
   procenv   = calloc(1, arg_end - arg_ptr);
 
-  char *s;
 
   while (*arg_ptr != '\0' && arg_ptr < arg_end) {
     s = memchr(arg_ptr + 1, '\0', arg_end - arg_ptr);
@@ -110,101 +100,4 @@ static struct Vector *get_pid_env(int pid){
   vector_release(vector);
   stringfn_release_strings_struct(EnvSplit);
   return(pid_env_v);
-} /* get_pid_env */
-
-
-TEST t_pid_env(void){
-  int           pid        = getpid();
-  struct Vector *pid_env_v = get_pid_env(pid);
-  size_t        ENV_QTY    = vector_size(pid_env_v);
-
-  ASSERT_GTE(ENV_QTY, 0);
-
-  for (size_t i = 0; i < ENV_QTY; i++) {
-    char *ENV_KEY = ((process_env_t *)vector_get(pid_env_v, i))->key,
-         *ENV_VAL = ((process_env_t *)vector_get(pid_env_v, i))->val;
-    ASSERT_GTE(strlen(ENV_KEY), 0);
-    ASSERT_GTE(strlen(ENV_VAL), 0);
-    dbg(ENV_KEY, %s);
-    dbg(ENV_VAL, %s);
-    free(ENV_KEY);
-    free(ENV_VAL);
-    free(((process_env_t *)vector_get(pid_env_v, i)));
-  }
-  dbg(ENV_QTY, %lu);
-  vector_release(pid_env_v);
-  PASS();
-} /* t_pid_env */
-
-
-//////////////////////////////////////////
-TEST t_display_id(void){
-  CGDirectDisplayID display_id = get_display_id(0);
-
-  fprintf(stdout,
-          "display id:%d\n",
-          display_id
-          );
-  PASS();
-}
-
-
-TEST t_display_count(void){
-  int display_count = get_display_count();
-
-  fprintf(stdout,
-          "display count:%d\n",
-          display_count
-          );
-  PASS();
-}
-
-
-TEST t_display_size(void){
-  CGDirectDisplayID              display_id = get_display_id(0);
-  struct DarwinDisplayResolution *res       = get_display_resolution(display_id);
-
-  fprintf(stdout,
-          "x:%zu|y:%zu|pixels:%d|width:%fmm|height:%fmm|\n",
-          res->x,
-          res->y,
-          res->pixels,
-          res->size.width,
-          res->size.height
-          );
-  PASS();
-}
-
-SUITE(s_display_count){
-  RUN_TEST(t_display_count);
-  PASS();
-}
-
-SUITE(s_display_id){
-  RUN_TEST(t_display_id);
-  PASS();
-}
-
-
-SUITE(s_pid_env){
-  RUN_TEST(t_pid_env);
-  PASS();
-}
-
-SUITE(s_display_size){
-  RUN_TEST(t_display_size);
-  PASS();
-}
-
-GREATEST_MAIN_DEFS();
-
-
-int main(int argc, char **argv) {
-  GREATEST_MAIN_BEGIN();
-  RUN_SUITE(s_display_id);
-  RUN_SUITE(s_display_size);
-  RUN_SUITE(s_display_count);
-  RUN_SUITE(s_pid_env);
-  GREATEST_MAIN_END();
-  return(0);
-}
+} /* get_process_environment */
