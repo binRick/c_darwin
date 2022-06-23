@@ -17,13 +17,13 @@ static int get_argmax() {
 }
 
 
-struct Vector *get_pid_cmdline(int pid){
+struct Vector *get_process_cmdline(int process){
   struct Vector *cmdline_v = vector_new();
   int           mib[3], nargs;
   char          *procargs = NULL, *arg_ptr, *arg_end, *curr_arg;
   size_t        len, argmax;
 
-  if (pid < 1) {
+  if (process < 1) {
     return(NULL);
   }
 
@@ -38,7 +38,7 @@ struct Vector *get_pid_cmdline(int pid){
 
   mib[0] = CTL_KERN;
   mib[1] = KERN_PROCARGS2;
-  mib[2] = (pid_t)pid;
+  mib[2] = (pid_t)process;
   if (sysctl(mib, 3, procargs, &argmax, NULL, 0) < 0) {
     return(NULL);
   }
@@ -70,15 +70,15 @@ struct Vector *get_pid_cmdline(int pid){
     free(procargs);
   }
   return(cmdline_v);
-} /* get_pid_cmdline */
+} /* get_process_cmdline */
 
 
-char *get_pid_cwd(int pid){
-  if (pid < 0) {
+char *get_process_cwd(int process){
+  if (process < 0) {
     return(NULL);
   }
   struct proc_vnodepathinfo vpi;
-  int                       ret = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
+  int                       ret = proc_pidinfo(process, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
   if (ret < 0) {
     return(NULL);
   }
@@ -86,28 +86,28 @@ char *get_pid_cwd(int pid){
   return(cwd);
 }
 
-struct Vector *get_all_pids(){
-  struct Vector *pids_v      = vector_new();
-  pid_t         num          = proc_listallpids(NULL, 0);
-  size_t        pids_len     = sizeof(pid_t) * num * 2;
-  pid_t         *pids_buffer = malloc(pids_len);
-  size_t        pids_qty     = proc_listallpids(pids_buffer, pids_len);
+struct Vector *get_all_processes(){
+  struct Vector *processes_v      = vector_new();
+  pid_t         num               = proc_listallpids(NULL, 0);
+  size_t        processes_len     = sizeof(pid_t) * num * 2;
+  pid_t         *processes_buffer = malloc(processes_len);
+  size_t        processes_qty     = proc_listallpids(processes_buffer, processes_len);
 
-  for (pid_t i = 0; i < pids_qty; i++) {
-    if ((long long)pids_buffer[i] > 0) {
-      vector_push(pids_v, (void *)(long long)pids_buffer[i]);
+  for (pid_t i = 0; i < processes_qty; i++) {
+    if ((long long)processes_buffer[i] > 0) {
+      vector_push(processes_v, (void *)(long long)processes_buffer[i]);
     }
   }
-  return(pids_v);
+  return(processes_v);
 }
 
-struct Vector *get_pid_env(int pid){
+struct Vector *get_process_env(int process){
   struct Vector
-  *vector    = vector_new(),
-  *pid_env_v = vector_new();
+  *vector        = vector_new(),
+  *process_env_v = vector_new();
 
-  if (pid == 1) {
-    return(pid_env_v);
+  if (process == 1) {
+    return(process_env_v);
   }
   struct StringFNStrings EnvSplit;
   int                    env_res = -1, nargs;
@@ -115,7 +115,7 @@ struct Vector *get_pid_env(int pid){
   size_t                 argmax, size;
 
   int
-    mib_env[]    = { CTL_KERN, KERN_PROCARGS2, (pid_t)pid },
+    mib_env[]    = { CTL_KERN, KERN_PROCARGS2, (pid_t)process },
     mib_argmax[] = { CTL_KERN, KERN_ARGMAX }
   ;
 
@@ -164,11 +164,11 @@ struct Vector *get_pid_env(int pid){
     process_env_t *pe = malloc(sizeof(process_env_t));
     pe->key = strdup(EnvSplit.strings[0]);
     pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
-    vector_push(pid_env_v, pe);
+    vector_push(process_env_v, pe);
   }
   if (DEBUG_PID_ENV) {
     fprintf(stderr,
-            "pid:%d\n"
+            "process:%d\n"
             "argmax:%lu\n"
             "env_res:%d\n"
             "nargs:%d\n"
@@ -177,7 +177,7 @@ struct Vector *get_pid_env(int pid){
             "arg_end:%s\n"
             "vectors:%lu\n"
             "process env vector len:%lu\n",
-            pid,
+            process,
             argmax,
             env_res,
             nargs,
@@ -185,7 +185,7 @@ struct Vector *get_pid_env(int pid){
             arg_ptr,
             arg_end,
             vector_size(vector),
-            vector_size(pid_env_v)
+            vector_size(process_env_v)
             );
   }
   if (procargs != NULL) {
@@ -198,5 +198,5 @@ struct Vector *get_pid_env(int pid){
     stringfn_release_strings_struct(EnvSplit);
   }
   vector_release(vector);
-  return(pid_env_v);
-} /* get_pid_env */
+  return(process_env_v);
+} /* get_process_env */
