@@ -12,6 +12,8 @@ typedef struct {
   char *val;
 } process_env_t;
 //////////////////////////////////////////
-struct Vector *get_process_environment(int pid);
+struct Vector *get_process(int pid);
+struct Vector *get_all_pids();
+char *get_pid_cwd(int pid);
 
 //////////////////////////////////////////

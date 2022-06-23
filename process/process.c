@@ -1,11 +1,13 @@
 #pragma once
-#include "process-environment.h"
+#include "process.h"
+#include <sys/sysctl.h>
+typedef void *rusage_info_t;  // needed for libproc.h
+#include <libproc.h>
 
 
 static int get_argmax() {
-  int    argmax;
-  int    mib[] = { CTL_KERN, KERN_ARGMAX };
-  size_t size  = sizeof(argmax);
+  int    argmax, mib[] = { CTL_KERN, KERN_ARGMAX };
+  size_t size = sizeof(argmax);
 
   if (sysctl(mib, 2, &argmax, &size, NULL, 0) == 0) {
     return(argmax);
@@ -13,7 +15,36 @@ static int get_argmax() {
   return(0);
 }
 
-struct Vector *get_process_environment(int pid){
+
+char *get_pid_cwd(int pid){
+  if (pid < 0) {
+    return(NULL);
+  }
+  struct proc_vnodepathinfo vpi;
+  int                       ret = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
+  if (ret < 0) {
+    return(NULL);
+  }
+  char *cwd = strdup(vpi.pvi_cdir.vip_path);
+  return(cwd);
+}
+
+struct Vector *get_all_pids(){
+  struct Vector *pids_v      = vector_new();
+  pid_t         num          = proc_listallpids(NULL, 0);
+  size_t        pids_len     = sizeof(pid_t) * num * 2;
+  pid_t         *pids_buffer = malloc(pids_len);
+  size_t        pids_qty     = proc_listallpids(pids_buffer, pids_len);
+
+  for (pid_t i = 0; i < pids_qty; i++) {
+    if ((long long)pids_buffer[i] > 0) {
+      vector_push(pids_v, (void *)(long long)pids_buffer[i]);
+    }
+  }
+  return(pids_v);
+}
+
+struct Vector *get_process(int pid){
   struct Vector
                          *vector = vector_new(),
   *pid_env_v                     = vector_new();
@@ -100,4 +131,4 @@ struct Vector *get_process_environment(int pid){
   vector_release(vector);
   stringfn_release_strings_struct(EnvSplit);
   return(pid_env_v);
-} /* get_process_environment */
+} /* get_process */
