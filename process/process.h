@@ -14,6 +14,7 @@ typedef struct {
 //////////////////////////////////////////
 struct Vector *get_process(int pid);
 struct Vector *get_all_pids();
+struct Vector *get_pid_cmdline(int pid);
 char *get_pid_cwd(int pid);
 
 //////////////////////////////////////////

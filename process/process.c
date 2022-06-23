@@ -16,6 +16,62 @@ static int get_argmax() {
 }
 
 
+struct Vector *get_pid_cmdline(int pid){
+  struct Vector *cmdline_v = vector_new();
+  int           mib[3], nargs;
+  char          *procargs = NULL, *arg_ptr, *arg_end, *curr_arg;
+  size_t        len, argmax;
+
+  if (pid < 1) {
+    return(NULL);
+  }
+
+  argmax = get_argmax();
+  if (!argmax) {
+    return(NULL);
+  }
+  procargs = (char *)malloc(argmax);
+  if (procargs == NULL) {
+    return(NULL);
+  }
+
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROCARGS2;
+  mib[2] = (pid_t)pid;
+  if (sysctl(mib, 3, procargs, &argmax, NULL, 0) < 0) {
+    return(NULL);
+  }
+
+  arg_end = &procargs[argmax];
+  memcpy(&nargs, procargs, sizeof(nargs));
+  arg_ptr  = procargs + sizeof(nargs);
+  len      = strlen(arg_ptr);
+  arg_ptr += len + 1;
+  if (arg_ptr == arg_end) {
+    return(NULL);
+  }
+
+  for ( ; arg_ptr < arg_end; arg_ptr++) {
+    if (*arg_ptr != '\0') {
+      break;
+    }
+  }
+
+  curr_arg = arg_ptr;
+  while (arg_ptr < arg_end && nargs > 0) {
+    if (*arg_ptr++ == '\0') {
+      vector_push(cmdline_v, curr_arg);
+      curr_arg = arg_ptr;
+      nargs--;
+    }
+  }
+  if (procargs) {
+    free(procargs);
+  }
+  return(cmdline_v);
+} /* get_pid_cmdline */
+
+
 char *get_pid_cwd(int pid){
   if (pid < 0) {
     return(NULL);

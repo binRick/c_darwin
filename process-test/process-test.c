@@ -12,16 +12,39 @@ TEST t_pid_cwd(void){
 }
 
 
+TEST t_get_pid_cmdline(void){
+  struct Vector *cmdline_v = get_pid_cmdline((int)getpid());
+
+  ASSERT_NEQ(cmdline_v, NULL);
+  size_t CMDS_QTY = vector_size(cmdline_v);
+
+  ASSERT_GTE(CMDS_QTY, 1);
+  for (size_t i = 0; i < CMDS_QTY; i++) {
+    char *CMD = (char *)vector_get(cmdline_v, i);
+    ASSERT_NEQ(CMD, NULL);
+    ASSERT_GTE(strlen(CMD), 0);
+    if (DEBUG_MODE) {
+      dbg(CMD, %s);
+    }
+    dbg(CMD, %s);
+  }
+  dbg(CMDS_QTY, %lu);
+  PASS();
+}
+
+
 TEST t_pids(void){
-  struct Vector *pids_v  = get_all_pids();
-  size_t        PIDS_QTY = vector_size(pids_v);
+  struct Vector *pids_v = get_all_pids();
+
+  ASSERT_NEQ(pids_v, NULL);
+  size_t PIDS_QTY = vector_size(pids_v);
 
   ASSERT_GTE(PIDS_QTY, 0);
   for (size_t i = 0; i < PIDS_QTY; i++) {
     long long PID = (long long)vector_get(pids_v, i);
     ASSERT_GTE(PID, 0);
     if (DEBUG_MODE) {
-      dbg(PID, % llu);
+      dbg(PID, %llu);
     }
   }
   dbg(PIDS_QTY, %lu);
@@ -32,8 +55,10 @@ TEST t_pids(void){
 
 
 TEST t_process_env(void){
-  struct Vector *PE     = get_process((int)getpid());
-  size_t        ENV_QTY = vector_size(PE);
+  struct Vector *PE = get_process((int)getpid());
+
+  ASSERT_NEQ(PE, NULL);
+  size_t ENV_QTY = vector_size(PE);
 
   ASSERT_GTE(ENV_QTY, 0);
   for (size_t i = 0; i < ENV_QTY; i++) {
@@ -59,6 +84,7 @@ SUITE(s_process){
   RUN_TEST(t_process_env);
   RUN_TEST(t_pids);
   RUN_TEST(t_pid_cwd);
+  RUN_TEST(t_get_pid_cmdline);
   PASS();
 }
 

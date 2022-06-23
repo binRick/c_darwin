@@ -74,6 +74,7 @@ fix-dbg:
 	@$(SED) 's|, % lu);|, %lu);|g' -i $(TIDIED_FILES)
 	@$(SED) 's|, % d);|, %d);|g' -i $(TIDIED_FILES)
 	@$(SED) 's|, % zu);|, %zu);|g' -i $(TIDIED_FILES)
+	@$(SED) 's|, % llu);|, %llu);|g' -i $(TIDIED_FILES)
 rm-make-logs:
 	@rm .make-log* 2>/dev/null||true
 tidy: rm-make-logs uncrustify uncrustify-clean fix-dbg
