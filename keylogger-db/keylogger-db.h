@@ -19,10 +19,13 @@
 #include <string.h>
 #include <sys/time.h>
 //////////////////////////////////////
-#include "../keylogger/keylogger.h"
+#include "active-app.h"
+#include "app-utils.h"
 #include "bytes/bytes.h"
 #include "int/int.h"
-#include "keylogger-db/keylogger-db.h"
+#include "keylogger/keylogger.h"
+#include "pbpaste/pbpaste.h"
+#include "process.h"
 #include "submodules/b64.c/b64.h"
 #include "submodules/c_ansi/ansi-codes/ansi-codes.h"
 #include "submodules/c_ansi/ansi-utils/ansi-utils.h"
@@ -30,11 +33,29 @@
 #include "submodules/c_forever/include/forever.h"
 #include "submodules/c_string_buffer/include/stringbuffer.h"
 #include "submodules/c_stringfn/include/stringfn.h"
+#include "submodules/c_stringfn/include/stringfn.h"
 #include "submodules/c_vector/include/vector.h"
 #include "submodules/catpath/catpath.h"
 #include "submodules/dmt/src/dmt.h"
+#include "submodules/greatest/greatest.h"
+#include "submodules/greatest/greatest.h"
+#include "submodules/log.h/log.h"
 #include "submodules/sqldbal/src/sqldbal.h"
 #include "submodules/timestamp/timestamp.h"
+#include "window-utils.h"
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string.h>
+#include <sys/time.h>
 //////////////////////////////////////////
 typedef struct DB_STATEMENT_T {
   enum sqldbal_status_code rc;

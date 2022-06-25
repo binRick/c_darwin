@@ -8,11 +8,12 @@ keylogger_inc = [
 ]
 keylogger_deps = [
  c_string_buffer_dep,
+ pbpaste_dep,
+ active_app_dep,
  subprocess_dep,
  timestamp_dep,
  list_dep,
  dbg_dep,
- generic_print_dep,
  ansi_codes_dep,
  ansi_utils_dep,
  keylogger_db_dep,

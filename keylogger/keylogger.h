@@ -1,13 +1,28 @@
 #pragma once
 /******************************************************/
-#define MY_LOG_LEVEL    LOG_TRACE
+#define MY_LOG_LEVEL       LOG_TRACE
 /******************************************************/
+#ifndef SOCK_MAXADDRLEN
+#define SOCK_MAXADDRLEN    255
+#endif
+#include <assert.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
+#include <fnmatch.h>
+#include <mach/mach_time.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/proc_info.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 /******************************************************/
+#include "active-app.h"
 #include "fsio.h"
 #include "keylogger-db/keylogger-db.h"
 #include "parson/parson.h"
@@ -17,17 +32,6 @@
 #include "submodules/meson_deps/submodules/c_ansi/ansi-utils/ansi-utils.h"
 #include "submodules/meson_deps/submodules/c_timer/include/c_timer.h"
 #include "submodules/meson_deps/submodules/timestamp/timestamp.h"
-#include <assert.h>
-#include <fnmatch.h>
-#include <mach/mach_time.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/proc_info.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 /******************************************************/
 static FILE *logfile = NULL;
 static volatile unsigned long last_ts;

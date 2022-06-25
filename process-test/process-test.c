@@ -1,4 +1,6 @@
 #define DEBUG_MODE    false
+#include "dbg.h"
+#include "print.h"
 #include "process-test.h"
 #define CT_STOP_AND_DEBUG(COLOR)    { do {                                                                             \
                                         PRINT(AC_RESETALL "\t" COLOR "Duration: " AC_RESETALL, ct_stop(__FUNCTION__)); \

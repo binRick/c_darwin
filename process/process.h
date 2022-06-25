@@ -3,10 +3,8 @@
 #include <stdio.h>
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////
-#include "dbg.h"
-#include "dbg.h"
-#include "print.h"
-#include "socket99.h"
+//#include "dbg.h"
+#include "socket99/socket99.h"
 #include "stringbuffer.h"
 #include "stringfn.h"
 #include "stringfn.h"

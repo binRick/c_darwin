@@ -3,6 +3,8 @@
 #define DEBUG_PID_ENV    true
 #endif
 #include "process.h"
+//#include "print.h"
+#include "dbg.h"
 #include <libproc.h>
 #include <sys/sysctl.h>
 typedef void *rusage_info_t;

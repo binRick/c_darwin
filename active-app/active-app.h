@@ -25,7 +25,9 @@ struct focused_t {
   char  *name;
   pid_t pid;
 };
-
+struct screen_size {
+  int x, y, w, h;
+};
 #include "stringfn.h"
 #include <fnmatch.h>
 #include <libproc.h>
@@ -47,3 +49,5 @@ ProcessSerialNumber get_focused_ProcessSerialNumber();
 bool set_focused_ProcessSerialNumber(ProcessSerialNumber PSN);
 ProcessSerialNumber PID2PSN(pid_t pid);
 pid_t PSN2PID(ProcessSerialNumber psn);
+int get_frontmost_application();
+struct screen_size get_window_size();

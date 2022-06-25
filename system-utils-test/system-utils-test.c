@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #define DEBUG_PID_ENV    false
 //////////////////////////////////////////
-#include "submodules/log.h/log.h"
+#include "greatest.h"
 #include "system-utils-test.h"
 typedef struct {
   char *key;

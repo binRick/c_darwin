@@ -10,9 +10,9 @@ keylogger_db_test_dirs = [
 ]
 keylogger_db_test_deps = [
   c_vector_dep,
-  generic_print_dep,
   env_h_dep,
   throw_h_dep,
+  pbpaste_dep,
   timestamp_dep,
   c_stringfn_dep,
   keylogger_db_dep,

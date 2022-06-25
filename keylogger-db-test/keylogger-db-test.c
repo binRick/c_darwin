@@ -1,5 +1,6 @@
 #include "greatest.h"
 #include "keylogger-db-test.h"
+#include "keylogger-db/keylogger-db.h"
 #include <assert.h>
 #include <inttypes.h>
 #include <math.h>

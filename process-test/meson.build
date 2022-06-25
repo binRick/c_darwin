@@ -15,7 +15,6 @@ process_test_deps = [
   c_vector_dep,
   c_timer_dep,
   ansi_codes_dep,
-  generic_print_dep,
   tiny_regex_c_dep,
   socket99_dep,
   c_string_buffer_dep,

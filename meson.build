@@ -9,8 +9,20 @@ inc = [include_directories(
   'submodules/meson_deps/submodules/dbg.h',
   'submodules/meson_deps/submodules/tiny-regex-c',
   'submodules/meson_deps/submodules',
+  'submodules/meson_deps/submodules/c_vector/src',
+  'submodules/meson_deps/submodules/c_vector/include',
   'app-utils',
+  './system-utils',
+  'submodules/meson_deps/submodules/generic-print',
   'window-utils',
+  './active-app',
+  './window-utils',
+  './system-utils',
+  './active-app-test',
+  './window-utils-test',
+  './active-app-module',
+  './app-utils',
+  './process',
   '.',
 )]
 #############################################################################
@@ -33,10 +45,10 @@ subdir('active-app-module-test')
 subdir('pbpaste')
 subdir('pbpaste-test')
 #//////////////////////////////////////////////////////////////////////
+subdir('process')
+subdir('process-test')
 subdir('keylogger-db')
 subdir('keylogger-db-test')
 subdir('keylogger')
 subdir('keylogger-test')
 #//////////////////////////////////////////////////////////////////////
-subdir('process')
-subdir('process-test')
