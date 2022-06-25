@@ -1,8 +1,8 @@
 project('c_darwin', ['c'],default_options: ['warning_level=0','c_std=gnu99',],subproject_dir: 'submodules/meson_deps/subprojects')
 cc = meson.get_compiler('c')
 pwd = meson.current_source_dir()
-passh_program = find_program('passh', required : true)
 meson_deps_dir = join_paths(meson.current_source_dir(),'submodules/meson_deps')
+subdir('meson')
 inc = [include_directories(
   'submodules','submodules/meson_deps','submodules/meson_deps/submodules',
   'submodules/meson_deps/submodules/c_ansi',
@@ -25,7 +25,7 @@ subdir('system-utils')
 subdir('system-utils-test')
 #//////////////////////////////////////////////////////////////////////
 subdir('active-app-test')
-#subdir('active-app-module-test')
+subdir('active-app-module-test')
 #//////////////////////////////////////////////////////////////////////
 subdir('pbpaste')
 subdir('pbpaste-test')

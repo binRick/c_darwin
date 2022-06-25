@@ -33,16 +33,16 @@ bool isAuthorizedForAccessibility();
     bool OK = isAuthorizedForScreenRecording();                                 \
     log_debug("%s> isAuthorizedForScreenRecording:%d\n", APPLICATION_NAME, OK); \
     ASSERT_EQm("App not authorized for screen recording", 1, OK);               \
-    PASS();                                                                     \
+    /*PASS();*/                                                                 \
   }                                                                             \
   TEST t_isAuthorizedForAccessibility(void) {                                   \
     bool OK = isAuthorizedForAccessibility();                                   \
     log_debug("%s> isAuthorizedForAccessibility:%d\n", APPLICATION_NAME, OK);   \
     ASSERT_EQm("App not authorized for accessibility", 1, OK);                  \
-    PASS();                                                                     \
+    /*PASS();*/                                                                 \
   }                                                                             \
   SUITE(s_authorized) {                                                         \
     RUN_TEST(t_isAuthorizedForAccessibility);                                   \
     RUN_TEST(t_isAuthorizedForScreenRecording);                                 \
-    PASS();                                                                     \
+    /*PASS();*/                                                                 \
   }                                                                             \

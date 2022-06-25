@@ -1,9 +1,11 @@
 #pragma once
+#ifndef DEBUG_PID_ENV
 #define DEBUG_PID_ENV    true
+#endif
 #include "process.h"
-#include <sys/sysctl.h>
-typedef void *rusage_info_t;  // needed for libproc.h
 #include <libproc.h>
+#include <sys/sysctl.h>
+typedef void *rusage_info_t;
 
 
 static int get_argmax() {

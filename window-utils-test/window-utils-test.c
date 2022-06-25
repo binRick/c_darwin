@@ -9,6 +9,9 @@
 #include "window-utils.h"
 
 
+APP_AUTHORIZATION_TESTS
+
+
 TEST t_windows_search(void *NAME){
   LsWinCtx ctx;
   int      ch;
@@ -47,9 +50,9 @@ SUITE(s_windows){
   RUN_TESTp(t_windows_search, (void *)NULL);
   RUN_TESTp(t_windows_search, (void *)"kitty");
   RUN_TESTp(t_windows_search, (void *)"chrome");
-  PASS();
+  //PASS();
 }
-APP_AUTHORIZATION_TESTS
+
 GREATEST_MAIN_DEFS();
 
 
