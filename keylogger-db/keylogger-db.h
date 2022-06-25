@@ -42,7 +42,15 @@ typedef struct DB_STATEMENT_T {
 } db_statement_t;
 typedef struct logged_key_event_t {
   unsigned long ts, qty;
+  unsigned long key_code;
+  char          *key_string, *action, *input_type;
+  unsigned long mouse_x, mouse_y;
 } logged_key_event_t;
+struct MouseEvent {
+  CGFloat     x;
+  CGFloat     y;
+  CGEventType type;
+};
 //////////////////////////////////////////
 int keylogger_db_delete(void);
 int keylogger_create_db(void);

