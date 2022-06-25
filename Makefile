@@ -73,7 +73,11 @@ pull:
 
 dev: nodemon
 nodemon:
-	@$(PASSH) -L .nodemon.log $(NODEMON) -i build -w process -w process-test -w . -w '*/meson.build' --delay 1 -i '*/subprojects' -I  -w 'include/*.h' -w meson.build -w src -w Makefile -w loader/meson.build -w loader/src -w loader/include -i '*/embeds/*' -e tpl,build,sh,c,h,Makefile -x env -- bash -c 'reset;passh make||true'
+	@$(PASSH) -L .nodemon.log $(NODEMON) -i build \
+		-i submodules -w "*/*.c" -w "*/*.h" -w Makefle -w "*/meson.build" \
+		-e c,h,sh,Makefile,build \
+			-x sh -- -c 'make||true'
+#		-w process -w process-test -w . -w '*/meson.build' --delay 1 -i '*/subprojects' -I  -w 'include/*.h' -w meson.build -w src -w Makefile -w loader/meson.build -w loader/src -w loader/include -i '*/embeds/*' -e tpl,build,sh,c,h,Makefile -x env -- bash -c 'reset;passh make||true'
 
 
 

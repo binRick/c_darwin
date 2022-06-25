@@ -6,6 +6,54 @@
 #include <libproc.h>
 #include <sys/sysctl.h>
 typedef void *rusage_info_t;
+#define GET_PID(proc)       (proc)->kp_proc.p_pid
+#define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)
+#define ERROR_CHECK(fun) \
+  do {                   \
+    if (fun) {           \
+      goto ERROR;        \
+    }                    \
+  } while (0)
+
+
+struct kinfo_proc *proc_list(size_t *count) {
+  struct kinfo_proc *list = NULL;
+  int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL };
+  size_t            size  = 0;
+
+  ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), NULL, &size, NULL, 0));
+  list = malloc(size);
+  ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), list, &size, NULL, 0));
+  *count = size / sizeof(struct kinfo_proc);
+  return(list);
+
+ERROR:
+  if (list) {
+    free(list);
+  }
+  return(NULL);
+}
+
+
+struct kinfo_proc *proc_info_for_pid(pid_t pid) {
+  struct kinfo_proc *list = NULL;
+
+  int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
+  size_t            size  = 0;
+
+  ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), NULL, &size, NULL, 0));
+
+  list = malloc(size);
+  ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), list, &size, NULL, 0));
+
+  return(list);
+
+ERROR:
+  if (list) {
+    free(list);
+  }
+  return(NULL);
+}
 
 
 static int get_argmax() {

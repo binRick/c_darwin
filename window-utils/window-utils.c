@@ -9,7 +9,7 @@
 #ifndef APPLICATION_NAME
 #define APPLICATION_NAME    "UNDEFINED"
 #endif
-
+static int emptyWindowNameAllowed(char *appName);
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
 
 
@@ -19,6 +19,7 @@ uint32_t getWindowId(AXUIElementRef window) {
   if (_AXUIElementGetWindow(window, &_windowId) == kAXErrorSuccess) {
     return(_windowId);
   }
+
   return(-1);
 }
 
@@ -290,7 +291,7 @@ char *windowTitle(char *appName, char *windowName) {
   size_t titleSize;
   char   *title;
 
-  log_debug("%s> windowTitle: |app:%s|window:%s", APPLICATION_NAME, appName, windowName);
+  log_info("%s> windowTitle: |app:%s|window:%s", APPLICATION_NAME, appName, windowName);
 
   if (!appName || !*appName) {
     title  = (char *)malloc(1);
@@ -310,46 +311,45 @@ char *windowTitle(char *appName, char *windowName) {
 
 
 void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
-  log_debug("PrintWindow..........");
-  LsWinCtx    *ctx                      = (LsWinCtx *)ctxPtr;
-  int         windowId                  = CFDictionaryGetInt(window, kCGWindowNumber);
-  char        *appName                  = CFDictionaryCopyCString(window, kCGWindowOwnerName);
-  char        *windowName               = CFDictionaryCopyCString(window, kCGWindowName);
-  char        *title                    = windowTitle(appName, windowName);
-  CGPoint     position                  = CGWindowGetPosition(window);
-  CGSize      size                      = CGWindowGetSize(window);
-  JSON_Value  *root_value               = json_value_init_object();
-  JSON_Object *root_object              = json_value_get_object(root_value);
-  char        *serialized_string        = NULL;
-  char        *pretty_serialized_string = NULL;
+  LsWinCtx    *ctx = (LsWinCtx *)ctxPtr;
+  int         windowId = CFDictionaryGetInt(window, kCGWindowNumber);
+  char        *appName = CFDictionaryCopyCString(window, kCGWindowOwnerName);
+  char        *windowName = CFDictionaryCopyCString(window, kCGWindowName);
+  char        *title = windowTitle(appName, windowName);
+  CGPoint     position = CGWindowGetPosition(window);
+  CGSize      size = CGWindowGetSize(window);
+  JSON_Value  *root_value = json_value_init_object();
+  JSON_Object *root_object = json_value_get_object(root_value);
+  char        *serialized_string = NULL, *pretty_serialized_string = NULL;
 
-  json_object_set_string(root_object, "appName", appName);
-  json_object_set_string(root_object, "windowName", windowName);
-  json_object_set_string(root_object, "title", title);
-  json_object_set_number(root_object, "windowId", windowId);
-  json_object_dotset_number(root_object, "size.height", (int)size.height);
-  json_object_dotset_number(root_object, "size.width", (int)size.width);
-  json_object_dotset_number(root_object, "position.x", (int)position.x);
-  json_object_dotset_number(root_object, "position.y", (int)position.y);
-  pretty_serialized_string = json_serialize_to_string_pretty(root_value);
-  serialized_string        = json_serialize_to_string(root_value);
-  log_debug(
-    AC_RESETALL AC_REVERSED AC_YELLOW_BLACK "%s" AC_RESETALL,
-    pretty_serialized_string
-    );
   if (ctx->id == -1 || ctx->id == windowId) {
     if (ctx->jsonMode) {
-      log_debug("%s", serialized_string);
+      json_object_set_string(root_object, "appName", appName);
+      json_object_set_string(root_object, "windowName", windowName);
+      json_object_set_string(root_object, "title", title);
+      json_object_set_number(root_object, "windowId", windowId);
+      json_object_dotset_number(root_object, "size.height", (int)size.height);
+      json_object_dotset_number(root_object, "size.width", (int)size.width);
+      json_object_dotset_number(root_object, "position.x", (int)position.x);
+      json_object_dotset_number(root_object, "position.y", (int)position.y);
+      pretty_serialized_string = json_serialize_to_string_pretty(root_value);
+      serialized_string        = json_serialize_to_string(root_value);
+      log_info(AC_RESETALL AC_REVERSED AC_YELLOW_BLACK "%s" AC_RESETALL, pretty_serialized_string);
+      fprintf(stdout, "%s", serialized_string);
     }else if (ctx->longDisplay) {
-      fprintf(stderr,
-              "%s - %s %d %d %d %d %d\n", title,
+      fprintf(stdout,
+              "%s - %s %d %d %d %d %d" "\n",
+              title,
               appName,
               (int)windowId,
               (int)position.x, (int)position.y,
               (int)size.width, (int)size.height
               );
     }else {
-      printf("%d\n", windowId);
+      fprintf(stdout,
+              "%d" "\n",
+              windowId
+              );
     }
     ctx->numFound++;
   }
@@ -359,3 +359,65 @@ void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
   free(windowName);
   free(appName);
 } /* PrintWindow */
+
+
+int get_front_window_pid(void){
+  int        pid;
+  CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
+  CFIndex    i, n;
+
+  for (i = 0, n = CFArrayGetCount(windows); i < n; i++) {
+    CFDictionaryRef windict  = CFArrayGetValueAtIndex(windows, i);
+    CFNumberRef     layernum = CFDictionaryGetValue(windict, kCGWindowLayer);
+    CFNumberRef     pidnum   = CFDictionaryGetValue(windict, kCGWindowOwnerPID);
+    if (layernum && pidnum) {
+      int layer;
+      CFNumberGetValue(layernum, kCFNumberIntType, &layer);
+      if (layer == 0) {
+        CFNumberGetValue(pidnum, kCFNumberIntType, &pid);
+        CFRelease(windows);
+        return(pid);
+      }
+    }
+  }
+  CFRelease(windows);
+  return(-1);
+}
+
+
+char *cstring_from_CFString(CFStringRef cf_string) {
+  CFIndex length = CFStringGetLength(cf_string);
+  CFIndex size   = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
+  CFIndex used_size;
+  CFRange range   = CFRangeMake(0, length);
+  char    *string = malloc(size);
+
+  CFStringGetBytes(
+    cf_string, range, kCFStringEncodingUTF8, '?', false, (unsigned char *)string,
+    size - 1, &used_size);
+  string[used_size] = '\0';
+  return(string);
+}
+
+
+char *front_window_owner(void) {
+  CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
+
+  for (CFIndex idx = 0; idx < CFArrayGetCount(windows); idx++) {
+    CFDictionaryRef window = CFArrayGetValueAtIndex(windows, idx);
+
+    int64_t         window_layer;
+    CFNumberRef     window_layer_ref = CFDictionaryGetValue(window, kCGWindowLayer);
+    CFNumberGetValue(window_layer_ref, kCFNumberSInt64Type, &window_layer);
+    CFRelease(window_layer_ref);
+    if (window_layer == 0) {
+      char        *window_owner;
+      CFStringRef window_owner_ref = CFDictionaryGetValue(window, kCGWindowOwnerName);
+      //window_owner = CFStringCopyUTF8String(window_owner_ref);
+      CFRelease(window_owner_ref);
+      return(window_owner);
+    }
+  }
+  CFRelease(windows);
+  return(NULL);
+}

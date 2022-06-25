@@ -38,6 +38,94 @@ TEST t_get_process_cmdline(void){
 }
 
 
+TEST t_kitty_pids(void){
+  ct_start(NULL);
+  struct Vector *pids_v = get_all_processes();
+  ASSERT_NEQ(pids_v, NULL);
+  size_t        PIDS_QTY = vector_size(pids_v);
+  int           match_length, match_idx;
+  struct Vector *KittySockets = vector_new();
+  for (size_t i = 0; i < PIDS_QTY; i++) {
+    int           pid        = (int)(long long)vector_get(pids_v, i);
+    struct Vector *cmdline_v = get_process_cmdline(pid);
+    if (cmdline_v == NULL) {
+      continue;
+    }
+    re_t pattern = re_compile("[Kk]itty");
+    for (int i = 0; i < vector_size(cmdline_v); i++) {
+      match_idx = re_matchp(pattern, (char *)vector_get(cmdline_v, i), &match_length);
+      if (match_length < 1) {
+        continue;
+      }
+    }
+    char          *cwd = get_process_cwd(pid);
+    struct Vector *PE  = get_process_env(pid);
+    if (PE == NULL) {
+      continue;
+    }
+    size_t CMDS_QTY = vector_size(cmdline_v),
+           ENV_QTY  = vector_size(PE);
+    for (size_t i = 0; i < ENV_QTY; i++) {
+      char *ENV_KEY = ((process_env_t *)vector_get(PE, i))->key,
+           *ENV_VAL = ((process_env_t *)vector_get(PE, i))->val;
+      if (strcmp(ENV_KEY, "KITTY_LISTEN_ON") == 0) {
+        printf("%d\t\t%s\n", pid, ENV_VAL);
+        vector_push(KittySockets, (void *)strdup(ENV_VAL));
+
+        continue;
+
+
+        socket99_config cfg = {
+          .host = "127.0.0.1",
+          .port = 25009,
+        };
+
+        socket99_result res;
+        if (!socket99_open(&cfg, &res)) {
+          socket99_fprintf(stderr, &res);
+          FAIL();
+        }
+
+        const char *msg     = "\eP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\e\\";
+        size_t     msg_size = strlen(msg);
+        size_t     sent     = send(res.fd, msg, msg_size, 0);
+        bool       pass     = ((size_t)sent == msg_size);
+        ASSERT_EQ(msg_size, sent);
+        size_t     BUFSIZE = 1024 * 16;
+        size_t     recvd = 0, total_recvd = 0;
+        dbg("SENT!", %s);
+        dbg(sent, %lu);
+        struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
+        char                buffer[BUFSIZE];
+        do {
+          dbg("RECEIVING!", %s);
+          recvd         = recv(res.fd, buffer, BUFSIZE, 0);
+          buffer[recvd] = '\0';
+          stringbuffer_append_string(SB, buffer);
+          dbg("RECEIVED!", %s);
+          dbg(recvd, %lu);
+          total_recvd += recvd;
+        } while (recvd > 0);
+        buffer[total_recvd] = '\0';
+        close(res.fd);
+        dbg("RECV DONE!", %s);
+        char   *READ = stringbuffer_to_string(SB);
+        size_t s     = strlen(READ);
+        stringbuffer_release(SB);
+        dbg(READ, %s);
+        dbg("OK!", %s);
+        dbg(s, %lu);
+      }
+      free(ENV_KEY);
+      free(ENV_VAL);
+      free(((process_env_t *)vector_get(PE, i)));
+    }
+  }
+  CT_STOP_AND_DEBUG(AC_RED);
+  PASS();
+} /* t_kitty_pids */
+
+
 TEST t_pids_iterate(void){
   ct_start(NULL);
   struct Vector *pids_v = get_all_processes();
@@ -150,6 +238,7 @@ SUITE(s_process){
   RUN_TEST(t_pid_cwd);
   RUN_TEST(t_get_process_cmdline);
   RUN_TEST(t_pids_iterate);
+  RUN_TEST(t_kitty_pids);
   CT_STOP_AND_DEBUG(AC_RED_BLACK);
   PASS();
 }

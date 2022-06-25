@@ -21,6 +21,15 @@ static const struct {
 };
 
 
+uint32_t os_get_core_count() {
+  uint32_t count;
+  size_t   size = sizeof(count);
+
+  sysctlbyname("hw.logicalcpu", &count, &size, NULL, 0);
+  return(count);
+}
+
+
 static void get_sysctl(enum sysctls ctl) {
   size_t len;
 

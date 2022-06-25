@@ -16,6 +16,11 @@ process_test_deps = [
   c_timer_dep,
   ansi_codes_dep,
   generic_print_dep,
+  tiny_regex_c_dep,
+  socket99_dep,
+  c_string_buffer_dep,
+  c_stringfn_dep,
+  c_fsio_dep,
 ]
 if get_option('enable-binaries')
   process_test_exec = executable('process-test',

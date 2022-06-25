@@ -3,18 +3,21 @@
 #include <stdio.h>
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////
-#include "submodules/meson_deps/submodules/c_stringfn/include/stringfn.h"
-#include "submodules/meson_deps/submodules/c_vector/include/vector.h"
-#include "submodules/meson_deps/submodules/dbg.h/dbg.h"
+#include "dbg.h"
+#include "stringfn.h"
+#include "vector.h"
 //////////////////////////////////////////
 typedef struct {
   char *key;
   char *val;
 } process_env_t;
 //////////////////////////////////////////
-struct Vector *get_process_env(int process);
+int *get_all_pids();
+int *get_app_pids();
+int *get_window_pids();
 struct Vector *get_all_processes();
-struct Vector *get_process_cmdline(int process);
-char *get_process_cwd(int process);
+struct Vector *get_process_env(int PID);
+struct Vector *get_process_cmdline(int PID);
+char *get_process_cwd(int PID);
 
 //////////////////////////////////////////

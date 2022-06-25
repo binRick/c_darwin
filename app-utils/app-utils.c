@@ -7,7 +7,7 @@
 
 
 int CFDictionaryGetInt(CFDictionaryRef dict, const void *key) {
-  log_debug("CFDictionaryGetInt.......");
+  log_info("CFDictionaryGetInt.......");
   int isSuccess, value;
 
   isSuccess = CFNumberGetValue(
@@ -19,12 +19,12 @@ int CFDictionaryGetInt(CFDictionaryRef dict, const void *key) {
 
 
 char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
-  log_debug("CFDictionaryCopyCString.......");
   const void *dictValue;
   CFIndex    length;
   int        maxSize, isSuccess;
   char       *value;
 
+  log_info("CFDictionaryCopyCString.......|'%s'|", (char *)key);
   dictValue = CFDictionaryGetValue(dict, key);
   if (dictValue == NULL) {
     return(NULL);
@@ -42,7 +42,8 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
     dictValue, value, maxSize, kCFStringEncodingUTF8
     );
 
-  return(isSuccess ? value : NULL);
+  log_info("CFDictionaryCopyCString.......|'%s'->'%s'|", (char *)key, (char *)value);
+  return((isSuccess) ? (value) : (NULL));
 }
 
 

@@ -19,6 +19,7 @@ keylogger_db_deps = [
   timestamp_dep,
   c_stringfn_dep,
   c_fsio_dep,
+  bytes_dep,
   c_string_buffer_dep,
   logh_dep,
   sqldbal_dep,

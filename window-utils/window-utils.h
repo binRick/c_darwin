@@ -2,9 +2,9 @@
 #ifndef DEFAULT_LOGLEVEL
 #define DEFAULT_LOGLEVEL    1
 #endif
-#include "ansicodes/ansicodes.h"
+#include "ansi-codes/ansi-codes.h"
 #include "app-utils.h"
-#include "submodules/c_stringfn/include/stringfn.h"
+#include "c_stringfn/include/stringfn.h"
 #include <assert.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
@@ -39,7 +39,6 @@ typedef struct {
 } MoveWinCtx;
 ///////////////////////////////////////////////////
 char *windowTitle(char *appName, char *windowName);
-static int emptyWindowNameAllowed(char *appName);
 void PrintWindow(CFDictionaryRef window, void *ctxPtr);
 int EnumerateWindows(char *pattern, void (*callback)(CFDictionaryRef window, void *callback_data), void *callback_data);
 CGPoint CGWindowGetPosition(CFDictionaryRef window);
@@ -52,5 +51,6 @@ CGSize AXWindowGetSize(AXUIElementRef window);
 void AXWindowSetSize(AXUIElementRef window, CGSize size);
 void MoveWindow(CFDictionaryRef window, void *ctxPtr);
 int GetWindowsQty(void);
+int get_front_window_pid(void);
 
 ///////////////////////////////////////////////////
