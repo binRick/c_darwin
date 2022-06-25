@@ -36,24 +36,10 @@ TIDIED_FILES = \
 			   */*.h */*.c
 ##############################################################
 all: build test
-test-libs: 
-	./build/window-utils-test/window-utils-test
-	./build/app-utils-test/app-utils-test
 
 clean:
 	@rm -rf build
-test: do-test
-test-module:
-	@echo TESTING MDDULE
-	@./build/active-window-module-test/active-window-module-test -v | ./submodules/greatest/contrib/greenest
-	@gtimeout .3 ./build/active-window-module-test/active-window-module-test --watch 2>/dev/null ||true
-	@echo TESTING MDDULE OK; echo
 
-test-bin:
-	@echo TESTING
-	@./build/active-window-test/active-window-test -v | ./submodules/greatest/contrib/greenest
-	@gtimeout .3 ./build/active-window-test/active-window-test --watch 2>/dev/null ||true
-	@echo TESTING OK; echo
 do-meson: 
 	@eval cd . && {  meson build || { meson build --reconfigure || { meson build --wipe; } && meson build; }; }
 do-install: all
@@ -87,7 +73,7 @@ pull:
 
 dev: nodemon
 nodemon:
-	@$(PASSH) -L .nodemon.log $(NODEMON) -V -i build -w process -w process-test -w . -w '*/meson.build' --delay 1 -i '*/subprojects' -I  -w 'include/*.h' -w meson.build -w src -w Makefile -w loader/meson.build -w loader/src -w loader/include -i '*/embeds/*' -e tpl,build,sh,c,h,Makefile -x env -- bash -c 'reset;passh make||true'
+	@$(PASSH) -L .nodemon.log $(NODEMON) -i build -w process -w process-test -w . -w '*/meson.build' --delay 1 -i '*/subprojects' -I  -w 'include/*.h' -w meson.build -w src -w Makefile -w loader/meson.build -w loader/src -w loader/include -i '*/embeds/*' -e tpl,build,sh,c,h,Makefile -x env -- bash -c 'reset;passh make||true'
 
 
 

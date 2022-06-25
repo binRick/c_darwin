@@ -10,8 +10,8 @@
 #include <stdio.h>
 
 
-APP_AUTHORIZATION_TESTS
 GREATEST_MAIN_DEFS();
+APP_AUTHORIZATION_TESTS
 
 
 int main(int argc, char **argv) {

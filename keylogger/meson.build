@@ -11,6 +11,12 @@ keylogger_deps = [
  subprocess_dep,
  timestamp_dep,
  list_dep,
+ dbg_dep,
+ generic_print_dep,
+ ansi_codes_dep,
+ ansi_utils_dep,
+ keylogger_db_dep,
+ c_timer_dep,
 ]
 
 

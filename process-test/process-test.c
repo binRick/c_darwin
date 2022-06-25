@@ -1,18 +1,24 @@
 #define DEBUG_MODE    false
 #include "process-test.h"
+#define CT_STOP_AND_DEBUG(COLOR)    { do {                                                                             \
+                                        PRINT(AC_RESETALL "\t" COLOR "Duration: " AC_RESETALL, ct_stop(__FUNCTION__)); \
+                                      }while (0); }
 
 
 TEST t_pid_cwd(void){
+  ct_start(NULL);
   char *cwd = get_process_cwd((int)getpid());
 
   ASSERT_NEQ(cwd, NULL);
   ASSERT_GTE(strlen(cwd), 0);
   dbg(cwd, %s);
+  CT_STOP_AND_DEBUG(AC_BLUE);
   PASS();
 }
 
 
 TEST t_get_process_cmdline(void){
+  ct_start(NULL);
   struct Vector *cmdline_v = get_process_cmdline((int)getpid());
 
   ASSERT_NEQ(cmdline_v, NULL);
@@ -27,16 +33,16 @@ TEST t_get_process_cmdline(void){
   }
   dbg(CMDS_QTY, %lu);
   vector_release(cmdline_v);
+  CT_STOP_AND_DEBUG(AC_RED);
   PASS();
 }
 
 
 TEST t_pids_iterate(void){
+  ct_start(NULL);
   struct Vector *pids_v = get_all_processes();
-
   ASSERT_NEQ(pids_v, NULL);
-  size_t PIDS_QTY = vector_size(pids_v);
-
+  size_t        PIDS_QTY = vector_size(pids_v);
   for (size_t i = 0; i < PIDS_QTY; i++) {
     int pid = (int)(long long)vector_get(pids_v, i);
     if (DEBUG_MODE) {
@@ -80,10 +86,12 @@ TEST t_pids_iterate(void){
     vector_release(PE);
   }
   vector_release(pids_v);
+  CT_STOP_AND_DEBUG(AC_CYAN);
 } /* t_pids_iterate */
 
 
 TEST t_pids(void){
+  ct_start(NULL);
   struct Vector *pids_v = get_all_processes();
 
   ASSERT_NEQ(pids_v, NULL);
@@ -99,12 +107,15 @@ TEST t_pids(void){
   }
   dbg(PIDS_QTY, %lu);
   vector_release(pids_v);
+  char *dur = ct_stop(__FUNCTION__);
+  dbg(dur, %s);
 
   PASS();
 }
 
 
 TEST t_process_env(void){
+  ct_start(NULL);
   struct Vector *PE = get_process_env((int)getpid());
 
   ASSERT_NEQ(PE, NULL);
@@ -126,16 +137,20 @@ TEST t_process_env(void){
   }
   dbg(ENV_QTY, %lu);
   vector_release(PE);
+  char *dur = ct_stop(__FUNCTION__);
+  dbg(dur, %s);
 
   PASS();
 }
 
 SUITE(s_process){
+  ct_start(NULL);
   RUN_TEST(t_process_env);
   RUN_TEST(t_pids);
   RUN_TEST(t_pid_cwd);
   RUN_TEST(t_get_process_cmdline);
   RUN_TEST(t_pids_iterate);
+  CT_STOP_AND_DEBUG(AC_RED_BLACK);
   PASS();
 }
 
@@ -144,7 +159,9 @@ GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
+  ct_start(NULL);
   RUN_SUITE(s_process);
+  CT_STOP_AND_DEBUG(AC_BLUE_BLACK AC_ITALIC);
   GREATEST_MAIN_END();
   return(0);
 }

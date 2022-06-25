@@ -2,8 +2,9 @@ system_utils_test_srcs = [
   'system-utils-test.c',
 ]
 system_utils_include_dirs = [
-  inc,
+  '.',
   '../system-utils',
+  inc,
 ]
 system_utils_test_deps = [
   greatest_dep,
@@ -16,16 +17,11 @@ system_utils_test_deps = [
 
 if get_option('enable-binaries')
   system_utils_test_exec = executable('system-utils-test',
-     [
-      system_utils_test_srcs,
-     ],
+     system_utils_test_srcs,
      dependencies: system_utils_test_deps,
-     include_directories: [
-       system_utils_include_dirs,
-       inc,
-     ],
+     include_directories: system_utils_include_dirs,
   )
   if get_option('enable-binary-tests')
-    test('system-utils-test', system_utils_test_exec, args: [])
+    test('system-utils-test', passh_program, args:[system_utils_test_exec,'-v'])
   endif
 endif

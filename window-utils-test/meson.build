@@ -21,6 +21,6 @@ if get_option('enable-binaries')
      include_directories: window_utils_test_include_dirs,
   )
   if get_option('enable-binary-tests')
-    test('window-utils-test', window_utils_test_exec, args: ['-v'])
+    test('window-utils-test', passh_program, args:[ window_utils_test_exec])
   endif
 endif

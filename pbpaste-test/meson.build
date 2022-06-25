@@ -20,6 +20,6 @@ if get_option('enable-binaries')
      include_directories: pbpaste_test_inc,
   )
   if get_option('enable-binary-tests')
-    test('pbpaste-test', pbpaste_test, args: [])
+    test('pbppaste-test', passh_program, args: [pbpaste_test])
   endif
 endif

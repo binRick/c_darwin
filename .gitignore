@@ -9,3 +9,7 @@ submodules
 .make-log-*
 .DU
 .make-*log*
+snapshot.jpg
+*/*.sqlite
+*.sqlite
+*/*/*.sqlite

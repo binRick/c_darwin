@@ -24,6 +24,6 @@ if get_option('enable-binaries')
      include_directories: active_app_include_dirs,
   )
   if get_option('enable-binary-tests')
-    test('active-app-test', active_app_test_exec, args: [])
+    test('active-app-test', passh_program, args: [active_app_test_exec,'-v'])
   endif
 endif
