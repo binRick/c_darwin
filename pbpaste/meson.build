@@ -2,13 +2,32 @@ pbpaste_srcs = [
   'pbpaste.c',
 ]
 pbpaste_inc = [
- inc,
  '.',
  '../pbpaste',
+ inc,
 ]
 pbpaste_deps = [
  c_string_buffer_dep,
  subprocess_dep,
+ greatest_dep,
+ ansi_codes_dep,
+ djbhash_dep,
+ c_string_buffer_dep,
+ parson_dep,
+ c_fsio_dep,
+ c_stringfn_dep,
+ tiny_regex_c_dep,
+ dbg_dep,
+ ansi_utils_dep,
+ c_eventemitter_dep,
+ chan_dep,
+ c_vector_dep,
+ murmurhash_dep,
+ b64_dep,
+ libbeaufort_dep,
+ timestamp_dep,
+ c_eventemitter_dep,
+ smaz_dep, 
 ]
 
 

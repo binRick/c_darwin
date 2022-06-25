@@ -1,15 +1,14 @@
 #include "greatest.h"
 #include "pbpaste-test.h"
 #include <stdio.h>
-
 //////////////////////////////////////////////
 
 
 TEST t_pbpaste_test(){
-  char *cb = pbpaste_exec();
+  clipboard_event_t CE = encode_cliboard_event(pbpaste_exec());
 
-  fprintf(stderr, "%lub Clipboard: '%s'\n", strlen(cb), cb);
-  ASSERT_GT(strlen(cb), 0);
+  dump_cliboard_event(&CE);
+  ASSERT_GT(CE.raw_size, 0);
   PASS();
 }
 
