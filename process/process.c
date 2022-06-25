@@ -34,15 +34,82 @@ ERROR:
   return(NULL);
 }
 
+struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
+  const size_t           BUFSIZE                    = 1024;
+  char                   *msg                       = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\x1b\\";
+  struct Vector          *ConnectedKittyProcesses_v = vector_new();
+  struct StringFNStrings ListenSplit;
+  size_t                 recvd = 0, total_recvd = 0;
+
+  for (int i = 0; i < vector_size(KittyProcesses_v); i++) {
+    dbg(i, %d);
+    kitty_process_t *KP = (kitty_process_t *)vector_get(KittyProcesses_v, i);
+    for (int ii = 0; ii < vector_size(KP->env_v); ii++) {
+      if (strcmp((char *)((process_env_t *)vector_get(KP->env_v, ii))->key, "KITTY_LISTEN_ON") == 0) {
+        dbg((char *)((process_env_t *)vector_get(KP->env_v, ii))->val, %s);
+        ListenSplit = stringfn_split(stringfn_trim((char *)((process_env_t *)vector_get(KP->env_v, ii))->val), ':');
+        if (ListenSplit.count > 0 && strcmp(ListenSplit.strings[0], "tcp") == 0 && ListenSplit.count == 3) {
+          dbg("CONNETING TO TCP!", %s);
+          socket99_config cfg = { .host = strdup(ListenSplit.strings[1]), .port = atoi(ListenSplit.strings[2]), };
+          socket99_result res;
+          if (!socket99_open(&cfg, &res)) {
+            continue;
+          }
+          size_t total_sent = 0;
+          size_t msg_size   = strlen(msg);
+          dbg(msg_size, %lu);
+          do {
+            size_t sent = send(res.fd, msg, msg_size, 0);
+            dbg(sent, %lu);
+            total_sent += sent;
+          } while (total_sent < msg_size);
+          dbg("SENT!", %s);
+          dbg(total_sent, %lu);
+          struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+          do {
+            char *buffer = calloc(BUFSIZE + 1, 1);
+            dbg("RECEIVING!", %s);
+            recvd = recv(res.fd, buffer, BUFSIZE - 32, 0);
+            dbg(recvd, %lu);
+            if (recvd < 1) {
+              break;
+            }
+            buffer[recvd] = '\0';
+            dbg("RECEIVED!", %s);
+            total_recvd += recvd;
+            stringbuffer_append_string(SB, buffer);
+            free(buffer);
+            if ((int)(buffer[strlen(buffer) - 1]) == 92) {
+              if ((int)(buffer[strlen(buffer) - 2]) == 27) {
+                dbg("END!", %s);
+                close(res.fd);
+                recvd = -1;
+                break;
+              }
+            }
+          }while (recvd > 0);
+          close(res.fd);
+          dbg(total_recvd, %lu);
+          dbg("RECV DONE!", %s);
+          char   *READ = stringbuffer_to_string(SB);
+          size_t s     = strlen(READ);
+          dbg("OK!", %s);
+          dbg(s, %lu);
+          fprintf(stderr, "%s\n", READ);
+          stringbuffer_release(SB);
+        }
+      }
+    }
+  }
+  return(ConnectedKittyProcesses_v);
+} /* connect_kitty_processes */
 struct Vector *get_kitty_processes(){
+  const re_t    pattern = re_compile("[Kk]itty");
+  int           match_length, match_idx;
   struct Vector *KittyProcesses_v = vector_new();
-  const re_t    pattern           = re_compile("[Kk]itty");
   struct Vector *pids_v           = get_all_processes();
 
   assert(pids_v != NULL);
-  int           match_length, match_idx;
-  struct Vector *PE;
-
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     int           pid        = (int)(long long)vector_get(pids_v, i);
     struct Vector *cmdline_v = get_process_cmdline(pid);
@@ -54,7 +121,7 @@ struct Vector *get_kitty_processes(){
       if (match_length < 1) {
         continue;
       }
-      PE = get_process_env(pid);
+      struct Vector *PE = get_process_env(pid);
       for (size_t ii = 0; ii < vector_size(PE); ii++) {
         process_env_t *E = (process_env_t *)(vector_get(PE, ii));
         if (strcmp(E->key, "KITTY_WINDOW_ID") == 0) {
@@ -62,13 +129,13 @@ struct Vector *get_kitty_processes(){
           assert(KP != NULL);
           KP->window_id = atoi(E->val);
           assert(KP->window_id > 0);
-          KP->pid = (unsigned long)pid;
+          KP->pid   = (unsigned long)pid;
+          KP->env_v = PE;
           assert(KP->pid > 0);
           KP->listen_on = strdup(E->key);
           vector_push(KittyProcesses_v, (void *)KP);
         }
       }
-      free(((process_env_t *)vector_get(PE, i)));
     }
   }
   return(KittyProcesses_v);

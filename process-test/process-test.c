@@ -38,6 +38,18 @@ TEST t_get_process_cmdline(void){
 }
 
 
+TEST t_kitty_pids_connect(void){
+  ct_start(NULL);
+  struct Vector *KittyProcesses_v = get_kitty_processes();
+  dbg(vector_size(KittyProcesses_v), %lu);
+  ASSERT_GTE(vector_size(KittyProcesses_v), 0);
+  struct Vector *ConnectedKittyProcess_v = connect_kitty_processes(KittyProcesses_v);
+  dbg(vector_size(ConnectedKittyProcess_v), %lu);
+  CT_STOP_AND_DEBUG(AC_RED);
+  PASS();
+} /* t_kitty_pids */
+
+
 TEST t_kitty_pids(void){
   ct_start(NULL);
   struct Vector *KittyProcesses_v = get_kitty_processes();
@@ -161,6 +173,7 @@ SUITE(s_process){
   RUN_TEST(t_get_process_cmdline);
   RUN_TEST(t_pids_iterate);
   RUN_TEST(t_kitty_pids);
+  RUN_TEST(t_kitty_pids_connect);
   CT_STOP_AND_DEBUG(AC_RED_BLACK);
   PASS();
 }

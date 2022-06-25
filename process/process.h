@@ -31,6 +31,7 @@ struct Vector *get_all_processes();
 struct Vector *get_process_env(int PID);
 struct Vector *get_process_cmdline(int PID);
 struct Vector *get_kitty_processes();
+struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
 char *get_process_cwd(int PID);
 
 //////////////////////////////////////////
