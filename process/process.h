@@ -4,9 +4,21 @@
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////
 #include "dbg.h"
+#include "dbg.h"
+#include "print.h"
+#include "socket99.h"
+#include "stringbuffer.h"
 #include "stringfn.h"
+#include "stringfn.h"
+#include "tiny-regex-c/re.h"
 #include "vector.h"
 //////////////////////////////////////////
+typedef struct {
+  unsigned long pid;
+  int           window_id;
+  struct Vector *env_v;
+  char          *listen_on;
+} kitty_process_t;
 typedef struct {
   char *key;
   char *val;
@@ -18,6 +30,7 @@ int *get_window_pids();
 struct Vector *get_all_processes();
 struct Vector *get_process_env(int PID);
 struct Vector *get_process_cmdline(int PID);
+struct Vector *get_kitty_processes();
 char *get_process_cwd(int PID);
 
 //////////////////////////////////////////

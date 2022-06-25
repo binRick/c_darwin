@@ -34,7 +34,89 @@ ERROR:
   return(NULL);
 }
 
+struct Vector *get_kitty_processes(){
+  struct Vector *KittyProcesses_v = vector_new();
+  const re_t    pattern           = re_compile("[Kk]itty");
+  struct Vector *pids_v           = get_all_processes();
 
+  assert(pids_v != NULL);
+  int           match_length, match_idx;
+  struct Vector *PE;
+
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    int           pid        = (int)(long long)vector_get(pids_v, i);
+    struct Vector *cmdline_v = get_process_cmdline(pid);
+    if (cmdline_v == NULL) {
+      continue;
+    }
+    for (int i = 0; i < vector_size(cmdline_v); i++) {
+      match_idx = re_matchp(pattern, (char *)vector_get(cmdline_v, i), &match_length);
+      if (match_length < 1) {
+        continue;
+      }
+      PE = get_process_env(pid);
+      for (size_t ii = 0; ii < vector_size(PE); ii++) {
+        process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+        if (strcmp(E->key, "KITTY_WINDOW_ID") == 0) {
+          kitty_process_t *KP = malloc(sizeof(kitty_process_t));
+          assert(KP != NULL);
+          KP->window_id = atoi(E->val);
+          assert(KP->window_id > 0);
+          KP->pid = (unsigned long)pid;
+          assert(KP->pid > 0);
+          KP->listen_on = strdup(E->key);
+          vector_push(KittyProcesses_v, (void *)KP);
+        }
+      }
+      free(((process_env_t *)vector_get(PE, i)));
+    }
+  }
+  return(KittyProcesses_v);
+} /* get_kitty_processes */
+  /*
+   *  continue;
+   *  socket99_config cfg = { .host = "127.0.0.1", .port = 25009, };
+   *  socket99_result res;
+   *  if (!socket99_open(&cfg, &res)) {
+   *    continue;
+   *  }
+   *  const char *msg     = "\eP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\e\\";
+   *  size_t     msg_size = strlen(msg);
+   *  size_t     sent     = send(res.fd, msg, msg_size, 0);
+   *  bool       pass     = ((size_t)sent == msg_size);
+   *  assert(msg_size == sent);
+   *  size_t     BUFSIZE = 1024 * 16;
+   *  size_t     recvd = 0, total_recvd = 0;
+   *  dbg("SENT!", %s);
+   *  dbg(sent, %lu);
+   *  struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
+   *  char                buffer[BUFSIZE];
+   *  do {
+   *    dbg("RECEIVING!", %s);
+   *    recvd         = recv(res.fd, buffer, BUFSIZE, 0);
+   *    buffer[recvd] = '\0';
+   *    stringbuffer_append_string(SB, buffer);
+   *    dbg("RECEIVED!", %s);
+   *    dbg(recvd, %lu);
+   *    total_recvd += recvd;
+   *  } while (recvd > 0);
+   *  buffer[total_recvd] = '\0';
+   *  close(res.fd);
+   *  dbg("RECV DONE!", %s);
+   *  char   *READ = stringbuffer_to_string(SB);
+   *  size_t s     = strlen(READ);
+   *  stringbuffer_release(SB);
+   *  dbg(READ, %s);
+   *  dbg("OK!", %s);
+   *  dbg(s, %lu);
+   * }
+   * }
+   * }
+   *
+   *
+   * return(kitty_procs_v);
+   * }
+   */
 struct kinfo_proc *proc_info_for_pid(pid_t pid) {
   struct kinfo_proc *list = NULL;
 

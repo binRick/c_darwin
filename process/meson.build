@@ -7,6 +7,12 @@ process_c_args = []
 process_deps = [
   c_stringfn_dep,
   c_vector_dep,
+  tiny_regex_c_dep,
+  socket99_dep,
+  generic_print_dep,
+  c_string_buffer_dep,
+  c_stringfn_dep,
+  c_fsio_dep,  
 ]
 process_dirs = [
     '.',
