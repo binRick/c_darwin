@@ -33,10 +33,10 @@ ERROR:
   }
   return(NULL);
 }
+const char KITTY_MSG[] = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,14,2]}\x1b\\\\";
 
 struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
   const size_t           BUFSIZE                    = 1024;
-  char                   *msg                       = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\x1b\\";
   struct Vector          *ConnectedKittyProcesses_v = vector_new();
   struct StringFNStrings ListenSplit;
   size_t                 recvd = 0, total_recvd = 0;
@@ -56,10 +56,10 @@ struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
             continue;
           }
           size_t total_sent = 0;
-          size_t msg_size   = strlen(msg);
+          size_t msg_size   = strlen(KITTY_MSG);
           dbg(msg_size, %lu);
           do {
-            size_t sent = send(res.fd, msg, msg_size, 0);
+            size_t sent = send(res.fd, KITTY_MSG, msg_size, 0);
             dbg(sent, %lu);
             total_sent += sent;
           } while (total_sent < msg_size);
@@ -74,16 +74,17 @@ struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
             if (recvd < 1) {
               break;
             }
-            buffer[recvd] = '\0';
+            //buffer[recvd] = '\0';
             dbg("RECEIVED!", %s);
             total_recvd += recvd;
             stringbuffer_append_string(SB, buffer);
-            free(buffer);
+            dbg(buffer, %s);
+//            free(buffer);
             if ((int)(buffer[strlen(buffer) - 1]) == 92) {
               if ((int)(buffer[strlen(buffer) - 2]) == 27) {
                 dbg("END!", %s);
-                close(res.fd);
                 recvd = -1;
+                //close(res.fd);
                 break;
               }
             }
@@ -95,8 +96,10 @@ struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
           size_t s     = strlen(READ);
           dbg("OK!", %s);
           dbg(s, %lu);
-          fprintf(stderr, "%s\n", READ);
-          stringbuffer_release(SB);
+          dbg(READ, %s);
+          fprintf(stdout, "%s\n", READ);
+          //stringbuffer_release(SB);
+          //exit(0);
         }
       }
     }
