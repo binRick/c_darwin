@@ -4,7 +4,10 @@
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////
 //#include "dbg.h"
+#include "fsio.h"
+#include "parson.h"
 #include "socket99/socket99.h"
+#include "str-replace.h"
 #include "stringbuffer.h"
 #include "stringfn.h"
 #include "stringfn.h"
@@ -31,5 +34,6 @@ struct Vector *get_process_cmdline(int PID);
 struct Vector *get_kitty_processes();
 struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
 char *get_process_cwd(int PID);
+void connect_kitty_port(int PORT);
 
 //////////////////////////////////////////

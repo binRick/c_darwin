@@ -167,6 +167,18 @@ TEST t_process_env(void){
   PASS();
 }
 
+
+TEST t_process_port(void){
+  int PORT = 4911;
+
+  connect_kitty_port(PORT);
+  PASS();
+}
+
+SUITE(s_process_port){
+  RUN_TEST(t_process_port);
+  PASS();
+}
 SUITE(s_process){
   ct_start(NULL);
   RUN_TEST(t_process_env);
@@ -187,6 +199,7 @@ int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
   ct_start(NULL);
   RUN_SUITE(s_process);
+  RUN_SUITE(s_process_port);
   CT_STOP_AND_DEBUG(AC_BLUE_BLACK AC_ITALIC);
   GREATEST_MAIN_END();
   return(0);

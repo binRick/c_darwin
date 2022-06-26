@@ -1,13 +1,10 @@
 #pragma once
-#ifndef DEBUG_PID_ENV
-#define DEBUG_PID_ENV    true
-#endif
-#include "process.h"
-//#include "print.h"
 #include "dbg.h"
+#include "process.h"
 #include <libproc.h>
 #include <sys/sysctl.h>
-typedef void *rusage_info_t;
+const char   KITTY_MSG[] = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\x1b\\";
+const size_t BUFSIZE     = 8192;
 #define GET_PID(proc)       (proc)->kp_proc.p_pid
 #define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)
 #define ERROR_CHECK(fun) \
@@ -18,101 +15,102 @@ typedef void *rusage_info_t;
   } while (0)
 
 
-struct kinfo_proc *proc_list(size_t *count) {
-  struct kinfo_proc *list = NULL;
-  int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL };
-  size_t            size  = 0;
+void connect_kitty_port(int PORT){
+  socket99_config cfg = { .host = "127.0.0.1", .port = PORT };
+  socket99_result res;
 
-  ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), NULL, &size, NULL, 0));
-  list = malloc(size);
-  ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), list, &size, NULL, 0));
-  *count = size / sizeof(struct kinfo_proc);
-  return(list);
-
-ERROR:
-  if (list) {
-    free(list);
+  if (!socket99_open(&cfg, &res)) {
+    return;
   }
-  return(NULL);
-}
-const char KITTY_MSG[] = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,14,2]}\x1b\\\\";
+  struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+  size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
 
-struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
-  const size_t           BUFSIZE                    = 1024;
-  struct Vector          *ConnectedKittyProcesses_v = vector_new();
-  struct StringFNStrings ListenSplit;
-  size_t                 recvd = 0, total_recvd = 0;
-
-  for (int i = 0; i < vector_size(KittyProcesses_v); i++) {
-    dbg(i, %d);
-    kitty_process_t *KP = (kitty_process_t *)vector_get(KittyProcesses_v, i);
-    for (int ii = 0; ii < vector_size(KP->env_v); ii++) {
-      if (strcmp((char *)((process_env_t *)vector_get(KP->env_v, ii))->key, "KITTY_LISTEN_ON") == 0) {
-        dbg((char *)((process_env_t *)vector_get(KP->env_v, ii))->val, %s);
-        ListenSplit = stringfn_split(stringfn_trim((char *)((process_env_t *)vector_get(KP->env_v, ii))->val), ':');
-        if (ListenSplit.count > 0 && strcmp(ListenSplit.strings[0], "tcp") == 0 && ListenSplit.count == 3) {
-          dbg("CONNETING TO TCP!", %s);
-          socket99_config cfg = { .host = strdup(ListenSplit.strings[1]), .port = atoi(ListenSplit.strings[2]), };
-          socket99_result res;
-          if (!socket99_open(&cfg, &res)) {
-            continue;
-          }
-          size_t total_sent = 0;
-          size_t msg_size   = strlen(KITTY_MSG);
-          dbg(msg_size, %lu);
-          do {
-            size_t sent = send(res.fd, KITTY_MSG, msg_size, 0);
-            dbg(sent, %lu);
-            total_sent += sent;
-          } while (total_sent < msg_size);
-          dbg("SENT!", %s);
-          dbg(total_sent, %lu);
-          struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
-          do {
-            char *buffer = calloc(BUFSIZE + 1, 1);
-            dbg("RECEIVING!", %s);
-            recvd = recv(res.fd, buffer, BUFSIZE - 32, 0);
-            dbg(recvd, %lu);
-            if (recvd < 1) {
-              break;
-            }
-            //buffer[recvd] = '\0';
-            dbg("RECEIVED!", %s);
-            total_recvd += recvd;
-            stringbuffer_append_string(SB, buffer);
-            dbg(buffer, %s);
-//            free(buffer);
-            if ((int)(buffer[strlen(buffer) - 1]) == 92) {
-              if ((int)(buffer[strlen(buffer) - 2]) == 27) {
-                dbg("END!", %s);
-                recvd = -1;
-                //close(res.fd);
-                break;
-              }
-            }
-          }while (recvd > 0);
-          close(res.fd);
-          dbg(total_recvd, %lu);
-          dbg("RECV DONE!", %s);
-          char   *READ = stringbuffer_to_string(SB);
-          size_t s     = strlen(READ);
-          dbg("OK!", %s);
-          dbg(s, %lu);
-          dbg(READ, %s);
-          fprintf(stdout, "%s\n", READ);
-          //stringbuffer_release(SB);
-          //exit(0);
-        }
+  do {
+    total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
+  } while (total_sent < msg_size);
+  do {
+    char *buf = calloc(BUFSIZE + 1, 1);
+    recvd = 0;
+    recvd = recv(res.fd, buf, BUFSIZE, 0);
+    if (recvd < 1) {
+      break;
+    }
+    buf[recvd]   = '\0';
+    total_recvd += recvd;
+    stringbuffer_append_string(SB, buf);
+    free(buf);
+    if ((int)(buf[strlen(buf) - 1]) == 92) {
+      if ((int)(buf[strlen(buf) - 2]) == 27) {
+        recvd = -1;
+        close(res.fd);
+        break;
       }
     }
+  }while (recvd > 0);
+  close(res.fd);
+  char *Nb = calloc(stringbuffer_get_content_size(SB) + 1, 1);
+
+  strncpy(Nb, stringbuffer_to_string(SB) + 12, stringbuffer_get_content_size(SB) - 3);
+  stringbuffer_release(SB);
+  JSON_Value  *V  = json_parse_string(Nb);
+  JSON_Object *O0 = json_value_get_object(V);
+
+  assert(json_object_get_boolean(O0, "ok") == 1);
+  JSON_Value *S0V = json_parse_string(json_object_get_string(O0, "data"));
+  JSON_Array *A0  = json_value_get_array(S0V);
+
+  assert(json_array_get_count(A0) > 0);
+  assert(json_type(json_array_get_value(A0, 0)) == 4);
+  JSON_Object *V101 = json_value_get_object(json_array_get_value(A0, 0));
+
+  assert(json_object_get_count(V101) > 0);
+  JSON_Value *V_WM_NAME = json_object_get_value(V101, "wm_name");
+  JSON_Value *V_ID      = json_object_get_value(V101, "id");
+
+  assert(json_type(V_WM_NAME) == 2);
+  assert(json_type(V_ID) == 3);
+  assert(json_value_get_string(V_WM_NAME) != NULL);
+  assert(json_value_get_number(V_ID) > 0);
+  JSON_Value *V_IS_FOCUSED = json_object_get_value(V101, "is_focused");
+
+  assert(json_type(V_IS_FOCUSED) == 6);
+  bool       IS_FOCUSED = json_value_get_boolean(V_IS_FOCUSED);
+  JSON_Value *V_TABS    = json_object_get_value(V101, "tabs");
+  JSON_Array *TABS      = json_value_get_array(V_TABS);
+
+  assert(json_array_get_count(TABS) > 0);
+  for (int ii = 0; ii < json_array_get_count(TABS); ii++) {
+    JSON_Value  *TABv = json_array_get_value(TABS, ii);
+    assert(json_type(TABv) == 4);
+    JSON_Object *TAB = json_value_get_object(TABv);
+    assert(json_object_get_count(TAB) == 9);
+    assert(json_object_has_value_of_type(TAB, "id", JSONNumber));
+    assert(json_object_has_value_of_type(TAB, "is_focused", JSONBoolean));
+    assert(json_object_has_value_of_type(TAB, "title", JSONString));
+    assert(json_object_has_value_of_type(TAB, "layout", JSONString));
+    assert(json_object_has_value_of_type(TAB, "layout_state", JSONObject));
+    assert(json_object_has_value_of_type(TAB, "layout_opts", JSONObject));
+    assert(json_object_has_value_of_type(TAB, "windows", JSONArray));
+    assert(json_object_has_value_of_type(TAB, "enabled_layouts", JSONArray));
+    assert(json_object_has_value_of_type(TAB, "active_window_history", JSONArray));
+    dbg(json_object_get_string(TAB, "title"), %s);
+    dbg(json_object_get_boolean(TAB, "is_focused"), %d);
+    dbg(json_object_get_string(TAB, "layout"), %s);
   }
+} /* connect_kitty_port */
+
+struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
+  struct Vector *ConnectedKittyProcesses_v = vector_new();
+
   return(ConnectedKittyProcesses_v);
 } /* connect_kitty_processes */
+
+
 struct Vector *get_kitty_processes(){
+  struct Vector *KittyProcesses_v = vector_new();
   const re_t    pattern = re_compile("[Kk]itty");
   int           match_length, match_idx;
-  struct Vector *KittyProcesses_v = vector_new();
-  struct Vector *pids_v           = get_all_processes();
+  struct Vector *pids_v = get_all_processes();
 
   assert(pids_v != NULL);
   for (size_t i = 0; i < vector_size(pids_v); i++) {
@@ -144,62 +142,15 @@ struct Vector *get_kitty_processes(){
     }
   }
   return(KittyProcesses_v);
-} /* get_kitty_processes */
-  /*
-   *  continue;
-   *  socket99_config cfg = { .host = "127.0.0.1", .port = 25009, };
-   *  socket99_result res;
-   *  if (!socket99_open(&cfg, &res)) {
-   *    continue;
-   *  }
-   *  const char *msg     = "\eP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\e\\";
-   *  size_t     msg_size = strlen(msg);
-   *  size_t     sent     = send(res.fd, msg, msg_size, 0);
-   *  bool       pass     = ((size_t)sent == msg_size);
-   *  assert(msg_size == sent);
-   *  size_t     BUFSIZE = 1024 * 16;
-   *  size_t     recvd = 0, total_recvd = 0;
-   *  dbg("SENT!", %s);
-   *  dbg(sent, %lu);
-   *  struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
-   *  char                buffer[BUFSIZE];
-   *  do {
-   *    dbg("RECEIVING!", %s);
-   *    recvd         = recv(res.fd, buffer, BUFSIZE, 0);
-   *    buffer[recvd] = '\0';
-   *    stringbuffer_append_string(SB, buffer);
-   *    dbg("RECEIVED!", %s);
-   *    dbg(recvd, %lu);
-   *    total_recvd += recvd;
-   *  } while (recvd > 0);
-   *  buffer[total_recvd] = '\0';
-   *  close(res.fd);
-   *  dbg("RECV DONE!", %s);
-   *  char   *READ = stringbuffer_to_string(SB);
-   *  size_t s     = strlen(READ);
-   *  stringbuffer_release(SB);
-   *  dbg(READ, %s);
-   *  dbg("OK!", %s);
-   *  dbg(s, %lu);
-   * }
-   * }
-   * }
-   *
-   *
-   * return(kitty_procs_v);
-   * }
-   */
+}
 struct kinfo_proc *proc_info_for_pid(pid_t pid) {
   struct kinfo_proc *list = NULL;
-
   int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
   size_t            size  = 0;
 
   ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), NULL, &size, NULL, 0));
-
   list = malloc(size);
   ERROR_CHECK(sysctl(mib, sizeof(mib) / sizeof(*mib), list, &size, NULL, 0));
-
   return(list);
 
 ERROR:
@@ -310,6 +261,7 @@ struct Vector *get_process_env(int process){
   *vector        = vector_new(),
   *process_env_v = vector_new();
 
+
   if (process == 1) {
     return(process_env_v);
   }
@@ -345,7 +297,6 @@ struct Vector *get_process_env(int process){
   env_start = arg_ptr;
   procenv   = calloc(1, arg_end - arg_ptr);
 
-
   while (*arg_ptr != '\0' && arg_ptr < arg_end) {
     s = memchr(arg_ptr + 1, '\0', arg_end - arg_ptr);
     if (s == NULL) {
@@ -370,27 +321,27 @@ struct Vector *get_process_env(int process){
     pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
     vector_push(process_env_v, pe);
   }
+  fprintf(stdout,
+          "process:%d\n"
+          "argmax:%lu\n"
+          "env_res:%d\n"
+          "nargs:%d\n"
+          "progargs:%s\n"
+          "arg_ptr:%s\n"
+          "arg_end:%s\n"
+          "vectors:%lu\n"
+          "process env vector len:%lu\n",
+          process,
+          argmax,
+          env_res,
+          nargs,
+          procargs,
+          arg_ptr,
+          arg_end,
+          vector_size(vector),
+          vector_size(process_env_v)
+          );
   if (DEBUG_PID_ENV) {
-    fprintf(stderr,
-            "process:%d\n"
-            "argmax:%lu\n"
-            "env_res:%d\n"
-            "nargs:%d\n"
-            "progargs:%s\n"
-            "arg_ptr:%s\n"
-            "arg_end:%s\n"
-            "vectors:%lu\n"
-            "process env vector len:%lu\n",
-            process,
-            argmax,
-            env_res,
-            nargs,
-            procargs,
-            arg_ptr,
-            arg_end,
-            vector_size(vector),
-            vector_size(process_env_v)
-            );
   }
   if (procargs != NULL) {
     free(procargs);

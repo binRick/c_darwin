@@ -77,12 +77,14 @@ nodemon:
 		-i submodules -w "*/*.c" -w "*/*.h" -w Makefle -w "*/meson.build" \
 		-e c,h,sh,Makefile,build \
 			-x sh -- -c 'make||true'
-#		-w process -w process-test -w . -w '*/meson.build' --delay 1 -i '*/subprojects' -I  -w 'include/*.h' -w meson.build -w src -w Makefile -w loader/meson.build -w loader/src -w loader/include -i '*/embeds/*' -e tpl,build,sh,c,h,Makefile -x env -- bash -c 'reset;passh make||true'
-
-
-
+meson-introspect-all:
+	@meson introspect --all -i meson.build
 meson-introspect-targets:
 	@meson introspect --targets -i meson.build
-
 meson-binaries:
 	@meson introspect --targets  meson.build -i | jq 'map(select(.type == "executable").filename)|flatten|join("\n")' -Mrc
+meson-binaries-loc:
+	@make meson-binaries|xargs -I % echo %.c|sort -u|xargs Loc --files|bline -a bold:green -r yellow -R 1-6
+
+do-pull-submodules-cmds:
+	command find submodules -type d -maxdepth 1|xargs -I % echo -e "sh -c 'cd % && git pull'"

@@ -1,6 +1,5 @@
 process_srcs = [
   'process.c',
-  'process.h',
 ]
 process_link_flags = []
 process_c_args = []
@@ -10,10 +9,16 @@ process_deps = [
   tiny_regex_c_dep,
   socket99_dep,
   c_string_buffer_dep,
+  c_stringfn_dep,
+  str_replace_dep,
+  occurrences_dep,
+  parson_dep,
   c_fsio_dep,  
 ]
 process_dirs = [
+  '../submodules/meson_deps/submodules/c_fsio/include',
     '.',
+	'../submodules/meson_deps/submodules/c_fsio',
     inc,
 ]
 process_lib = shared_library('process',
