@@ -1,11 +1,7 @@
 #include "window-utils-test.h"
 #define DEFAULT_WINDOW_NAME_PATTERN    "kitty"
-#ifndef LOGLEVEL
-#define LOGLEVEL                       DEFAULT_LOGLEVEL
-#endif
 #include "app-utils/app-utils.h"
 #include "greatest/greatest.h"
-#include "log.h/log.h"
 #include "window-utils/window-utils.h"
 
 APP_AUTHORIZATION_TESTS
@@ -39,7 +35,7 @@ TEST t_windows_search(void *NAME){
 TEST t_authorized_tests(void){
   authorized_test_t *authorized_test_results = execute_authorization_tests();
 
-  for (int i = 0; i < sizeof(*authorized_test_results) / sizeof((authorized_test_results)[0]); i++) {
+  for (int i = 0; i < (sizeof(*authorized_test_results) / sizeof((authorized_test_results)[0])); i++) {
     ASSERT_EQ(authorized_test_results[i].authorized, true);
   }
 }
@@ -58,7 +54,6 @@ SUITE(s_windows){
   RUN_TESTp(t_windows_search, (void *)NULL);
   RUN_TESTp(t_windows_search, (void *)"kitty");
   RUN_TESTp(t_windows_search, (void *)"chrome");
-  //PASS();
 }
 
 GREATEST_MAIN_DEFS();

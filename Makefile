@@ -74,6 +74,7 @@ pull:
 dev: nodemon
 nodemon:
 	@$(PASSH) -L .nodemon.log $(NODEMON) -i build \
+		--delay 1 \
 		-i submodules -w "*/*.c" -w "*/*.h" -w Makefle -w "*/meson.build" \
 		-e c,h,sh,Makefile,build \
 			-x sh -- -c 'make||true'
