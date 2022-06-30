@@ -3,6 +3,7 @@
 #ifndef LOGLEVEL
 #define LOGLEVEL    DEFAULT_LOGLEVEL
 #endif
+#include "greatest/greatest.h"
 #include "submodules/greatest/greatest.h"
 #include "submodules/log.h/log.h"
 #include "window-utils.h"

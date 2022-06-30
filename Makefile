@@ -82,7 +82,7 @@ meson-introspect-all:
 meson-introspect-targets:
 	@meson introspect --targets -i meson.build
 meson-binaries:
-	@meson introspect --targets  meson.build -i | jq 'map(select(.type == "executable").filename)|flatten|join("\n")' -Mrc
+	@meson introspect --targets  meson.build -i | jq 'map(select(.type == "executable").filename)|flatten|join("\n")' -Mrc|xargs -I % echo ./build/%
 meson-binaries-loc:
 	@make meson-binaries|xargs -I % echo %.c|sort -u|xargs Loc --files|bline -a bold:green -r yellow -R 1-6
 

@@ -15,8 +15,8 @@ const size_t BUFSIZE     = 8192;
   } while (0)
 
 
-void connect_kitty_port(int PORT){
-  socket99_config cfg = { .host = "127.0.0.1", .port = PORT };
+void connect_kitty_port(const char *HOST, const int PORT){
+  socket99_config cfg = { .host = HOST, .port = PORT };
   socket99_result res;
 
   if (!socket99_open(&cfg, &res)) {
@@ -52,7 +52,9 @@ void connect_kitty_port(int PORT){
 
   strncpy(Nb, stringbuffer_to_string(SB) + 12, stringbuffer_get_content_size(SB) - 3);
   stringbuffer_release(SB);
-  JSON_Value  *V  = json_parse_string(Nb);
+  JSON_Value *V = json_parse_string(Nb);
+
+  free(Nb);
   JSON_Object *O0 = json_value_get_object(V);
 
   assert(json_object_get_boolean(O0, "ok") == 1);
@@ -143,6 +145,7 @@ struct Vector *get_kitty_processes(){
   }
   return(KittyProcesses_v);
 }
+
 struct kinfo_proc *proc_info_for_pid(pid_t pid) {
   struct kinfo_proc *list = NULL;
   int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
@@ -321,27 +324,27 @@ struct Vector *get_process_env(int process){
     pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
     vector_push(process_env_v, pe);
   }
-  fprintf(stdout,
-          "process:%d\n"
-          "argmax:%lu\n"
-          "env_res:%d\n"
-          "nargs:%d\n"
-          "progargs:%s\n"
-          "arg_ptr:%s\n"
-          "arg_end:%s\n"
-          "vectors:%lu\n"
-          "process env vector len:%lu\n",
-          process,
-          argmax,
-          env_res,
-          nargs,
-          procargs,
-          arg_ptr,
-          arg_end,
-          vector_size(vector),
-          vector_size(process_env_v)
-          );
   if (DEBUG_PID_ENV) {
+    fprintf(stdout,
+            "process:%d\n"
+            "argmax:%lu\n"
+            "env_res:%d\n"
+            "nargs:%d\n"
+            "progargs:%s\n"
+            "arg_ptr:%s\n"
+            "arg_end:%s\n"
+            "vectors:%lu\n"
+            "process env vector len:%lu\n",
+            process,
+            argmax,
+            env_res,
+            nargs,
+            procargs,
+            arg_ptr,
+            arg_end,
+            vector_size(vector),
+            vector_size(process_env_v)
+            );
   }
   if (procargs != NULL) {
     free(procargs);

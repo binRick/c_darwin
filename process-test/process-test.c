@@ -168,15 +168,19 @@ TEST t_process_env(void){
 }
 
 
-TEST t_process_port(void){
-  int PORT = 4911;
+TEST t_process_port(void *PORT){
+  const char HOST[] = "127.0.0.1";
 
-  connect_kitty_port(PORT);
+  connect_kitty_port(HOST, (int)PORT);
   PASS();
 }
 
+
 SUITE(s_process_port){
-  RUN_TEST(t_process_port);
+  const int DEFAULT_PORT = 12321;
+  int       PORT         = DEFAULT_PORT;
+
+  RUN_TESTp(t_process_port, (void *)PORT);
   PASS();
 }
 SUITE(s_process){

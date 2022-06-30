@@ -50,7 +50,7 @@ void AXWindowSetPosition(AXUIElementRef window, CGPoint position);
 CGSize AXWindowGetSize(AXUIElementRef window);
 void AXWindowSetSize(AXUIElementRef window, CGSize size);
 void MoveWindow(CFDictionaryRef window, void *ctxPtr);
-int GetWindowsQty(void);
+int get_windows_qty(void);
 int get_front_window_pid(void);
 
 ///////////////////////////////////////////////////

@@ -23,7 +23,7 @@ static inline int logger_Update(){
       info.processName       = processName;
       err                    = GetProcessInformation(&psn, &info);
       if (err == noErr) {
-        sprintf(require(logger)->Name, stringfn_trim(strdup(processName)));
+        //sprintf(require(logger)->Name, stringfn_trim(strdup(processName)));
         GetProcessPID(&psn, &(require(logger)->PID));
       }
     }

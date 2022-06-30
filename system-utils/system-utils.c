@@ -1,10 +1,25 @@
 #include "system-utils.h"
 #include <Availability.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <dirent.h>
+#include <getopt.h>
+#include <IOKit/IOKitLib.h>
 #include <libproc.h>
+#include <mach/mach.h>
+#include <pwd.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string.h>
+#include <sys/queue.h>
+#include <sys/statvfs.h>
+#include <sys/sysctl.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
+#include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
 
@@ -378,4 +393,45 @@ char *osdep_get_cwd(int fd) {
     return(wd);
   }
   return(NULL);
+}
+
+
+static const struct {
+  const char *ctls;
+  const char *names;
+} values[] = {
+  { "hw.model",                 "Model"     }, /* MODEL    */
+  { "machdep.cpu.brand_string", "Processor" }, /* CPU       */
+  { "hw.memsize",               "Memory"    }, /* MEM       */
+  { "kern.ostype",              "OS"        }, /* OSTYPE   */
+  { "kern.osrelease",           "Release"   }, /* OSREL    */
+  { "kern.hostname",            "Hostname"  }, /* HOSTNAME */
+};
+
+
+static void get_mem(void) {
+  size_t                 len;
+  mach_port_t            myHost;
+  vm_statistics64_data_t vm_stat;
+  vm_size_t              pageSize = 4096; /* set to 4k default */
+  unsigned int           count    = HOST_VM_INFO64_COUNT;
+  kern_return_t          ret;
+
+  myHost = mach_host_self();
+  uint64_t value64;
+
+  len = sizeof(value64);
+
+  sysctlbyname(values[2].ctls, &value64, &len, NULL, 0);
+  if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS) {
+    if ((ret = host_statistics64(myHost, HOST_VM_INFO64, (host_info64_t)&
+                                 vm_stat, &count) == KERN_SUCCESS)) {
+      printf(RED "%s    : "NOR "%llu MB of %.f MB\n",
+             values[2].names,
+             (uint64_t)(vm_stat.active_count +
+                        vm_stat.inactive_count +
+                        vm_stat.wire_count) * pageSize >> 20,
+             value64 / 1e+06);
+    }
+  }
 }

@@ -3,11 +3,10 @@
 #ifndef LOGLEVEL
 #define LOGLEVEL                       DEFAULT_LOGLEVEL
 #endif
-#include "app-utils.h"
-#include "submodules/greatest/greatest.h"
-#include "submodules/log.h/log.h"
-#include "window-utils.h"
-
+#include "app-utils/app-utils.h"
+#include "greatest/greatest.h"
+#include "log.h/log.h"
+#include "window-utils/window-utils.h"
 
 APP_AUTHORIZATION_TESTS
 
@@ -37,11 +36,20 @@ TEST t_windows_search(void *NAME){
 }
 
 
+TEST t_authorized_tests(void){
+  authorized_test_t *authorized_test_results = execute_authorization_tests();
+
+  for (int i = 0; i < sizeof(*authorized_test_results) / sizeof((authorized_test_results)[0]); i++) {
+    ASSERT_EQ(authorized_test_results[i].authorized, true);
+  }
+}
+
+
 TEST t_windows_qty(void){
-  int qty = GetWindowsQty();
+  int qty = get_windows_qty();
 
   ASSERT_GT(qty, 1);
-  printf("GetWindowsQty:%d\n", qty);
+  printf("get_windows_qty:%d\n", qty);
   PASS();
 }
 
@@ -59,6 +67,7 @@ GREATEST_MAIN_DEFS();
 int main(int argc, char **argv) {
   (void)argc; (void)argv;
   GREATEST_MAIN_BEGIN();
+  RUN_TEST(t_authorized_tests);
   RUN_SUITE(s_authorized);
   RUN_SUITE(s_windows);
 

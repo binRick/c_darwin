@@ -120,32 +120,12 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   foundAppWindow = NULL;
   for (i = 0; i < CFArrayGetCount(appWindowList); i++) {
     appWindow = CFArrayGetValueAtIndex(appWindowList, i);
-    if (_AXUIElementGetWindow) {
-      _AXUIElementGetWindow(appWindow, &actualWindowId);
-      if (actualWindowId == targetWindowId) {
-        foundAppWindow = appWindow;
-        break;
-      } else {
-        continue;
-      }
-    } else {
-      AXUIElementCopyAttributeValue(
-        appWindow, kAXTitleAttribute, (CFTypeRef *)&actualWindowTitle
-        );
-      if (!actualWindowTitle
-          || CFStringCompare(targetWindowName, actualWindowTitle, 0) != 0) {
-        continue;
-      }
-      actualPosition = AXWindowGetPosition(appWindow);
-      if (!CGPointEqualToPoint(targetPosition, actualPosition)) {
-        continue;
-      }
-      actualSize = AXWindowGetSize(appWindow);
-      if (!CGSizeEqualToSize(targetSize, actualSize)) {
-        continue;
-      }
+    _AXUIElementGetWindow(appWindow, &actualWindowId);
+    if (actualWindowId == targetWindowId) {
       foundAppWindow = appWindow;
       break;
+    } else {
+      continue;
     }
   }
   CFRelease(app);
@@ -202,7 +182,7 @@ void AXWindowSetSize(AXUIElementRef window, CGSize size) {
 }
 
 
-int GetWindowsQty(void){
+int get_windows_qty(void){
   int        qty        = -1;
   CFArrayRef windowList = CGWindowListCopyWindowInfo(
     (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),

