@@ -15,6 +15,7 @@ keylogger_db_dirs = [
   inc,
 ]
 keylogger_db_deps = [
+  pasteboard_dep,
   active_app_dep,
   process_dep,
   c_stringfn_dep,

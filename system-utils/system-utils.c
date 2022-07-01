@@ -1,14 +1,28 @@
 #include "system-utils.h"
+#include <ApplicationServices/ApplicationServices.h>
 #include <Availability.h>
+#include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreGraphics/CoreGraphics.h>
 #include <dirent.h>
 #include <getopt.h>
+#include <IOKit/graphics/IOFramebufferShared.h>
+#include <IOKit/graphics/IOGraphicsInterface.h>
+#include <IOKit/Graphics/IOGraphicsLib.h>
+#include <IOKit/IOCFPlugIn.h>
 #include <IOKit/IOKitLib.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/IOReturn.h>
+#include <IOKit/serial/IOSerialKeys.h>
+#include <IOKit/usb/IOUSBLib.h>
+#include <IOKit/usb/USBSpec.h>
 #include <libproc.h>
 #include <mach/mach.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +35,10 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
+CGDirectDisplayID get_display_id(uint32_t id);
+CGDirectDisplayID get_current_display_id();
 
 static const struct {
   const char *ctls;
@@ -34,6 +51,262 @@ static const struct {
   { "kern.osrelease",           "Release"   },
   { "kern.hostname",            "Hostname"  },
 };
+
+
+size_t get_devices_count(){
+  IOHIDManagerRef mgr;
+  int             i;
+
+  mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+  IOHIDManagerSetDeviceMatching(mgr, NULL);
+  IOHIDManagerOpen(mgr, kIOHIDOptionsTypeNone);
+
+  CFSetRef device_set = IOHIDManagerCopyDevices(mgr);
+
+  CFIndex  num_devices = CFSetGetCount(device_set);
+
+  return(num_devices);
+/*
+ * IOHIDDeviceRef *device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
+ *
+ * CFSetGetValues(device_set, (const void **)device_array);
+ *
+ *  //printf("got %ld devices\n", num_devices);
+ * printf("mac-hid-dump:\n");
+ *
+ * for (i = 0; i < num_devices; i++) {
+ *  IOHIDDeviceRef dev = device_array[i];
+ *  wchar_t        str1[256], str2[256];
+ *
+ *  get_manufacturer_string(dev, str1, sizeof(str1));
+ *  get_product_string(dev, str2, sizeof(str2));
+ *  printf("%04hX %04hX: %ls - %ls\n",
+ *         get_vendor_id(dev), get_product_id(dev), str1, str2);
+ *
+ *  CFDataRef cfprop = (CFDataRef)IOHIDDeviceGetProperty(dev,
+ *                                                       CFSTR(kIOHIDReportDescriptorKey));
+ *  printf("DESCRIPTOR:\n  ");
+ *  uint8_t pbuf[1024];
+ *  if (cfprop != NULL) {
+ *    long len = CFDataGetLength(cfprop);
+ *    CFDataGetBytes(cfprop, CFRangeMake(0, len), pbuf);
+ *    for ( int i = 0; i < len; i++) {
+ *      printf("%02x ", pbuf[i]);
+ *      printf((i % 16 == 15) ? "\n  " : " ");
+ *    }
+ *    printf("\n  (%ld bytes)\n", len);
+ *  }
+ * }
+ *
+ */
+}
+
+
+CGImageRef display_screen_snapshot(void) {
+  CGDirectDisplayID current_display = get_current_display_id();
+
+  return(CGDisplayCreateImage(current_display));
+}
+
+
+/*
+ * screen_size get_desktop_sizes(){
+ * CGDirectDisplayID display_buffer[9];
+ * unsigned int      num_displays;
+ *
+ * CGGetActiveDisplayList(9, display_buffer, &num_displays);
+ *
+ * struct screen_sizes ret = {
+ *  .len = num_displays,
+ *  .arr = malloc(sizeof(struct screen_size) * num_displays),
+ * };
+ *
+ * for (int i = 0; i < num_displays; i++) {
+ *  CGRect display_bounds = CGDisplayBounds(display_buffer[i]);
+ *  ret.arr[i] = (struct screen_size) {
+ *    .x  = display_bounds.origin.x,
+ *    .y  = display_bounds.origin.y,
+ *    .dx = display_bounds.size.width,
+ *    .dy = display_bounds.size.height,
+ *  };
+ * }
+ *
+ * return(ret);
+ * }
+ */
+
+
+/*
+ * pid_stats_t * get_pid_stats(const int pid){
+ * pid_stats_t *ps = malloc(sizeof(pid_stats_t));
+ *
+ * ps->connections_qty     = 0;
+ * ps->open_files_qty      = 0;
+ * ps->fds_qty             = 0;
+ * ps->sockets_qty         = 0;
+ * ps->listening_ports_qty = 0;
+ *
+ * if (pid == 0) {
+ *  printf(INVALID_PID, pid);
+ *  return(ps);
+ * }
+ *
+ * int bufferSize = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, 0, 0);
+ *
+ * if (bufferSize == -1) {
+ *  printf(UNABLE_TO_GET_PROC_FDS, pid);
+ *  return(ps);
+ * }
+ *
+ * // Get the list of open FDs
+ * struct proc_fdinfo *procFDInfo = (struct proc_fdinfo *)malloc(bufferSize);
+ *
+ * if (!procFDInfo) {
+ *  printf(OUT_OF_MEMORY, bufferSize);
+ *  return(ps);
+ * }
+ * proc_pidinfo(pid, PROC_PIDLISTFDS, 0, procFDInfo, bufferSize);
+ * ps->fds_qty = bufferSize / PROC_PIDLISTFD_SIZE;
+ * for (int i = 0; i < ps->fds_qty; i++) {
+ *  if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_VNODE) {
+ *    struct vnode_fdinfowithpath vnodeInfo;
+ *    int                         bytesUsed = proc_pidfdinfo(pid, procFDInfo[i].proc_fd, PROC_PIDFDVNODEPATHINFO, &vnodeInfo, PROC_PIDFDVNODEPATHINFO_SIZE);
+ *    if (bytesUsed == PROC_PIDFDVNODEPATHINFO_SIZE) {
+ *      ps->open_files_qty++;
+ *      if (DEBUG_PID_STATS) {
+ *        printf(OPEN_FILE, vnodeInfo.pvip.vip_path);
+ *      }
+ *    }
+ *  } else if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_SOCKET) { // A socket is open
+ *    ps->sockets_qty++;
+ *    struct socket_fdinfo socketInfo;
+ *    int                  bytesUsed = proc_pidfdinfo(pid, procFDInfo[i].proc_fd, PROC_PIDFDSOCKETINFO, &socketInfo, PROC_PIDFDSOCKETINFO_SIZE);
+ *    if (bytesUsed == PROC_PIDFDSOCKETINFO_SIZE) {
+ *      if (socketInfo.psi.soi_family == AF_INET && socketInfo.psi.soi_kind == SOCKINFO_TCP) {
+ *        int localPort  = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_lport);
+ *        int remotePort = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_fport);
+ *        if (remotePort == 0) { // Remote port will be 0 when the FD represents a listening socket
+ *          ps->listening_ports_qty++;
+ *          if (DEBUG_PID_STATS) {
+ *            printf(LISTENING_ON_PORT, localPort);
+ *          }
+ *        } else { // Remote port will be non-0 when the FD represents communication with a remote socket
+ *          ps->connections_qty++;
+ *          if (DEBUG_PID_STATS) {
+ *            printf(OPEN_SOCKET, localPort, remotePort);
+ *          }
+ *        }
+ *      }
+ *    }
+ *  }
+ * }
+ *
+ * return(ps);
+ * }
+ */
+
+
+/*
+ * int take_snapshot_darwin(const char *img_path, Options o) {
+ * static char cmd[256];
+ *
+ * if (sprintf(cmd,
+ *            "screencapture -x -l%s -o -m %s &> /dev/null",
+ *            o.window_id, img_path) < 0) {
+ *  return(-1);
+ * }
+ *
+ * system_exec(cmd, o);
+ *
+ * if (!o.fullscreen) {
+ *  if (sprintf(cmd,
+ *              "convert %s -background white -quiet -flatten +matte -crop +0+22 -crop +4+0 -crop -4-0 +repage %s &> /dev/null",
+ *              img_path, img_path) < 0) {
+ *    return(-1);
+ *  }
+ * }
+ *
+ * system_exec(cmd, o);
+ *
+ * return(0);
+ * }
+ */
+
+
+double getCPUTime( ){
+#if defined (_POSIX_TIMERS) && (_POSIX_TIMERS > 0)
+  /* Prefer high-res POSIX timers, when available. */
+  {
+    clockid_t       id;
+    struct timespec ts;
+#if _POSIX_CPUTIME > 0
+    /* Clock ids vary by OS.  Query the id, if possible. */
+    if (clock_getcpuclockid(0, &id) == -1)
+#endif
+#if defined (CLOCK_PROCESS_CPUTIME_ID)
+    /* Use known clock id for AIX, Linux, or Solaris. */
+    id = CLOCK_PROCESS_CPUTIME_ID;
+#elif defined (CLOCK_VIRTUAL)
+    /* Use known clock id for BSD or HP-UX. */
+    id = CLOCK_VIRTUAL;
+#else
+    id = (clockid_t)-1;
+#endif
+    if (id != (clockid_t)-1 && clock_gettime(id, &ts) != -1) {
+      return((double)ts.tv_sec +
+             (double)ts.tv_nsec / 1000000000.0);
+    }
+  }
+#endif
+
+#if defined (RUSAGE_SELF)
+  {
+    struct rusage rusage;
+    if (getrusage(RUSAGE_SELF, &rusage) != -1) {
+      return((double)rusage.ru_utime.tv_sec +
+             (double)rusage.ru_utime.tv_usec / 1000000.0);
+    }
+  }
+#endif
+
+#if defined (CLOCKS_PER_SEC)
+  {
+    clock_t cl = clock( );
+    if (cl != (clock_t)-1) {
+      return((double)cl / (double)CLOCKS_PER_SEC);
+    }
+  }
+#endif
+  return(-1);                   /* Failed. */
+} /* getCPUTime */
+
+
+double getCPUUsage() {
+  static double  lastT       = -1.0;
+  static double  lastCPUTime = -1.0;
+  struct timeval tv;
+  double         nowCPUTime;
+  double         nowT;
+  double         percent = 0.0;
+
+  if (gettimeofday(&tv, NULL) != 0) {
+    return(-1);
+  }
+  nowCPUTime = getCPUTime();
+  if (nowCPUTime < 0) {
+    return(-2);
+  }
+  nowT = (double)tv.tv_sec + (double)(tv.tv_usec / 1000000.0);
+  if (lastT <= 0) {
+    lastT       = nowT;
+    lastCPUTime = nowCPUTime;
+    return(0);
+  }
+  percent     = (nowCPUTime - lastCPUTime) / (nowT - lastT);
+  lastT       = nowT;
+  lastCPUTime = nowCPUTime;
+  return(percent);
+}
 
 
 uint32_t os_get_core_count() {
@@ -91,6 +364,65 @@ DarwinMouseLocation_t * get_darwin_mouse_location(){
   //return(l);
 }
 
+
+static const char *display_name_from_displayID(CGDirectDisplayID displayID, CFStringRef countryCode) {
+  char *displayProductName = 0;
+
+  // get a CFDictionary with a key for the preferred name of the display
+  CFDictionaryRef displayInfo = IODisplayCreateInfoDictionary(CGDisplayIOServicePort(displayID), kIODisplayOnlyPreferredName);
+  // retrieve the display product name
+  CFStringRef     displayProductNameKey = CFStringCreateWithCString(kCFAllocatorDefault, kDisplayProductName, kCFStringEncodingUTF8);
+  CFDictionaryRef localizedNames        = CFDictionaryGetValue(displayInfo, displayProductNameKey);
+
+  CFRelease(displayProductNameKey);
+  // use the first name
+  if (CFDictionaryGetCount(localizedNames) > 0) {
+    if (!countryCode) {
+      countryCode = CFSTR("en_US");
+    }
+    CFStringRef displayProductNameValue = (CFStringRef)CFDictionaryGetValue(localizedNames, countryCode);
+    displayProductName = CFStringCopyUTF8String(displayProductNameValue);
+    CFRelease(displayProductNameValue);
+  }
+
+  CFRelease(localizedNames);
+
+  return(displayProductName);
+}
+
+
+CGDirectDisplayID get_current_display_id() {
+  // displays[] Quartz display ID's
+  CGDirectDisplayID *displays;
+  CGDisplayCount    displayCount;
+
+  // get number of active displays
+  if (CGGetActiveDisplayList(0, NULL, &displayCount) != CGDisplayNoErr) {
+    fprintf(stderr, "%s: Could not get the number of active displays.\n", __func__);
+    return(-1);
+  }
+
+  // allocate enough memory to hold all the display IDs we have
+  displays = calloc((size_t)displayCount, sizeof(CGDirectDisplayID));
+
+  // get the list of all active displays
+  if (CGGetActiveDisplayList(displayCount, displays, &displayCount) != CGDisplayNoErr) {
+    fprintf(stderr, "%s: Could not get active display list.\n", __func__);
+    return(-1);
+  }
+
+  CGDirectDisplayID mainDisplay             = CGMainDisplayID();
+  const char        *mainDisplayProductName = display_name_from_displayID(mainDisplay, NULL);
+
+  printf("%s: Main Display ID: %d has product name: %s.\n", __func__, mainDisplay, mainDisplayProductName);
+
+  for (int i = 0; i < displayCount; i++) {
+    const char *displayProductName = display_name_from_displayID(displays[i], NULL);
+    printf("%s: Display ID: %d has product name: %s.\n", __func__, displays[i], displayProductName);
+  }
+
+  return(mainDisplay);
+}
 
 struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID display_id){
   struct DarwinDisplayResolution *res = malloc(sizeof(struct DarwinDisplayResolution));
@@ -409,6 +741,20 @@ static const struct {
 };
 
 
+void model(){
+  size_t len = 0;
+
+  if (!sysctlbyname("hw.model", NULL, &len, NULL, 0) && len) {
+    char *model = malloc(len * sizeof(char));
+    if (!sysctlbyname("hw.model", model, &len, NULL, 0)) {
+      fprintf(stderr, "\nlen:%lu\n", len);
+      fprintf(stderr, "\nmodel:%s\n", model);
+    }
+    free(model);
+  }
+}
+
+
 static void get_mem(void) {
   size_t                 len;
   mach_port_t            myHost;
@@ -435,3 +781,4 @@ static void get_mem(void) {
     }
   }
 }
+

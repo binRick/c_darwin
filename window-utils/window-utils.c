@@ -134,6 +134,27 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
 } /* AXWindowFromCGWindow */
 
 
+int is_full_screen(void){
+  CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
+  CFIndex    i, n;
+
+  for (i = 0, n = CFArrayGetCount(windows); i < n; i++) {
+    CFDictionaryRef windict  = CFArrayGetValueAtIndex(windows, i);
+    CFNumberRef     layernum = CFDictionaryGetValue(windict, kCGWindowLayer);
+    if (layernum) {
+      int layer;
+      CFNumberGetValue(layernum, kCFNumberIntType, &layer);
+      if (layer == -1) {
+        CFRelease(windows);
+        return(1);
+      }
+    }
+  }
+  CFRelease(windows);
+  return(0);
+}
+
+
 void AXWindowGetValue(AXUIElementRef window,
                       CFStringRef    attrName,
                       void           *valuePtr) {
@@ -365,18 +386,144 @@ int get_front_window_pid(void){
 }
 
 
-char *cstring_from_CFString(CFStringRef cf_string) {
-  CFIndex length = CFStringGetLength(cf_string);
-  CFIndex size   = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
-  CFIndex used_size;
-  CFRange range   = CFRangeMake(0, length);
-  char    *string = malloc(size);
+CGWindowID CGWindowWithInfo(AXUIElementRef window, CGPoint location) {
+  AXError    error;
+  CGWindowID windowID = kCGNullWindowID;
 
-  CFStringGetBytes(
-    cf_string, range, kCFStringEncodingUTF8, '?', false, (unsigned char *)string,
-    size - 1, &used_size);
-  string[used_size] = '\0';
-  return(string);
+#ifndef APP_STORE
+  error = _AXUIElementGetWindow(window, &windowID);
+#else
+  pid_t pid;
+  error = AXUIElementGetPid(window, &pid);
+  if (error != kAXErrorSuccess) {
+    return(kCGNullWindowID);
+  }
+
+  CFStringRef title = NULL;
+  error = AXUIElementGetTitle(window, &title);
+
+  CGRect frame;
+  error = AXUIElementGetFrame(window, &frame);
+  if (error != kAXErrorSuccess) {
+    return(kCGNullWindowID);
+  }
+
+  CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+                                                     kCGNullWindowID);
+  if (windowList == NULL) {
+    return(kCGNullWindowID);
+  }
+
+  for (CFIndex i = 0; i < CFArrayGetCount(windowList); i++) {
+    CFDictionaryRef window = CFArrayGetValueAtIndex(windowList, i);
+
+    int             windowPID;
+    CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowOwnerPID),
+                     kCFNumberIntType,
+                     &windowPID);
+
+    if (windowPID != pid) {
+      continue;
+    }
+
+    CGRect windowBounds;
+    CGRectMakeWithDictionaryRepresentation(CFDictionaryGetValue(window, kCGWindowBounds),
+                                           &windowBounds);
+
+    if (!CGSizeEqualToSize(frame.size, windowBounds.size)) {
+      continue;
+    }
+
+    if (!CGRectContainsPoint(windowBounds, location)) {
+      continue;
+    }
+
+    CFStringRef windowName = CFDictionaryGetValue(window, kCGWindowName);
+    if (windowName == NULL || title == NULL || CFStringCompare(windowName, title, 0) == kCFCompareEqualTo) {
+      CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowNumber),
+                       kCGWindowIDCFNumberType,
+                       &windowID);
+      break;
+    }
+  }
+
+  CFRelease(windowList);
+#endif
+
+  return(windowID);
+} /* CGWindowWithInfo */
+
+
+CGRect CGWindowGetBounds(CGWindowID windowID) {
+  CGRect     bounds;
+
+  CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow,
+                                                windowID);
+
+  if (CFArrayGetCount(array) != 1) {
+    return(CGRectMake(NAN, NAN, NAN, NAN));
+  }
+
+  CFDictionaryRef dict    = CFArrayGetValueAtIndex(array, 0);
+  CFDictionaryRef _bounds = CFDictionaryGetValue(dict, kCGWindowBounds);
+
+  CGRectMakeWithDictionaryRepresentation(_bounds, &bounds);
+
+  CFRelease(array);
+
+  return(bounds);
+}
+
+
+void _set_window_size(AXUIElementRef ax_window, CGSize *size) {
+  AXValueRef ax_size = AXValueCreate(kAXValueCGSizeType, size);
+
+  AXUIElementSetAttributeValue(ax_window, kAXSizeAttribute, ax_size);
+}
+
+
+void _set_window_position(AXUIElementRef ax_window, CGPoint *position) {
+  AXValueRef ax_position = AXValueCreate(kAXValueCGPointType, position);
+  AXError    error       = AXUIElementSetAttributeValue(ax_window, kAXPositionAttribute, ax_position);
+}
+
+
+CGWindowID CGWindowAtPosition(CGPoint position) {
+  CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+                                                     kCGNullWindowID);
+
+  if (windowList == NULL) {
+    return(kCGNullWindowID);
+  }
+
+  CGWindowID windowID = kCGNullWindowID;
+
+  for (CFIndex i = 0; i < CFArrayGetCount(windowList); i++) {
+    CFDictionaryRef window = CFArrayGetValueAtIndex(windowList, i);
+
+    int             layer;
+    CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowLayer),
+                     kCFNumberIntType,
+                     &layer);
+    if (layer != 0) {
+      continue;
+    }
+
+    CGRect windowBounds;
+    CGRectMakeWithDictionaryRepresentation(CFDictionaryGetValue(window, kCGWindowBounds),
+                                           &windowBounds);
+
+    if (CGRectContainsPoint(windowBounds, position)) {
+      CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowNumber),
+                       kCGWindowIDCFNumberType,
+                       &windowID);
+      break;
+    }
+  }
+
+  CFRelease(windowList);
+
+  return(windowID);
 }
 
 

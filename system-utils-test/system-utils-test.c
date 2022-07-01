@@ -45,6 +45,17 @@ TEST t_display_count(void){
 }
 
 
+TEST t_devices_count(void){
+  size_t qty = get_devices_count();
+
+  fprintf(stdout,
+          "devices qty:%lu\n",
+          qty
+          );
+  PASS();
+}
+
+
 TEST t_display_size(void){
   CGDirectDisplayID              display_id = get_display_id(0);
   struct DarwinDisplayResolution *res       = get_display_resolution(display_id);
@@ -70,6 +81,11 @@ SUITE(s_display_id){
   PASS();
 }
 
+SUITE(s_devices_count){
+  RUN_TEST(t_devices_count);
+  PASS();
+}
+
 
 SUITE(s_display_size){
   RUN_TEST(t_display_size);
@@ -84,6 +100,7 @@ int main(int argc, char **argv) {
   RUN_SUITE(s_display_id);
   RUN_SUITE(s_display_size);
   RUN_SUITE(s_display_count);
+  RUN_SUITE(s_devices_count);
   GREATEST_MAIN_END();
   return(0);
 }

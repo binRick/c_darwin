@@ -6,14 +6,15 @@
 ////////////////////////////////////////////////////////
 #include <assert.h>
 ////////////////////////////////////////////////////////
-#include "active-app.h"
-#include "app-utils.h"
+#include "active-app/active-app.h"
+#include "app-utils/app-utils.h"
 #include "greatest/greatest.h"
-#include "keylogger-db.h"
+#include "keylogger-db/keylogger-db.h"
 #include "log.h/log.h"
-#include "system-utils.h"
-#include "window-utils-test.h"
-#include "window-utils.h"
+#include "pasteboard/pasteboard.h"
+#include "system-utils/system-utils.h"
+#include "window-utils-test/window-utils-test.h"
+#include "window-utils/window-utils.h"
 ////////////////////////////////////////////////////////
 static bool exited = false, was_icanon = false;
 static int                focused_pid = 0, windows_qty = 0, display_qty = 0;
@@ -21,7 +22,7 @@ static struct screen_size ss = { 0, 0, 0, 0 };
 static struct sqldbal_db  *db;
 static unsigned long      last_qty_checks = 0, last_qty_check_ts = 0, last_clipboard_check_ts = 0,
                           check_qty_interval_ms = 1000,
-                          check_clipboard_interval_ms = 25000;
+                          check_clipboard_interval_ms = 2000;
 static size_t            recorded_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
 static struct Vector     *pids_v;
 static clipboard_event_t CLIPBOARD_EVENT;
@@ -184,11 +185,17 @@ int keylogger_select_db(void){
   return(0);
 }
 
-static size_t updates_qty = 0;
-static bool   initialized = false;
+static size_t        updates_qty = 0;
+static bool          initialized = false;
+static unsigned long last_ts     = 0;
 
 
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
+  unsigned long cur_ts = timestamp();
+
+  if (last_ts == 0) {
+    last_ts = 0;
+  }
   if (initialized == false) {
     initialized = true;
     was_icanon  = (seticanon(false, false) == true) ? true : false;
@@ -200,12 +207,12 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     atexit(__at_exit);
   }
   db_statement_t db_st                 = NEW_DB_STATEMENT();
-  long long      cur_ts                = timestamp();
-  unsigned long  updated_dur           = cur_ts - last_qty_check_ts;
+  unsigned long  updated_dur           = cur_ts - last_ts;
   unsigned long  clipboard_updated_dur = cur_ts - last_clipboard_check_ts;
 
   if (clipboard_updated_dur > check_clipboard_interval_ms) {
-    CLIPBOARD_EVENT         = encode_cliboard_event(pbpaste_exec());
+    CLIPBOARD_EVENT = encode_cliboard_event(read_clipboard());
+//    CLIPBOARD_EVENT         = encode_cliboard_event(pbpaste_exec());
     last_clipboard_check_ts = cur_ts;
   }
   if (updated_dur > check_qty_interval_ms) {
@@ -219,11 +226,11 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     last_qty_check_ts = timestamp();
     //focused_t *fp = get_focused_process();
   }
-  if (updated_dur > 50) {
+  if (updated_dur > 5) {
     fprintf(stdout,
             AC_CLS
-            "\n\t  | updated ms:    |" AC_BOLD AC_UNDERLINE "%lu" AC_NOUNDERLINE AC_PLAIN "|"
             "\n\t  | ts:            |%lu|"
+            "\n\t  | updated ms:    |" AC_BOLD AC_UNDERLINE "%lu" AC_NOUNDERLINE AC_PLAIN "|"
             "\n\t  | keycode:       |%lu|"
             "\n\t  | action:        |%s|"
             "\n\t  | key:           |%s|"
@@ -241,8 +248,7 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             "|" AC_ITALIC AC_YELLOW "%.30s" AC_RESETALL AC_PLAIN " " AC_UNDERLINE "..." AC_NOUNDERLINE
             "|"
             "%s",
-            updated_dur,
-            LOGGED_EVENT->ts,
+            LOGGED_EVENT->ts, updated_dur,
             LOGGED_EVENT->key_code,
             LOGGED_EVENT->action,
             LOGGED_EVENT->key_string,
@@ -327,6 +333,7 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
      * log_debug("screen size:x:%d,y:%d,w:%d,h:%d", ss.x, ss.y, ss.w, ss.h);
      */
   }
+  last_ts = cur_ts;
   return(0);
 } /* keylogger_insert_db_row */
 

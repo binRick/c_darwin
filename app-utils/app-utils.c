@@ -2,6 +2,9 @@
 #define DEBUG_MODE_ENABLED    false
 #include "app-utils/app-utils.h"
 #include "timestamp/timestamp.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <CoreVideo/CVPixelBuffer.h>
+#include <stdbool.h>
 ///////////////////////////////////////////////////////////////////////
 static bool is_authorized_for_screen_recording();
 static bool is_authorized_for_accessibility();
@@ -14,18 +17,36 @@ static authorized_tests_t authorized_tests = {
       .name          = "accessibility",
       .test_function = (is_authorized_for_accessibility),
       .authorized    = false,
-      .ts            = false,
+      .ts            = 0,
     },
     [AUTHORIZED_SCREEN_RECORDING] = {
       .id            = AUTHORIZED_SCREEN_RECORDING,
       .name          = "screen_recording",
       .test_function = (is_authorized_for_screen_recording),
       .authorized    = false,
-      .ts            = false,
+      .ts            = 0,
     },
   },
 };
+///////////////////////////////////////////////////////////////////////
 
+
+bool request_accessibility_permissions() {
+  bool                       result          = false;
+  CFDictionaryKeyCallBacks   key_callbacks   = kCFTypeDictionaryKeyCallBacks;
+  CFDictionaryValueCallBacks value_callbacks = kCFTypeDictionaryValueCallBacks;
+  CFStringRef                key             = kAXTrustedCheckOptionPrompt;
+  CFBooleanRef               value           = kCFBooleanTrue;
+  CFDictionaryRef            options         = CFDictionaryCreate(
+    kCFAllocatorDefault, (CFTypeRef *)&key, (CFTypeRef *)&value, 1,
+    &key_callbacks, &value_callbacks);
+
+  result = AXIsProcessTrustedWithOptions(options);
+  CFRelease(key);
+  CFRelease(value);
+  CFRelease(options);
+  return(result);
+}
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -61,18 +82,29 @@ authorized_test_t *execute_authorization_tests(){
 }
 
 
+bool request_screen_recording_permissions() {
+  CGDisplayStreamRef stream = NULL;
+
+  stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, kCVPixelFormatType_32BGRA, nil,
+                                 ^ (CGDisplayStreamFrameStatus status, uint64_t displayTime, IOSurfaceRef frameSurface,
+                                    CGDisplayStreamUpdateRef updateRef){});
+  if (stream == NULL) {
+    return(false);
+  }
+  CFRelease(stream);
+  return(true);
+}
+
+
 static bool is_authorized_for_screen_recording() {
-  CGDisplayStreamFrameAvailableHandler handler = ^ (CGDisplayStreamFrameStatus status, uint64_t display_time, IOSurfaceRef frame_surface, CGDisplayStreamUpdateRef updateRef){
-    return;
-  };
-  CGDisplayStreamRef stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, 'BGRA', NULL, handler);
+  CGDisplayStreamFrameAvailableHandler handler = ^ (CGDisplayStreamFrameStatus status, uint64_t display_time, IOSurfaceRef frame_surface, CGDisplayStreamUpdateRef updateRef){ return; };
+  CGDisplayStreamRef                   stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, 'BGRA', NULL, handler);
 
   if (stream == NULL) {
     return(false);
-  } else {
-    CFRelease(stream);
-    return(true);
   }
+  CFRelease(stream);
+  return(true);
 }
 
 
@@ -117,13 +149,11 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   }
 
   value     = (char *)malloc(maxSize);
-  isSuccess = CFStringGetCString(
-    dictValue, value, maxSize, kCFStringEncodingUTF8
-    );
+  isSuccess = CFStringGetCString(dictValue, value, maxSize, kCFStringEncodingUTF8);
 
   if (DEBUG_MODE_ENABLED) {
     fprintf(stderr, "CFDictionaryCopyCString.......|'%s'->'%s'|\n", (char *)key, (char *)value);
   }
-  return((isSuccess) ? (value) : (NULL));
+  return((isSuccess ? value : NULL));
 }
 

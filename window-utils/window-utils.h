@@ -5,6 +5,7 @@
 #include "ansi-codes/ansi-codes.h"
 #include "app-utils.h"
 #include "c_stringfn/include/stringfn.h"
+#include "core-utils/core-utils.h"
 #include <assert.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>

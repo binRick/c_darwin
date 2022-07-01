@@ -17,7 +17,6 @@ pbpaste_deps = [
  c_fsio_dep,
  c_stringfn_dep,
  tiny_regex_c_dep,
- dbg_dep,
  ansi_utils_dep,
  c_eventemitter_dep,
  chan_dep,

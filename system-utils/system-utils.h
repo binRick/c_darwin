@@ -1,4 +1,5 @@
 #pragma once
+#include "core-utils/core-utils.h"
 #include <assert.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -20,7 +21,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
 ///////////////////////////
 typedef struct DarwinDisplaySize       DarwinDisplaySize;
 typedef struct DarwinMouseLocation_t   DarwinMouseLocation_t;
@@ -58,6 +58,7 @@ static void kernel(void);
 static void os(void);
 static void cpu(void);
 static void battery(void);
+size_t get_devices_count();
 
 uint32_t get_display_count();
 CGDirectDisplayID get_display_id(uint32_t id);

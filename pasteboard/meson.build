@@ -9,10 +9,12 @@ pasteboard_dirs = [
 pasteboard_deps = [
   core_utils_dep,
   c_stringfn_dep,
+  pbpaste_dep,
 ]
 
 pasteboard_link_args = [
   '-Wl,-framework,CoreFoundation',
+  '-Wl,-framework,IOKit',
 ]
 
 pasteboard_lib = static_library('pasteboard',
