@@ -242,17 +242,21 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     vector_push(ctx.downkeys_v, (int)keyCode);
   }
 
+  int focused_pid = (int)get_front_window_pid();
+
   keylogger_insert_db_row(&(logged_key_event_t){
-    .ts           = (uint64_t)TS,
-    .qty          = 1,
-    .key_code     = (unsigned long)keyCode,
-    .key_string   = (char *)strdup(ckc),
-    .action       = (char *)strdup(action),
-    .mouse_x      = (unsigned long)mouse_location.x,
-    .mouse_y      = (unsigned long)mouse_location.y,
-    .input_type   = input_type,
-    .downkeys_v   = ctx.downkeys_v,
-    .downkeys_csv = down_keys_csv()
+    .ts               = (uint64_t)TS,
+    .qty              = 1,
+    .key_code         = (unsigned long)keyCode,
+    .key_string       = (char *)strdup(ckc),
+    .action           = (char *)strdup(action),
+    .mouse_x          = (unsigned long)mouse_location.x,
+    .mouse_y          = (unsigned long)mouse_location.y,
+    .input_type       = input_type,
+    .downkeys_v       = ctx.downkeys_v,
+    .downkeys_csv     = down_keys_csv(),
+    .focused_pid      = focused_pid,
+    .active_window_id = (int)get_pid_window_id(focused_pid),
   });
 
   return(event);

@@ -5,6 +5,7 @@
 #include "ansi-codes/ansi-codes.h"
 #include "app-utils.h"
 #include "c_stringfn/include/stringfn.h"
+#include "c_vector/include/vector.h"
 #include "core-utils/core-utils.h"
 #include <assert.h>
 #include <ApplicationServices/ApplicationServices.h>
@@ -52,6 +53,8 @@ CGSize AXWindowGetSize(AXUIElementRef window);
 void AXWindowSetSize(AXUIElementRef window, CGSize size);
 void MoveWindow(CFDictionaryRef window, void *ctxPtr);
 int get_windows_qty(void);
+struct Vector *get_windows_ids(void);
 int get_front_window_pid(void);
+int get_pid_window_id(const int PID);
 
 ///////////////////////////////////////////////////

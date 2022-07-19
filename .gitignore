@@ -18,3 +18,8 @@ snapshot.jpg
 **/*.sqlite
 */*/*.sqlite
 */**/*.sqlite
+.utils
+.tmp
+.o
+a.png
+o

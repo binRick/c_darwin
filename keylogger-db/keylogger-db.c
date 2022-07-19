@@ -17,7 +17,7 @@
 #include "window-utils/window-utils.h"
 ////////////////////////////////////////////////////////
 static bool exited = false, was_icanon = false;
-static int                focused_pid = 0, windows_qty = 0, display_qty = 0;
+static int                windows_qty = 0, display_qty = 0;
 static struct screen_size ss = { 0, 0, 0, 0 };
 static struct sqldbal_db  *db;
 static unsigned long      last_qty_checks = 0, last_qty_check_ts = 0, last_clipboard_check_ts = 0,
@@ -26,6 +26,9 @@ static unsigned long      last_qty_checks = 0, last_qty_check_ts = 0, last_clipb
 static size_t            recorded_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
 static struct Vector     *pids_v;
 static clipboard_event_t CLIPBOARD_EVENT;
+static size_t            updates_qty = 0;
+static bool              initialized = false;
+static unsigned long     last_ts     = 0;
 #define ASSERT_SQLDB_RESULT()          \
   { do {                               \
       assert(rc == SQLDBAL_STATUS_OK); \
@@ -47,7 +50,7 @@ static clipboard_event_t CLIPBOARD_EVENT;
 
 
 void __at_exit(void){
-  if (exited) {
+  if (exited == true) {
     return(0);
   }
   exited = true;
@@ -87,6 +90,7 @@ CREATE TABLE IF NOT EXISTS events(\
 , display_qty INTEGER NOT NULL\
 , focused_pid INTEGER NOT NULL\
 , pids_qty INTEGER NOT NULL\
+, active_window_id INTEGER NOT NULL\
 )",
                           NULL,
                           NULL);
@@ -182,10 +186,6 @@ int keylogger_select_db(void){
   return(0);
 }
 
-static size_t        updates_qty = 0;
-static bool          initialized = false;
-static unsigned long last_ts     = 0;
-
 
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   unsigned long cur_ts = timestamp();
@@ -222,10 +222,8 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     windows_qty       = get_windows_qty();
     ss                = get_window_size();
     display_qty       = get_display_count();
-    focused_pid       = get_frontmost_application();
     pids_v            = get_all_processes();
     last_qty_check_ts = timestamp();
-    //focused_t *fp = get_focused_process();
   }
   if (updated_dur > 0) {
     fprintf(stdout,
@@ -240,8 +238,9 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             "\n\t  | # rows:        |%lu|"
             "\n\t  | table size:    |" AC_INVERSE "%s" AC_NOINVERSE "|"
             "\n\t  | # windows:     |%d|"
-            "\n\t  | # displays:    |%d|"
+            "\n\t  | active window: |%d|"
             "\n\t  | focused pid:   |%d|"
+            "\n\t  | # displays:    |%d|"
             "\n\t  | # pids:        |%lu|"
             "\n\t  | window size:   |x:%d|y:%d|w:%d|h:%d|"
             "\n\t  | mouse loc:     |x:%lu|y:%lu|"
@@ -259,8 +258,9 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             recorded_qty,
             bytes_to_string(table_size_bytes),
             windows_qty,
+            LOGGED_EVENT->active_window_id,
+            LOGGED_EVENT->focused_pid,
             display_qty,
-            focused_pid,
             vector_size(pids_v),
             ss.x, ss.y, ss.w, ss.h,
             LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y,
@@ -271,9 +271,9 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   for (size_t i = 0; i < LOGGED_EVENT->qty; i++) {
     db_st.rc = sqldbal_stmt_prepare(db,
                                     "INSERT INTO events\
-      (ts, key_code, key_string, action, mouse_x, mouse_y, input_type, windows_qty, display_qty, focused_pid, pids_qty) \
+      (ts, key_code, key_string, action, mouse_x, mouse_y, input_type, windows_qty, display_qty, focused_pid, pids_qty, active_window_id) \
                                     VALUES\
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
 ",
                                     -1,
                                     &db_st.stmt);
@@ -296,9 +296,11 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 8, display_qty);
     ASSERT_DB_STATEMENT(db_st);
-    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 9, focused_pid);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 9, LOGGED_EVENT->focused_pid);
     ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 10, vector_size(pids_v));
+    ASSERT_DB_STATEMENT(db_st);
+    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 11, LOGGED_EVENT->active_window_id);
     ASSERT_DB_STATEMENT(db_st);
     EXEC_AND_ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_last_insert_id(db, "events_id_seq", &db_st.inserted_id);
@@ -306,20 +308,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     db_st.rc = sqldbal_stmt_close(db_st.stmt);
     ASSERT_DB_STATEMENT(db_st);
     inserted_events_qty++;
-  }
-  if (DEBUG_LOGGED_EVENTS) {
-    fprintf(stderr,
-            AC_RESETALL "last recorded_qty check ts:%lu (%llums ago)" AC_RESETALL
-            "\n\t|%lu checks| %lu records|%s Database|"
-            "\n\t|pids:	%lu|"
-            "\n\t|windows:	%d|"
-
-            , last_qty_check_ts, (long long)(timestamp() - last_qty_check_ts),
-            last_qty_checks, recorded_qty,
-            bytes_to_string(table_size_bytes),
-            vector_size(pids_v),
-            windows_qty
-            );
   }
   last_ts = cur_ts;
   return(0);
@@ -333,23 +321,3 @@ int keylogger_close_db(void){
   ASSERT_DB_STATEMENT(db_st);
   return(0);
 }
-
-
-int keylogger_db_lifecycle(void){
-  assert(keylogger_init_db() == 0);
-  assert(keylogger_create_db() == 0);
-  assert(keylogger_insert_db_row(&(logged_key_event_t){
-    .ts         = timestamp(),
-    .qty        = 8,
-    .key_code   = 100,
-    .key_string = "xxxxxxxx",
-    .action     = "YYY",
-    .mouse_x    = 123,
-    .mouse_y    = 222,
-    .input_type = "DUMMY",
-  }) == 0);
-  assert(keylogger_select_db() == 0);
-  assert(keylogger_close_db() == 0);
-  return(0);
-} /* t_sqldb */
-

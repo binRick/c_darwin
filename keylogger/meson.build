@@ -20,6 +20,7 @@ keylogger_deps = [
  c_timer_dep,
  debug_memory_dep,
  djbhash_dep,
+ window_utils_dep,
 ]
 
 

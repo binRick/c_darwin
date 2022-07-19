@@ -4,6 +4,7 @@
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "c_vector/include/vector.h"
 #include "djbhash/src/djbhash.h"
 #include "fsio.h"
 #include "kitty/kitty.h"
@@ -12,10 +13,7 @@
 #include "str-replace.h"
 #include "stringbuffer.h"
 #include "stringfn.h"
-#include "stringfn.h"
 #include "tiny-regex-c/re.h"
-#include "vector.h"
-//const char KITTY_GET_COLORS_CMD[] = "\x1bP@kitty-cmd{\"cmd\":\"get-colors\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
 //////////////////////////////////////////
 typedef struct {
   char *protocol;

@@ -12,6 +12,7 @@ window_utils_dirs = [
   ]
 window_utils_deps = [
   core_utils_dep,
+  c_vector_dep,
   active_app_dep,
   c_stringfn_dep,
   parson_dep,

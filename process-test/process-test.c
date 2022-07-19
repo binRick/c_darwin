@@ -122,8 +122,10 @@ TEST t_kitty_listen_ons(void){
       // dbg(kitty_text_ansi_cursor_screen, %s);
       dbg(strlen(kitty_text_ansi_cursor_screen), %lu);
 
-      char *kitty_text_ansi_cursor_all = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_ALL_TEXT));
-      dbg(strlen(kitty_text_ansi_cursor_all), %lu);
+      char                   *kitty_text = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_SCREEN_TEXT));
+      struct StringFNStrings Lines       = stringfn_split_lines(kitty_text);
+      dbg(strlen(kitty_text), %lu);
+      dbg(Lines.count, %d);
 
 
       struct Vector *COLOR_TYPES_V = kitty_get_color_types(KLO->host, KLO->port);
@@ -138,7 +140,6 @@ TEST t_kitty_listen_ons(void){
 
       char *BACKGROUND_COLOR = kitty_get_color("background", KLO->host, KLO->port);
       dbg(BACKGROUND_COLOR, %s);
-
 
       char          *kitty_ls = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_LS_CMD));
       dbg(strlen(kitty_ls), %lu);

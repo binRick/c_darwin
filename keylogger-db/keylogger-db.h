@@ -65,6 +65,7 @@ typedef struct DB_STATEMENT_T {
 } db_statement_t;
 typedef struct logged_key_event_t {
   unsigned long  ts, qty;
+  int            active_window_id, focused_pid;
   unsigned long  key_code;
   char           *key_string, *action, *input_type;
   unsigned long  mouse_x, mouse_y;

@@ -1,16 +1,56 @@
 #pragma once
-#include "app-utils.h"
-#include "window-utils.h"
+#include "app-utils/app-utils.h"
+#include "window-utils/window-utils.h"
 #ifndef LOGLEVEL
 #define LOGLEVEL    DEFAULT_LOGLEVEL
 #endif
-#include "parson.h"
+#include "parson/parson.h"
 #include "submodules/log.h/log.h"
 #ifndef APPLICATION_NAME
 #define APPLICATION_NAME    "UNDEFINED"
 #endif
 static int emptyWindowNameAllowed(char *appName);
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
+
+
+int get_pid_window_id(const int PID){
+  int             WINDOW_ID = -1;
+  CFArrayRef      windowList;
+  CFDictionaryRef window;
+
+  windowList = CGWindowListCopyWindowInfo(
+    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    kCGNullWindowID
+    );
+  for (int i = 0; i < CFArrayGetCount(windowList); i++) {
+    window = CFArrayGetValueAtIndex(windowList, i);
+    if (CFDictionaryGetInt(window, kCGWindowOwnerPID) == PID) {
+      WINDOW_ID = CFDictionaryGetInt(window, kCGWindowNumber);
+      break;
+    }
+  }
+  CFRelease(windowList);
+  return(WINDOW_ID);
+}
+
+struct Vector *get_windows_ids(void){
+  struct Vector   *ids_v = vector_new();
+  CFArrayRef      windowList;
+  CFDictionaryRef window;
+
+  windowList = CGWindowListCopyWindowInfo(
+    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    kCGNullWindowID
+    );
+
+  for (int i = 0; i < CFArrayGetCount(windowList); i++) {
+    window = CFArrayGetValueAtIndex(windowList, i);
+    int id = CFDictionaryGetInt(window, kCGWindowNumber);
+    vector_push(ids_v, (int)id);
+  }
+  CFRelease(windowList);
+  return(ids_v);
+}
 
 
 uint32_t getWindowId(AXUIElementRef window) {

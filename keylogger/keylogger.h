@@ -22,7 +22,7 @@
 #include <time.h>
 #include <unistd.h>
 /******************************************************/
-#include "active-app.h"
+#include "active-app/active-app.h"
 #include "fsio.h"
 #include "keylogger-db/keylogger-db.h"
 #include "parson/parson.h"
@@ -32,6 +32,7 @@
 #include "submodules/meson_deps/submodules/c_ansi/ansi-utils/ansi-utils.h"
 #include "submodules/meson_deps/submodules/c_timer/include/c_timer.h"
 #include "submodules/meson_deps/submodules/timestamp/timestamp.h"
+#include "window-utils/window-utils.h"
 /******************************************************/
 static FILE *logfile = NULL;
 static struct StringBuffer *sb;
