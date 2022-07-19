@@ -77,7 +77,7 @@ nodemon:
 		--delay 1 \
 		-i submodules -w "*/*.c" -w "*/*.h" -w Makefle -w "*/meson.build" \
 		-e c,h,sh,Makefile,build \
-			-x sh -- -c 'make||true'
+			-x sh -- -c 'passh make||true'
 meson-introspect-all:
 	@meson introspect --all -i meson.build
 meson-introspect-targets:
@@ -90,7 +90,7 @@ meson-binaries-loc:
 do-pull-submodules-cmds:
 	@command find submodules -type d -maxdepth 1|xargs -I % echo -e "sh -c 'cd % && git pull'"
 run-binary:
-	@make meson-binaries | fzf --reverse | xargs -I % passh "./%" 
+	@make meson-binaries | fzf --reverse | xargs -I % nodemon -w build --delay 1000 -x passh "./%"
 meson-tests-list:
 	@meson test -C build --list
 meson-tests:

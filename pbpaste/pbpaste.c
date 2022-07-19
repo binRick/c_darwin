@@ -24,7 +24,7 @@ void dump_cliboard_event(const clipboard_event_t *E){
 }
 
 
-clipboard_event_t encode_cliboard_event(char *CLIPBOARD_CONTENT){
+clipboard_event_t encode_clipboard_event(char *CLIPBOARD_CONTENT){
   size_t            LEN = strlen(CLIPBOARD_CONTENT);
   clipboard_event_t E   = {
     .raw               = CLIPBOARD_CONTENT,

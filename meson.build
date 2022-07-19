@@ -35,6 +35,7 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
+subdir('kitty')
 subdir('core-utils')
 subdir('active-app')
 subdir('app-utils')

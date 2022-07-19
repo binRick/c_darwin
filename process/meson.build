@@ -4,6 +4,8 @@ process_srcs = [
 process_link_flags = []
 process_c_args = []
 process_deps = [
+  ansi_codes_dep,
+  djbhash_dep,
   c_stringfn_dep,
   c_vector_dep,
   tiny_regex_c_dep,
@@ -14,12 +16,14 @@ process_deps = [
   occurrences_dep,
   parson_dep,
   c_fsio_dep,  
+  debug_memory_dep,  
+  kitty_dep,  
 ]
 process_dirs = [
   '../submodules/meson_deps/submodules/c_fsio/include',
-    '.',
-	'../submodules/meson_deps/submodules/c_fsio',
-    inc,
+  '.',
+  '../submodules/meson_deps/submodules/c_fsio',
+  inc,
 ]
 process_lib = shared_library('process',
   process_srcs,

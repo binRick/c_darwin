@@ -64,10 +64,13 @@ typedef struct DB_STATEMENT_T {
   int64_t                  inserted_id;
 } db_statement_t;
 typedef struct logged_key_event_t {
-  unsigned long ts, qty;
-  unsigned long key_code;
-  char          *key_string, *action, *input_type;
-  unsigned long mouse_x, mouse_y;
+  unsigned long  ts, qty;
+  unsigned long  key_code;
+  char           *key_string, *action, *input_type;
+  unsigned long  mouse_x, mouse_y;
+  struct Vector  *downkeys_v;
+  struct djbhash *downkeys_h;
+  char           *downkeys_csv;
 } logged_key_event_t;
 struct MouseEvent {
   CGFloat     x;

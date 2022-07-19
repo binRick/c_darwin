@@ -1,7 +1,8 @@
 #pragma once
 #include <stdio.h>
 ////////////////////////////////////////////////////////
-#include "process.h"
+#include "kitty/kitty.h"
+#include "process/process.h"
 #include "submodules/meson_deps/submodules/c_ansi/ansi-codes/ansi-codes.h"
 #include "submodules/meson_deps/submodules/c_fsio/include/fsio.h"
 #include "submodules/meson_deps/submodules/c_string_buffer/include/stringbuffer.h"

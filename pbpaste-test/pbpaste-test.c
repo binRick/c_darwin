@@ -5,7 +5,7 @@
 
 
 TEST t_pbpaste_test(){
-  clipboard_event_t CE = encode_cliboard_event(pbpaste_exec());
+  clipboard_event_t CE = encode_clipboard_event(pbpaste_exec());
 
   dump_cliboard_event(&CE);
   ASSERT_GT(CE.raw_size, 0);

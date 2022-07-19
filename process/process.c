@@ -1,10 +1,10 @@
 #pragma once
 #include "dbg.h"
+//#include "debug-memory/debug_memory.h"
 #include "process.h"
 #include <libproc.h>
 #include <sys/sysctl.h>
-const char   KITTY_MSG[] = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2]}\x1b\\";
-const size_t BUFSIZE     = 8192;
+const size_t BUFSIZE = 8192;
 #define GET_PID(proc)       (proc)->kp_proc.p_pid
 #define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)
 #define ERROR_CHECK(fun) \
@@ -51,11 +51,127 @@ static long get_process_ppid(unsigned long pid) {
 }
 
 
-void connect_kitty_port(const char *HOST, const int PORT){
+kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
+  kitty_listen_on_t      *KLO               = malloc(sizeof(kitty_listen_on_t));
+  struct StringFNStrings KittyListenOnSplit = stringfn_split(KITTY_LISTEN_ON, ':');
+
+  assert(KittyListenOnSplit.count == 3);
+  KLO->protocol = strdup(KittyListenOnSplit.strings[0]);
+  KLO->host     = strdup(KittyListenOnSplit.strings[1]);
+  KLO->port     = atoi(KittyListenOnSplit.strings[2]);
+  stringfn_release_strings_struct(KittyListenOnSplit);
+  return(KLO);
+}
+
+
+struct Vector *kitty_get_color_types(const char *HOST, const int PORT){
+  struct Vector          *color_types  = vector_new();
+  char                   *kitty_colors = kitty_cmd_data(kitty_tcp_cmd((const char *)HOST, PORT, __KITTY_GET_COLORS_CMD__));
+  struct StringFNStrings Lines         = stringfn_split_lines(kitty_colors);
+  struct StringFNStrings LineWords;
+
+  for (size_t i = 0; i < Lines.count; i++) {
+    LineWords = stringfn_split_words(Lines.strings[i]);
+    if (LineWords.count != 2 || strlen(LineWords.strings[0]) < 1) {
+      continue;
+    }
+    vector_push(color_types, strdup(LineWords.strings[0]));
+  }
+  if (LineWords.count > 0) {
+    stringfn_release_strings_struct(LineWords);
+  }
+  if (Lines.count > 0) {
+    stringfn_release_strings_struct(Lines);
+  }
+  return(color_types);
+}
+
+
+char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT){
+  char                   *COLOR        = NULL;
+  char                   *kitty_colors = kitty_cmd_data(kitty_tcp_cmd((const char *)HOST, PORT, __KITTY_GET_COLORS_CMD__));
+  struct StringFNStrings Lines         = stringfn_split_lines(kitty_colors);
+  struct StringFNStrings LineWords;
+
+  for (size_t i = 0; i < Lines.count; i++) {
+    LineWords = stringfn_split_words(Lines.strings[i]);
+    if (LineWords.count != 2) {
+      continue;
+    }
+    if (strcmp(COLOR_TYPE, LineWords.strings[0]) == 0) {
+      COLOR = strdup(LineWords.strings[1]);
+      break;
+    }
+  }
+  if (LineWords.count > 0) {
+    stringfn_release_strings_struct(LineWords);
+  }
+  if (Lines.count > 0) {
+    stringfn_release_strings_struct(Lines);
+  }
+  return(COLOR);
+}
+
+
+char *kitty_cmd_data(const char *CMD_OUTPUT){
+  JSON_Value  *V = json_parse_string(CMD_OUTPUT);
+  JSON_Object *O = json_value_get_object(V);
+
+  assert(json_object_get_boolean(O, "ok") == 1);
+  char *CMD_DATA = json_object_get_string(O, "data");
+
+  return(CMD_DATA);
+}
+
+
+char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
   socket99_config cfg = { .host = HOST, .port = PORT };
   socket99_result res;
 
   if (!socket99_open(&cfg, &res)) {
+    fprintf(stderr, "Failed to connect to kitty @ %s:%h!\n", cfg.host, cfg.port);
+    return(NULL);
+  }
+  struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+  size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
+
+  do {
+    total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
+  } while (total_sent < msg_size);
+  do {
+    char *buf = calloc(BUFSIZE + 1, 1);
+    recvd = 0;
+    recvd = recv(res.fd, buf, BUFSIZE, 0);
+    if (recvd < 1) {
+      break;
+    }
+    buf[recvd]   = '\0';
+    total_recvd += recvd;
+    stringbuffer_append_string(SB, buf);
+    free(buf);
+    if ((int)(buf[strlen(buf) - 1]) == 92) {
+      if ((int)(buf[strlen(buf) - 2]) == 27) {
+        recvd = -1;
+        close(res.fd);
+        break;
+      }
+    }
+  }while (recvd > 0);
+  close(res.fd);
+  char *KITTY_RESPONSE = calloc(stringbuffer_get_content_size(SB) + 1, 1);
+
+  strncpy(KITTY_RESPONSE, stringbuffer_to_string(SB) + 12, stringbuffer_get_content_size(SB) - 3);
+  stringbuffer_release(SB);
+  return(KITTY_RESPONSE);
+}
+
+
+void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
+  socket99_config cfg = { .host = HOST, .port = PORT };
+  socket99_result res;
+
+  if (!socket99_open(&cfg, &res)) {
+    fprintf(stderr, "Failed to connect to kitty @ %s:%h!\n", cfg.host, cfg.port);
     return;
   }
   struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
@@ -134,8 +250,11 @@ void connect_kitty_port(const char *HOST, const int PORT){
     dbg(json_object_get_string(TAB, "title"), %s);
     dbg(json_object_get_boolean(TAB, "is_focused"), %d);
     dbg(json_object_get_string(TAB, "layout"), %s);
+    for (int iii = 0; iii < json_object_get_count(TAB); iii++) {
+      dbg(json_object_get_name(TAB, iii), %s);
+    }
   }
-} /* connect_kitty_port */
+} /* kitty_command */
 
 struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
   struct Vector *ConnectedKittyProcesses_v = vector_new();
@@ -143,44 +262,98 @@ struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
   return(ConnectedKittyProcesses_v);
 } /* connect_kitty_processes */
 
+struct Vector *get_kitty_listen_ons(){
+  struct djbhash kitty_listen_ons_h;
 
-struct Vector *get_kitty_processes(){
-  struct Vector *KittyProcesses_v = vector_new();
-  const re_t    pattern = re_compile("[Kk]itty");
-  int           match_length, match_idx;
-  struct Vector *pids_v = get_all_processes();
+  djbhash_init(&kitty_listen_ons_h);
+  struct Vector *kitty_listen_ons = vector_new();
+  struct Vector *kitty_pids_v     = get_kitty_pids();
 
-  assert(pids_v != NULL);
-  for (size_t i = 0; i < vector_size(pids_v); i++) {
-    int           pid        = (int)(long long)vector_get(pids_v, i);
-    struct Vector *cmdline_v = get_process_cmdline(pid);
-    if (cmdline_v == NULL) {
+  for (size_t i = 0; i < vector_size(kitty_pids_v); i++) {
+    kitty_process_t *KP = get_kitty_process_t(vector_get(kitty_pids_v, i));
+    if (KP->listen_on == NULL) {
       continue;
     }
-    for (int i = 0; i < vector_size(cmdline_v); i++) {
-      match_idx = re_matchp(pattern, (char *)vector_get(cmdline_v, i), &match_length);
-      if (match_length < 1) {
-        continue;
-      }
-      struct Vector *PE = get_process_env(pid);
-      for (size_t ii = 0; ii < vector_size(PE); ii++) {
-        process_env_t *E = (process_env_t *)(vector_get(PE, ii));
-        if (strcmp(E->key, "KITTY_WINDOW_ID") == 0) {
-          kitty_process_t *KP = malloc(sizeof(kitty_process_t));
-          assert(KP != NULL);
-          KP->window_id = atoi(E->val);
-          assert(KP->window_id > 0);
-          KP->pid   = (unsigned long)pid;
-          KP->env_v = PE;
-          assert(KP->pid > 0);
-          KP->listen_on = strdup(E->key);
-          vector_push(KittyProcesses_v, (void *)KP);
-        }
-      }
+    if (djbhash_find(&kitty_listen_ons_h, KP->listen_on) == NULL) {
+      djbhash_set(&kitty_listen_ons_h, KP->listen_on, &KP->listen_on, DJBHASH_STRING);
+      vector_push(kitty_listen_ons, KP->listen_on);
     }
   }
-  return(KittyProcesses_v);
+  djbhash_destroy(&kitty_listen_ons_h);
+  return(kitty_listen_ons);
 }
+
+struct Vector *get_kitty_pids(){
+  struct djbhash kitty_pids_h;
+
+  djbhash_init(&kitty_pids_h);
+  struct Vector *pids_v       = get_all_processes();
+  struct Vector *kitty_pids_v = vector_new();
+
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    int           pid = (int)(long long)vector_get(pids_v, i);
+    struct Vector *PE = get_process_env(pid);
+    for (size_t ii = 0; ii < vector_size(PE); ii++) {
+      process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+      if (
+        strcmp(E->key, "KITTY_WINDOW_ID") == 0
+        || strcmp(E->key, "KITTY_PID") == 0
+        || strcmp(E->key, "KITTY_LISTEN_ON") == 0
+        ) {
+        if (djbhash_find(&kitty_pids_h, E->val) == NULL) {
+          djbhash_set(&kitty_pids_h, E->val, &pid, DJBHASH_INT);
+          vector_push(kitty_pids_v, (int)pid);
+        }
+      }
+      free(E->key);
+      free(E->val);
+    }
+    vector_release(PE);
+  }
+  djbhash_destroy(&kitty_pids_h);
+  return(kitty_pids_v);
+}
+
+#define DEBUG_GET_KITTY_PROCESS_T    false
+
+
+kitty_process_t *get_kitty_process_t(const int PID){
+  kitty_process_t *KP = malloc(sizeof(kitty_process_t));
+
+  assert(KP != NULL);
+  KP->pid = PID;
+  struct Vector *PE = get_process_env(KP->pid);
+
+  KP->window_id   = -1;
+  KP->listen_on   = NULL;
+  KP->install_dir = NULL;
+  for (size_t ii = 0; ii < vector_size(PE); ii++) {
+    process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+    if (DEBUG_GET_KITTY_PROCESS_T) {
+      fprintf(stderr,
+              AC_YELLOW "#%lu> %s->%s\n" AC_RESETALL,
+              ii, E->key, E->val);
+    }
+    if (strcmp(E->key, "KITTY_INSTALLATION_DIR") == 0) {
+      KP->install_dir = strdup(E->val);
+    }
+    if (strcmp(E->key, "KITTY_LISTEN_ON") == 0) {
+      KP->listen_on = strdup(E->val);
+    }
+    if (strcmp(E->key, "KITTY_PID") == 0) {
+      KP->pid = atoi(E->val);
+    }
+    if (strcmp(E->key, "KITTY_WINDOW_ID") == 0) {
+      KP->window_id = atoi(E->val);
+    }
+    free(E->key);
+    free(E->val);
+  }
+  vector_release(PE);
+
+  return(KP);
+}
+
 
 struct kinfo_proc *proc_info_for_pid(pid_t pid) {
   struct kinfo_proc *list = NULL;
@@ -234,6 +407,7 @@ struct Vector *get_process_cmdline(int process){
   mib[1] = KERN_PROCARGS2;
   mib[2] = (pid_t)process;
   if (sysctl(mib, 3, procargs, &argmax, NULL, 0) < 0) {
+    free(procargs);
     return(NULL);
   }
 
@@ -243,6 +417,7 @@ struct Vector *get_process_cmdline(int process){
   len      = strlen(arg_ptr);
   arg_ptr += len + 1;
   if (arg_ptr == arg_end) {
+    free(procargs);
     return(NULL);
   }
 
@@ -292,18 +467,17 @@ struct Vector *get_all_processes(){
       vector_push(processes_v, (void *)(long long)processes_buffer[i]);
     }
   }
+  free(processes_buffer);
   return(processes_v);
 }
 
 struct Vector *get_process_env(int process){
-  struct Vector
-  *vector        = vector_new(),
-  *process_env_v = vector_new();
-
+  struct Vector *process_env_v = vector_new();
 
   if (process == 1) {
     return(process_env_v);
   }
+  struct Vector          *vector = vector_new();
   struct StringFNStrings EnvSplit;
   int                    env_res = -1, nargs;
   char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *arg_start, *env_start, *s;
@@ -358,10 +532,14 @@ struct Vector *get_process_env(int process){
     process_env_t *pe = malloc(sizeof(process_env_t));
     pe->key = strdup(EnvSplit.strings[0]);
     pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
+    if (false) {
+      fprintf(stderr,
+              AC_RESETALL AC_BLUE "%s=>%s\n" AC_RESETALL, pe->key, pe->val);
+    }
     vector_push(process_env_v, pe);
   }
   if (DEBUG_PID_ENV) {
-    fprintf(stdout,
+    fprintf(stderr,
             "process:%d\n"
             "argmax:%lu\n"
             "env_res:%d\n"

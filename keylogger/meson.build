@@ -18,6 +18,8 @@ keylogger_deps = [
  ansi_utils_dep,
  keylogger_db_dep,
  c_timer_dep,
+ debug_memory_dep,
+ djbhash_dep,
 ]
 
 

