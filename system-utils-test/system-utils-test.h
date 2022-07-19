@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////
 #include "core-utils/core-utils.h"
 #include "pasteboard/pasteboard.h"
+#include "process/process.h"
 #include "system-utils/system-utils.h"
 ////////////////////////////////////////////////////////
 #define WATCH_INTERVAL_MS    100

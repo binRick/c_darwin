@@ -47,15 +47,16 @@ struct DarwinMouseLocation_t {
 ///////////////////////////
 
 static void get_sysctl(enum sysctls);
-static void disk(void);
+void get_disk(void);
 static void get_pkg_count(void);
-static void uptime(time_t *nowp);
-static void gpu(void);
-static void mem(void);
+static void get_uptime(time_t *t);
+void get_gpu(void);
+double get_cpu();
+double get_cpu_time(void);
 static void curtime(void);
 static void host(void);
 static void kernel(void);
-static void os(void);
+void get_os(void);
 static void cpu(void);
 static void battery(void);
 size_t get_devices_count();
@@ -73,3 +74,16 @@ struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID displa
 #define C5     "\x1B[0;36m" /* Blue   */
 #define RED    C3
 #define NOR    C0
+
+
+typedef struct mem {
+  uint64_t total;
+  uint64_t used;
+  uint64_t free;
+  uint64_t active;
+  uint64_t inactive;
+  uint64_t wired;
+} mem_t;
+
+void get_mem(void);
+void get_model(void);

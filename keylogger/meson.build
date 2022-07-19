@@ -10,6 +10,7 @@ keylogger_deps = [
  c_string_buffer_dep,
  pbpaste_dep,
  active_app_dep,
+ system_utils_dep,
  subprocess_dep,
  timestamp_dep,
  list_dep,

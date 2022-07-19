@@ -2,8 +2,15 @@
 #include "dbg.h"
 //#include "debug-memory/debug_memory.h"
 #include "process.h"
+#include <ctype.h>
 #include <libproc.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/sysctl.h>
+#include <sys/time.h>
 const size_t BUFSIZE = 8192;
 #define GET_PID(proc)       (proc)->kp_proc.p_pid
 #define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)

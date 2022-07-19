@@ -12,7 +12,6 @@
 #include <IOKit/Graphics/IOGraphicsLib.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/IOKitLib.h>
-#include <IOKit/IOKitLib.h>
 #include <IOKit/IOReturn.h>
 #include <IOKit/serial/IOSerialKeys.h>
 #include <IOKit/usb/IOUSBLib.h>
@@ -23,17 +22,25 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string.h>
 #include <sys/queue.h>
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
-#include <sys/sysctl.h>
-#include <sys/types.h>
 #include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
+#include <mach/host_info.h>
+#include <mach/host_priv.h>
+#include <mach/kern_return.h>
+#include <mach/mach.h>
+#include <mach/mach_error.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
@@ -66,39 +73,6 @@ size_t get_devices_count(){
   CFIndex  num_devices = CFSetGetCount(device_set);
 
   return(num_devices);
-/*
- * IOHIDDeviceRef *device_array = calloc(num_devices, sizeof(IOHIDDeviceRef));
- *
- * CFSetGetValues(device_set, (const void **)device_array);
- *
- *  //printf("got %ld devices\n", num_devices);
- * printf("mac-hid-dump:\n");
- *
- * for (i = 0; i < num_devices; i++) {
- *  IOHIDDeviceRef dev = device_array[i];
- *  wchar_t        str1[256], str2[256];
- *
- *  get_manufacturer_string(dev, str1, sizeof(str1));
- *  get_product_string(dev, str2, sizeof(str2));
- *  printf("%04hX %04hX: %ls - %ls\n",
- *         get_vendor_id(dev), get_product_id(dev), str1, str2);
- *
- *  CFDataRef cfprop = (CFDataRef)IOHIDDeviceGetProperty(dev,
- *                                                       CFSTR(kIOHIDReportDescriptorKey));
- *  printf("DESCRIPTOR:\n  ");
- *  uint8_t pbuf[1024];
- *  if (cfprop != NULL) {
- *    long len = CFDataGetLength(cfprop);
- *    CFDataGetBytes(cfprop, CFRangeMake(0, len), pbuf);
- *    for ( int i = 0; i < len; i++) {
- *      printf("%02x ", pbuf[i]);
- *      printf((i % 16 == 15) ? "\n  " : " ");
- *    }
- *    printf("\n  (%ld bytes)\n", len);
- *  }
- * }
- *
- */
 }
 
 
@@ -107,33 +81,6 @@ CGImageRef display_screen_snapshot(void) {
 
   return(CGDisplayCreateImage(current_display));
 }
-
-
-/*
- * screen_size get_desktop_sizes(){
- * CGDirectDisplayID display_buffer[9];
- * unsigned int      num_displays;
- *
- * CGGetActiveDisplayList(9, display_buffer, &num_displays);
- *
- * struct screen_sizes ret = {
- *  .len = num_displays,
- *  .arr = malloc(sizeof(struct screen_size) * num_displays),
- * };
- *
- * for (int i = 0; i < num_displays; i++) {
- *  CGRect display_bounds = CGDisplayBounds(display_buffer[i]);
- *  ret.arr[i] = (struct screen_size) {
- *    .x  = display_bounds.origin.x,
- *    .y  = display_bounds.origin.y,
- *    .dx = display_bounds.size.width,
- *    .dy = display_bounds.size.height,
- *  };
- * }
- *
- * return(ret);
- * }
- */
 
 
 /*
@@ -206,34 +153,7 @@ CGImageRef display_screen_snapshot(void) {
  */
 
 
-/*
- * int take_snapshot_darwin(const char *img_path, Options o) {
- * static char cmd[256];
- *
- * if (sprintf(cmd,
- *            "screencapture -x -l%s -o -m %s &> /dev/null",
- *            o.window_id, img_path) < 0) {
- *  return(-1);
- * }
- *
- * system_exec(cmd, o);
- *
- * if (!o.fullscreen) {
- *  if (sprintf(cmd,
- *              "convert %s -background white -quiet -flatten +matte -crop +0+22 -crop +4+0 -crop -4-0 +repage %s &> /dev/null",
- *              img_path, img_path) < 0) {
- *    return(-1);
- *  }
- * }
- *
- * system_exec(cmd, o);
- *
- * return(0);
- * }
- */
-
-
-double getCPUTime( ){
+double get_cpu_time( ){
 #if defined (_POSIX_TIMERS) && (_POSIX_TIMERS > 0)
   /* Prefer high-res POSIX timers, when available. */
   {
@@ -281,7 +201,7 @@ double getCPUTime( ){
 } /* getCPUTime */
 
 
-double getCPUUsage() {
+double get_cpu() {
   static double  lastT       = -1.0;
   static double  lastCPUTime = -1.0;
   struct timeval tv;
@@ -292,7 +212,7 @@ double getCPUUsage() {
   if (gettimeofday(&tv, NULL) != 0) {
     return(-1);
   }
-  nowCPUTime = getCPUTime();
+  nowCPUTime = get_cpu_time();
   if (nowCPUTime < 0) {
     return(-2);
   }
@@ -322,7 +242,7 @@ static void get_sysctl(enum sysctls ctl) {
   size_t len;
 
   if (ctl == MEM) {
-    mem();
+    get_mem();
   } else {
     sysctlbyname(SYSCTL_VALUES[ctl].ctls, NULL, &len, NULL, 0);
     char *type = malloc(len);
@@ -471,7 +391,7 @@ CGDirectDisplayID get_display_id(uint32_t id){
 }
 
 
-static void disk(void) {
+void get_disk(void) {
   struct statvfs info;
 
   if (!statvfs("/", &info)) {
@@ -485,35 +405,7 @@ static void disk(void) {
 }
 
 
-static void mem(void) {
-  size_t                 len;
-  mach_port_t            myHost;
-  vm_statistics64_data_t vm_stat;
-  vm_size_t              pageSize = 4096; /* set to 4k default */
-  unsigned int           count    = HOST_VM_INFO64_COUNT;
-  kern_return_t          ret;
-
-  myHost = mach_host_self();
-  uint64_t value64;
-
-  len = sizeof(value64);
-
-  sysctlbyname(SYSCTL_VALUES[2].ctls, &value64, &len, NULL, 0);
-  if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS) {
-    if ((ret = host_statistics64(myHost, HOST_VM_INFO64, (host_info64_t)&
-                                 vm_stat, &count) == KERN_SUCCESS)) {
-      printf("%s    : " "%llu MB of %.f MB\n",
-             SYSCTL_VALUES[2].names,
-             (uint64_t)(vm_stat.active_count +
-                        vm_stat.inactive_count +
-                        vm_stat.wire_count) * pageSize >> 20,
-             value64 / 1e+06);
-    }
-  }
-}
-
-
-static void gpu(void) {
+void get_gpu(void) {
   io_iterator_t Iterator;
   kern_return_t err = IOServiceGetMatchingServices(kIOMasterPortDefault,
                                                    IOServiceMatching("IOPCIDevice"), &Iterator);
@@ -741,7 +633,7 @@ static const struct {
 };
 
 
-void model(){
+void get_model(){
   size_t len = 0;
 
   if (!sysctlbyname("hw.model", NULL, &len, NULL, 0) && len) {
@@ -755,7 +647,7 @@ void model(){
 }
 
 
-static void get_mem(void) {
+void get_mem(void) {
   size_t                 len;
   mach_port_t            myHost;
   vm_statistics64_data_t vm_stat;

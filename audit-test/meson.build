@@ -32,6 +32,6 @@ if get_option('enable-binaries')
      c_args: audit_include_cargs,
   )
   if get_option('enable-binary-tests')
-    test('audit-test', passh_program, args: [audit_test_exec])
+    #//test('audit-test', passh_program, args: [audit_test_exec])
   endif
 endif

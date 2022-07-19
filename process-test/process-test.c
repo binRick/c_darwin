@@ -13,10 +13,10 @@ const char KITTY_QUERY_TERMINAL_CMD[]            = "\x1bP@kitty-cmd{\"cmd\":\"ki
 const char KITTY_LS_NO_ENV_CMD[]                 = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":false}}\x1b\\";
 const char KITTY_GET_TEXT[]                      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
 const char KITTY_GET_ANSI_TEXT[]                 = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_TEXT[]          = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":true}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_ALL_TEXT[]      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":true,\"extent\":\"all\"}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_SCREEN_TEXT[]   = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":true,\"extent\":\"screen\"}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT[] = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":true,\"extent\":\"last_non_empty_output\"}}\x1b\\";
+const char KITTY_GET_ANSI_CURSOR_TEXT[]          = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false}}\x1b\\";
+const char KITTY_GET_ANSI_CURSOR_ALL_TEXT[]      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"all\"}}\x1b\\";
+const char KITTY_GET_ANSI_CURSOR_SCREEN_TEXT[]   = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"screen\"}}\x1b\\";
+const char KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT[] = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"last_non_empty_output\"}}\x1b\\";
 const char KITTY_GET_NO_ANSI_TEXT[]              = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\";
 
 
@@ -117,13 +117,14 @@ TEST t_kitty_listen_ons(void){
  *    char *kitty_text_ansi_cursor_last_cmd = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT));
  *
  *    dbg(strlen(kitty_text_ansi_cursor_last_cmd), %lu);
+ *    char *kitty_text_ansi_cursor_screen = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_SCREEN_TEXT));
+ *    // dbg(kitty_text_ansi_cursor_screen, %s);
+ *    dbg(strlen(kitty_text_ansi_cursor_screen), %lu);
  */
-      char *kitty_text_ansi_cursor_screen = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_SCREEN_TEXT));
-      // dbg(kitty_text_ansi_cursor_screen, %s);
-      dbg(strlen(kitty_text_ansi_cursor_screen), %lu);
 
       char                   *kitty_text = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_SCREEN_TEXT));
       struct StringFNStrings Lines       = stringfn_split_lines(kitty_text);
+      fprintf(stdout, AC_RESETALL "\nkitty_text:\n%s" AC_RESETALL "\n", kitty_text);
       dbg(strlen(kitty_text), %lu);
       dbg(Lines.count, %d);
 
@@ -141,10 +142,10 @@ TEST t_kitty_listen_ons(void){
       char *BACKGROUND_COLOR = kitty_get_color("background", KLO->host, KLO->port);
       dbg(BACKGROUND_COLOR, %s);
 
-      char          *kitty_ls = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_LS_CMD));
+      char *kitty_ls = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_LS_CMD));
       dbg(strlen(kitty_ls), %lu);
-      struct Vector *kitty_procs_v = get_kitty_procs(kitty_ls);
 
+      struct Vector *kitty_procs_v = get_kitty_procs(kitty_ls);
       dbg(vector_size(kitty_procs_v), %lu);
       for (size_t ci = 0; ci < vector_size(kitty_procs_v); ci++) {
         struct kitty_proc_t *kp = (struct kitty_proc_t *)vector_get(kitty_procs_v, ci);

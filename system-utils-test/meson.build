@@ -8,6 +8,8 @@ system_utils_include_dirs = [
 ]
 system_utils_test_deps = [
   greatest_dep,
+  system_utils_dep,
+  process_dep,
   logh_dep,
   c_stringfn_dep,
   system_utils_dep,

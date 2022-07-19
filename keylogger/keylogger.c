@@ -99,29 +99,28 @@ unsigned long
 
 /**********************************/
 static bool IsMouseEvent(CGEventType type) {
-  return(type == kCGEventLeftMouseDown
-         || type == kCGEventLeftMouseUp
-         || type == kCGEventRightMouseDown
-         || type == kCGEventLeftMouseDragged
-         || type == kCGEventRightMouseDragged
-         || type == kCGEventRightMouseUp
-         || type == kCGEventMouseMoved
-         || type == kCGEventOtherMouseUp
-         || type == kCGEventOtherMouseDown
-         || type == kCGEventOtherMouseDragged
-         || type == kCGEventLeftMouseDragged
-         || type == kCGEventScrollWheel
-         || type == kCGEventRightMouseDragged
-         );
+  return(
+    type == kCGEventLeftMouseDown
+    || type == kCGEventLeftMouseUp
+    || type == kCGEventRightMouseDown
+    || type == kCGEventLeftMouseDragged
+    || type == kCGEventRightMouseDragged
+    || type == kCGEventRightMouseUp
+    || type == kCGEventMouseMoved
+    || type == kCGEventOtherMouseUp
+    || type == kCGEventOtherMouseDown
+    || type == kCGEventOtherMouseDragged
+    || type == kCGEventLeftMouseDragged
+    || type == kCGEventScrollWheel
+    || type == kCGEventRightMouseDragged
+    );
 }
 
 
 /**********************************/
 static volatile CGEventMask mouse_and_kb_events = (
-  ///////////////////////////////////////
   CGEventMaskBit(kCGEventKeyDown)
   | CGEventMaskBit(kCGEventKeyUp)
-  ///////////////////////////////////////
   | CGEventMaskBit(kCGEventFlagsChanged)
   | CGEventMaskBit(kCGEventLeftMouseDown)
   | CGEventMaskBit(kCGEventLeftMouseUp)
@@ -134,7 +133,6 @@ static volatile CGEventMask mouse_and_kb_events = (
   | CGEventMaskBit(kCGEventScrollWheel)
   | CGEventMaskBit(kCGEventLeftMouseDragged)
   | CGEventMaskBit(kCGEventRightMouseDragged)
-  ///////////////////////////////////////
   );
 
 
@@ -244,7 +242,7 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
 
   int focused_pid = (int)get_front_window_pid();
 
-  keylogger_insert_db_row(&(logged_key_event_t){
+  int ok1 = keylogger_insert_db_row(&(logged_key_event_t){
     .ts               = (uint64_t)TS,
     .qty              = 1,
     .key_code         = (unsigned long)keyCode,
@@ -257,7 +255,15 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     .downkeys_csv     = down_keys_csv(),
     .focused_pid      = focused_pid,
     .active_window_id = (int)get_pid_window_id(focused_pid),
+    .devices_qty      = (size_t)0,//get_devices_count(),
   });
+
+  assert(ok1 == 0);
+
+  if (keyCode == 13) {
+    int ok2 = keylogger_insert_db_window_row();
+    assert(ok2 == 0);
+  }
 
   return(event);
 } /* CGEventCallback */
