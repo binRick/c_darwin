@@ -4,13 +4,99 @@
 #ifndef LOGLEVEL
 #define LOGLEVEL    DEFAULT_LOGLEVEL
 #endif
+#include "active-app/active-app.h"
 #include "parson/parson.h"
+#include "process/process.h"
 #include "submodules/log.h/log.h"
+#include "system-utils/system-utils.h"
 #ifndef APPLICATION_NAME
 #define APPLICATION_NAME    "UNDEFINED"
 #endif
 static int emptyWindowNameAllowed(char *appName);
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
+
+struct Vector *get_windows(){
+  struct Vector *windows      = vector_new();
+  struct Vector *window_ids   = get_windows_ids();
+  CGRect        displayBounds = CGDisplayBounds(CGMainDisplayID());
+  int           focused_pid   = get_frontmost_application();
+
+  for (size_t i = 0; i < vector_size(window_ids); i++) {
+    size_t   window_id = (size_t)vector_get(window_ids, i);
+    window_t *w        = get_window_id(window_id);
+    if (w->pid == focused_pid) {
+      w->is_focused = true;
+    }
+
+    w->rect = CGRectMake(w->position.x, w->position.y, w->size.width, w->size.height);
+    if (CGRectContainsRect(displayBounds, w->rect)) {
+      w->is_visible = true;
+    }
+
+    vector_push(windows, (window_t *)w);
+  }
+
+  return(windows);
+}
+
+
+window_t *get_window_id(const int WINDOW_ID){
+  window_t *w = malloc(sizeof(window_t));
+
+  w->window_id    = WINDOW_ID;
+  w->window       = window_id_to_window(w->window_id);
+  w->app_name     = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowOwnerName));
+  w->window_name  = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowName));
+  w->window_title = stringfn_trim(windowTitle(w->app_name, w->window_name));
+  w->layer        = CFDictionaryGetInt(w->window, kCGWindowLayer);
+  w->position     = CGWindowGetPosition(w->window);
+  w->size         = CGWindowGetSize(w->window);
+  CFNumberGetValue(CFDictionaryGetValue(w->window, kCGWindowOwnerPID), kCFNumberIntType, &w->pid);
+  w->is_minimized = false;
+  w->is_focused   = false;
+  w->is_visible   = false;
+  get_kinfo_proc(w->pid, &w->pid_info);
+
+
+  return(w);
+}
+
+
+CFDictionaryRef window_id_to_window(const int WINDOW_ID){
+  CFArrayRef      windowList;
+  CFDictionaryRef window;
+
+  windowList = CGWindowListCopyWindowInfo(
+    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    kCGNullWindowID
+    );
+  int count = 0;
+
+  for (int i = 0; i < CFArrayGetCount(windowList); i++) {
+    window = CFArrayGetValueAtIndex(windowList, i);
+    int windowId = CFDictionaryGetInt(window, kCGWindowNumber);
+    if (windowId != WINDOW_ID) {
+      continue;
+    }
+    return(window);
+  }
+  return(NULL);
+}
+
+
+char *get_window_id_title(const int WINDOW_ID){
+  char *window_title = malloc(128);
+
+  sprintf(window_title, "Window #%d", WINDOW_ID);
+  return(window_title);
+}
+
+
+void move_window_id(const int WINDOW_ID, const int X, const int Y){
+  CGPoint position = CGPointMake(X, Y);
+
+  fprintf(stderr, "moving window #%d to %fx%f\n", WINDOW_ID, position.x, position.y);
+}
 
 
 int get_pid_window_id(const int PID){

@@ -18,6 +18,8 @@ window_utils_deps = [
   parson_dep,
   logh_dep,
   ansi_codes_dep,
+  system_utils_dep,
+  process_dep,
 ]
 window_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 window_utils_lib = static_library('window-utils',

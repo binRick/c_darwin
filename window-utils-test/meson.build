@@ -8,10 +8,17 @@ window_utils_test_include_dirs = [
 ]
 window_utils_test_deps = [
   c_stringfn_dep,
+  c_string_buffer_dep,
+  string_utils_dep,
   app_utils_dep,
   window_utils_dep,
   logh_dep,
   greatest_dep,
+  dbg_dep,
+  c_timer_dep,
+  capture_dep,
+  c_fsio_dep,
+  fort_dep,
 ]
 
 if get_option('enable-binaries')

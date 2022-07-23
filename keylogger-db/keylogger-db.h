@@ -22,8 +22,12 @@
 #include "active-app.h"
 #include "app-utils.h"
 #include "bytes/bytes.h"
+#include "hidapi/hidapi/hidapi.h"
+#include "hidapi/mac/hidapi_darwin.h"
 #include "int/int.h"
 #include "keylogger/keylogger.h"
+#include "libusb/libusb/libusb.h"
+#include "libusb/libusb/os/darwin_usb.h"
 #include "pbpaste/pbpaste.h"
 #include "process.h"
 #include "submodules/b64.c/b64.h"
@@ -66,6 +70,8 @@ typedef struct DB_STATEMENT_T {
 typedef struct logged_key_event_t {
   unsigned long  ts, qty;
   int            active_window_id, focused_pid;
+  unsigned long  event_flags;
+  char           *event_flag;
   size_t         devices_qty;
   unsigned long  key_code;
   char           *key_string, *action, *input_type;
@@ -73,6 +79,7 @@ typedef struct logged_key_event_t {
   struct Vector  *downkeys_v;
   struct djbhash *downkeys_h;
   char           *downkeys_csv;
+  ssize_t        usb_devices_qty;
 } logged_key_event_t;
 struct MouseEvent {
   CGFloat     x;

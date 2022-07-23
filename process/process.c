@@ -22,6 +22,14 @@ const size_t BUFSIZE = 8192;
   } while (0)
 
 
+char *pid_path(pid_t pid){
+  char *pathbuf = malloc(PATH_MAX);
+
+  proc_pidpath(pid, pathbuf, sizeof(pathbuf));
+  return(pathbuf);
+}
+
+
 int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   int    mib[4];
   size_t len;
@@ -31,15 +39,11 @@ int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   mib[2] = KERN_PROC_PID;
   mib[3] = pid;
 
-  // fetch the info with sysctl()
   len = sizeof(struct kinfo_proc);
-
-  // now read the data from sysctl
   if (sysctl(mib, 4, kp, &len, NULL, 0) == -1) {
     return(-1);
   }
 
-  // sysctl succeeds but len is zero, happens when process has gone away
   if (len == 0) {
     fprintf(stderr, "sysctl(kinfo_proc), len == 0\n");
     return(-1);

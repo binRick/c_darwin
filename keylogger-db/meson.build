@@ -15,6 +15,8 @@ keylogger_db_dirs = [
   inc,
 ]
 keylogger_db_deps = [
+  hidapi_dep,
+  libusb_dep,
   pasteboard_dep,
   generic_print_dep,
   active_app_dep,

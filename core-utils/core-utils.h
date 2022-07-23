@@ -18,3 +18,4 @@ int get_serial_number(IOHIDDeviceRef device, wchar_t *buf, size_t len);
 int get_manufacturer_string(IOHIDDeviceRef device, wchar_t *buf, size_t len);
 int get_product_string(IOHIDDeviceRef device, wchar_t *buf, size_t len);
 char * CFStringCopyUTF8String(CFStringRef aString);
+char *int_to_string(const int);

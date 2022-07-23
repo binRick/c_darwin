@@ -1,4 +1,5 @@
 project('c_darwin', ['c'],default_options: ['warning_level=0','c_std=gnu99',],subproject_dir: 'submodules/meson_deps/subprojects')
+sudo_program = find_program('sudo', required : true)
 cc = meson.get_compiler('c')
 pwd = meson.current_source_dir()
 meson_deps_dir = join_paths(meson.current_source_dir(),'submodules/meson_deps')
@@ -12,7 +13,11 @@ inc = [include_directories(
   'submodules/meson_deps/submodules/c_vector/src',
   'submodules/meson_deps/submodules/c_vector/include',
   'app-utils',
-  './system-utils',
+  'system-utils',
+  'submodules/meson_deps/submodules/hidapi/hidapi',
+  'submodules/meson_deps/submodules/libusb/libusb',
+  'submodules/meson_deps/submodules/libusb/Xcode',
+  'submodules/meson_deps/submodules/libusb/libusb/os',
   'submodules/meson_deps/submodules/generic-print',
   'submodules/meson_deps/submodules/c_fsio',
   'submodules/meson_deps/submodules/c_fsio/src',
@@ -22,14 +27,14 @@ inc = [include_directories(
   'submodules/meson_deps/submodules/str-replace.c/src',
   'submodules/meson_deps/submodules/occurrences.c',
   'window-utils',
-  './active-app',
-  './window-utils',
-  './system-utils',
-  './active-app-test',
-  './window-utils-test',
-  './active-app-module',
-  './app-utils',
-  './process',
+  'active-app',
+  'window-utils',
+  'system-utils',
+  'active-app-test',
+  'window-utils-test',
+  'active-app-module',
+  'app-utils',
+  'process',
   '.',
 )]
 #############################################################################
@@ -39,12 +44,12 @@ subdir('kitty')
 subdir('core-utils')
 subdir('active-app')
 subdir('app-utils')
-subdir('window-utils')
 subdir('active-app-module')
 subdir('pbpaste')
 subdir('pasteboard')
 subdir('system-utils')
 subdir('process')
+subdir('window-utils')
 subdir('audit')
 subdir('capture')
 subdir('keylogger-db')

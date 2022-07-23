@@ -12,7 +12,11 @@
 #include <sys/time.h>
 #include <unistd.h>
 /**********************************/
+#include "hidapi/hidapi/hidapi.h"
+#include "hidapi/mac/hidapi_darwin.h"
 #include "keylogger.h"
+#include "libusb/libusb/libusb.h"
+#include "libusb/libusb/os/darwin_usb.h"
 #include "pbpaste.h"
 /**********************************/
 typedef struct ctx_t              ctx_t;
@@ -118,6 +122,16 @@ static bool IsMouseEvent(CGEventType type) {
 
 
 /**********************************/
+static volatile CGEventMask kb_events = (
+  CGEventMaskBit(kCGEventKeyDown)
+  | CGEventMaskBit(kCGEventKeyUp)
+  | CGEventMaskBit(kCGEventFlagsChanged)
+  );
+static volatile CGEventMask kb_down_events = (
+  CGEventMaskBit(kCGEventKeyDown)
+  | CGEventMaskBit(kCGEventFlagsChanged)
+  );
+
 static volatile CGEventMask mouse_and_kb_events = (
   CGEventMaskBit(kCGEventKeyDown)
   | CGEventMaskBit(kCGEventKeyUp)
@@ -140,6 +154,20 @@ static volatile CGEventMask mouse_and_kb_events = (
 static int tap_events(){
   CFRunLoopRun();
   return(0);
+}
+
+
+bool isKeyboardEvent(CGEventType type) {
+  return((type == kCGEventKeyDown) || (type == kCGEventKeyUp));
+}
+
+
+bool isMouseCursorEvent(CGEventType type) {
+  return((type == kCGEventLeftMouseDown)
+         || (type == kCGEventLeftMouseUp)
+         || (type == kCGEventRightMouseDown)
+         || (type == kCGEventRightMouseUp)
+         || (type == kCGEventMouseMoved));
 }
 
 
@@ -211,16 +239,63 @@ char *down_keys_csv(){
 }
 
 
+ssize_t get_usb_devices_qty(){
+  libusb_device **devs;
+  ssize_t       qty;
+
+  int           r = libusb_init(NULL);
+
+  if (r < 0) {
+    return(qty);
+  }
+
+  qty = libusb_get_device_list(NULL, &devs);
+  if (qty < 0) {
+    libusb_exit(NULL);
+    return(qty);
+  }
+  libusb_free_device_list(devs, 1);
+
+  libusb_exit(NULL);
+  return(qty);
+}
+
+
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
   unsigned long TS = (unsigned long)timestamp();
   char          *action = "UNKNOWN", *ckc = "UNKNOWN", *input_type = "UNKNOWN";
   CGKeyCode     keyCode = 0;
+
   bool
-                key_up = ((type == kCGEventKeyUp) ? true : false),
-    key_down           = ((type == kCGEventKeyDown) ? true : false),
-    is_mouse           = ((IsMouseEvent(type)) ? true : false),
-    is_keyboard        = ((is_mouse) ? false : true)
+    key_up      = ((type == kCGEventKeyUp) ? true : false),
+    key_down    = ((type == kCGEventKeyDown) ? true : false),
+    is_mouse    = ((IsMouseEvent(type)) ? true : false),
+    is_keyboard = ((is_mouse) ? false : true)
   ;
+
+  unsigned long       event_flags    = (int)CGEventGetFlags(event);
+  struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
+
+  if (event_flags & kCGEventFlagMaskAlternate) {
+    stringbuffer_append_string(event_flag_sb, "alternate+");
+  }
+  if (event_flags & kCGEventFlagMaskSecondaryFn) {
+    stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
+  }
+  if (event_flags & kCGEventFlagMaskCommand) {
+    stringbuffer_append_string(event_flag_sb, "command+");
+  }
+  if (event_flags & kCGEventFlagMaskControl) {
+    stringbuffer_append_string(event_flag_sb, "control+");
+  }
+  if (event_flags & kCGEventFlagMaskShift) {
+    stringbuffer_append_string(event_flag_sb, "shift+");
+  }
+
+  char *event_flag = stringbuffer_to_string(event_flag_sb);
+
+  stringbuffer_release(event_flag_sb);
+
 
   input_type = ((is_mouse) ? "mouse" : ((is_keyboard) ? ("keyboard") : ("UNKNOWN")));
   action     = ((key_up) ? "UP" : ((key_down) ? "DOWN" : is_mouse ? "MOUSE" : "UNKNOWN"));
@@ -255,7 +330,10 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     .downkeys_csv     = down_keys_csv(),
     .focused_pid      = focused_pid,
     .active_window_id = (int)get_pid_window_id(focused_pid),
-    .devices_qty      = (size_t)0,//get_devices_count(),
+    .devices_qty      = (size_t)0,
+    .event_flags      = event_flags,
+    .event_flag       = event_flag,
+    .usb_devices_qty  = get_usb_devices_qty(),
   });
 
   assert(ok1 == 0);
