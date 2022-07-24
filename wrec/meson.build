@@ -18,10 +18,14 @@ wrec_deps = [
   libterminput_dep,
   chan_dep,
   generic_print_dep,
+  bytes_dep,
+  b64_dep,
+  rwimg_dep,
   window_utils_dep,
   logh_dep,
   dbg_dep,
   c_timer_dep,
+  gd_dep,
   capture_dep,
   fort_dep,  
 ]
@@ -31,12 +35,15 @@ wrec_dirs = [
   '.',
   inc,
 ]
-wrec_lib = shared_library('wrec',
+
+
+wrec_lib = library('wrec',
   wrec_srcs,
   install: false,
   dependencies: wrec_deps,
   c_args: wrec_c_args,
   include_directories: wrec_dirs,
+  link_args: wrec_link_flags,
 )
 wrec_dep = declare_dependency(
   include_directories: wrec_dirs,

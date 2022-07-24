@@ -14,6 +14,8 @@ wrec_cli_dirs = [
   '../submodules/meson_deps/submodules/c_fsio',
   inc,
 ]
+
+
 if get_option('enable-binaries')
   wrec_cli_exec = executable('wrec-cli',
      wrec_cli_srcs,
@@ -22,6 +24,6 @@ if get_option('enable-binaries')
      c_args: wrec_cli_c_args,
   )
   if get_option('enable-binary-tests')
-    test('wrec-cli', passh_program, args: [wrec_cli_exec])
+    #test('wrec-cli', passh_program, args: [wrec_cli_exec])
   endif
 endif

@@ -14,14 +14,17 @@ static struct args_t args = {
   DEFAULT_MODE,
   DEFAULT_VERBOSE,
   DEFAULT_WINDOW_ID,
+  DEFAULT_MAX_RECORD_FRAMES,
+  DEFAULT_MAX_RECORD_DURATION_SECONDS,
+  DEFAULT_FRAMES_PER_SECOND,
 };
 
 
 static struct modes_t    modes[] = {
-  { .name = "debug_args",     .description = "Debug Arguments", .handler = debug_args     },
-  { .name = "wrec0",          .description = "Wrec0",           .handler = wrec0          },
-  { .name = "list",           .description = "List Windows",    .handler = list_windows   },
-  { .name = "capture_window", .description = "Capture Window",  .handler = capture_window },
+  { .name = "debug_args", .description = "Debug Arguments", .handler = debug_args     },
+  { .name = "wrec0",      .description = "Wrec0",           .handler = wrec0          },
+  { .name = "list",       .description = "List Windows",    .handler = list_windows   },
+  { .name = "record",     .description = "Capture Window",  .handler = capture_window },
   { NULL },
 };
 
@@ -31,11 +34,10 @@ static struct cag_option options[] = {
     .access_name    = "mode",
     .value_name     = "MODE",
     .description    = "Mode" },
-  { .identifier     = 'v',
-    .access_letters = "v",
-    .access_name    = "verbose",
-    .value_name     = NULL,
-    .description    = "Verbose Mode" },
+  { .identifier     = 'v',.access_letters  = "v", .access_name = "verbose",     .value_name = NULL,          .description = "Verbose Mode"         },
+  { .identifier     = 'f',.access_letters  = "f", .access_name = "max-frames",  .value_name = "MAX_FRAMES",  .description = "Max Recorded Frames"  },
+  { .identifier     = 's',.access_letters  = "s", .access_name = "max-seconds", .value_name = "MAX_SECONDS", .description = "Max Recorded Seconds" },
+  { .identifier     = 'F',.access_letters  = "F", .access_name = "fps",         .value_name = "RECORD_FPS",  .description = "Frames Per Second"    },
   { .identifier     = 'w',
     .access_letters = "w",
     .access_name    = "window",
@@ -81,10 +83,16 @@ int debug_args(){
           acs(AC_BRIGHT_BLUE_BLACK AC_ITALIC  "Verbose: %d") "\n"
           ansistr(AC_RESETALL AC_BRIGHT_GREEN_BLACK "Mode: %s") "\n"
           acs(AC_BRIGHT_MAGENTA_BLACK AC_ITALIC  "Window ID: %d") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Max Recorded Frames: %lu") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Max Record Seconds: %lu") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Frames Per Second: %d") "\n"
           ,
           args.verbose,
           args.mode,
-          args.window_id
+          args.window_id,
+          args.max_recorded_frames,
+          args.max_record_duration_seconds,
+          args.frames_per_second
           );
 
   return(EXIT_SUCCESS);
@@ -92,25 +100,18 @@ int debug_args(){
 
 
 static int parse_args(int argc, char *argv[]){
-  char               identifier;
-  const char         *value;
   cag_option_context context;
 
   cag_option_prepare(&context, options, CAG_ARRAY_SIZE(options), argc, argv);
   while (cag_option_fetch(&context)) {
-    identifier = cag_option_get(&context);
+    char identifier = cag_option_get(&context);
     switch (identifier) {
-    case 'm':
-      value     = cag_option_get_value(&context);
-      args.mode = value;
-      break;
-    case 'v':
-      args.verbose = true;
-      break;
-    case 'w':
-      value          = cag_option_get_value(&context);
-      args.window_id = atoi(value);
-      break;
+    case 'm': args.mode                        = cag_option_get_value(&context); break;
+    case 'v': args.verbose                     = true; break;
+    case 'w': args.window_id                   = atoi(cag_option_get_value(&context)); break;
+    case 'f': args.max_recorded_frames         = atoi(cag_option_get_value(&context)); break;
+    case 's': args.max_record_duration_seconds = atoi(cag_option_get_value(&context)); break;
+    case 'F': args.frames_per_second           = atoi(cag_option_get_value(&context)); break;
     case 'h':
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "Usage: parse-colors [OPTION]\n" AC_RESETALL);
       cag_option_print(options, CAG_ARRAY_SIZE(options), stdout);

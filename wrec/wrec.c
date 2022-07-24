@@ -1,4 +1,15 @@
 #pragma once
+/////////////////////////////////////
+#include <assert.h>
+#include <gd.h>
+#include <pthread.h>
+#include <termios.h>
+#include <unistd.h>
+/////////////////////////////////////
+#include "wrec/wrec.h"
+/////////////////////////////////////
+#include "b64.c/b64.h"
+#include "bytes/bytes.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "capture/capture.h"
 #include "chan/src/chan.h"
@@ -6,15 +17,13 @@
 #include "dbg/dbg.h"
 #include "generic-print/print.h"
 #include "libterminput/libterminput.h"
+#include "rwimg/readimage.h"
+#include "rwimg/writeimage.h"
 #include "timestamp/timestamp.h"
 #include "wrec-cli/wrec-cli.h"
-#include "wrec/wrec.h"
-#include <pthread.h>
-#include <termios.h>
-#include <unistd.h>
+
 ////////////////////////////////////////////////////////////
 struct args_t   execution_args;
-////////////////////////////////////////////////////////////
 pthread_mutex_t *capture_config_mutex;
 pthread_t       capture_thread, wait_ctrl_d_thread;
 chan_t          *done_chan;
@@ -22,17 +31,17 @@ chan_t          *done_chan;
 #define RECORDED_FRAMES_QTY    vector_size(capture_config->recorded_frames_v)
 static struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {
-    return &(struct recorded_frame_t){
-             .timestamp = 0,
-    }
+    return(&(struct recorded_frame_t){
+      .timestamp = 0,
+    });
   }
   return((struct recorded_frame_t *)vector_get(capture_config->recorded_frames_v, 0));
 }
 static struct recorded_frame_t *get_latest_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {
-    return &(struct recorded_frame_t){
-             .timestamp = 0,
-    }
+    return(&(struct recorded_frame_t){
+      .timestamp = 0,
+    });
   }
   return((struct recorded_frame_t *)vector_get(capture_config->recorded_frames_v, vector_size(capture_config->recorded_frames_v) - 1));
 }
@@ -83,6 +92,55 @@ size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
 }
 
 
+int do_gd(void){
+  int        i;
+  FILE       *out;
+
+  gdImagePtr im;
+  gdImagePtr prev = NULL;
+  int        black;
+
+  im = gdImageCreate(100, 100);
+  if (!im) {
+    fprintf(stderr, "can't create image");
+    return(1);
+  }
+
+  out = fopen("anim.gif", "wb");
+  if (!out) {
+    fprintf(stderr, "can't create file %s", "anim.gif");
+    return(1);
+  }
+
+  gdImageColorAllocate(im, 255, 255, 255);   /* allocate white as side effect */
+  gdImageGifAnimBegin(im, out, 1, -1);
+
+  for (i = 0; i < 20; i++) {
+    int r, g, b;
+    im = gdImageCreate(100, 100);
+    r  = rand() % 255;
+    g  = rand() % 255;
+    b  = rand() % 255;
+
+    gdImageColorAllocate(im, 255, 255, 255);      /* allocate white as side effect */
+    black = gdImageColorAllocate(im, r, g, b);
+    printf("(%i, %i, %i)\n", r, g, b);
+    gdImageFilledRectangle(im, rand() % 100, rand() % 100, rand() % 100, rand() % 100, black);
+    gdImageGifAnimAdd(im, out, 1, 0, 0, 10, 1, prev);
+
+    if (prev) {
+      gdImageDestroy(prev);
+    }
+    prev = im;
+  }
+
+  gdImageGifAnimEnd(out);
+  fclose(out);
+
+  return(0);
+} /* do_gd */
+
+
 ////////////////////////////////////////////////////////////
 void do_capture(void *CAPTURE_CONFIG){
   struct capture_config_t *capture_config = (struct capture_config_t *)CAPTURE_CONFIG;
@@ -91,7 +149,7 @@ void do_capture(void *CAPTURE_CONFIG){
   bool active = capture_config->active;
 
   if (execution_args.verbose) {
-    printf("capturing max %d frames, %d seconds.......\n", capture_config->max_frames_qty, capture_config->max_duration_seconds);
+    printf("capturing max %d frames, %d seconds.......\n", capture_config->max_record_frames_qty, capture_config->max_record_duration_seconds);
   }
   pthread_mutex_unlock(capture_config_mutex);
 
@@ -102,8 +160,8 @@ void do_capture(void *CAPTURE_CONFIG){
     }
     active =
       (capture_config->active)
-      && (RECORDED_FRAMES_QTY < capture_config->max_frames_qty)
-      && ((size_t)(get_recorded_duration_ms(capture_config) / 1000) < ((size_t)capture_config->max_duration_seconds));
+      && (RECORDED_FRAMES_QTY < capture_config->max_record_frames_qty)
+      && ((size_t)(get_recorded_duration_ms(capture_config) / 1000) < ((size_t)capture_config->max_record_duration_seconds));
     pthread_mutex_unlock(capture_config_mutex);
     if (!active) {
       if (execution_args.verbose) {
@@ -119,8 +177,8 @@ void do_capture(void *CAPTURE_CONFIG){
     if (execution_args.verbose) {
       fprintf(stderr, "         latest frame ts: %" PRIu64 " (running for %lu/%lus) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums\n",
               get_latest_recorded_frame(capture_config)->timestamp,
-              get_recorded_duration_ms(capture_config) / 1000, (size_t)capture_config->max_duration_seconds,
-              RECORDED_FRAMES_QTY, capture_config->max_frames_qty,
+              get_recorded_duration_ms(capture_config) / 1000, (size_t)capture_config->max_record_duration_seconds,
+              RECORDED_FRAMES_QTY, capture_config->max_record_frames_qty,
               get_ms_since_last_recorded_frame(capture_config),
               sleep_ms
               );
@@ -133,7 +191,10 @@ void do_capture(void *CAPTURE_CONFIG){
     if (execution_args.verbose) {
       dbg(SCREENSHOT_FILE, %s);
     }
-    bool                    ok = capture_to_file_image(capture_config->window_id, SCREENSHOT_FILE);
+    bool ok = capture_to_file_image(capture_config->window_id, SCREENSHOT_FILE);
+    if (execution_args.verbose) {
+      dbg(ok, %d);
+    }
     struct recorded_frame_t *f = malloc(sizeof(struct recorded_frame_t));
     f->timestamp = timestamp();
     f->file      = SCREENSHOT_FILE;
@@ -204,6 +265,31 @@ void wait_for_control_d(){
 } /* wait_for_control_d */
 
 
+bool read_captured_frames(struct capture_config_t *capture_config) {
+  for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
+    struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
+    fprintf(stdout, AC_RESETALL AC_BLUE " - %s @ %" PRIu64 "\n",
+            f->file,
+            f->timestamp
+            );
+
+    f->file_size = fsio_file_size(f->file);
+    unsigned char *d;
+    int           width, height;
+    d = read_image(f->file, &width, &height);
+    dbg(width, %d);
+    dbg(height, %d);
+
+    char *gif_file = malloc(1024);
+    sprintf(gif_file, "%s-%lu.gif", f->file, i);
+    dbg(gif_file, %s);
+    free(gif_file);
+    write_image(gif_file, width, height, d, 3, width * 3, IMAGE_FORMAT_AUTO);
+  }
+  return(true);
+}
+
+
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   struct Vector *window_ids = get_windows_ids();
@@ -215,12 +301,12 @@ int capture_window(void *ARGS) {
   struct capture_config_t *capture_config = malloc(sizeof(struct capture_config_t));
 
   pthread_mutex_lock(capture_config_mutex);
-  capture_config->active               = true;
-  capture_config->frames_per_second    = 2;
-  capture_config->max_frames_qty       = 30;
-  capture_config->max_duration_seconds = 2;
-  capture_config->recorded_frames_v    = vector_new();
-  capture_config->window_id            = execution_args.window_id;
+  capture_config->active                      = true;
+  capture_config->frames_per_second           = execution_args.frames_per_second;
+  capture_config->max_record_frames_qty       = execution_args.max_recorded_frames;
+  capture_config->max_record_duration_seconds = execution_args.max_record_duration_seconds;
+  capture_config->recorded_frames_v           = vector_new();
+  capture_config->window_id                   = execution_args.window_id;
   pthread_mutex_unlock(capture_config_mutex);
 
   if (execution_args.verbose) {
@@ -240,9 +326,8 @@ int capture_window(void *ARGS) {
     return(1);
   }
 
-  void *msg;
   printf("waiting for done chan\n");
-  chan_recv(done_chan, &msg);
+  chan_recv(done_chan, (void *)NULL);
   printf("received done chan\n");
   chan_dispose(done_chan);
 
@@ -265,15 +350,26 @@ int capture_window(void *ARGS) {
     fprintf(stderr, AC_RESETALL AC_GREEN "Capture Thread Joined\n");
   }
 
-  pthread_mutex_lock(capture_config_mutex);
   fprintf(stderr, AC_RESETALL AC_GREEN "Captured %lu frames\n", vector_size(capture_config->recorded_frames_v));
+
+  fprintf(stderr, AC_RESETALL AC_GREEN "Reading %lu frames\n", vector_size(capture_config->recorded_frames_v));
+  int ok = read_captured_frames(capture_config);
+  ok = do_gd();
+  assert(ok == 0);
+  ok = do_gd();
+  assert(ok == true);
+  fprintf(stderr, AC_RESETALL AC_GREEN "Read frames\n");
+
   for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
     struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
-    fprintf(stdout, AC_RESETALL AC_BLUE " - %s @ %" PRIu64 "\n",
+    fprintf(stdout,
+            AC_RESETALL AC_BLUE
+            " - %s @ %" PRIu64 " (%s)"
+            AC_RESETALL "\n",
             f->file,
-            f->timestamp
+            f->timestamp,
+            bytes_to_string(f->file_size)
             );
-    pthread_mutex_unlock(capture_config_mutex);
   }
   return(0);
 } /* capture_window */
