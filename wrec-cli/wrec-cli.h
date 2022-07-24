@@ -10,51 +10,37 @@
 #include <string.h>
 #include <sys/time.h>
 ///////////////////////////////////
-#define DEFAULT_VERBOSE    false
-#define DEFAULT_MODE       "test"
+#define DEFAULT_VERBOSE      false
+#define DEFAULT_MODE         "test"
+#define DEFAULT_WINDOW_ID    0
+///////////////////////////////////
+struct modes_t {
+  char *name;
+  char *description;
+  int  (*handler)(void *);
+} modes_t;
+struct args_t {
+  char   *mode;
+  bool   verbose;
+  int    window_id;
+  size_t max_recorded_frames;
+};
+struct recorded_frame_t {
+  int64_t timestamp;
+  char    *file;
+};
+struct capture_config_t {
+  bool          active;
+  int           max_duration_seconds;
+  int           max_frames_qty;
+  int64_t       started_timestamp, ended_timestamp;
+  int           frames_per_second;
+  int           window_id;
+  struct Vector *recorded_frames_v;
+};
 ///////////////////////////////////
 static int parse_args(int argc, char *argv[]);
 int debug_args();
 
 ///////////////////////////////////
-struct modes_t {
-  char *name;
-  char *description;
-  int  (*handler)();
-} modes_t;
-
-struct args_t {
-  char *mode;
-  bool verbose;
-};
-
-static struct args_t args = {
-  DEFAULT_MODE,
-  DEFAULT_VERBOSE,
-};
-
-
-static struct modes_t    modes[] = {
-  { .name = "debug_args", .description = "Debug Arguments", .handler = debug_args   },
-  { .name = "wrec0",      .description = "Wrec0",           .handler = wrec0        },
-  { .name = "list",       .description = "List Windows",    .handler = list_windows },
-  { NULL },
-};
-
-static struct cag_option options[] = {
-  { .identifier     = 'm',
-    .access_letters = "m",
-    .access_name    = "mode",
-    .value_name     = "MODE",
-    .description    = "Mode" },
-  { .identifier     = 'v',
-    .access_letters = "v",
-    .access_name    = "verbose",
-    .value_name     = NULL,
-    .description    = "Verbose Mode" },
-  { .identifier     = 'h',
-    .access_letters = "h",
-    .access_name    = "help",
-    .description    = "Shows the command help" }
-};
 
