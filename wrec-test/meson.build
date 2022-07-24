@@ -1,0 +1,27 @@
+wrec_test_srcs = [
+  'wrec-test.c',
+  'wrec-test.h',
+]
+wrec_include_dirs = [
+  '.',
+  '../wrec',
+  inc,
+]
+wrec_include_cargs = [
+  ]
+wrec_test_deps = [
+  greatest_dep,
+  wrec_dep,
+  debug_memory_dep,
+]
+if get_option('enable-binaries')
+  wrec_test_exec = executable('wrec-test',
+     wrec_test_srcs,
+     dependencies: wrec_test_deps,
+     include_directories: wrec_include_dirs,
+     c_args: wrec_include_cargs,
+  )
+  if get_option('enable-binary-tests')
+    test('wrec-test', passh_program, args: [wrec_test_exec])
+  endif
+endif
