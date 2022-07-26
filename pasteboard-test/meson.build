@@ -14,6 +14,7 @@ pasteboard_test_deps = [
   c_vector_dep,
   ansi_utils_dep,
   bytes_dep,
+  bench_dep,
 ]
 
 if get_option('enable-binaries')

@@ -5,6 +5,7 @@
 #define BITS_PER_COMPONENT         8
 #define COMPONENTS_PER_PIXEL       4
 #define DEBUG_IMAGE_RESIZE         false
+#define DEBUG_MEASUREMENTS         true
 ///////////////////////////////////////////////////////
 #include <assert.h>
 #include <stdbool.h>
@@ -12,9 +13,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 ///////////////////////////////////////////////////////
+#include "bench/bench.h"
+#include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "capture/capture.h"
 #include "core-utils/core-utils.h"
+#include "ms/ms.h"
+#include "tempdir.c/tempdir.h"
+static const char *tempdir_path = NULL;
 struct img_data {
   size_t  width;
   size_t  height;
@@ -25,16 +31,22 @@ static void debug_resize(const char *FILE_NAME, char *RESIZE_BY, int RESIZE_VALU
 
 
 static bool cgimage_save_png(const CGImageRef image, const char *filename) {
-  CFStringRef path;
-  CFURLRef    url;
+  //MEASURE(measurement_cgimage_save_png)
+  bool                  success = false;
+  CFStringRef           path;
+  CFURLRef              url;
+  CGImageDestinationRef destination;
+  {
+    path = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);
+    url  = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
+    CFRelease(path);
+    destination = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
+    CGImageDestinationAddImage(destination, image, nil);
+    success = CGImageDestinationFinalize(destination);
+  }
 
-  path = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);
-  url  = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
-  CFRelease(path);
-  CGImageDestinationRef destination = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
-
-  CGImageDestinationAddImage(destination, image, nil);
-  bool success = CGImageDestinationFinalize(destination);
+//   END_MEASURE(measurement_cgimage_save_png)
+//   MEASURE_SUMMARY(measurement_cgimage_save_png);
 
   if (!success) {
     fprintf(stderr, "Failed to write image to %s", filename);
@@ -88,11 +100,16 @@ void CGImageDumpInfo(CGImageRef image, bool shouldPrintPixelData) {
 
 
 static CFStringRef image_file_name(const char *file_extension) {
+  if (tempdir_path == NULL) {
+    tempdir_path = gettempdir();
+  }
   char      *c_file_name;
   time_t    t  = time(NULL);
   struct tm tm = *localtime(&t);
 
-  asprintf(c_file_name, "/tmp/Image_%d-%02d-%02d_%02d.%02d.%02d.%s", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+  asprintf(c_file_name, "%s/Image_%d-%02d-%02d_%02d.%02d.%02d.%s",
+           tempdir_path,
+           tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
            tm.tm_hour, tm.tm_min, tm.tm_sec, file_extension);
   return(CFStringCreateWithCString(kCFAllocatorDefault, c_file_name, kCFStringEncodingUTF8));
 }
@@ -112,37 +129,6 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
 
   CGContextRelease(context);
   return(newImageRef);
-}
-
-
-bool CGImageSaveToFile(CGImageRef image, CFStringRef file_path, CFStringRef file_name, CFStringRef file_type) {
-  CFURLRef filePathURL  = CFURLCreateWithString(kCFAllocatorDefault, file_path, NULL);
-  CFURLRef fileURL      = CFURLCreateCopyAppendingPathComponent(kCFAllocatorDefault, filePathURL, file_name, false);
-  char     *c_file_path = CFStringCopyUTF8String(file_path) + 8;
-
-  mkdir(c_file_path, 0777);
-  CGImageDestinationRef imageDestination = CGImageDestinationCreateWithURL(fileURL, file_type, 1, NULL);
-
-  if (!imageDestination) {
-    fprintf(stderr, "%s: Failed to create CGImageDestination for %s/%s.\n", __func__, CFStringCopyUTF8String(file_path), CFStringCopyUTF8String(file_name));
-    CFRelease(filePathURL);
-    CFRelease(fileURL);
-    CFRelease(imageDestination);
-    return(false);
-  }
-
-  CGImageDestinationAddImage(imageDestination, image, NULL);
-
-  if (!CGImageDestinationFinalize(imageDestination)) {
-    fprintf(stderr, "%s: Failed to write image to %s/%s.\n", __func__, CFStringCopyUTF8String(file_path), CFStringCopyUTF8String(file_name));
-    CFRelease(filePathURL);
-    CFRelease(fileURL);
-    CFRelease(imageDestination);
-    return(false);
-  }
-
-  CFRelease(imageDestination);
-  return(true);
 }
 
 
@@ -227,9 +213,15 @@ bool capture_to_file_image_resize_width(const int WINDOW_ID, const char *FILE_NA
 
 
 bool capture_to_file_image(const int WINDOW_ID, const char *FILE_NAME){
-  CGImageRef img    = capture_window_id_cgimageref(WINDOW_ID);
-  size_t     width  = CGImageGetWidth(img);
-  size_t     height = CGImageGetHeight(img);
+  //MEASURE(measurement_capture_window_id_cgimageref)
+
+  CGImageRef img = capture_window_id_cgimageref(WINDOW_ID);
+
+  //END_MEASURE(measurement_capture_window_id_cgimageref)
+  //MEASURE_SUMMARY(measurement_capture_window_id_cgimageref);
+
+  size_t width  = CGImageGetWidth(img);
+  size_t height = CGImageGetHeight(img);
 
   if (DEBUG_IMAGE_RESIZE) {
     debug_resize(FILE_NAME, "none", 0, 1, width, height, width, height);

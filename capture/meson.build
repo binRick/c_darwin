@@ -6,6 +6,9 @@ capture_c_args = []
 capture_deps = [
   ansi_codes_dep,
   core_utils_dep,
+  bench_dep,
+  ms_dep,
+  tempdir_dep,
   which_dep,
   subprocess_dep,
   assertf_dep,

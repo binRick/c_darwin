@@ -2,13 +2,46 @@
 #define DEBUG_PASTEBOARD_TEST    true
 //////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "bench/bench.h"
 #include "bytes/bytes.h"
 #include "greatest/greatest.h"
 #include "pasteboard-test/pasteboard-test.h"
 #include "pasteboard/pasteboard.h"
 
 
+/*
+ * ////////////////////////////////////////
+ *  BENCHMARK_QTY(benchmark_name, 3)
+ *  //DO_WORK
+ *  END_BENCHMARK(benchmark_name)
+ *  BENCHMARK_SUMMARY(benchmark_name);
+ * ////////////////////////////////////////
+ *  MEASURE(measurement_name)
+ *  //DO_WORK
+ *  END_MEASURE(measurement_name)
+ *  MEASURE_SUMMARY(measurement_name);
+ * ////////////////////////////////////////
+ */
+
+
+TEST t_pasteboard_benchmark(void){
+  char *pasteboard_content;
+
+  BENCHMARK_QTY(benchmark_pasteboard, 250)
+
+  pasteboard_content = read_clipboard();
+  ASSERT_NEQ(pasteboard_content, NULL);
+
+  END_BENCHMARK(benchmark_pasteboard)
+  BENCHMARK_SUMMARY(benchmark_pasteboard);
+
+  free(pasteboard_content);
+}
+
+
 TEST t_pasteboard(void){
+  MEASURE(pasteboard_measurement)
+
   char *pasteboard_content = read_clipboard();
 
   if (pasteboard_content == NULL) {
@@ -29,12 +62,15 @@ TEST t_pasteboard(void){
             bytes_to_string(len), len
             );
   }
+  END_MEASURE(pasteboard_measurement)
+  MEASURE_SUMMARY(pasteboard_measurement);
   PASS();
 }
 
 
 SUITE(s_pasteboard){
   RUN_TEST(t_pasteboard);
+  RUN_TEST(t_pasteboard_benchmark);
   PASS();
 }
 

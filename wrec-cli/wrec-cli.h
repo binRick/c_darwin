@@ -40,6 +40,7 @@ static char *resize_type_name(const int RESIZE_TYPE){
 #define DEFAULT_MODE_DEBUG_ARGS                false
 #define DEFAULT_RESIZE_TYPE                    RESIZE_NONE
 #define DEFAULT_RESIZE_VALUE                   1
+#define DEFAULT_APPLICATION_NAME_GLOB          "*"
 ///////////////////////////////////
 struct modes_t {
   char *name;
@@ -58,11 +59,12 @@ struct args_t {
   bool   mode_debug_args;
   int    resize_type;
   int    resize_value;
+  char   *application_name_glob;
 };
 struct recorded_frame_t {
   int64_t timestamp;
   char    *file, *hash_enc;
-  size_t  file_size;
+  size_t  file_size, record_dur;
 };
 struct capture_config_t {
   bool          active;

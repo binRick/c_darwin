@@ -67,7 +67,7 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   CFDictionaryRef window;
 
   windowList = CGWindowListCopyWindowInfo(
-    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
   int count = 0;
@@ -105,7 +105,7 @@ int get_pid_window_id(const int PID){
   CFDictionaryRef window;
 
   windowList = CGWindowListCopyWindowInfo(
-    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
@@ -332,7 +332,7 @@ void AXWindowSetSize(AXUIElementRef window, CGSize size) {
 int get_windows_qty(void){
   int        qty        = -1;
   CFArrayRef windowList = CGWindowListCopyWindowInfo(
-    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
 
@@ -534,7 +534,7 @@ CGWindowID CGWindowWithInfo(AXUIElementRef window, CGPoint location) {
     return(kCGNullWindowID);
   }
 
-  CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+  CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements,
                                                      kCGNullWindowID);
   if (windowList == NULL) {
     return(kCGNullWindowID);

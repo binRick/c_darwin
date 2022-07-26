@@ -20,7 +20,11 @@ capture_test_deps = [
   socket99_dep,
   c_string_buffer_dep,
   c_stringfn_dep,
+  bench_dep,
   c_fsio_dep,
+  bytes_dep,
+  ms_dep,
+  tempdir_dep,
   debug_memory_dep,
 ]
 if get_option('enable-binaries')

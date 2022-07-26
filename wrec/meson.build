@@ -15,6 +15,7 @@ wrec_deps = [
   subprocess_dep,
   strdup_dep,
   assertf_dep,
+  wildcardcmp_dep,
   parson_dep,
   c_fsio_dep,  
   string_utils_dep,
@@ -32,6 +33,9 @@ wrec_deps = [
   gd_dep,
   progress_dep,
   capture_dep,
+  bench_dep,
+  ms_dep,
+  tempdir_dep,
   fort_dep,  
 ]
 wrec_dirs = [
