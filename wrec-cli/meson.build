@@ -7,6 +7,7 @@ wrec_cli_deps = [
   ansi_codes_dep,
   cargs_dep,
   wrec_dep,
+  progress_dep,
 ]
 wrec_cli_dirs = [
   '../submodules/meson_deps/submodules/c_fsio/include',

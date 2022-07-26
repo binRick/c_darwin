@@ -5,6 +5,7 @@ capture_link_flags = []
 capture_c_args = []
 capture_deps = [
   ansi_codes_dep,
+  core_utils_dep,
   which_dep,
   subprocess_dep,
   assertf_dep,

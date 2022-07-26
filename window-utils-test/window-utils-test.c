@@ -161,19 +161,6 @@ TEST t_list_windows(){
     }else{
       ft_set_cell_prop(table, i + 1, 9, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
     }
-
-//    unsigned char *img_content = capture_to_file_image_data(w->window_id);
-/*
- *  char *SCREENSHOT_FILE = malloc(1024);
- *  sprintf(SCREENSHOT_FILE, "/tmp/window-%d-screenshot.png", w->window_id);
- *  bool ok = capture_to_file_image(w->window_id, SCREENSHOT_FILE);
- *  ASSERT_EQm("Failed to take screenshot", ok, true);
- *  size_t SCREENSHOT_FILE_SIZE = fsio_file_size(SCREENSHOT_FILE);
- *  free(SCREENSHOT_FILE);
- *
- *  dbg(SCREENSHOT_FILE,%s);
- *  dbg(SCREENSHOT_FILE_SIZE,%lu);
- */
   }
   char *dur = ct_stop("");
 

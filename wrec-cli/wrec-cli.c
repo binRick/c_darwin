@@ -17,6 +17,11 @@ static struct args_t args = {
   DEFAULT_MAX_RECORD_FRAMES,
   DEFAULT_MAX_RECORD_DURATION_SECONDS,
   DEFAULT_FRAMES_PER_SECOND,
+  DEFAULT_MODE_LIST,
+  DEFAULT_MODE_CAPTURE,
+  DEFAULT_MODE_DEBUG_ARGS,
+  DEFAULT_RESIZE_TYPE,
+  DEFAULT_RESIZE_VALUE
 };
 
 
@@ -34,15 +39,33 @@ static struct cag_option options[] = {
     .access_name    = "mode",
     .value_name     = "MODE",
     .description    = "Mode" },
-  { .identifier     = 'v',.access_letters  = "v", .access_name = "verbose",     .value_name = NULL,          .description = "Verbose Mode"         },
-  { .identifier     = 'f',.access_letters  = "f", .access_name = "max-frames",  .value_name = "MAX_FRAMES",  .description = "Max Recorded Frames"  },
-  { .identifier     = 's',.access_letters  = "s", .access_name = "max-seconds", .value_name = "MAX_SECONDS", .description = "Max Recorded Seconds" },
-  { .identifier     = 'F',.access_letters  = "F", .access_name = "fps",         .value_name = "RECORD_FPS",  .description = "Frames Per Second"    },
+  { .identifier     = 'v',.access_letters  = "v", .access_name = "verbose",     .value_name = NULL,              .description = "Verbose Mode"         },
+  { .identifier     = 'f',.access_letters  = "f", .access_name = "max-frames",  .value_name = "MAX_FRAMES",      .description = "Max Recorded Frames"  },
+  { .identifier     = 's',.access_letters  = "s", .access_name = "max-seconds", .value_name = "MAX_SECONDS",     .description = "Max Recorded Seconds" },
+  { .identifier     = 'F',.access_letters  = "F", .access_name = "fps",         .value_name = "RECORD_FPS",      .description = "Frames Per Second"    },
   { .identifier     = 'w',
     .access_letters = "w",
     .access_name    = "window",
     .value_name     = "WINDOW_ID",
     .description    = "Window ID" },
+  { .identifier     = 'c',.access_letters  = "c", .access_name = "capture",     .value_name = "MODE_CAPTURE",    .description = "Capture Mode"         },
+  { .identifier     = 'l',.access_letters  = "l", .access_name = "list",        .value_name = "MODE_LIST",       .description = "List Mode"            },
+  { .identifier     = 'a',.access_letters  = "a", .access_name = "debug-args",  .value_name = "MODE_DEBUG_ARGS", .description = "Debug Arguments"      },
+  { .identifier     = 'W',
+    .access_letters = "W",
+    .access_name    = "resize-width",
+    .value_name     = "RESIZE_WIDTH",
+    .description    = "Resize To Width" },
+  { .identifier     = 'H',
+    .access_letters = "H",
+    .access_name    = "resize-height",
+    .value_name     = "RESIZE_HEIGHT",
+    .description    = "Resize To Height" },
+  { .identifier     = 'R',
+    .access_letters = "R",
+    .access_name    = "resize-factor",
+    .value_name     = "RESIZE_FACTOR",
+    .description    = "Resize Factor" },
   { .identifier     = 'h',
     .access_letters = "h",
     .access_name    = "help",
@@ -86,13 +109,23 @@ int debug_args(){
           acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Max Recorded Frames: %lu") "\n"
           acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Max Record Seconds: %lu") "\n"
           acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Frames Per Second: %d") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Capture Mode: %d") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "List Mode: %d") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Debug Args Mode: %d") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Resize Type: %s") "\n"
+          acs(AC_BRIGHT_YELLOW_BLACK AC_ITALIC  "Resize Value: %d") "\n"
           ,
           args.verbose,
           args.mode,
           args.window_id,
           args.max_recorded_frames,
           args.max_record_duration_seconds,
-          args.frames_per_second
+          args.frames_per_second,
+          args.mode_capture,
+          args.mode_list,
+          args.mode_debug_args,
+          resize_type_name(args.resize_type),
+          args.resize_value
           );
 
   return(EXIT_SUCCESS);
@@ -112,6 +145,21 @@ static int parse_args(int argc, char *argv[]){
     case 'f': args.max_recorded_frames         = atoi(cag_option_get_value(&context)); break;
     case 's': args.max_record_duration_seconds = atoi(cag_option_get_value(&context)); break;
     case 'F': args.frames_per_second           = atoi(cag_option_get_value(&context)); break;
+    case 'c': args.mode_capture                = true; args.mode = "capture"; break;
+    case 'a': args.mode_debug_args             = true; args.mode = "debug_args"; break;
+    case 'l': args.mode_list                   = true; args.mode = "list"; break;
+    case 'W':
+      args.resize_type  = RESIZE_BY_WIDTH;
+      args.resize_value = atoi(cag_option_get_value(&context));
+      break;
+    case 'H':
+      args.resize_type  = RESIZE_BY_HEIGHT;
+      args.resize_value = atoi(cag_option_get_value(&context));
+      break;
+    case 'R':
+      args.resize_type  = RESIZE_BY_FACTOR;
+      args.resize_value = atoi(cag_option_get_value(&context));
+      break;
     case 'h':
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "Usage: parse-colors [OPTION]\n" AC_RESETALL);
       cag_option_print(options, CAG_ARRAY_SIZE(options), stdout);

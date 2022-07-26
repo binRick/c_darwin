@@ -11,6 +11,10 @@ wrec_deps = [
   tiny_regex_c_dep,
   cargs_dep,
   c_string_buffer_dep,
+  which_dep,
+  subprocess_dep,
+  strdup_dep,
+  assertf_dep,
   parson_dep,
   c_fsio_dep,  
   string_utils_dep,
@@ -26,6 +30,7 @@ wrec_deps = [
   dbg_dep,
   c_timer_dep,
   gd_dep,
+  progress_dep,
   capture_dep,
   fort_dep,  
 ]

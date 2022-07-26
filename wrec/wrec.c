@@ -3,13 +3,18 @@
 #include <assert.h>
 #include <gd.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 /////////////////////////////////////
+#include "wrec-cli/wrec-cli.h"
 #include "wrec/wrec.h"
 /////////////////////////////////////
+#include "assertf/assertf.h"
 #include "b64.c/b64.h"
 #include "bytes/bytes.h"
+#include "c_string_buffer/include/stringbuffer.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "capture/capture.h"
 #include "chan/src/chan.h"
@@ -17,10 +22,22 @@
 #include "dbg/dbg.h"
 #include "generic-print/print.h"
 #include "libterminput/libterminput.h"
+#include "progress.c/progress.h"
 #include "rwimg/readimage.h"
 #include "rwimg/writeimage.h"
+#include "strdup/strdup.h"
+#include "subprocess.h/subprocess.h"
 #include "timestamp/timestamp.h"
+#include "which/src/which.h"
 #include "wrec-cli/wrec-cli.h"
+#define PROGRESS_ENABLED      false
+#define FFMPEG_LOOP_QTY       0
+#define FFMPEG_CROP_HEIGHT    50
+
+////////////////////////////////////////////////////////////
+static void db_progress_start(progress_data_t *data);
+static void db_progress(progress_data_t *data);
+static void db_progress_end(progress_data_t *data);
 
 ////////////////////////////////////////////////////////////
 struct args_t   execution_args;
@@ -28,6 +45,91 @@ pthread_mutex_t *capture_config_mutex;
 pthread_t       capture_thread, wait_ctrl_d_thread;
 chan_t          *done_chan;
 ////////////////////////////////////////////////////////////
+
+#define STDOUT_READ_BUFFER_SIZE    1024 * 16
+//#define FFMPEG_LOG_LEVEL "debug"
+//#define FFMPEG_LOG_LEVEL "verbose"
+//#define FFMPEG_LOG_LEVEL "info"
+#define FFMPEG_LOG_LEVEL    "warning"
+
+
+static bool convert_images_to_animated_gif_ffmpeg(struct Vector *images_v, char *ANIMATED_GIF_FILE, int FRAMES_PER_SECOND, int WINDOW_ID){
+  char *cmd;
+  char *images_args;
+
+  asprintf(&images_args, "-i '/tmp/window-%d-%%d.png'", WINDOW_ID);
+  char                 *PATH        = getenv("PATH");
+  char                 *ffmpeg_path = (char *)which_path("ffmpeg", PATH);
+
+  bool                 ANIMATED_GIF_FILE_CREATED = false;
+  char                 *READ_STDOUT;
+  char                 *READ_STDERR;
+  int                  exited, result;
+  struct subprocess_s  subprocess;
+  char                 stdout_buffer[STDOUT_READ_BUFFER_SIZE] = { 0 };
+  char                 stderr_buffer[STDOUT_READ_BUFFER_SIZE] = { 0 };
+  struct  StringBuffer *SB                                    = stringbuffer_new_with_options(STDOUT_READ_BUFFER_SIZE, true);
+  struct  StringBuffer *ERR                                   = stringbuffer_new_with_options(STDOUT_READ_BUFFER_SIZE, true);
+  size_t               bytes_read                             = 0,
+                       index                                  = 0,
+                       err_bytes_read                         = 0;
+
+  asprintf(&cmd, "env AV_LOG_FORCE_COLOR=1 '%s' -stats -y -f image2 -framerate '%d' %s -loglevel '%s' -vf 'crop=in_w:in_h-%d,smartblur=ls=-0.5' -loop '%d' '%s'",
+           ffmpeg_path,
+           FRAMES_PER_SECOND,
+           images_args,
+           FFMPEG_LOG_LEVEL,
+           FFMPEG_CROP_HEIGHT,
+           FFMPEG_LOOP_QTY,
+           ANIMATED_GIF_FILE
+           );
+  const char *command_line[] = { "/bin/sh", "-c", cmd, NULL };
+
+  dbg(images_args, %s);
+  dbg(PATH, %s);
+  dbg(ffmpeg_path, %s);
+  dbg(ANIMATED_GIF_FILE, %s);
+  dbg(FRAMES_PER_SECOND, %d);
+  dbg(vector_size(images_v), %lu);
+  dbg(cmd, %s);
+
+  result = subprocess_create(command_line, 0, &subprocess);
+  assert_eq(result, 0, %d);
+  do {
+    bytes_read = subprocess_read_stdout(&subprocess, stdout_buffer, STDOUT_READ_BUFFER_SIZE - 1);
+    stringbuffer_append_string(SB, stdout_buffer);
+    index += bytes_read;
+  } while (bytes_read != 0);
+  do {
+    err_bytes_read = subprocess_read_stderr(&subprocess, stderr_buffer, STDOUT_READ_BUFFER_SIZE - 1);
+    stringbuffer_append_string(ERR, stderr_buffer);
+    index += err_bytes_read;
+  } while (bytes_read != 0);
+
+  result                    = subprocess_join(&subprocess, &exited);
+  ANIMATED_GIF_FILE_CREATED = fsio_file_exists(ANIMATED_GIF_FILE);
+
+  READ_STDOUT = stringbuffer_to_string(SB);
+  READ_STDERR = stringbuffer_to_string(ERR);
+
+  stringbuffer_release(SB);
+  stringbuffer_release(ERR);
+
+  dbg(exited, %d);
+  dbg(command_line[2], %s);
+  dbg(strlen(READ_STDOUT), %lu);
+  dbg(strlen(READ_STDERR), %lu);
+  dbg(READ_STDOUT, %s);
+  dbg(READ_STDERR, %s);
+  dbg(ANIMATED_GIF_FILE_CREATED, %d);
+
+
+  assert_eq(result, 0, %d);
+  assert_eq(exited, 0, %d);
+  assert_eq(ANIMATED_GIF_FILE_CREATED, true, %d);
+
+  return(ANIMATED_GIF_FILE_CREATED);
+} /* convert_images_to_animated_gif_ffmpeg */
 #define RECORDED_FRAMES_QTY    vector_size(capture_config->recorded_frames_v)
 static struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {
@@ -106,7 +208,7 @@ int do_gd(void){
     return(1);
   }
 
-  out = fopen("anim.gif", "wb");
+  out = fopen("/tmp/anim.gif", "wb");
   if (!out) {
     fprintf(stderr, "can't create file %s", "anim.gif");
     return(1);
@@ -152,6 +254,20 @@ void do_capture(void *CAPTURE_CONFIG){
     printf("capturing max %d frames, %d seconds.......\n", capture_config->max_record_frames_qty, capture_config->max_record_duration_seconds);
   }
   pthread_mutex_unlock(capture_config_mutex);
+  if (PROGRESS_ENABLED) {
+    /*
+     * progress_t  *progress = progress_new(capture_config->max_record_duration_seconds, PROGRESS_BAR_WIDTH);
+     * {
+     * progress->fmt         = "    Progress (:percent) => {:bar} [:elapsed]";
+     * progress->bg_bar_char = BG_PROGRESS_BAR_CHAR;
+     * progress->bar_char    = PROGRESS_BAR_CHAR;
+     * progress_on(progress, PROGRESS_EVENT_START, db_progress_start);
+     * progress_on(progress, PROGRESS_EVENT_PROGRESS, db_progress);
+     * progress_on(progress, PROGRESS_EVENT_END, db_progress_end);
+     * }
+     */
+  }
+  int cur = 0;
 
   while (true) {
     pthread_mutex_lock(capture_config_mutex);
@@ -160,8 +276,8 @@ void do_capture(void *CAPTURE_CONFIG){
     }
     active =
       (capture_config->active)
-      && (RECORDED_FRAMES_QTY < capture_config->max_record_frames_qty)
-      && ((size_t)(get_recorded_duration_ms(capture_config) / 1000) < ((size_t)capture_config->max_record_duration_seconds));
+      && (RECORDED_FRAMES_QTY <= capture_config->max_record_frames_qty)
+      && ((size_t)(get_recorded_duration_ms(capture_config) / 1000) <= ((size_t)capture_config->max_record_duration_seconds));
     pthread_mutex_unlock(capture_config_mutex);
     if (!active) {
       if (execution_args.verbose) {
@@ -186,30 +302,45 @@ void do_capture(void *CAPTURE_CONFIG){
 
     usleep(1000 * sleep_ms);
 
-    char *SCREENSHOT_FILE = malloc(1024);
-    sprintf(SCREENSHOT_FILE, "/tmp/window-%d-%lu.png", capture_config->window_id, RECORDED_FRAMES_QTY);
-    if (execution_args.verbose) {
-      dbg(SCREENSHOT_FILE, %s);
+    char *SCREENSHOT_FILE;
+    asprintf(&SCREENSHOT_FILE, "/tmp/window-%d-%lu.png", capture_config->window_id, RECORDED_FRAMES_QTY);
+    bool ok;
+    switch (execution_args.resize_type) {
+    case RESIZE_BY_WIDTH:
+      ok = capture_to_file_image_resize_width(capture_config->window_id, SCREENSHOT_FILE, execution_args.resize_value);
+      break;
+    case RESIZE_BY_HEIGHT:
+      ok = capture_to_file_image_resize_height(capture_config->window_id, SCREENSHOT_FILE, execution_args.resize_value);
+      break;
+    case RESIZE_BY_FACTOR:
+      ok = capture_to_file_image_resize_factor(capture_config->window_id, SCREENSHOT_FILE, execution_args.resize_value);
+      break;
+    case RESIZE_NONE:
+    default:
+      ok = capture_to_file_image(capture_config->window_id, SCREENSHOT_FILE);
+      break;
     }
-    bool ok = capture_to_file_image(capture_config->window_id, SCREENSHOT_FILE);
-    if (execution_args.verbose) {
-      dbg(ok, %d);
-    }
+    assert(ok == true);
     struct recorded_frame_t *f = malloc(sizeof(struct recorded_frame_t));
     f->timestamp = timestamp();
     f->file      = SCREENSHOT_FILE;
 
     pthread_mutex_lock(capture_config_mutex);
     vector_push(capture_config->recorded_frames_v, f);
+    if (PROGRESS_ENABLED) {
+      //progress_value(progress, cur + 1);
+      cur++;
+    }
     pthread_mutex_unlock(capture_config_mutex);
   }
   if (execution_args.verbose) {
     printf("do capture done\n");
   }
-
-  printf("[capture thread] sending done chan\n");
+  if (PROGRESS_ENABLED) {
+    //progress_value(progress, capture_config->max_record_duration_seconds);
+    //progress_free(progress);
+  }
   chan_send(done_chan, (void *)NULL);
-  printf("[capture thread] sent done chan\n");
 } /* do_capture */
 
 
@@ -266,26 +397,28 @@ void wait_for_control_d(){
 
 
 bool read_captured_frames(struct capture_config_t *capture_config) {
+  struct Vector *images_v = vector_new();
+  char          *animated_gif_file;
+
+  asprintf(&animated_gif_file, "/tmp/window-%d-animation.gif", capture_config->window_id);
   for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
     struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
-    fprintf(stdout, AC_RESETALL AC_BLUE " - %s @ %" PRIu64 "\n",
-            f->file,
-            f->timestamp
+    fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s>\n",
+            i,
+            f->timestamp,
+            bytes_to_string(fsio_file_size(f->file)),
+            f->file
             );
 
     f->file_size = fsio_file_size(f->file);
-    unsigned char *d;
-    int           width, height;
-    d = read_image(f->file, &width, &height);
-    dbg(width, %d);
-    dbg(height, %d);
-
-    char *gif_file = malloc(1024);
-    sprintf(gif_file, "%s-%lu.gif", f->file, i);
-    dbg(gif_file, %s);
-    free(gif_file);
-    write_image(gif_file, width, height, d, 3, width * 3, IMAGE_FORMAT_AUTO);
+    vector_push(images_v, (char *)f->file);
   }
+  if (fsio_file_exists(animated_gif_file)) {
+    fsio_remove(animated_gif_file);
+  }
+  assert(fsio_file_exists(animated_gif_file) == false);
+  convert_images_to_animated_gif_ffmpeg(images_v, animated_gif_file, capture_config->frames_per_second, capture_config->window_id);
+  assert(fsio_file_exists(animated_gif_file) == true);
   return(true);
 }
 
@@ -307,6 +440,8 @@ int capture_window(void *ARGS) {
   capture_config->max_record_duration_seconds = execution_args.max_record_duration_seconds;
   capture_config->recorded_frames_v           = vector_new();
   capture_config->window_id                   = execution_args.window_id;
+  capture_config->resize_type                 = execution_args.resize_type;
+  capture_config->resize_value                = execution_args.resize_value;
   pthread_mutex_unlock(capture_config_mutex);
 
   if (execution_args.verbose) {
@@ -326,51 +461,25 @@ int capture_window(void *ARGS) {
     return(1);
   }
 
-  printf("waiting for done chan\n");
   chan_recv(done_chan, (void *)NULL);
-  printf("received done chan\n");
   chan_dispose(done_chan);
 
 
   if (execution_args.verbose) {
     fprintf(stderr, AC_RESETALL AC_GREEN "Capture Stopped\n");
   }
-
-  fprintf(stderr, AC_RESETALL AC_GREEN "Locking capture_config_mutex\n");
   pthread_mutex_lock(capture_config_mutex);
-  fprintf(stderr, AC_RESETALL AC_GREEN "Locked capture_config_mutex\n");
 
   capture_config->active = false;
   pthread_mutex_unlock(capture_config_mutex);
-  if (execution_args.verbose) {
-    fprintf(stderr, AC_RESETALL AC_GREEN "Joining capture thread\n");
-  }
   pthread_join(&capture_thread, NULL);
   if (execution_args.verbose) {
-    fprintf(stderr, AC_RESETALL AC_GREEN "Capture Thread Joined\n");
+    fprintf(stderr, AC_RESETALL AC_GREEN "Captured %lu frames\n", vector_size(capture_config->recorded_frames_v));
   }
 
-  fprintf(stderr, AC_RESETALL AC_GREEN "Captured %lu frames\n", vector_size(capture_config->recorded_frames_v));
-
-  fprintf(stderr, AC_RESETALL AC_GREEN "Reading %lu frames\n", vector_size(capture_config->recorded_frames_v));
   int ok = read_captured_frames(capture_config);
-  ok = do_gd();
-  assert(ok == 0);
-  ok = do_gd();
   assert(ok == true);
-  fprintf(stderr, AC_RESETALL AC_GREEN "Read frames\n");
 
-  for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
-    struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
-    fprintf(stdout,
-            AC_RESETALL AC_BLUE
-            " - %s @ %" PRIu64 " (%s)"
-            AC_RESETALL "\n",
-            f->file,
-            f->timestamp,
-            bytes_to_string(f->file_size)
-            );
-  }
   return(0);
 } /* capture_window */
 
