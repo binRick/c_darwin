@@ -11,14 +11,14 @@
 #include <stdio.h>
 
 
-APP_AUTHORIZATION_TESTS
 GREATEST_MAIN_DEFS();
 
 
 int main(int argc, char **argv) {
   (void)argc; (void)argv;
   GREATEST_MAIN_BEGIN();
-  RUN_SUITE(s_authorized);
+  execute_authorization_tests();
+//  RUN_SUITE(s_authorized);
   GREATEST_MAIN_END();
   return(0);
 }

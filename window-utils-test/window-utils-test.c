@@ -25,7 +25,6 @@
 
 
 ////////////////////////////////////////
-APP_AUTHORIZATION_TESTS
 
 
 TEST t_windows_search(void *NAME){
@@ -198,7 +197,7 @@ int main(int argc, char **argv) {
   (void)argc; (void)argv;
   GREATEST_MAIN_BEGIN();
   RUN_TEST(t_authorized_tests);
-  RUN_SUITE(s_authorized);
+  //RUN_SUITE(s_authorized);
   RUN_SUITE(s_windows);
   RUN_SUITE(s_move_window);
   RUN_SUITE(s_list_windows);

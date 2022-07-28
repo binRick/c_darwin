@@ -72,7 +72,6 @@ typedef struct logged_key_event_t {
   int            active_window_id, focused_pid;
   unsigned long  event_flags;
   char           *event_flag;
-  size_t         devices_qty;
   unsigned long  key_code;
   char           *key_string, *action, *input_type;
   unsigned long  mouse_x, mouse_y;
@@ -80,6 +79,7 @@ typedef struct logged_key_event_t {
   struct djbhash *downkeys_h;
   char           *downkeys_csv;
   ssize_t        usb_devices_qty;
+  struct Vector  *usb_devices_v;
 } logged_key_event_t;
 struct MouseEvent {
   CGFloat     x;

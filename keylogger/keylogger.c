@@ -31,6 +31,101 @@ typedef struct displays_t         displays_t;
 typedef struct clipboard_t        clipboard_t;
 /**********************************/
 struct djbhash downkeys_h;
+struct keybindings_t {
+  char          *name;
+  char          *description;
+  struct Vector *keys_v;
+  char          *keys[24];
+} static keybindings[] = {
+  { .name = "ctrl+k",       .description = "test0 desc", .keys = { "control", "k",      NULL } },
+  { .name = "ctrl+shift+k", .description = "test1 desc", .keys = { "control", "shift",  "k", NULL} },
+  { .name = "ctrl+return",  .description = "",           .keys = { "control", "return", NULL } },
+  { .name = "ctrl+\\",      .description = "",           .keys = { "control", "\\",     NULL } },
+  { .name = "a",            .description = "",           .keys = { "a",       NULL } },
+  { NULL },
+};
+
+#define KEYBINDING(INDEX)                                          keybindings[INDEX]
+#define KEYBINDING_INDEX_KEYS_VECTOR(INDEX)                        keybindings[INDEX].keys_v
+#define KEYBINDING_INDEX(KEYBINDING_INDEX)                         keybindings[KEYBINDING_INDEX]
+#define KEYBINDING_INDEX_KEYS_QTY(KEYBINDING_INDEX)                sizeof(KEYBINDING_INDEX(KEYBINDING_INDEX)) / sizeof(KEYBINDING_INDEX(KEYBINDING_INDEX)[0])
+#define KEYBINDING_INDEX_KEY_INDEX(KEYBINDING_INDEX, KEY_INDEX)    keybindings[KEYBINDING_INDEX].keys[KEY_INDEX]
+#define KEYBINDING_INDEX_QTY(INDEX)                                sizeof(KEYBINDING(INDEX).keys) / sizeof(KEYBINDING(INDEX).keys[0])
+#define KEYBINDINGS_QTY    sizeof(keybindings) / sizeof(keybindings[0]) - 1
+
+struct Vector *split_keys_by_plus_v(const char *STR){
+  struct Vector          *v      = vector_new();
+  struct StringFNStrings str_fns = stringfn_split(STR, '+');
+
+  for (size_t i = 0; i < str_fns.count; i++) {
+    vector_push(v, str_fns.strings[i]);
+  }
+  stringfn_release_strings_struct(str_fns);
+  return(v);
+}
+
+
+bool compare_key_vectors(struct Vector *v0, struct Vector *v1){
+  size_t matches_qty;
+
+  for (size_t i0 = 0; i0 < vector_size(v0); i0++) {
+    for (size_t i1 = 0; i1 < vector_size(v1); i1++) {
+      if (strcmp(vector_get(v0, i0), vector_get(v1, i1)) == 0) {
+        matches_qty++;
+      }
+    }
+  }
+  return(true);
+}
+
+struct Vector *get_keybindings_index_keys_v(const size_t INDEX){
+  if (keybindings[INDEX].keys_v != NULL) {
+    return(keybindings[INDEX].keys_v);
+  }
+  keybindings[INDEX].keys_v = vector_new();
+  char **tmp = (&keybindings[INDEX])->keys;
+  while (*tmp != NULL) {
+    vector_push(keybindings[INDEX].keys_v, *tmp++);
+  }
+  return(keybindings[INDEX].keys_v);
+}
+
+struct keybindings_t *get_bound_keybinding(const char *CURRENT_DOWNKEYS_EVENT_STRING){
+  char                 *debug_msg, *kb_debug_msg;
+  char                 *debug_msg_color    = AC_YELLOW;
+  struct keybindings_t *tmp                = keybindings;
+  char                 *kb_debug_msg_color = AC_BLUE;
+  bool                 kb_match            = false;
+  char                 *kb_match_color     = AC_RED;
+  struct Vector        *kb_keys_v;
+  size_t               qty   = 0;
+  struct Vector        *dk_v = split_keys_by_plus_v(CURRENT_DOWNKEYS_EVENT_STRING);
+
+  for (size_t i = 0; tmp->name != NULL && i < KEYBINDINGS_QTY; i++) {
+    kb_keys_v = get_keybindings_index_keys_v(i);
+    kb_match  = compare_key_vectors(dk_v, kb_keys_v);
+    asprintf(&kb_debug_msg, AC_RESETALL "     " AC_CYAN "[get_bound_keybinding #%lu/%lu]  "AC_RESETALL "  " AC_YELLOW "<%s>"AC_RESETALL
+             AC_RESETALL "  " "%s" "|match:%s|" AC_RESETALL
+             AC_RESETALL "  " "|vec qty:%lu|" AC_RESETALL,
+             i + 1, KEYBINDINGS_QTY,
+             tmp->name,
+             kb_match_color, kb_match ? "Yes" : "No",
+             vector_size(kb_keys_v)
+             );
+    fprintf(stderr, AC_RESETALL "%s" "%s" AC_RESETALL "\n", kb_debug_msg_color, kb_debug_msg);
+    free(kb_debug_msg);
+    tmp++;
+  }
+
+  asprintf(&debug_msg, "[get_bound_keybinding]  cur:'%s'|dk_v qty:%lu|",
+           CURRENT_DOWNKEYS_EVENT_STRING,
+           vector_size(dk_v)
+           );
+  fprintf(stderr, AC_RESETALL AC_REVERSED "%s" "%s" AC_RESETALL "\n", debug_msg_color, debug_msg);
+  free(debug_msg);
+  return(NULL);
+}
+
 struct ctx_t {
   struct Vector *downkeys_v;
   char          *downkeys_csv;
@@ -201,9 +296,9 @@ int init(){
 /**********************************/
 
 
-void key_not_down(const KEYCODE){
+void key_not_down(const size_t KEYCODE){
   for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
-    if ((int)vector_get(ctx.downkeys_v, i) == KEYCODE) {
+    if ((size_t)vector_get(ctx.downkeys_v, i) == KEYCODE) {
       vector_remove(ctx.downkeys_v, i);
       return;
     }
@@ -212,9 +307,9 @@ void key_not_down(const KEYCODE){
 }
 
 
-bool key_is_down(const KEYCODE){
-  for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
-    if ((int)vector_get(ctx.downkeys_v, i) == KEYCODE) {
+bool key_is_down(const size_t KEYCODE){
+  for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
+    if ((size_t)vector_get(ctx.downkeys_v, i) == KEYCODE) {
       return(true);
     }
   }
@@ -225,8 +320,8 @@ bool key_is_down(const KEYCODE){
 char *down_keys_csv(){
   struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
 
-  for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
-    int dk = (int)vector_get(ctx.downkeys_v, i);
+  for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
+    size_t dk = (size_t)vector_get(ctx.downkeys_v, i);
     if (i > 0) {
       stringbuffer_append_string(SB, ", ");
     }
@@ -238,8 +333,8 @@ char *down_keys_csv(){
   return(S);
 }
 
-
-ssize_t get_usb_devices_qty(){
+struct Vector *get_usb_devices_v(){
+  struct Vector *usb_devices_v = vector_new();
   libusb_device **devs;
   ssize_t       qty;
 
@@ -254,11 +349,38 @@ ssize_t get_usb_devices_qty(){
     libusb_exit(NULL);
     return(qty);
   }
+  libusb_device *dev;
+  int           i = 0, j = 0;
+  uint8_t       path[8];
+
+  while ((dev = devs[i++]) != NULL) {
+    struct libusb_device_descriptor desc;
+    int                             r = libusb_get_device_descriptor(dev, &desc);
+    if (r < 0) {
+      fprintf(stderr, "failed to get device descriptor");
+      return;
+    }
+    char *dev_desc;
+    asprintf(&dev_desc, "%04x:%04x (bus %d, device %d)",
+             desc.idVendor, desc.idProduct,
+             libusb_get_bus_number(dev), libusb_get_device_address(dev));
+
+    free(dev_desc);
+    vector_push(usb_devices_v, dev_desc);
+
+    r = libusb_get_port_numbers(dev, path, sizeof(path));
+    if (r > 0) {
+      for (j = 1; j < r; j++) {
+      }
+    }
+    printf("\n");
+  }
+
   libusb_free_device_list(devs, 1);
 
   libusb_exit(NULL);
-  return(qty);
-}
+  return(usb_devices_v);
+} /* get_usb_devices_v */
 
 
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
@@ -275,27 +397,7 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
 
   unsigned long       event_flags    = (int)CGEventGetFlags(event);
   struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
-
-  if (event_flags & kCGEventFlagMaskAlternate) {
-    stringbuffer_append_string(event_flag_sb, "alternate+");
-  }
-  if (event_flags & kCGEventFlagMaskSecondaryFn) {
-    stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
-  }
-  if (event_flags & kCGEventFlagMaskCommand) {
-    stringbuffer_append_string(event_flag_sb, "command+");
-  }
-  if (event_flags & kCGEventFlagMaskControl) {
-    stringbuffer_append_string(event_flag_sb, "control+");
-  }
-  if (event_flags & kCGEventFlagMaskShift) {
-    stringbuffer_append_string(event_flag_sb, "shift+");
-  }
-
-  char *event_flag = stringbuffer_to_string(event_flag_sb);
-
-  stringbuffer_release(event_flag_sb);
-
+  char                *event_flag;
 
   input_type = ((is_mouse) ? "mouse" : ((is_keyboard) ? ("keyboard") : ("UNKNOWN")));
   action     = ((key_up) ? "UP" : ((key_down) ? "DOWN" : is_mouse ? "MOUSE" : "UNKNOWN"));
@@ -307,15 +409,57 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
   }else{
     keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
     ckc     = convertKeyboardCode(keyCode);
+    if (key_up && key_is_down((size_t)keyCode)) {
+      key_not_down((size_t)keyCode);
+    }else if (key_down && !key_is_down((size_t)keyCode)) {
+      vector_push(ctx.downkeys_v, (void *)(size_t)keyCode);
+    }
+    if (key_down) {
+      if (event_flags & kCGEventFlagMaskAlternate) {
+        stringbuffer_append_string(event_flag_sb, "alternate+");
+      }
+      if (event_flags & kCGEventFlagMaskSecondaryFn) {
+        stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
+      }
+      if (event_flags & kCGEventFlagMaskCommand) {
+        stringbuffer_append_string(event_flag_sb, "command+");
+      }
+      if (event_flags & kCGEventFlagMaskControl) {
+        stringbuffer_append_string(event_flag_sb, "control+");
+      }
+      if (event_flags & kCGEventFlagMaskShift) {
+        stringbuffer_append_string(event_flag_sb, "shift+");
+      }
+      for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
+        char *_down_key_str  = (char *)convertKeyboardCode((size_t)vector_get(ctx.downkeys_v, i));
+        char *__down_key_str = stringfn_remove(_down_key_str, "[");
+        char *down_key_str   = stringfn_remove(__down_key_str, "]");
+        stringfn_mut_to_lowercase(down_key_str);
+        if (down_key_str && strlen(down_key_str) > 0) {
+          stringfn_mut_trim(down_key_str);
+          if (strlen(down_key_str) > 0) {
+            stringbuffer_append_string(event_flag_sb, down_key_str);
+            stringbuffer_append_string(event_flag_sb, "+");
+          }
+        }
+      }
+    }
+  }
+  event_flag = stringbuffer_to_string(event_flag_sb);
+  stringbuffer_release(event_flag_sb);
+  if (stringfn_ends_with(event_flag, "+")) {
+    stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
+  }
+  stringfn_mut_trim(event_flag);
+
+  struct keybindings_t *BOUND_KEYBINDING;
+
+  if (event_flag && strlen(event_flag) > 0) {
+    BOUND_KEYBINDING = get_bound_keybinding(event_flag);
   }
 
-  if (key_up && key_is_down((int)keyCode)) {
-    key_not_down((int)keyCode);
-  }else if (key_down && !key_is_down((int)keyCode)) {
-    vector_push(ctx.downkeys_v, (int)keyCode);
-  }
-
-  int focused_pid = (int)get_front_window_pid();
+  int focused_pid       = (int)get_front_window_pid(),
+      focused_window_id = (int)get_pid_window_id(focused_pid);
 
   int ok1 = keylogger_insert_db_row(&(logged_key_event_t){
     .ts               = (uint64_t)TS,
@@ -329,11 +473,10 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     .downkeys_v       = ctx.downkeys_v,
     .downkeys_csv     = down_keys_csv(),
     .focused_pid      = focused_pid,
-    .active_window_id = (int)get_pid_window_id(focused_pid),
-    .devices_qty      = (size_t)0,
+    .active_window_id = focused_window_id,
     .event_flags      = event_flags,
     .event_flag       = event_flag,
-    .usb_devices_qty  = get_usb_devices_qty(),
+    .usb_devices_v    = get_usb_devices_v(),
   });
 
   assert(ok1 == 0);

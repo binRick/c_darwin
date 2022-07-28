@@ -108,7 +108,7 @@ static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion
            FFMPEG_LOOP_QTY,
            config->animated_gif_file
            );
-  const char *command_line[] = { "/bin/sh", "-c", r.ffmpeg_cmd, NULL };
+  const char *command_line[] = { "/bin/sh", "--norc", "--noprofile", "-c", r.ffmpeg_cmd, NULL };
 
   if (config->debug_mode) {
     dbg(r.ffmpeg_path, %s);

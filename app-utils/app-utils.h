@@ -50,27 +50,3 @@ authorized_test_t *execute_authorization_tests();
 
 ///////////////////////////////////////////////////////////////////////
 
-/*is_authorized_for_screen_recording();                                 \
- *  log_debug("%s> is_authorized_for_screen_recording:%d\n", APPLICATION_NAME, OK); \
- *  ASSERT_EQm("App not authorized for screen recording", 1, OK);               \
- */
-//bool OK = true;
-/*is_authorized_for_accessibility();                                   \
- * log_debug("%s> is_authorized_for_accessibility:%d\n", APPLICATION_NAME, OK);   \
- * ASSERT_EQm("App not authorized for accessibility", 1, OK);                  \
- */
-///////////////////////////////////////////////////////////////////////
-#define APP_AUTHORIZATION_TESTS                        \
-  TEST t_authorized_screen_recording(void) {           \
-    bool OK = true;                                    \
-    /*PASS("OK- Authorized for Screen Recording");*/   \
-  }                                                    \
-  TEST t_authorized_accessibiliiy(void) {              \
-    bool OK = true;                                    \
-    /*PASS("OK- Authorized for Accessibility");     */ \
-  }                                                    \
-  SUITE(s_authorized) {                                \
-    RUN_TEST(t_authorized_screen_recording);           \
-    RUN_TEST(t_authorized_accessibiliiy);              \
-    /*PASS();*/                                        \
-  }                                                    \

