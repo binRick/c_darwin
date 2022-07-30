@@ -22,7 +22,6 @@ wrec_deps = [
   app_utils_dep,
   libterminput_dep,
   chan_dep,
-  generic_print_dep,
   bytes_dep,
   b64_dep,
   rwimg_dep,
@@ -30,7 +29,6 @@ wrec_deps = [
   logh_dep,
   dbg_dep,
   c_timer_dep,
-  gd_dep,
   progress_dep,
   capture_dep,
   bench_dep,
@@ -46,7 +44,7 @@ wrec_dirs = [
 ]
 
 
-wrec_lib = library('wrec',
+wrec_lib = static_library('wrec',
   wrec_srcs,
   install: false,
   dependencies: wrec_deps,

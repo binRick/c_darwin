@@ -25,7 +25,7 @@ audit_dirs = [
   '../submodules/meson_deps/submodules/c_fsio',
   inc,
 ]
-audit_lib = shared_library('audit',
+audit_lib =static_library('audit',
   audit_srcs,
   install: false,
   dependencies: audit_deps,

@@ -2,7 +2,7 @@ window_utils_srcs = [
   'window-utils.c',
 ]
 window_utils_c_args = [
-  '-Wbo-address',
+  '-Wno-address',
   ]
 window_utils_dirs = [
     '.',

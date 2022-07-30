@@ -24,6 +24,9 @@
 #include "generic-print/print.h"
 #include "libterminput/libterminput.h"
 #include "ms/ms.h"
+#ifdef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif
 #include "progress.c/progress.h"
 #include "rwimg/readimage.h"
 #include "rwimg/writeimage.h"

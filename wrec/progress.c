@@ -3,6 +3,9 @@
 #define BG_PROGRESS_BAR_CHAR    "."
 #define PROGRESS_BAR_CHAR       "="
 #include "ansi-codes/ansi-codes.h"
+#ifdef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif
 #include "progress.c/progress.h"
 
 

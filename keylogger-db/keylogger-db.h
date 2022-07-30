@@ -25,6 +25,9 @@
 #include "hidapi/hidapi/hidapi.h"
 #include "hidapi/mac/hidapi_darwin.h"
 #include "int/int.h"
+#ifdef ASSERT_EQ
+#undef ASSERT_EQ
+#endif
 #include "keylogger/keylogger.h"
 #include "libusb/libusb/libusb.h"
 #include "libusb/libusb/os/darwin_usb.h"
@@ -41,8 +44,6 @@
 #include "submodules/c_vector/include/vector.h"
 #include "submodules/catpath/catpath.h"
 #include "submodules/dmt/src/dmt.h"
-#include "submodules/greatest/greatest.h"
-#include "submodules/greatest/greatest.h"
 #include "submodules/log.h/log.h"
 #include "submodules/sqldbal/src/sqldbal.h"
 #include "submodules/timestamp/timestamp.h"

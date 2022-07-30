@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 /**********************************/
+#include "djbhash/src/djbhash.h"
 #include "hidapi/hidapi/hidapi.h"
 #include "hidapi/mac/hidapi_darwin.h"
 #include "keylogger.h"
@@ -30,7 +31,7 @@ typedef struct event_t            event_t;
 typedef struct displays_t         displays_t;
 typedef struct clipboard_t        clipboard_t;
 /**********************************/
-struct djbhash downkeys_h;
+struct djbhash downkeys_h = { 0 };
 struct keybindings_t {
   char          *name;
   char          *description;
@@ -282,7 +283,7 @@ static int setup_event_tap(){
 
 
 /**********************************/
-int init(){
+int keylogger_init(){
   assert(keylogger_init_db() == 0);
   assert(keylogger_create_db() == 0);
   mouse_location   = CGEventGetLocation(event_handler);
@@ -341,13 +342,13 @@ struct Vector *get_usb_devices_v(){
   int           r = libusb_init(NULL);
 
   if (r < 0) {
-    return(qty);
+    return(usb_devices_v);
   }
 
   qty = libusb_get_device_list(NULL, &devs);
   if (qty < 0) {
     libusb_exit(NULL);
-    return(qty);
+    return(usb_devices_v);
   }
   libusb_device *dev;
   int           i = 0, j = 0;
@@ -725,7 +726,7 @@ static const char *convertKeyboardCode(int keyCode) {
 
 /**********************************/
 int keylogger_exec() {
-  assert(init() == 0);
+  assert(keylogger_init() == 0);
   assert(setup_event_tap() == 0);
   assert(tap_events() == 0);
   return(0);

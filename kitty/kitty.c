@@ -1,7 +1,325 @@
 #pragma once
+#include "ansi-codes/ansi-codes.h"
+#include "c_vector/include/vector.h"
 #include "dbg/dbg.h"
-#include "generic-print/print.h"
+#include "djbhash/src/djbhash.h"
+#include "fsio.h"
+//#include "generic-print/print.h"
 #include "kitty/kitty.h"
+#include "kitty/kitty.h"
+#include "parson.h"
+#include "process/process.h"
+#include "socket99/socket99.h"
+#include "str-replace.h"
+#include "stringbuffer.h"
+#include "stringfn.h"
+#include "tiny-regex-c/re.h"
+
+const size_t BUFSIZE = 8192;
+
+
+kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
+  kitty_listen_on_t      *KLO               = malloc(sizeof(kitty_listen_on_t));
+  struct StringFNStrings KittyListenOnSplit = stringfn_split(KITTY_LISTEN_ON, ':');
+
+  assert(KittyListenOnSplit.count == 3);
+  KLO->protocol = strdup(KittyListenOnSplit.strings[0]);
+  KLO->host     = strdup(KittyListenOnSplit.strings[1]);
+  KLO->port     = atoi(KittyListenOnSplit.strings[2]);
+  stringfn_release_strings_struct(KittyListenOnSplit);
+  return(KLO);
+}
+
+
+struct Vector *kitty_get_color_types(const char *HOST, const int PORT){
+  struct Vector          *color_types  = vector_new();
+  char                   *kitty_colors = kitty_cmd_data(kitty_tcp_cmd((const char *)HOST, PORT, __KITTY_GET_COLORS_CMD__));
+  struct StringFNStrings Lines         = stringfn_split_lines(kitty_colors);
+  struct StringFNStrings LineWords;
+
+  for (size_t i = 0; i < Lines.count; i++) {
+    LineWords = stringfn_split_words(Lines.strings[i]);
+    if (LineWords.count != 2 || strlen(LineWords.strings[0]) < 1) {
+      continue;
+    }
+    vector_push(color_types, strdup(LineWords.strings[0]));
+  }
+  if (LineWords.count > 0) {
+    stringfn_release_strings_struct(LineWords);
+  }
+  if (Lines.count > 0) {
+    stringfn_release_strings_struct(Lines);
+  }
+  return(color_types);
+}
+
+
+char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT){
+  char                   *COLOR        = NULL;
+  char                   *kitty_colors = kitty_cmd_data(kitty_tcp_cmd((const char *)HOST, PORT, __KITTY_GET_COLORS_CMD__));
+  struct StringFNStrings Lines         = stringfn_split_lines(kitty_colors);
+  struct StringFNStrings LineWords;
+
+  for (size_t i = 0; i < Lines.count; i++) {
+    LineWords = stringfn_split_words(Lines.strings[i]);
+    if (LineWords.count != 2) {
+      continue;
+    }
+    if (strcmp(COLOR_TYPE, LineWords.strings[0]) == 0) {
+      COLOR = strdup(LineWords.strings[1]);
+      break;
+    }
+  }
+  if (LineWords.count > 0) {
+    stringfn_release_strings_struct(LineWords);
+  }
+  if (Lines.count > 0) {
+    stringfn_release_strings_struct(Lines);
+  }
+  return(COLOR);
+}
+
+
+char *kitty_cmd_data(const char *CMD_OUTPUT){
+  JSON_Value  *V = json_parse_string(CMD_OUTPUT);
+  JSON_Object *O = json_value_get_object(V);
+
+  assert(json_object_get_boolean(O, "ok") == 1);
+  char *CMD_DATA = json_object_get_string(O, "data");
+
+  return(CMD_DATA);
+}
+
+
+char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
+  socket99_config cfg = { .host = HOST, .port = PORT };
+  socket99_result res;
+
+  if (!socket99_open(&cfg, &res)) {
+    fprintf(stderr, "Failed to connect to kitty @ %s:%d.\n", cfg.host, cfg.port);
+    return(NULL);
+  }
+  struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+  size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
+
+  do {
+    total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
+  } while (total_sent < msg_size);
+  do {
+    char *buf = calloc(BUFSIZE + 1, 1);
+    recvd = 0;
+    recvd = recv(res.fd, buf, BUFSIZE, 0);
+    if (recvd < 1) {
+      break;
+    }
+    buf[recvd]   = '\0';
+    total_recvd += recvd;
+    stringbuffer_append_string(SB, buf);
+    free(buf);
+    if ((int)(buf[strlen(buf) - 1]) == 92) {
+      if ((int)(buf[strlen(buf) - 2]) == 27) {
+        recvd = -1;
+        close(res.fd);
+        break;
+      }
+    }
+  }while (recvd > 0);
+  close(res.fd);
+  char *KITTY_RESPONSE = calloc(stringbuffer_get_content_size(SB) + 1, 1);
+
+  strncpy(KITTY_RESPONSE, stringbuffer_to_string(SB) + 12, stringbuffer_get_content_size(SB) - 3);
+  stringbuffer_release(SB);
+  return(KITTY_RESPONSE);
+}
+
+
+void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
+  socket99_config cfg = { .host = HOST, .port = PORT };
+  socket99_result res;
+
+  if (!socket99_open(&cfg, &res)) {
+    fprintf(stderr, "Failed to connect to kitty @ %s:%d\n", cfg.host, cfg.port);
+    return;
+  }
+  struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+  size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
+
+  do {
+    total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
+  } while (total_sent < msg_size);
+  do {
+    char *buf = calloc(BUFSIZE + 1, 1);
+    recvd = 0;
+    recvd = recv(res.fd, buf, BUFSIZE, 0);
+    if (recvd < 1) {
+      break;
+    }
+    buf[recvd]   = '\0';
+    total_recvd += recvd;
+    stringbuffer_append_string(SB, buf);
+    free(buf);
+    if ((int)(buf[strlen(buf) - 1]) == 92) {
+      if ((int)(buf[strlen(buf) - 2]) == 27) {
+        recvd = -1;
+        close(res.fd);
+        break;
+      }
+    }
+  }while (recvd > 0);
+  close(res.fd);
+  char *Nb = calloc(stringbuffer_get_content_size(SB) + 1, 1);
+
+  strncpy(Nb, stringbuffer_to_string(SB) + 12, stringbuffer_get_content_size(SB) - 3);
+  stringbuffer_release(SB);
+  JSON_Value *V = json_parse_string(Nb);
+
+  free(Nb);
+  JSON_Object *O0 = json_value_get_object(V);
+
+  assert(json_object_get_boolean(O0, "ok") == 1);
+  JSON_Value *S0V = json_parse_string(json_object_get_string(O0, "data"));
+  JSON_Array *A0  = json_value_get_array(S0V);
+
+  assert(json_array_get_count(A0) > 0);
+  assert(json_type(json_array_get_value(A0, 0)) == 4);
+  JSON_Object *V101 = json_value_get_object(json_array_get_value(A0, 0));
+
+  assert(json_object_get_count(V101) > 0);
+  JSON_Value *V_WM_NAME = json_object_get_value(V101, "wm_name");
+  JSON_Value *V_ID      = json_object_get_value(V101, "id");
+
+  assert(json_type(V_WM_NAME) == 2);
+  assert(json_type(V_ID) == 3);
+  assert(json_value_get_string(V_WM_NAME) != NULL);
+  assert(json_value_get_number(V_ID) > 0);
+  JSON_Value *V_IS_FOCUSED = json_object_get_value(V101, "is_focused");
+
+  assert(json_type(V_IS_FOCUSED) == 6);
+  bool       IS_FOCUSED = json_value_get_boolean(V_IS_FOCUSED);
+  JSON_Value *V_TABS    = json_object_get_value(V101, "tabs");
+  JSON_Array *TABS      = json_value_get_array(V_TABS);
+
+  assert(json_array_get_count(TABS) > 0);
+  for (int ii = 0; ii < json_array_get_count(TABS); ii++) {
+    JSON_Value  *TABv = json_array_get_value(TABS, ii);
+    assert(json_type(TABv) == 4);
+    JSON_Object *TAB = json_value_get_object(TABv);
+    assert(json_object_get_count(TAB) == 9);
+    assert(json_object_has_value_of_type(TAB, "id", JSONNumber));
+    assert(json_object_has_value_of_type(TAB, "is_focused", JSONBoolean));
+    assert(json_object_has_value_of_type(TAB, "title", JSONString));
+    assert(json_object_has_value_of_type(TAB, "layout", JSONString));
+    assert(json_object_has_value_of_type(TAB, "layout_state", JSONObject));
+    assert(json_object_has_value_of_type(TAB, "layout_opts", JSONObject));
+    assert(json_object_has_value_of_type(TAB, "windows", JSONArray));
+    assert(json_object_has_value_of_type(TAB, "enabled_layouts", JSONArray));
+    assert(json_object_has_value_of_type(TAB, "active_window_history", JSONArray));
+    dbg(json_object_get_string(TAB, "title"), %s);
+    dbg(json_object_get_boolean(TAB, "is_focused"), %d);
+    dbg(json_object_get_string(TAB, "layout"), %s);
+    for (int iii = 0; iii < json_object_get_count(TAB); iii++) {
+      dbg(json_object_get_name(TAB, iii), %s);
+    }
+  }
+} /* kitty_command */
+
+struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
+  struct Vector *ConnectedKittyProcesses_v = vector_new();
+
+  return(ConnectedKittyProcesses_v);
+} /* connect_kitty_processes */
+
+struct Vector *get_kitty_listen_ons(){
+  struct djbhash kitty_listen_ons_h;
+
+  djbhash_init(&kitty_listen_ons_h);
+  struct Vector *kitty_listen_ons = vector_new();
+  struct Vector *kitty_pids_v     = get_kitty_pids();
+
+  for (size_t i = 0; i < vector_size(kitty_pids_v); i++) {
+    kitty_process_t *KP = get_kitty_process_t((size_t)vector_get(kitty_pids_v, i));
+    if (KP->listen_on == NULL) {
+      continue;
+    }
+    if (djbhash_find(&kitty_listen_ons_h, KP->listen_on) == NULL) {
+      djbhash_set(&kitty_listen_ons_h, KP->listen_on, &KP->listen_on, DJBHASH_STRING);
+      vector_push(kitty_listen_ons, KP->listen_on);
+    }
+  }
+  djbhash_destroy(&kitty_listen_ons_h);
+  return(kitty_listen_ons);
+}
+
+struct Vector *get_kitty_pids(){
+  struct djbhash kitty_pids_h;
+
+  djbhash_init(&kitty_pids_h);
+  struct Vector *pids_v       = get_all_processes();
+  struct Vector *kitty_pids_v = vector_new();
+
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    int           pid = (int)(long long)vector_get(pids_v, i);
+    struct Vector *PE = get_process_env(pid);
+    for (size_t ii = 0; ii < vector_size(PE); ii++) {
+      process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+      if (
+        strcmp(E->key, "KITTY_WINDOW_ID") == 0
+        || strcmp(E->key, "KITTY_PID") == 0
+        || strcmp(E->key, "KITTY_LISTEN_ON") == 0
+        ) {
+        if (djbhash_find(&kitty_pids_h, E->val) == NULL) {
+          djbhash_set(&kitty_pids_h, E->val, &pid, DJBHASH_INT);
+          vector_push(kitty_pids_v, (void *)(size_t)pid);
+        }
+      }
+      free(E->key);
+      free(E->val);
+    }
+    vector_release(PE);
+  }
+  djbhash_destroy(&kitty_pids_h);
+  return(kitty_pids_v);
+}
+
+#define DEBUG_GET_KITTY_PROCESS_T    false
+
+
+kitty_process_t *get_kitty_process_t(const size_t PID){
+  kitty_process_t *KP = malloc(sizeof(kitty_process_t));
+
+  assert(KP != NULL);
+  KP->pid = PID;
+  struct Vector *PE = get_process_env(KP->pid);
+
+  KP->window_id   = -1;
+  KP->listen_on   = NULL;
+  KP->install_dir = NULL;
+  for (size_t ii = 0; ii < vector_size(PE); ii++) {
+    process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+    if (DEBUG_GET_KITTY_PROCESS_T) {
+      fprintf(stderr,
+              AC_YELLOW "#%lu> %s->%s\n" AC_RESETALL,
+              ii, E->key, E->val);
+    }
+    if (strcmp(E->key, "KITTY_INSTALLATION_DIR") == 0) {
+      KP->install_dir = strdup(E->val);
+    }
+    if (strcmp(E->key, "KITTY_LISTEN_ON") == 0) {
+      KP->listen_on = strdup(E->val);
+    }
+    if (strcmp(E->key, "KITTY_PID") == 0) {
+      KP->pid = atoi(E->val);
+    }
+    if (strcmp(E->key, "KITTY_WINDOW_ID") == 0) {
+      KP->window_id = atoi(E->val);
+    }
+    free(E->key);
+    free(E->val);
+  }
+  vector_release(PE);
+
+  return(KP);
+}
 
 struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
   struct Vector *kitty_procs_v = vector_new();

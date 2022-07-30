@@ -2,7 +2,7 @@ app_utils_srcs = [
   'app-utils.c',
 ]
 app_utils_c_args = [
-  '-Wbo-address',
+  '-Wno-address',
 ]
 app_utils_deps = [
   active_app_dep,

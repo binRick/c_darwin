@@ -9,14 +9,12 @@
 #include <sys/time.h>
 ////////////////////////////////////////
 #include "app-utils/app-utils.h"
-#include "app-utils/app-utils.h"
+#include "submodules/meson_deps/submodules/dbg/dbg.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_timer/include/c_timer.h"
 #include "capture/capture.h"
-#include "dbg/dbg.h"
-#include "greatest/greatest.h"
 #include "greatest/greatest.h"
 #include "string-utils/string-utils.h"
 #include "submodules/libfort/src/fort.h"
@@ -177,8 +175,8 @@ SUITE(s_list_windows){
 }
 
 
-TEST t_move_window(void *ID){
-  int id = (int)ID, x = 50, y = 75;
+TEST t_move_window(int *ID){
+  int id = *ID, x = 50, y = 75;
 
   dbg(id, %d);
   move_window_id(id, x, y);

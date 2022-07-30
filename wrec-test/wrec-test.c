@@ -1,8 +1,6 @@
 #define DEBUG_MODE                false
 #define DEBUG_KITTEN_LISTEN_ON    false
-#include "dbg.h"
 //#include "debug-memory/debug_memory.h"
-#include "print.h"
 #include "wrec-test/wrec-test.h"
 #include "wrec/wrec.h"
 

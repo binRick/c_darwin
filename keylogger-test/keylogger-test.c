@@ -3,6 +3,9 @@
 //////////////////////////////////////////////
 #include "keylogger-test.h"
 //////////////////////////////////////////////
+#ifdef ASSERT_EQ
+#undef ASSERT_EQ
+#endif
 #include "submodules/greatest/greatest.h"
 
 

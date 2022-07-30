@@ -1,6 +1,9 @@
 keylogger_srcs = [
   'keylogger.c',
 ]
+keylogger_cargs = [
+  '-Wno-unused-command-line-argument',
+  ]
 keylogger_inc = [
  inc,
  '.',
@@ -14,7 +17,6 @@ keylogger_deps = [
  subprocess_dep,
  timestamp_dep,
  list_dep,
- generic_print_dep,
  dbg_dep,
  ansi_codes_dep,
  ansi_utils_dep,
@@ -26,11 +28,11 @@ keylogger_deps = [
 ]
 
 
-keylogger_lib = library('keylogger',
+keylogger_lib = static_library('keylogger',
   keylogger_srcs,
   install: false,
   dependencies: keylogger_deps,
-  c_args: osx_ldflags,
+  c_args: keylogger_cargs,
   include_directories: [
     keylogger_inc,
   ],

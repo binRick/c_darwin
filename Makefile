@@ -37,6 +37,20 @@ TIDIED_FILES = \
 ##############################################################
 all: build test
 
+do-muon-setup:
+	@muon setup build-muon
+do-muon-clean:
+	@rm -rf build-muon
+do-muon-build:
+	@muon samu -C build-muon
+do-muon-install:
+	@cd build-muon && muon install
+do-muon-test:
+	@cd build-muon && muon test
+build-muon: do-muon-setup do-muon-build do-muon-test
+muon: build-muon do-muon-install
+
+
 clean:
 	@rm -rf build
 

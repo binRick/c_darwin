@@ -1,8 +1,21 @@
-project('c_darwin', ['c'],default_options: ['warning_level=0','c_std=gnu99',],subproject_dir: 'submodules/meson_deps/subprojects')
+project('c_darwin', ['c'],default_options: ['warning_level=0','c_std=gnu99',],
+  subproject_dir: 'submodules/meson_deps/subprojects',
+  version:'0.0.1')
+fs = import('fs')
 sudo_program = find_program('sudo', required : true)
+git_program = find_program('git', required : true)
 cc = meson.get_compiler('c')
 pwd = meson.current_source_dir()
 meson_deps_dir = join_paths(meson.current_source_dir(),'submodules/meson_deps')
+if fs.is_dir('.git')
+    git_rev_parse = run_command(git_program, 'rev-parse', '--short', '@', check: true)
+    git_sha = git_rev_parse.stdout().strip()
+else
+    git_sha = ''
+endif
+version_info = configuration_data()
+version_info.set('version', git_sha)
+version_info.set('vcs_tag', git_sha)
 subdir('meson')
 inc = [include_directories(
   'submodules','submodules/meson_deps',
@@ -40,7 +53,6 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
-subdir('kitty')
 subdir('core-utils')
 subdir('active-app')
 subdir('app-utils')
@@ -49,6 +61,7 @@ subdir('pbpaste')
 subdir('pasteboard')
 subdir('system-utils')
 subdir('process')
+subdir('kitty')
 subdir('window-utils')
 subdir('audit')
 subdir('capture')

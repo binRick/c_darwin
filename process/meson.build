@@ -17,17 +17,15 @@ process_deps = [
   parson_dep,
   c_fsio_dep,  
   debug_memory_dep,  
-  kitty_dep,  
 ]
 process_dirs = [
-  '../submodules/meson_deps/submodules/c_fsio/include',
   '.',
+  '../submodules/meson_deps/submodules/c_fsio/include',
   '../submodules/meson_deps/submodules/c_fsio',
   inc,
 ]
-process_lib = shared_library('process',
+process_lib = static_library('process',
   process_srcs,
-  install: false,
   dependencies: process_deps,
   c_args: process_c_args,
   include_directories: process_dirs,

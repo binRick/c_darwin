@@ -132,7 +132,7 @@ struct Vector *get_windows_ids(void){
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     int id = CFDictionaryGetInt(window, kCGWindowNumber);
-    vector_push(ids_v, (int)id);
+    vector_push(ids_v, (void *)(size_t)id);
   }
   CFRelease(windowList);
   return(ids_v);

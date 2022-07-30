@@ -1,9 +1,8 @@
 #define DEBUG_MODE                false
 #define DEBUG_KITTEN_LISTEN_ON    false
-#include "dbg.h"
 //#include "debug-memory/debug_memory.h"
-#include "print.h"
 #include "process-test.h"
+#include "print.h"
 #define CT_STOP_AND_DEBUG(COLOR)    { do {                                                                             \
                                         PRINT(AC_RESETALL "\t" COLOR "Duration: " AC_RESETALL, ct_stop(__FUNCTION__)); \
                                       }while (0); }
@@ -26,7 +25,7 @@ TEST t_pid_cwd(void){
 
   ASSERT_NEQ(cwd, NULL);
   ASSERT_GTE(strlen(cwd), 0);
-  dbg(cwd, %s);
+  //dbg(cwd, %s);
   if (cwd) {
     free(cwd);
   }
@@ -47,9 +46,9 @@ TEST t_get_process_cmdline(void){
     char *CMD = (char *)vector_get(cmdline_v, i);
     ASSERT_NEQ(CMD, NULL);
     ASSERT_GTE(strlen(CMD), 0);
-    dbg(CMD, %s);
+    //dbg(CMD, %s);
   }
-  dbg(CMDS_QTY, %lu);
+  //dbg(CMDS_QTY, %lu);
   vector_release(cmdline_v);
   CT_STOP_AND_DEBUG(AC_RED);
   PASS();
@@ -59,13 +58,31 @@ TEST t_get_process_cmdline(void){
 TEST t_kitty_pids_connect(void){
   ct_start(NULL);
   struct Vector *KittyProcesses_v = get_kitty_pids();
-  dbg(vector_size(KittyProcesses_v), %lu);
+  //dbg(vector_size(KittyProcesses_v), %lu);
   ASSERT_GTE(vector_size(KittyProcesses_v), 0);
   struct Vector *ConnectedKittyProcess_v = connect_kitty_processes(KittyProcesses_v);
-  dbg(vector_size(ConnectedKittyProcess_v), %lu);
+  //dbg(vector_size(ConnectedKittyProcess_v), %lu);
   CT_STOP_AND_DEBUG(AC_RED);
   PASS();
 } /* t_kitty_pids */
+
+
+TEST t_kitty_get_text(void){
+  struct Vector *kitty_listen_ons = get_kitty_listen_ons();
+
+  for (size_t i = 0; i < vector_size(kitty_listen_ons); i++) {
+    char              *LO  = vector_get(kitty_listen_ons, i);
+    kitty_listen_on_t *KLO = parse_kitten_listen_on(LO);
+    if (strcmp(KLO->protocol, "tcp") == 0) {
+      char                   *kitty_text = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_SCREEN_TEXT));
+      struct StringFNStrings Lines       = stringfn_split_lines(kitty_text);
+      fprintf(stdout, AC_RESETALL "\nkitty_text:\n%s" AC_RESETALL "\n", kitty_text);
+      //dbg(strlen(kitty_text), %lu);
+      //dbg(Lines.count, %d);
+    }
+  }
+  PASS();
+}
 
 
 TEST t_kitty_listen_ons(void){
@@ -75,14 +92,14 @@ TEST t_kitty_listen_ons(void){
     fprintf(stderr,
             AC_RESETALL AC_BLUE "Listen on #%lu/%lu: %s\n" AC_RESETALL,
             i + 1, vector_size(kitty_listen_ons),
-            vector_get(kitty_listen_ons, i)
+            (char *)vector_get(kitty_listen_ons, i)
             );
     char              *LO  = vector_get(kitty_listen_ons, i);
     kitty_listen_on_t *KLO = parse_kitten_listen_on(LO);
     if (DEBUG_KITTEN_LISTEN_ON) {
-      dbg(KLO->protocol, %s);
-      dbg(KLO->host, %s);
-      dbg(KLO->port, %d);
+      //dbg(KLO->protocol, %s);
+      //dbg(KLO->host, %s);
+      //dbg(KLO->port, %d);
     }
     if (strcmp(KLO->protocol, "tcp") == 0) {
 /*
@@ -122,31 +139,25 @@ TEST t_kitty_listen_ons(void){
  *    dbg(strlen(kitty_text_ansi_cursor_screen), %lu);
  */
 
-      char                   *kitty_text = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_GET_ANSI_CURSOR_SCREEN_TEXT));
-      struct StringFNStrings Lines       = stringfn_split_lines(kitty_text);
-      fprintf(stdout, AC_RESETALL "\nkitty_text:\n%s" AC_RESETALL "\n", kitty_text);
-      dbg(strlen(kitty_text), %lu);
-      dbg(Lines.count, %d);
-
 
       struct Vector *COLOR_TYPES_V = kitty_get_color_types(KLO->host, KLO->port);
-      dbg(vector_size(COLOR_TYPES_V), %lu);
+      //dbg(vector_size(COLOR_TYPES_V), %lu);
       for (size_t ci = 0; ci < vector_size(COLOR_TYPES_V); ci++) {
 //          PRINT("#",ci,"/", (size_t)vector_size(COLOR_TYPES), (char *)vector_get(COLOR_TYPES,ci), "=>", (char *)kitty_get_color(vector_get(COLOR_TYPES,ci),KLO->host,KLO->port));
       }
       vector_release(COLOR_TYPES_V);
 
       char *CURSOR_COLOR = kitty_get_color("cursor", KLO->host, KLO->port);
-      dbg(CURSOR_COLOR, %s);
+      //dbg(CURSOR_COLOR, %s);
 
       char *BACKGROUND_COLOR = kitty_get_color("background", KLO->host, KLO->port);
-      dbg(BACKGROUND_COLOR, %s);
+      //dbg(BACKGROUND_COLOR, %s);
 
       char *kitty_ls = kitty_cmd_data(kitty_tcp_cmd((const char *)KLO->host, KLO->port, KITTY_LS_CMD));
-      dbg(strlen(kitty_ls), %lu);
+      //dbg(strlen(kitty_ls), %lu);
 
       struct Vector *kitty_procs_v = get_kitty_procs(kitty_ls);
-      dbg(vector_size(kitty_procs_v), %lu);
+      //dbg(vector_size(kitty_procs_v), %lu);
       for (size_t ci = 0; ci < vector_size(kitty_procs_v); ci++) {
         struct kitty_proc_t *kp = (struct kitty_proc_t *)vector_get(kitty_procs_v, ci);
         PRINT(
@@ -204,16 +215,16 @@ TEST t_kitty_listen_ons(void){
 TEST t_kitty_pids(void){
   ct_start(NULL);
   struct Vector *kitty_pids_v = get_kitty_pids();
-  dbg(vector_size(kitty_pids_v), %lu);
+  //dbg(vector_size(kitty_pids_v), %lu);
   ASSERT_GTE(vector_size(kitty_pids_v), 0);
   for (size_t i = 0; i < vector_size(kitty_pids_v); i++) {
-    kitty_process_t *KP = get_kitty_process_t(vector_get(kitty_pids_v, i));
+    kitty_process_t *KP = get_kitty_process_t((size_t)vector_get(kitty_pids_v, i));
     if (KP->listen_on == NULL) {
       continue;
     }
     fprintf(stdout,
             "\t"
-            AC_RESETALL AC_BLUE "Kitty PID #%lu/%lu: " AC_RESETALL AC_GREEN AC_REVERSED "%d" AC_RESETALL
+            AC_RESETALL AC_BLUE "Kitty PID #%lu/%lu: " AC_RESETALL AC_GREEN AC_REVERSED "%lu" AC_RESETALL
             AC_RESETALL "\n\t\t" AC_RED "|Window #" AC_RESETALL AC_GREEN AC_REVERSED "%d" AC_RESETALL
             AC_RESETALL "\n\t\t" AC_RED "|Listen on:" AC_RESETALL AC_GREEN AC_REVERSED "%s" AC_RESETALL
             "\n",
@@ -236,7 +247,7 @@ TEST t_pids_iterate(void){
   for (size_t i = 0; i < PIDS_QTY; i++) {
     int pid = (int)(long long)vector_get(pids_v, i);
     if (DEBUG_MODE) {
-      dbg(pid, %d);
+      //dbg(pid, %d);
     }
     if (pid <= 1) {
       continue;
@@ -262,16 +273,16 @@ TEST t_pids_iterate(void){
     size_t CMDS_QTY = vector_size(cmdline_v);
     size_t ENV_QTY  = vector_size(PE);
     if (DEBUG_MODE) {
-      dbg(CMDS_QTY, %lu);
-      dbg(ENV_QTY, %lu);
-      dbg(cwd, %s);
+      //dbg(CMDS_QTY, %lu);
+      //dbg(ENV_QTY, %lu);
+      //dbg(cwd, %s);
     }
     for (size_t i = 0; i < ENV_QTY; i++) {
       char *ENV_KEY = ((process_env_t *)vector_get(PE, i))->key,
            *ENV_VAL = ((process_env_t *)vector_get(PE, i))->val;
       if (DEBUG_MODE) {
-        dbg(ENV_KEY, %s);
-        dbg(ENV_VAL, %s);
+        //dbg(ENV_KEY, %s);
+        //dbg(ENV_VAL, %s);
       }
       if (ENV_KEY) {
         free(ENV_KEY);
@@ -305,13 +316,13 @@ TEST t_pids(void){
     long long PID = (long long)vector_get(pids_v, i);
     ASSERT_GTE(PID, 0);
     if (DEBUG_MODE) {
-      dbg(PID, %llu);
+      //dbg(PID, %llu);
     }
   }
-  dbg(PIDS_QTY, %lu);
+  //dbg(PIDS_QTY, %lu);
   vector_release(pids_v);
   char *dur = ct_stop(__FUNCTION__);
-  dbg(dur, %s);
+  //dbg(dur, %s);
 
   PASS();
 }
@@ -331,8 +342,8 @@ TEST t_process_env(void){
     ASSERT_GTE(strlen(ENV_KEY), 0);
     ASSERT_GTE(strlen(ENV_VAL), 0);
     if (DEBUG_MODE) {
-      dbg(ENV_KEY, %s);
-      dbg(ENV_VAL, %s);
+      //dbg(ENV_KEY, %s);
+      //dbg(ENV_VAL, %s);
     }
     if (ENV_KEY) {
       free(ENV_KEY);
@@ -342,9 +353,9 @@ TEST t_process_env(void){
     }
     free(((process_env_t *)vector_get(PE, i)));
   }
-  dbg(ENV_QTY, %lu);
+  //dbg(ENV_QTY, %lu);
   char *dur = ct_stop(__FUNCTION__);
-  dbg(dur, %s);
+  //dbg(dur, %s);
   vector_release(PE);
   PASS();
 }
@@ -359,6 +370,7 @@ SUITE(s_process){
   RUN_TEST(t_pids_iterate);
   RUN_TEST(t_kitty_pids);
   RUN_TEST(t_kitty_listen_ons);
+  RUN_TEST(t_kitty_get_text);
   //RUN_TEST(t_kitty_pids_connect);
   CT_STOP_AND_DEBUG(AC_RED_BLACK);
   PASS();

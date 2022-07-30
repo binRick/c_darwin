@@ -34,7 +34,7 @@ capture_dirs = [
   '../submodules/meson_deps/submodules/c_fsio',
   inc,
 ]
-capture_lib = shared_library('capture',
+capture_lib =static_library('capture',
   capture_srcs,
   install: false,
   dependencies: capture_deps,
