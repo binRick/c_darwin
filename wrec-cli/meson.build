@@ -6,7 +6,7 @@ wrec_cli_c_args = []
 wrec_cli_deps = [
   ansi_codes_dep,
   cargs_dep,
-  wrec_dep,
+  wrec_utils_dep,
   progress_dep,
 ]
 wrec_cli_dirs = [
@@ -18,13 +18,13 @@ wrec_cli_dirs = [
 
 
 if get_option('enable-binaries')
-  wrec_cli_exec = executable('wrec-cli',
+  wrec_cli_exec = executable('wrec',
      wrec_cli_srcs,
      dependencies: wrec_cli_deps,
      include_directories: wrec_cli_dirs,
      c_args: wrec_cli_c_args,
   )
   if get_option('enable-binary-tests')
-    #test('wrec-cli', passh_program, args: [wrec_cli_exec])
+    test('wrec', wrec_cli_exec, args: ['-h'])
   endif
 endif

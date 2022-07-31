@@ -4,14 +4,14 @@ wrec_test_srcs = [
 ]
 wrec_include_dirs = [
   '.',
-  '../wrec',
+  '../wrec-cli',
   inc,
 ]
 wrec_include_cargs = [
   ]
 wrec_test_deps = [
   greatest_dep,
-  wrec_dep,
+  wrec_utils_dep,
   debug_memory_dep,
 ]
 if get_option('enable-binaries')

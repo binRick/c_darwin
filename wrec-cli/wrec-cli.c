@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "wrec-cli/wrec-cli.h"
-#include "wrec/wrec.h"
 ////////////////////////////////////////////////////
 
 static struct args_t args = {
@@ -164,7 +163,7 @@ static int parse_args(int argc, char *argv[]){
       args.resize_value = atoi(cag_option_get_value(&context));
       break;
     case 'h':
-      fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "Usage: parse-colors [OPTION]\n" AC_RESETALL);
+      fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "Usage: wrec [OPTION]\n" AC_RESETALL);
       cag_option_print(options, CAG_ARRAY_SIZE(options), stdout);
       exit(EXIT_SUCCESS);
     case 'A': args.application_name_glob = cag_option_get_value(&context); break;

@@ -27,3 +27,4 @@ error.log
 Monokai Vivid.conf
 loc.sh
 *.log
+.bin/

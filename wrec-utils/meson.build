@@ -1,9 +1,9 @@
-wrec_srcs = [
-  'wrec.c',
+wrec_utils_srcs = [
+  'wrec-utils.c',
 ]
-wrec_link_flags = []
-wrec_c_args = []
-wrec_deps = [
+wrec_utils_link_flags = []
+wrec_utils_c_args = []
+wrec_utils_deps = [
   ansi_codes_dep,
   djbhash_dep,
   c_stringfn_dep,
@@ -36,7 +36,7 @@ wrec_deps = [
   tempdir_dep,
   fort_dep,  
 ]
-wrec_dirs = [
+wrec_utils_dirs = [
   '../submodules/meson_deps/submodules/c_fsio/include',
   '../submodules/meson_deps/submodules/c_fsio',
   '.',
@@ -44,16 +44,16 @@ wrec_dirs = [
 ]
 
 
-wrec_lib = static_library('wrec',
-  wrec_srcs,
+wrec_utils_lib = static_library('wrec-utils',
+  wrec_utils_srcs,
   install: false,
-  dependencies: wrec_deps,
-  c_args: wrec_c_args,
-  include_directories: wrec_dirs,
-  link_args: wrec_link_flags,
+  dependencies: wrec_utils_deps,
+  c_args: wrec_utils_c_args,
+  include_directories: wrec_utils_dirs,
+  link_args: wrec_utils_link_flags,
 )
-wrec_dep = declare_dependency(
-  include_directories: wrec_dirs,
-  link_with: wrec_lib,
-  link_args: wrec_link_flags,
+wrec_utils_dep = declare_dependency(
+  include_directories: wrec_utils_dirs,
+  link_with: wrec_utils_lib,
+  link_args: wrec_utils_link_flags,
 )

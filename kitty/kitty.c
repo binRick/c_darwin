@@ -4,18 +4,54 @@
 #include "dbg/dbg.h"
 #include "djbhash/src/djbhash.h"
 #include "fsio.h"
-//#include "generic-print/print.h"
-#include "kitty/kitty.h"
 #include "kitty/kitty.h"
 #include "parson.h"
 #include "process/process.h"
 #include "socket99/socket99.h"
-#include "str-replace.h"
 #include "stringbuffer.h"
 #include "stringfn.h"
+#include "subprocess.h/subprocess.h"
 #include "tiny-regex-c/re.h"
+#include "which/src/which.h"
+const size_t KITTY_TCP_BUFFER_SIZE = 8192;
 
-const size_t BUFSIZE = 8192;
+
+struct kitty_process_communication_result_t *kitty_process_communication(const char *KITTY_CMD){
+  struct kitty_process_communication_result_t *r = malloc(sizeof(struct kitty_process_communication_result_t));
+
+  r->subprocess        = malloc(sizeof(struct subprocess_s));
+  r->kitty_exec_path   = (char *)which_path("kitty", getenv("PATH"));
+  r->subprocess_result = -1;
+  r->subprocess_exited = -1;
+  r->STDOUT_BUFFER     = stringbuffer_new();
+  r->STDERR_BUFFER     = stringbuffer_new();
+  r->stderr_bytes_read = 0;
+  r->stdout_bytes_read = 0;
+  subprocess_create(r->kitty_command, 0, r->subprocess);
+  assert(r->subprocess_result == 0);
+  size_t bytes_read = 0;
+
+  do {
+    bytes_read = subprocess_read_stdout(r->subprocess, r->stdout_buffer, READ_BUFFER_SIZE - 1);
+    stringbuffer_append_string(r->STDOUT_BUFFER, r->stdout_buffer);
+    r->stdout_bytes_read += bytes_read;
+  } while (bytes_read != 0);
+  bytes_read = 0;
+  do {
+    bytes_read = subprocess_read_stderr(r->subprocess, r->stderr_buffer, READ_BUFFER_SIZE - 1);
+    stringbuffer_append_string(r->STDERR_BUFFER, r->stderr_buffer);
+    r->stderr_bytes_read += bytes_read;
+  } while (bytes_read != 0);
+
+  r->subprocess_join_result = subprocess_join(r->subprocess, &r->subprocess_exited);
+
+  r->READ_STDOUT = stringbuffer_to_string(r->STDOUT_BUFFER);
+  r->READ_STDERR = stringbuffer_to_string(r->STDERR_BUFFER);
+
+  stringbuffer_release(r->STDOUT_BUFFER);
+  stringbuffer_release(r->STDERR_BUFFER);
+  return(r);
+}
 
 
 kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
@@ -99,16 +135,16 @@ char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
     fprintf(stderr, "Failed to connect to kitty @ %s:%d.\n", cfg.host, cfg.port);
     return(NULL);
   }
-  struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+  struct StringBuffer *SB = stringbuffer_new_with_options(KITTY_TCP_BUFFER_SIZE, true);
   size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
 
   do {
     total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
   } while (total_sent < msg_size);
   do {
-    char *buf = calloc(BUFSIZE + 1, 1);
+    char *buf = calloc(KITTY_TCP_BUFFER_SIZE + 1, 1);
     recvd = 0;
-    recvd = recv(res.fd, buf, BUFSIZE, 0);
+    recvd = recv(res.fd, buf, KITTY_TCP_BUFFER_SIZE, 0);
     if (recvd < 1) {
       break;
     }
@@ -141,16 +177,16 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
     fprintf(stderr, "Failed to connect to kitty @ %s:%d\n", cfg.host, cfg.port);
     return;
   }
-  struct StringBuffer *SB = stringbuffer_new_with_options(BUFSIZE, true);
+  struct StringBuffer *SB = stringbuffer_new_with_options(KITTY_TCP_BUFFER_SIZE, true);
   size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
 
   do {
     total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
   } while (total_sent < msg_size);
   do {
-    char *buf = calloc(BUFSIZE + 1, 1);
+    char *buf = calloc(KITTY_TCP_BUFFER_SIZE + 1, 1);
     recvd = 0;
-    recvd = recv(res.fd, buf, BUFSIZE, 0);
+    recvd = recv(res.fd, buf, KITTY_TCP_BUFFER_SIZE, 0);
     if (recvd < 1) {
       break;
     }

@@ -9,11 +9,38 @@
 #include "c_vector/include/vector.h"
 #include "parson/parson.h"
 #include "process/process.h"
+#include "subprocess.h/subprocess.h"
 ////////////////////////////////////////////////////////////////////////
-#define __KITTY_GET_COLORS_CMD__    "\x1bP@kitty-cmd{\"cmd\":\"get-colors\",\"version\":[0,25,2],\"no_response\":false}\x1b\\"
+#define __KITTY_GET_COLORS_CMD__               "\x1bP@kitty-cmd{\"cmd\":\"get-colors\",\"version\":[0,25,2],\"no_response\":false}\x1b\\"
+#define KITTY_LS_CMD                           "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false}\x1b\\"
+/*
+ * const char KITTY_LS_NO_ENV_CMD[]                 = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":false}}\x1b\\";
+ * const char KITTY_GET_TEXT[]                      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
+ * const char KITTY_GET_ANSI_TEXT[]                 = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true}}\x1b\\";
+ */
+#define KITTY_LS_ALL_ENV_CMD                   "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":true}}\x1b\\"
+#define KITTY_QUERY_TERMINAL_CMD               "\x1bP@kitty-cmd{\"cmd\":\"kitten\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"kitten\":\"query_terminal\"}}\x1b\\"
+#define KITTY_GET_ANSI_CURSOR_TEXT             "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false}}\x1b\\"
+#define KITTY_GET_ANSI_CURSOR_ALL_TEXT         "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"all\"}}\x1b\\"
+#define KITTY_GET_ANSI_CURSOR_SCREEN_TEXT      "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"screen\"}}\x1b\\"
+#define KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT    "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"last_non_empty_output\"}}\x1b\\"
+#define KITTY_GET_NO_ANSI_TEXT                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
+
+
 ////////////////////////////////////////////////////////////////////////
 struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE);
 
+#define READ_BUFFER_SIZE    1024 * 16
+struct kitty_process_communication_result_t {
+  struct subprocess_s  *subprocess;
+  int                  subprocess_result;
+  int                  subprocess_join_result;
+  int                  subprocess_exited;
+  char                 *READ_STDOUT, *READ_STDERR, *kitty_exec_path, **kitty_command;
+  struct  StringBuffer *STDOUT_BUFFER, *STDERR_BUFFER;
+  size_t               stdout_bytes_read, stderr_bytes_read;
+  char                 stdout_buffer[READ_BUFFER_SIZE], stderr_buffer[READ_BUFFER_SIZE];
+};
 typedef struct {
   char *protocol;
   char *host;

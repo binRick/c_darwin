@@ -12,5 +12,5 @@
 #include "submodules/meson_deps/submodules/socket99/socket99.h"
 #include "submodules/meson_deps/submodules/tiny-regex-c/re.h"
 #include "wrec-test/wrec-test.h"
-#include "wrec/wrec.h"
+#include "wrec-utils/wrec-utils.h"
 ////////////////////////////////////////////////////////

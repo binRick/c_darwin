@@ -1,6 +1,6 @@
 #pragma once
 #include "cargs/include/cargs.h"
-#include "wrec/wrec.h"
+#include "wrec-utils/wrec-utils.h"
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>

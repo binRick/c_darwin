@@ -1,22 +1,26 @@
 #define DEBUG_MODE                false
 #define DEBUG_KITTEN_LISTEN_ON    false
 //#include "debug-memory/debug_memory.h"
-#include "process-test.h"
 #include "print.h"
+#include "process-test.h"
 #define CT_STOP_AND_DEBUG(COLOR)    { do {                                                                             \
                                         PRINT(AC_RESETALL "\t" COLOR "Duration: " AC_RESETALL, ct_stop(__FUNCTION__)); \
                                       }while (0); }
-const char KITTY_LS_CMD[]                        = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
-const char KITTY_LS_ALL_ENV_CMD[]                = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":true}}\x1b\\";
-const char KITTY_QUERY_TERMINAL_CMD[]            = "\x1bP@kitty-cmd{\"cmd\":\"kitten\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"kitten\":\"query_terminal\"}}\x1b\\";
-const char KITTY_LS_NO_ENV_CMD[]                 = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":false}}\x1b\\";
-const char KITTY_GET_TEXT[]                      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
-const char KITTY_GET_ANSI_TEXT[]                 = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_TEXT[]          = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_ALL_TEXT[]      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"all\"}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_SCREEN_TEXT[]   = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"screen\"}}\x1b\\";
-const char KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT[] = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"last_non_empty_output\"}}\x1b\\";
-const char KITTY_GET_NO_ANSI_TEXT[]              = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\";
+
+
+/*
+ * const char KITTY_LS_CMD[]                        = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
+ * const char KITTY_LS_ALL_ENV_CMD[]                = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":true}}\x1b\\";
+ * const char KITTY_QUERY_TERMINAL_CMD[]            = "\x1bP@kitty-cmd{\"cmd\":\"kitten\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"kitten\":\"query_terminal\"}}\x1b\\";
+ * const char KITTY_LS_NO_ENV_CMD[]                 = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":false}}\x1b\\";
+ * const char KITTY_GET_TEXT[]                      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
+ * const char KITTY_GET_ANSI_TEXT[]                 = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true}}\x1b\\";
+ * const char KITTY_GET_ANSI_CURSOR_TEXT[]          = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false}}\x1b\\";
+ * const char KITTY_GET_ANSI_CURSOR_ALL_TEXT[]      = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"all\"}}\x1b\\";
+ * const char KITTY_GET_ANSI_CURSOR_SCREEN_TEXT[]   = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"screen\"}}\x1b\\";
+ * const char KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT[] = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"last_non_empty_output\"}}\x1b\\";
+ * const char KITTY_GET_NO_ANSI_TEXT[]              = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\";
+ */
 
 
 TEST t_pid_cwd(void){

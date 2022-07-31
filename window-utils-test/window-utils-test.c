@@ -9,7 +9,6 @@
 #include <sys/time.h>
 ////////////////////////////////////////
 #include "app-utils/app-utils.h"
-#include "submodules/meson_deps/submodules/dbg/dbg.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
@@ -18,6 +17,7 @@
 #include "greatest/greatest.h"
 #include "string-utils/string-utils.h"
 #include "submodules/libfort/src/fort.h"
+#include "submodules/meson_deps/submodules/dbg/dbg.h"
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"
 
@@ -28,24 +28,25 @@
 TEST t_windows_search(void *NAME){
   LsWinCtx ctx;
   int      ch;
+  char     *name = (char *)NAME;
 
   ctx.longDisplay = 0;
   ctx.id          = -1;
   ctx.numFound    = 0;
   char *pattern = NULL;
 
-  if ((char *)NAME != NULL) {
-    pattern = (char *)strdup(NAME);
-  }
+  if (name != NULL) {
+    pattern = strdup(name);
 
-  EnumerateWindows(pattern, PrintWindow, (void *)&ctx);
-  printf("\n"
-         "%s> ctx.numFound: %d|"
-         "\t"
-         "Pattern:%s|ID:%d|\n",
-         APPLICATION_NAME, ctx.numFound,
-         pattern, ctx.id
-         );
+    EnumerateWindows(pattern, PrintWindow, (void *)&ctx);
+    printf("\n"
+           "%s> ctx.numFound: %d|"
+           "\t"
+           "Pattern:%s|ID:%d|\n",
+           APPLICATION_NAME, ctx.numFound,
+           pattern, ctx.id
+           );
+  }
   PASS();
 }
 
@@ -175,10 +176,10 @@ SUITE(s_list_windows){
 }
 
 
-TEST t_move_window(int *ID){
-  int id = *ID, x = 50, y = 75;
+TEST t_move_window(void *ID){
+  size_t id = (size_t)ID, x = 200, y = 300;
 
-  dbg(id, %d);
+  dbg(id, %lu);
   move_window_id(id, x, y);
   PASS();
 }

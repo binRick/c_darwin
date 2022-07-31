@@ -1,7 +1,6 @@
 #pragma once
 /////////////////////////////////////
 #include <assert.h>
-#include <gd.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
@@ -9,7 +8,7 @@
 #include <unistd.h>
 /////////////////////////////////////
 #include "wrec-cli/wrec-cli.h"
-#include "wrec/wrec.h"
+#include "wrec-utils/wrec-utils.h"
 /////////////////////////////////////
 #include "assertf/assertf.h"
 #include "b64.c/b64.h"

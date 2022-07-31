@@ -67,7 +67,7 @@ subdir('audit')
 subdir('capture')
 subdir('keylogger-db')
 subdir('keylogger')
-subdir('wrec')
+subdir('wrec-utils')
 subdir('wrec-cli')
 #//////////////////////////////////////////////////////////////////////
 subdir('system-utils-test')

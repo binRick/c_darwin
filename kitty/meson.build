@@ -11,11 +11,14 @@ kitty_deps = [
   c_stringfn_dep,
   c_fsio_dep,
   c_string_buffer_dep,
+  subprocess_dep,
+  which_dep,
   process_dep,
   ansi_codes_dep,
   parson_dep,
 ]
 kitty_dirs = [
+  '.',
   inc,
 ]
 kitty_lib =static_library('kitty',
