@@ -37,7 +37,9 @@ __attribute__((constructor)) void init(void){
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
-  RUN_SUITE(s_keylogger);
+  if (isatty(STDOUT_FILENO)) {
+    RUN_SUITE(s_keylogger);
+  }
   GREATEST_MAIN_END();
 }
 

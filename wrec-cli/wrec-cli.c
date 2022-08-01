@@ -5,8 +5,10 @@
 #include <unistd.h>
 ////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "exec-fzf/exec-fzf.h"
 #include "wrec-cli/wrec-cli.h"
 ////////////////////////////////////////////////////
+int select_window(void);
 
 static struct args_t args = {
   .mode                        = DEFAULT_MODE,
@@ -25,10 +27,11 @@ static struct args_t args = {
 
 
 static struct modes_t    modes[] = {
-  { .name = "debug_args", .description = "Debug Arguments", .handler = debug_args     },
-  { .name = "wrec0",      .description = "Wrec0",           .handler = wrec0          },
-  { .name = "list",       .description = "List Windows",    .handler = list_windows   },
-  { .name = "record",     .description = "Capture Window",  .handler = capture_window },
+  { .name = "debug_args",    .description = "Debug Arguments", .handler = debug_args     },
+  { .name = "wrec0",         .description = "Wrec0",           .handler = wrec0          },
+  { .name = "list",          .description = "List Windows",    .handler = list_windows   },
+  { .name = "record",        .description = "Capture Window",  .handler = capture_window },
+  { .name = "select_window", .description = "Select Window",   .handler = select_window  },
   { NULL },
 };
 
@@ -40,6 +43,8 @@ static struct cag_option options[] = {
     .description    = "Mode" },
   { .identifier     = 'v',.access_letters  = "v", .access_name = "verbose",          .value_name = NULL,                    .description = "Verbose Mode"                                                              },
   { .identifier     = 'f',.access_letters  = "f", .access_name = "max-frames",       .value_name = "MAX_FRAMES",            .description = "Max Recorded Frames"                                                       },
+  { .identifier     = 'S',.access_letters  = "S", .access_name = "select-window",    .value_name = NULL,                    .description = "Select Window"                                                             },
+  { .identifier     = 'F',.access_letters  = "F", .access_name = "fps",              .value_name = "RECORD_FPS",            .description = "Frames Per Second"                                                         },
   { .identifier     = 's',.access_letters  = "s", .access_name = "max-seconds",      .value_name = "MAX_SECONDS",           .description = "Max Recorded Seconds"                                                      },
   { .identifier     = 'F',.access_letters  = "F", .access_name = "fps",              .value_name = "RECORD_FPS",            .description = "Frames Per Second"                                                         },
   { .identifier     = 'w',
@@ -142,6 +147,7 @@ static int parse_args(int argc, char *argv[]){
     char identifier = cag_option_get(&context);
     switch (identifier) {
     case 'm': args.mode                        = cag_option_get_value(&context); break;
+    case 'S': args.mode                        = "select_window"; break;
     case 'v': args.verbose                     = true; break;
     case 'w': args.window_id                   = atoi(cag_option_get_value(&context)); break;
     case 'f': args.max_recorded_frames         = atoi(cag_option_get_value(&context)); break;
@@ -172,3 +178,31 @@ static int parse_args(int argc, char *argv[]){
   return(EXIT_SUCCESS);
 } /* parse_args */
 
+
+int select_window(void){
+  int res = -1;
+
+
+  struct fzf_exec_t *fe = exec_fzf_setup();
+
+  assert(fe != NULL);
+  struct Vector *windows = get_windows();
+
+  for (size_t i = 0; i < vector_size(windows); i++) {
+    window_t *w = (window_t *)vector_get(windows, i);
+    vector_push(fe->input_options, w->app_name);
+  }
+
+
+  fe->header       = "Select Window";
+  fe->debug_mode   = true;
+  fe->height       = 100;
+  fe->preview_size = 0;
+
+  res = exec_fzf(fe);
+  assert(res == 0);
+
+  log_info("Selected %lu/%lu options", vector_size(fe->selected_options), vector_size(fe->input_options));
+  exec_fzf_release(fe);
+  return(EXIT_SUCCESS);
+}

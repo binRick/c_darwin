@@ -113,7 +113,9 @@ struct keybindings_t *get_bound_keybinding(const char *CURRENT_DOWNKEYS_EVENT_ST
              kb_match_color, kb_match ? "Yes" : "No",
              vector_size(kb_keys_v)
              );
-    fprintf(stderr, AC_RESETALL "%s" "%s" AC_RESETALL "\n", kb_debug_msg_color, kb_debug_msg);
+    if (false) {
+      fprintf(stderr, AC_RESETALL "%s" "%s" AC_RESETALL "\n", kb_debug_msg_color, kb_debug_msg);
+    }
     free(kb_debug_msg);
     tmp++;
   }
@@ -122,7 +124,9 @@ struct keybindings_t *get_bound_keybinding(const char *CURRENT_DOWNKEYS_EVENT_ST
            CURRENT_DOWNKEYS_EVENT_STRING,
            vector_size(dk_v)
            );
-  fprintf(stderr, AC_RESETALL AC_REVERSED "%s" "%s" AC_RESETALL "\n", debug_msg_color, debug_msg);
+  if (false) {
+    fprintf(stderr, AC_RESETALL AC_REVERSED "%s" "%s" AC_RESETALL "\n", debug_msg_color, debug_msg);
+  }
   free(debug_msg);
   return(NULL);
 }

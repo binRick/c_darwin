@@ -7,6 +7,7 @@ wrec_cli_deps = [
   ansi_codes_dep,
   cargs_dep,
   wrec_utils_dep,
+  exec_fzf_dep,
   progress_dep,
 ]
 wrec_cli_dirs = [

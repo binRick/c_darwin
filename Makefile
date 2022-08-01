@@ -47,11 +47,11 @@ do-muon-install:
 	@cd build-muon && muon install
 do-muon-test:
 	@cd build-muon && muon test
-build-muon: do-muon-setup do-muon-build do-muon-test
-muon: build-muon do-muon-install
+build-muon: do-muon-setup do-muon-build
+muon: build-muon
 
 
-clean:
+clean: do-muon-clean
 	@rm -rf build
 
 do-meson: 
@@ -64,7 +64,7 @@ do-test:
 	@passh meson test -C build -v --print-errorlogs
 install: do-install
 test: do-test
-build: do-meson do-build
+build: do-meson do-build muon
 uncrustify:
 	@$(UNCRUSTIFY) -c submodules/meson_deps/etc/uncrustify.cfg --replace $(TIDIED_FILES) 
 uncrustify-clean:
@@ -104,6 +104,13 @@ meson-binaries-loc:
 do-pull-submodules-cmds:
 	@command find submodules -type d -maxdepth 1|xargs -I % echo -e "sh -c 'cd % && git pull'"
 run-binary:
+	@clear; while :; do make meson-binaries | env FZF_DEFAULT_COMMAND= \
+		fzf --reverse --preview-window='follow,wrap,bottom,80%' --preview='env bash -c {} -v -a' \
+			--ansi --border \
+			--header='Select Test Binary' \
+			--height='100%' \
+	| xargs -I % env bash -c "./%"; sleep .1; done
+run-binary-nodemon:
 	@make meson-binaries | fzf --reverse | xargs -I % nodemon -w build --delay 1000 -x passh "./%"
 meson-tests-list:
 	@meson test -C build --list
