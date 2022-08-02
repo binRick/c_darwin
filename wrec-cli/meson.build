@@ -11,9 +11,9 @@ wrec_cli_deps = [
   progress_dep,
 ]
 wrec_cli_dirs = [
-  '../submodules/meson_deps/submodules/c_fsio/include',
+  '../submodules/c_deps/submodules/c_fsio/include',
   '.',
-  '../submodules/meson_deps/submodules/c_fsio',
+  '../submodules/c_deps/submodules/c_fsio',
   inc,
 ]
 

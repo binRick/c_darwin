@@ -10,7 +10,7 @@ audit_include_dirs = [
 audit_include_cargs = [
   ]
 audit_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   audit_dep,
   c_vector_dep,
   kitty_dep,

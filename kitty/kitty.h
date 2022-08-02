@@ -25,6 +25,7 @@
 #define KITTY_GET_ANSI_CURSOR_SCREEN_TEXT      "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"screen\"}}\x1b\\"
 #define KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT    "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"last_non_empty_output\"}}\x1b\\"
 #define KITTY_GET_NO_ANSI_TEXT                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
+#define KITTY_SELF_LS "@ ls"                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -58,19 +59,6 @@ kitty_process_t *get_kitty_process_t(const size_t PID);
 kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON);
 
 ////////////////////////////////////////////////////////////////////////
-struct Vector *get_kitty_listen_ons();
-struct Vector *get_all_processes();
-struct Vector *get_process_env(int PID);
-struct Vector *get_process_cmdline(int PID);
-struct Vector *get_kitty_pids();
-struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
-char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG);
-char *kitty_cmd_data(const char *CMD_OUTPUT);
-char *get_process_cwd(int PID);
-void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG);
-char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT);
-struct Vector *kitty_get_color_types(const char *HOST, const int PORT);
-
 typedef struct {
   char *key;
   char *val;
@@ -99,4 +87,17 @@ struct kitty_proc_t {
   bool          is_focused;
   struct Vector *tabs_v;
 } kitty_proc_t;
+/////////////////////////////////////////////////////////////////////////////////////
+struct Vector *get_kitty_listen_ons();
+struct Vector *get_all_processes();
+struct Vector *get_process_env(int PID);
+struct Vector *get_process_cmdline(int PID);
+struct Vector *get_kitty_pids();
+struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
+char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG);
+char *kitty_cmd_data(const char *CMD_OUTPUT);
+char *get_process_cwd(int PID);
+void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG);
+char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT);
+struct Vector *kitty_get_color_types(const char *HOST, const int PORT);
 

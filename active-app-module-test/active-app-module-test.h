@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////
 #include "active-app-module/active-app-module.h"
 #include "submodules/c_stringfn/include/stringfn.h"
-#include "submodules/greatest/greatest.h"
+#include "submodules/c_greatest/greatest/greatest.h"
 ////////////////////////////////////////////////////////
 #define WATCH_INTERVAL_MS    100
 #define TEST_ITERATIONS      1

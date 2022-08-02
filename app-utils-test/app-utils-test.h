@@ -4,7 +4,7 @@
 #define DEFAULT_LOGLEVEL    2
 #endif
 #include "submodules/c_stringfn/include/stringfn.h"
-#include "submodules/greatest/greatest.h"
+#include "submodules/c_greatest/greatest/greatest.h"
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>

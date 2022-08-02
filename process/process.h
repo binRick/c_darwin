@@ -25,6 +25,7 @@ int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp);
 char * pid_path(pid_t pid);
 struct Vector *get_all_processes();
 struct Vector *get_process_env(int process);
+char *get_my_cwd();
 
 //////////////////////////////////////////
 //////////////////////////////////////////

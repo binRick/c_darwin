@@ -55,10 +55,11 @@ struct kitty_process_communication_result_t *kitty_process_communication(const c
 
 
 kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
-  kitty_listen_on_t      *KLO               = malloc(sizeof(kitty_listen_on_t));
   struct StringFNStrings KittyListenOnSplit = stringfn_split(KITTY_LISTEN_ON, ':');
 
   assert(KittyListenOnSplit.count == 3);
+  kitty_listen_on_t *KLO = malloc(sizeof(kitty_listen_on_t));
+
   KLO->protocol = strdup(KittyListenOnSplit.strings[0]);
   KLO->host     = strdup(KittyListenOnSplit.strings[1]);
   KLO->port     = atoi(KittyListenOnSplit.strings[2]);

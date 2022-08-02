@@ -10,7 +10,7 @@ process_include_dirs = [
 process_include_cargs = [
   ]
 process_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   process_dep,
   c_vector_dep,
   kitty_dep,

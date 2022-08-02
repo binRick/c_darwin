@@ -10,7 +10,7 @@
 #include "submodules/module/module.h"
 #include "submodules/module/require.h"
 /////////////////////////////////////////////
-#include "submodules/greatest/greatest.h"
+#include "submodules/c_greatest/greatest/greatest.h"
 /////////////////////////////////////////////
 #include <assert.h>
 #include <Carbon/Carbon.h>

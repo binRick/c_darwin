@@ -14,10 +14,10 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_timer/include/c_timer.h"
 #include "capture/capture.h"
-#include "greatest/greatest.h"
+#include "c_greatest/greatest/greatest.h"
 #include "string-utils/string-utils.h"
+#include "submodules/c_deps/submodules/dbg/dbg.h"
 #include "submodules/libfort/src/fort.h"
-#include "submodules/meson_deps/submodules/dbg/dbg.h"
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"
 

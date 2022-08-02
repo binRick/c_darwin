@@ -9,7 +9,7 @@ pbpaste_test_inc = [
 ]
 pbpaste_test_deps = [
  c_string_buffer_dep,
- greatest_dep,
+ c_greatest_dep,
  pbpaste_dep,
  ansi_codes_dep,
  djbhash_dep,

@@ -7,7 +7,7 @@ system_utils_include_dirs = [
   inc,
 ]
 system_utils_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   system_utils_dep,
   process_dep,
   logh_dep,

@@ -10,7 +10,7 @@ capture_include_dirs = [
 capture_include_cargs = [
   ]
 capture_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   capture_dep,
   c_vector_dep,
   kitty_dep,

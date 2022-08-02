@@ -4,7 +4,7 @@
 #include "ansi-codes/ansi-codes.h"
 #include "bench/bench.h"
 #include "bytes/bytes.h"
-#include "greatest/greatest.h"
+#include "c_greatest/greatest/greatest.h"
 #include "pasteboard-test/pasteboard-test.h"
 #include "pasteboard/pasteboard.h"
 

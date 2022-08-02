@@ -7,7 +7,7 @@ pasteboard_include_dirs = [
   inc,
 ]
 pasteboard_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
   pasteboard_dep,

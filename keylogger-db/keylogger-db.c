@@ -9,7 +9,7 @@
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "generic-print/print.h"
-#include "greatest/greatest.h"
+#include "c_greatest/greatest/greatest.h"
 #include "keylogger-db/keylogger-db.h"
 #include "log.h/log.h"
 #include "pasteboard/pasteboard.h"

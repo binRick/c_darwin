@@ -1,6 +1,6 @@
 #pragma once
 #include "pbpaste.h"
-#include "submodules/greatest/greatest.h"
+#include "submodules/c_greatest/greatest/greatest.h"
 
 #include <ctype.h>
 #include <inttypes.h>

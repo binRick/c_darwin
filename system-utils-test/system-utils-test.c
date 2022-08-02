@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #define DEBUG_PID_ENV    false
 //////////////////////////////////////////
-#include "greatest.h"
+#include"c_greatest/greatest/greatest.h"
 #include "system-utils-test.h"
 #include "system-utils/system-utils.h"
 

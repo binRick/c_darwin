@@ -20,9 +20,9 @@ audit_deps = [
   kitty_dep,  
 ]
 audit_dirs = [
-  '../submodules/meson_deps/submodules/c_fsio/include',
+  '../submodules/c_deps/submodules/c_fsio/include',
   '.',
-  '../submodules/meson_deps/submodules/c_fsio',
+  '../submodules/c_deps/submodules/c_fsio',
   inc,
 ]
 audit_lib =static_library('audit',

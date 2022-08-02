@@ -13,7 +13,7 @@ window_utils_test_deps = [
   app_utils_dep,
   window_utils_dep,
   logh_dep,
-  greatest_dep,
+  c_greatest_dep,
   dbg_dep,
   c_timer_dep,
   capture_dep,

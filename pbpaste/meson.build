@@ -7,13 +7,13 @@ pbpaste_inc = [
  inc,
 ]
 pbpaste_deps = [
+ parson_dep,
  c_string_buffer_dep,
  subprocess_dep,
- greatest_dep,
+ c_greatest_dep,
  ansi_codes_dep,
  djbhash_dep,
  c_string_buffer_dep,
- parson_dep,
  c_fsio_dep,
  c_stringfn_dep,
  tiny_regex_c_dep,

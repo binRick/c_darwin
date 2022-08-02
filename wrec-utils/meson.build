@@ -37,8 +37,8 @@ wrec_utils_deps = [
   fort_dep,  
 ]
 wrec_utils_dirs = [
-  '../submodules/meson_deps/submodules/c_fsio/include',
-  '../submodules/meson_deps/submodules/c_fsio',
+  '../submodules/c_deps/submodules/c_fsio/include',
+  '../submodules/c_deps/submodules/c_fsio',
   '.',
   inc,
 ]

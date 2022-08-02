@@ -29,9 +29,9 @@ capture_deps = [
   kitty_dep,  
 ]
 capture_dirs = [
-  '../submodules/meson_deps/submodules/c_fsio/include',
+  '../submodules/c_deps/submodules/c_fsio/include',
   '.',
-  '../submodules/meson_deps/submodules/c_fsio',
+  '../submodules/c_deps/submodules/c_fsio',
   inc,
 ]
 capture_lib =static_library('capture',

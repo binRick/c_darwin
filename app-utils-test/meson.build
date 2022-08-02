@@ -7,12 +7,12 @@ app_utils_test_include_dirs = [
   '../app-utils',
 ]
 app_utils_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   c_stringfn_dep,
   app_utils_dep,
   window_utils_dep,
   logh_dep,
-  greatest_dep,
+  c_greatest_dep,
 ]
 
 if get_option('enable-binaries')

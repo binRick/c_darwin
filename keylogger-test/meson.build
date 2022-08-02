@@ -9,7 +9,7 @@ keylogger_test_inc = [
 ]
 keylogger_test_deps = [
  c_string_buffer_dep,
- greatest_dep,
+ c_greatest_dep,
  keylogger_dep,
 ]
 

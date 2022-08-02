@@ -1,12 +1,12 @@
 project('c_darwin', ['c'],default_options: ['warning_level=0','c_std=gnu99',],
-  subproject_dir: 'submodules/meson_deps/subprojects',
+  subproject_dir: 'submodules/c_deps/subprojects',
   version:'0.0.1')
 fs = import('fs')
 sudo_program = find_program('sudo', required : true)
 git_program = find_program('git', required : true)
 cc = meson.get_compiler('c')
 pwd = meson.current_source_dir()
-meson_deps_dir = join_paths(meson.current_source_dir(),'submodules/meson_deps')
+c_deps_dir = join_paths(meson.current_source_dir(),'submodules/c_deps')
 if fs.is_dir('.git')
     git_rev_parse = run_command(git_program, 'rev-parse', '--short', '@', check: true)
     git_sha = git_rev_parse.stdout().strip()
@@ -18,27 +18,27 @@ version_info.set('version', git_sha)
 version_info.set('vcs_tag', git_sha)
 subdir('meson')
 inc = [include_directories(
-  'submodules','submodules/meson_deps',
-  'submodules/meson_deps/submodules/c_ansi',
-  'submodules/meson_deps/submodules/dbg.h',
-  'submodules/meson_deps/submodules/tiny-regex-c',
-  'submodules/meson_deps/submodules',
-  'submodules/meson_deps/submodules/c_vector/src',
-  'submodules/meson_deps/submodules/c_vector/include',
+  'submodules','submodules/c_deps',
+  'submodules/c_deps/submodules/c_ansi',
+  'submodules/c_deps/submodules/dbg.h',
+  'submodules/c_deps/submodules/tiny-regex-c',
+  'submodules/c_deps/submodules',
+  'submodules/c_deps/submodules/c_vector/src',
+  'submodules/c_deps/submodules/c_vector/include',
   'app-utils',
   'system-utils',
-  'submodules/meson_deps/submodules/hidapi/hidapi',
-  'submodules/meson_deps/submodules/libusb/libusb',
-  'submodules/meson_deps/submodules/libusb/Xcode',
-  'submodules/meson_deps/submodules/libusb/libusb/os',
-  'submodules/meson_deps/submodules/generic-print',
-  'submodules/meson_deps/submodules/c_fsio',
-  'submodules/meson_deps/submodules/c_fsio/src',
-  'submodules/meson_deps/submodules/c_fsio/include',
-  'submodules/meson_deps/submodules/c_stringfn/include',
-  'submodules/meson_deps/submodules/parson',
-  'submodules/meson_deps/submodules/str-replace.c/src',
-  'submodules/meson_deps/submodules/occurrences.c',
+  'submodules/c_deps/submodules/hidapi/hidapi',
+  'submodules/c_deps/submodules/libusb/libusb',
+  'submodules/c_deps/submodules/libusb/Xcode',
+  'submodules/c_deps/submodules/libusb/libusb/os',
+  'submodules/c_deps/submodules/generic-print',
+  'submodules/c_deps/submodules/c_fsio',
+  'submodules/c_deps/submodules/c_fsio/src',
+  'submodules/c_deps/submodules/c_fsio/include',
+  'submodules/c_deps/submodules/c_stringfn/include',
+  'submodules/c_deps/submodules/parson',
+  'submodules/c_deps/submodules/str-replace.c/src',
+  'submodules/c_deps/submodules/occurrences.c',
   'window-utils',
   'active-app',
   'window-utils',

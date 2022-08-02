@@ -10,7 +10,7 @@ wrec_include_dirs = [
 wrec_include_cargs = [
   ]
 wrec_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   wrec_utils_dep,
   debug_memory_dep,
 ]

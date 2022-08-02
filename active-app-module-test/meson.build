@@ -5,7 +5,7 @@ active_app_module_include_dirs = [
   inc,
 ]
 active_app_module_test_deps = [
-  greatest_dep,
+  c_greatest_dep,
   logh_dep,
   c_stringfn_dep,
   active_app_module_dep,
