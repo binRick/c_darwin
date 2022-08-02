@@ -100,7 +100,7 @@ static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion
     .stderr_buffer             = { 0 },
   };
 
-  asprintf(&r.ffmpeg_cmd, "env AV_LOG_FORCE_COLOR=1 '%s' -stats -y -f image2 -framerate '%lu' -i '%s/window-%lu-%%d.png' -loglevel '%s' -vf 'crop=in_w:in_h-%d,smartblur=ls=-0.5' -loop '%d' '%s'",
+  asprintf(&r.ffmpeg_cmd, "env AV_LOG_FORCE_COLOR=1 '%s' -stats -y -f image2 -framerate '%lu' -i '%s/window-%lu-%%d.png' -loglevel '%s' -vf 'crop=in_w:in_h-%d' -loop '%d' '%s'",
            r.ffmpeg_path,
            config->frames_per_second,
            tempdir_path,

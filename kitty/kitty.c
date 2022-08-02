@@ -1,7 +1,7 @@
 #pragma once
 #include "ansi-codes/ansi-codes.h"
 #include "c_vector/include/vector.h"
-#include "dbg/dbg.h"
+//#include "dbg/dbg.h"
 #include "djbhash/src/djbhash.h"
 #include "fsio.h"
 #include "kitty/kitty.h"
@@ -13,22 +13,263 @@
 #include "subprocess.h/subprocess.h"
 #include "tiny-regex-c/re.h"
 #include "which/src/which.h"
-const size_t KITTY_TCP_BUFFER_SIZE = 8192;
+const size_t KITTY_TCP_BUFFER_SIZE                   = 8192;
+const char   *KITTY_ESC_CODE_CLEAR                   = "\x1b_Ga=d,q=2\x1b\\";
+const char   *KITTY_ESC_QUERY                        = "\x1b_Gi=1,a=q;\x1b\\";
+const char   *KITTY_ESC_CHECK_TERMINAL_CAPS          = "\x1b_Ga=q,s=1,v=1,i=1;YWJjZA==\x1b\\";
+const char   *KITTY_ESC_DELETE_ALL_VISIBLE_PLAYMENTS = "\x1b_Ga=d\x1b\\";
+const char   *KITTY_ESC_DRAW_IMAGE                   = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
+const char   *KITTY_ESC_DRAW_IMAGE1                  = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 
 
-struct kitty_process_communication_result_t *kitty_process_communication(const char *KITTY_CMD){
+static bool kitty_run_at_command(char *COMMAND){
+}
+
+
+bool kitty_set_tab_color(char *MODE, char *COLOR){
+  char *s;
+
+  asprintf(&s, "%s=%s", (char *)MODE, (char *)COLOR);
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "set-tab_color");
+  vector_push(v, s);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+bool kitty_send_text(char *TEXT){
+  char *s;
+
+  asprintf(&s, "\"%s\"", (char *)TEXT);
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "send-text");
+  vector_push(v, s);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+bool kitty_set_layout(char *LAYOUT){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "goto-layout");
+  vector_push(v, LAYOUT);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_list_fonts(){
+  struct Vector *v = vector_new();
+
+  vector_push(v, "+");
+  vector_push(v, "list-fonts");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_query_terminal(){
+  struct Vector *v = vector_new();
+
+  vector_push(v, "+");
+  vector_push(v, "kitten");
+  vector_push(v, "query_terminal");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_ls_kittens(){
+  struct Vector *v = vector_new();
+
+  vector_push(v, "+");
+  vector_push(v, "kitten");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_get_ls(){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "ls");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_get_colors(){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "get-colors");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_get_last_cmd_output(){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "get-text");
+  vector_push(v, "--extent=last_non_empty_output");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+char *kitty_get_text(){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "get-text");
+  vector_push(v, "--self");
+  vector_push(v, "--ansi");
+  vector_push(v, "--extent=all");
+  //   vector_push(v, "--extent=last_non_empty_output");
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
+
+bool kitty_set_window_title(char *TAB_TITLE){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "set-window-title");
+  vector_push(v, TAB_TITLE);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  return(true);
+}
+
+
+bool kitty_set_tab_title(char *TAB_TITLE){
+  char          *font_size_s;
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "set-tab-title");
+  vector_push(v, TAB_TITLE);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  return(true);
+}
+
+
+bool kitty_set_font_size(int FONT_SIZE){
+  char *font_size_s;
+
+  asprintf(&font_size_s, "%d", (int)FONT_SIZE);
+  struct Vector *v = vector_new();
+
+  vector_push(v, "@");
+  vector_push(v, "set-font-size");
+  vector_push(v, font_size_s);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  return(true);
+}
+
+struct kitty_process_communication_result_t *kitty_process_communication(struct Vector *CMD_VECTOR){
   struct kitty_process_communication_result_t *r = malloc(sizeof(struct kitty_process_communication_result_t));
 
-  r->subprocess        = malloc(sizeof(struct subprocess_s));
-  r->kitty_exec_path   = (char *)which_path("kitty", getenv("PATH"));
+  r->subprocess      = malloc(sizeof(struct subprocess_s));
+  r->kitty_exec_path = (char *)which_path("kitty", getenv("PATH"));
+  char          *kitty_command;
+  struct Vector *v = vector_new();
+
+  vector_push(v, r->kitty_exec_path);
+  for (size_t i = 0; i < vector_size(CMD_VECTOR); i++) {
+    vector_push(v, (char *)vector_get(CMD_VECTOR, i));
+  }
+  for (size_t i = 0; i < vector_size(v); i++) {
+    fprintf(stderr, "cmd #%lu: %s\n", i, (char *)vector_get(v, i));
+  }
+  char **cmd_arr = vector_to_array(v);
+
   r->subprocess_result = -1;
   r->subprocess_exited = -1;
   r->STDOUT_BUFFER     = stringbuffer_new();
   r->STDERR_BUFFER     = stringbuffer_new();
   r->stderr_bytes_read = 0;
   r->stdout_bytes_read = 0;
-  subprocess_create(r->kitty_command, 0, r->subprocess);
-  assert(r->subprocess_result == 0);
+
+
+  subprocess_create(cmd_arr, 0, r->subprocess);
+  printf("created.\n");
+
   size_t bytes_read = 0;
 
   do {
@@ -37,11 +278,13 @@ struct kitty_process_communication_result_t *kitty_process_communication(const c
     r->stdout_bytes_read += bytes_read;
   } while (bytes_read != 0);
   bytes_read = 0;
+  printf("read %lu stdout bytes.\n", r->stdout_bytes_read);
   do {
     bytes_read = subprocess_read_stderr(r->subprocess, r->stderr_buffer, READ_BUFFER_SIZE - 1);
     stringbuffer_append_string(r->STDERR_BUFFER, r->stderr_buffer);
     r->stderr_bytes_read += bytes_read;
   } while (bytes_read != 0);
+  printf("read %lu stderr bytes.\n", r->stderr_bytes_read);
 
   r->subprocess_join_result = subprocess_join(r->subprocess, &r->subprocess_exited);
 
@@ -50,8 +293,11 @@ struct kitty_process_communication_result_t *kitty_process_communication(const c
 
   stringbuffer_release(r->STDOUT_BUFFER);
   stringbuffer_release(r->STDERR_BUFFER);
+  puts(r->READ_STDOUT);
+  puts(r->READ_STDERR);
+  //assert(r->subprocess_result == 0);
   return(r);
-}
+} /* kitty_process_communication */
 
 
 kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
@@ -251,11 +497,11 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
     assert(json_object_has_value_of_type(TAB, "windows", JSONArray));
     assert(json_object_has_value_of_type(TAB, "enabled_layouts", JSONArray));
     assert(json_object_has_value_of_type(TAB, "active_window_history", JSONArray));
-    dbg(json_object_get_string(TAB, "title"), %s);
-    dbg(json_object_get_boolean(TAB, "is_focused"), %d);
-    dbg(json_object_get_string(TAB, "layout"), %s);
+    //dbg(json_object_get_string(TAB, "title"), %s);
+    //  dbg(json_object_get_boolean(TAB, "is_focused"), %d);
+//    dbg(json_object_get_string(TAB, "layout"), %s);
     for (int iii = 0; iii < json_object_get_count(TAB); iii++) {
-      dbg(json_object_get_name(TAB, iii), %s);
+      // dbg(json_object_get_name(TAB, iii), %s);
     }
   }
 } /* kitty_command */
@@ -444,3 +690,17 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
   }
   return(kitty_procs_v);
 } /* get_kitty_procs */
+
+
+bool kitty_draw_image(void){
+  int wrote = fprintf(stdout, "%s\n", KITTY_ESC_DRAW_IMAGE);
+
+  return((wrote > 0) ? true : false);
+}
+
+
+bool kitty_clear_screen(void){
+  int wrote = fprintf(stdout, "%s", KITTY_ESC_CODE_CLEAR);
+
+  return((wrote > 0) ? true : false);
+}

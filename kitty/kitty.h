@@ -25,11 +25,24 @@
 #define KITTY_GET_ANSI_CURSOR_SCREEN_TEXT      "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"screen\"}}\x1b\\"
 #define KITTY_GET_ANSI_CURSOR_LAST_CMD_TEXT    "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":true,\"cursor\":false,\"extent\":\"last_non_empty_output\"}}\x1b\\"
 #define KITTY_GET_NO_ANSI_TEXT                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
-#define KITTY_SELF_LS "@ ls"                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
+#define KITTY_SELF_LS                          "@ ls"                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
 
 
 ////////////////////////////////////////////////////////////////////////
 struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE);
+struct kitty_process_communication_result_t *kitty_process_communication(struct Vector *CMD_VECTOR);
+bool kitty_set_tab_title(char *TAB_TITLE);
+char *kitty_get_text();
+bool kitty_set_window_title(char *TITLE);
+char *kitty_get_ls();
+bool kitty_set_layout(char *LAYOUT);
+bool kitty_set_tab_color(char *MODE, char *COLOR);
+char *kitty_get_colors();
+bool kitty_send_text(char *TEXT);
+char *kitty_get_last_cmd_output();
+char *kitty_ls_kittens();
+char *kitty_query_terminal();
+char *kitty_list_fonts();
 
 #define READ_BUFFER_SIZE    1024 * 16
 struct kitty_process_communication_result_t {
@@ -37,7 +50,8 @@ struct kitty_process_communication_result_t {
   int                  subprocess_result;
   int                  subprocess_join_result;
   int                  subprocess_exited;
-  char                 *READ_STDOUT, *READ_STDERR, *kitty_exec_path, **kitty_command;
+  char                 *READ_STDOUT, *READ_STDERR, *kitty_exec_path;
+  char                 **kitty_command;
   struct  StringBuffer *STDOUT_BUFFER, *STDERR_BUFFER;
   size_t               stdout_bytes_read, stderr_bytes_read;
   char                 stdout_buffer[READ_BUFFER_SIZE], stderr_buffer[READ_BUFFER_SIZE];
@@ -93,9 +107,13 @@ struct Vector *get_all_processes();
 struct Vector *get_process_env(int PID);
 struct Vector *get_process_cmdline(int PID);
 struct Vector *get_kitty_pids();
+bool kitty_draw_image(void);
+bool kitty_set_font_size(int FONT_SIZE);
+static bool kitty_run_at_command(char *COMMAND);
 struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
 char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG);
 char *kitty_cmd_data(const char *CMD_OUTPUT);
+bool kitty_clear_screen(void);
 char *get_process_cwd(int PID);
 void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG);
 char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT);
