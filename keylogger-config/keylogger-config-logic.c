@@ -22,14 +22,39 @@
 ////////////////////////////////////////////////////////
 #include "c_vector/include/vector.h"
 //////////////////////////////////////////////////////////////////////////////////////////////////
+enum keylogger_config_action_type_t {
+  KEYLOGGER_CONFIG_ACTION_TYPE_EXECUTE,
+  KEYLOGGER_CONFIG_ACTION_TYPE_FOCUS_APP,
+  KEYLOGGER_CONFIG_ACTION_TYPES_QTY,
+} keylogger_config_action_type_t;
+enum keylogger_config_keybind_type_t {
+  KEYLOGGER_CONFIG_KEYBIND_TYPE_ANY,
+  KEYLOGGER_CONFIG_KEYBIND_TYPE_ACTIVE,
+  KEYLOGGER_CONFIG_KEYBIND_TYPE_INACTIVE,
+  KEYLOGGER_CONFIG_KEYBIND_TYPES_QTY,
+} keylogger_config_keybind_t;
+enum keylogger_config_log_mode_type_t {
+  KEYLOGGER_LOG_MODE_ERROR,
+  KEYLOGGER_LOG_MODE_WARNING,
+  KEYLOGGER_LOG_MODE_DEBUG,
+  KEYLOGGER_LOG_MODE_TRACE,
+  KEYLOGGER_LOG_MODES_QTY,
+} keylogger_config_log_mode_type_t;
+enum keylogger_config_mode_type_t {
+  KEYLOGGER_MODE_STARTED,
+  KEYLOGGER_MODE_STOPPED,
+  KEYLOGGER_MODES_QTY,
+} keylogger_config_mode_type_t;
+enum keylogger_config_key_type_t {
+  KEYLOGGER_CONFIG_KEY_TYPES_QTY,
+} keylogger_config_key_type_t;
+//////////////////////////////////////////////////////////////////////////////////////////////////
 static bool keylogger_execution_parse_config(void);
 static bool keylogger_execution_read_config(void);
 static bool keylogger_execution_get_is_started(void);
 static pid_t keylogger_execution_get_pid(void);
 static size_t keylogger_execution_get_started_ts(void);
-size_t keylogger_config_get_active_keybinds_qty(void);
 
-module(keylogger_execution) * keylogger_execution;
 //////////////////////////////////////////////////////////////////////////////////////////////////
 struct keylogger_config_action_t {
   char *type, *data;
@@ -37,7 +62,6 @@ struct keylogger_config_action_t {
 };
 struct keylogger_config_keybind_action_result_t {
 };
-
 struct keylogger_config_keybind_keys_t {
   bool          active;
   struct Vector *keys_v;
@@ -214,6 +238,8 @@ __attribute__((constructor))static void __keylogger_config_constructor(void){
 __attribute__((destructor))static void __keylogger_config_destructor(void){
 }
 
+#define KEYLOGGER_IS_STARTED    ()
+
 
 static bool keylogger_execution_get_is_started(){
   return(true);
@@ -246,12 +272,25 @@ int keylogger_config_module_init(module(keylogger_config) *exports) {
   exports->get_is_started = exports->execution->get_is_started;
   exports->read_config    = keylogger_execution_read_config;
   exports->parse_config   = keylogger_execution_parse_config;
-  printf("klc> Loaded %lu Actions\n", exports->get_actions_qty(0));
-  printf("klc> Loaded %lu Keybinds\n", exports->get_keybinds_qty());
-  printf("klc> Loaded %lu Keybind Keys\n", exports->get_keybind_keys_qty());
+  ///////////////////////////////////////////////////////////////////
+  bool read_ok  = exports->read_config();
+  bool parse_ok = exports->parse_config();
+  bool start_ok = exports->start();
+  ///////////////////////////////////////////////////////////////////
+  exports->is_loaded = (read_ok && parse_ok && start_ok);
+  printf("klc> Is Loaded: %s\n", exports->is_loaded == true ? "Yes" : "No");
+  printf("klc> Read Config: %s\n", read_ok == true ? "Yes" : "No");
+  printf("klc> Parsed Config: %s\n", parse_ok == true ? "Yes" : "No");
+  printf("klc> Loaded %lu Keybinds (%lu active, %lu inactive)\n",
+         exports->get_keybinds_qty(),
+         exports->get_active_keybinds_qty(),
+         exports->get_inactive_keybinds_qty()
+         );
+  printf("klc> Loaded %lu Actions\n", exports->get_keybind_actions_qty(0));
+//  printf("klc> Loaded %lu Keybind Keys\n", exports->get_keybind_keys_qty());
   printf("klc> Execution PID %d\n", exports->get_pid());
-  exports->is_loaded = true;
-  printf("init module(config)\n");
+  printf("klc> Started Timestamp %ld\n", exports->get_started_ts());
+  ///////////////////////////////////////////////////////////////////
   return(0);
 }
 
@@ -284,12 +323,6 @@ static bool keylogger_execution_read_config(void){
   require(keylogger_config)->config_s = cfg;
   return(true);
 }
-
-struct parse_config_result {
-  bool   success;
-  size_t keybinds_qty, actions_qty;
-  size_t active_keybinds_qty;
-};
 
 
 static bool keylogger_execution_parse_config(){
@@ -358,18 +391,17 @@ static bool keylogger_execution_parse_config(){
       printf("         ");
       for (size_t iii = 0; iii < json_array_get_count(key_combos_a); iii++) {
         char *k_s = json_array_get_string(key_combos_a, iii);
-        vector_push(bk->keys_v, k_s);
+        //   vector_push(bk->keys_v, k_s);
         asprintf(&msg, "%s ", k_s);
         printf(AC_RED "%s" AC_RESETALL, msg);
       }
       printf("\n");
-      vector_push(kb->keys_v, bk);
+      //vector_push(kb->keys_v, bk);
     }
     vector_push(keybinds_v, kb);
   }
   require(keylogger_config)->keybinds_v = keybinds_v;
   printf("Loaded %lu keybinds\n", vector_size(keybinds_v));
-//  json_value_free(parsed_cfg_r);
   return(true);
 } /* keylogger_execution_parse_config */
 
@@ -405,21 +437,31 @@ static struct Vector *keylogger_get_config_keybind_keys(int KEY_TYPE){
 
   return(v);
 }
+struct Vector *keylogger_config_get_keybind_keys_v(){
+  struct Vector *v   = vector_new();
+  struct Vector *cur = require(keylogger_config)->keybinds_v;
 
+  for (size_t i = 0; i < vector_size(cur); i++) {
+    struct keylogger_config_keybind_keys_t *kk = vector_get(cur, i);
+    for (size_t ii = 0; ii < vector_size(kk->keys_v); ii++) {
+//      vector_push(v, (struct keylogger_config_keybind_keys_t*)vector_get(kk->keys_v, ii));
+    }
+  }
+  return(v);
+}
+struct Vector *keylogger_config_get_keybind_actions_v(){
+  struct Vector *v   = vector_new();
+  struct Vector *cur = require(keylogger_config)->keybinds_v;
 
-size_t keylogger_config_get_actions_qty(int ACTION_TYPE){
-  return(0);
+  for (size_t i = 0; i < vector_size(cur); i++) {
+    struct keylogger_config_keybind_t *kb = vector_get(cur, i);
+    for (size_t ii = 0; ii < vector_size(kb->actions_v); ii++) {
+      vector_push(v, (struct keylogger_config_keybind_action_t *)vector_get(kb->actions_v, ii));
+    }
+  }
+  return(v);
 }
 
-
-size_t keylogger_config_get_keybind_keys_qty(){
-  return(0);
-}
-
-
-bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR){
-  return(false);
-}
 struct Vector *keylogger_config_get_active_keybinds_v(void){
   struct Vector *v   = vector_new();
   struct Vector *cur = require(keylogger_config)->keybinds_v;
@@ -454,6 +496,7 @@ size_t keylogger_config_get_active_keybinds_qty(void){
 size_t keylogger_config_get_inactive_keybinds_qty(void){
   return(vector_size(keylogger_config_get_inactive_keybinds_v()));
 }
+
 struct Vector *keylogger_config_get_keybinds_v(){
   return(require(keylogger_config)->keybinds_v);
 }
@@ -463,3 +506,17 @@ size_t keylogger_config_get_keybinds_qty(){
   return(vector_size(require(keylogger_config)->keybinds_v));
 }
 
+
+size_t keylogger_config_get_keybind_actions_qty(int ACTION_TYPE){
+  return(vector_size(require(keylogger_config)->get_keybind_actions_v()));
+}
+
+
+size_t keylogger_config_get_keybind_keys_qty(){
+  return(vector_size(require(keylogger_config)->get_keybind_keys_v()));
+}
+
+
+bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR){
+  return(false);
+}

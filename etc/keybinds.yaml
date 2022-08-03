@@ -1,0 +1,83 @@
+---
+keybinds:
+  - name: control 1
+    active: yes
+    keys:
+      - { active: yes, combos: [control, "1"] }
+      - { active: yes, combos: [control, "4"] }
+      - { active: yes, combos: [control, "5"] }
+      - { active: yes, combos: [control, "m"] }
+    actions:
+      - type: execute
+        data: echo control-1 >> /tmp/keybind.log
+      - type: execute
+        data: date >> /tmp/keybind.log
+
+  - name: control 2 or 0
+    active: no
+    keys:
+      - active: True
+        combos: [control, "2"]
+      - active: True
+        combos: [control, "0"]
+      - active: no
+        combos: [control, "a"]
+      - active: False
+        combos: [control, "a","x","2"]
+    actions:
+      - type: execute
+        data: echo control-2 >> /tmp/keybind.log
+        active: yes
+
+  - name: control 8
+    active: yes
+    keys:
+      - active: yes
+        combos: [control, "8"]
+    actions:
+      - type: focus-app
+        data: Kitty
+        active: yes
+
+  - name: control 9
+    active: yes
+    keys:
+      - active: yes
+        combos: [control, "9"]
+    actions:
+      - type: focus-app
+        data: Kitty
+        active: yes
+
+  - name: control a
+    active: yes
+    keys:
+      - active: yes
+        combos: [control, "a"]
+    actions:
+      - type: focus-app
+        data: Alacritty
+        active: yes
+
+  - name: control b
+    active: yes
+    keys:
+      - active: yes
+        combos: [control, "b"]
+    actions:
+      - type: focus-app
+        data: Alacritty
+        active: yes
+
+  - name: control 3
+    active: False
+    keys:
+      - active: yes
+        combos: [control, "3"]
+    actions:
+      - type: focus-app
+        data: Alacritty
+        active: False
+
+
+...

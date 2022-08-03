@@ -1,0 +1,191 @@
+{
+  "keybinds": [
+    {
+      "name": "control 1",
+      "active": true,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "1"
+          ]
+        },
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "4"
+          ]
+        },
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "5"
+          ]
+        },
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "m"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "execute",
+          "data": "echo control-1 >> /tmp/keybind.log"
+        },
+        {
+          "type": "execute",
+          "data": "date >> /tmp/keybind.log"
+        }
+      ]
+    },
+    {
+      "name": "control 2 or 0",
+      "active": false,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "2"
+          ]
+        },
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "0"
+          ]
+        },
+        {
+          "active": false,
+          "combos": [
+            "control",
+            "a"
+          ]
+        },
+        {
+          "active": false,
+          "combos": [
+            "control",
+            "a",
+            "x",
+            "2"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "execute",
+          "data": "echo control-2 >> /tmp/keybind.log",
+          "active": true
+        }
+      ]
+    },
+    {
+      "name": "control 8",
+      "active": true,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "8"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "focus-app",
+          "data": "Kitty",
+          "active": true
+        }
+      ]
+    },
+    {
+      "name": "control 9",
+      "active": true,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "9"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "focus-app",
+          "data": "Kitty",
+          "active": true
+        }
+      ]
+    },
+    {
+      "name": "control a",
+      "active": true,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "a"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "focus-app",
+          "data": "Alacritty",
+          "active": true
+        }
+      ]
+    },
+    {
+      "name": "control b",
+      "active": true,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "b"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "focus-app",
+          "data": "Alacritty",
+          "active": true
+        }
+      ]
+    },
+    {
+      "name": "control 3",
+      "active": false,
+      "keys": [
+        {
+          "active": true,
+          "combos": [
+            "control",
+            "3"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "focus-app",
+          "data": "Alacritty",
+          "active": false
+        }
+      ]
+    }
+  ]
+}

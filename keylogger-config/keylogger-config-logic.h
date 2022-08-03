@@ -29,6 +29,8 @@ enum keylogger_config_action_type_t;
 enum keylogger_config_keybind_type_t;
 enum keylogger_config_mode_type_t;
 enum keylogger_config_key_type_t;
+enum keylogger_config_mode_type_t;
+enum keylogger_config_log_mode_type_t;
 //////////////////////////////////////////////////////////////////////////////////////////////////
 struct keylogger_config_keybind_action_result_t;
 struct keylogger_config_keybind_action_t;
@@ -44,64 +46,69 @@ static bool keylogger_config_run_action(struct keylogger_config_keybind_action_t
 static bool keylogger_config_keybind_is_active(struct keylogger_config_keybind_t *KEYBIND);
 static struct Vector *keylogger_get_config_keybinds(int KEYBIND_TYPE);
 static struct Vector *keylogger_get_config_keybind_keys(int KEY_TYPE);
+struct Vector *keylogger_config_get_keybind_actions_v();
 bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR);
-struct Vector *keylogger_config_get_keybinds_v(void);
 struct Vector *keylogger_config_get_active_keybinds_v(void);
 struct Vector *keylogger_config_get_inactive_keybinds_v(void);
 size_t keylogger_config_get_inactive_keybinds_qty(void);
-size_t keylogger_config_get_actions_qty(int ACTION_TYPE);
+size_t keylogger_config_get_keybind_actions_qty(int ACTION_TYPE);
+struct Vector *keylogger_config_get_keybinds_v();
+struct Vector *keylogger_config_get_keybind_keys_v();
 size_t keylogger_config_get_keybind_keys_qty();
-size_t keylogger_config_get_keybinds_qty(void);
+size_t keylogger_config_get_keybinds_qty();
 size_t keylogger_config_get_active_keybinds_qty(void);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 module(keylogger_config) {
+  ///////////////////////////////////////////////////////
   KEYLOGGER_CONFIG_COMMON_PROPERTIES(keylogger_config)
-  bool          (*read_config)(void);
-  bool          (*parse_config)(void);
-  bool          (*start)(void);
-  bool          (*stop)(void);
-  bool          (*has_keybind_v)(struct Vector *KEYBINDS_VECTOR);
-  bool          (*get_is_started)(void);
-  unsigned long (*get_started_ts)(void);
-  size_t        (*get_keybind_keys_qty)(void);
-  size_t        (*get_actions_qty)(int ACTION_TYPE);
-  ///////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////
-  size_t        (*get_keybinds_qty)(void);
-  size_t        (*get_active_keybinds_qty)(void);
-  size_t        (*get_inactive_keybinds_qty)(void);
-  ///////////////////////////////////////////////////////
-  struct Vector *(*get_keybinds_v)(void);
-  struct Vector *(*get_active_keybinds_v)(void);
-  struct Vector *(*get_inactive_keybinds_v)(void);
-  ///////////////////////////////////////////////////////
-  pid_t         (*get_pid)();
   ///////////////////////////////////////////////////////
   module(keylogger_config_actions) * actions;
   module(keylogger_config_keybinds) * keybinds;
   module(keylogger_config_keybind_keys) * keybind_keys;
   module(keylogger_config_execution) * execution;
   ///////////////////////////////////////////////////////
-  const char                   *config_s;
-  ///////////////////////////////////////////////////////
   struct keylogger_execution_t *execution_state;
   ///////////////////////////////////////////////////////
-  struct Vector                *keybinds_v;
+  const char                   *config_s;
+  ///////////////////////////////////////////////////////
+  bool (*read_config)(void), (*parse_config)(void), (*start)(void), (*stop)(void),
+  (*has_keybind_v)(struct Vector *KEYBINDS_VECTOR), (*get_is_started)(void);
+  ///////////////////////////////////////////////////////
+  unsigned long (*get_started_ts)(void);
+  ///////////////////////////////////////////////////////
+  size_t (*get_keybind_keys_qty)(void),
+  (*get_keybind_actions_qty)(int ACTION_TYPE),
+  (*get_keybinds_qty)(void),
+  (*get_active_keybinds_qty)(void),
+  (*get_inactive_keybinds_qty)(void);
+  ///////////////////////////////////////////////////////
+  struct Vector
+  *keybinds_v,
+  *(*get_keybinds_v)(void),
+  *(*get_keybind_keys_v)(void),
+  *(*get_active_keybinds_v)(void),
+  *(*get_inactive_keybinds_v)(void),
+  *(*get_keybind_actions_v)(void);
+  ///////////////////////////////////////////////////////
+  pid_t (*get_pid)();
   ///////////////////////////////////////////////////////
 };
 KEYLOGGER_CONFIG_COMMON_FUNCTIONS(keylogger_config)
 exports(keylogger_config) {
   KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config)
-    .start                   = NULL, .stop = NULL, .get_is_started = NULL, .get_started_ts = NULL, .get_pid = NULL, .read_config = NULL,
+    .execution               = NULL,
+  .start                     = NULL, .stop = NULL, .get_is_started = NULL, .get_started_ts = NULL,
+  .get_pid                   = NULL, .read_config = NULL,
   .actions                   = NULL,
   .keybinds                  = NULL,
   .keybind_keys              = NULL,
-  .execution                 = NULL,
   .get_keybinds_qty          = keylogger_config_get_keybinds_qty,
   .has_keybind_v             = keylogger_config_has_keybind_v,
+  .get_keybind_keys_v        = keylogger_config_get_keybind_keys_v,
   .get_keybind_keys_qty      = keylogger_config_get_keybind_keys_qty,
-  .get_actions_qty           = keylogger_config_get_actions_qty,
+  .get_keybind_actions_qty   = keylogger_config_get_keybind_actions_qty,
+  .get_keybind_actions_v     = keylogger_config_get_keybind_actions_v,
   .get_active_keybinds_v     = keylogger_config_get_active_keybinds_v,
   .get_inactive_keybinds_v   = keylogger_config_get_inactive_keybinds_v,
   .get_active_keybinds_qty   = keylogger_config_get_active_keybinds_qty,
@@ -109,12 +116,3 @@ exports(keylogger_config) {
   .get_keybinds_v            = keylogger_config_get_keybinds_v,
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////
-enum keylogger_config_action_type_t;
-enum keylogger_config_keybind_type_t {
-  KEYLOGGER_CONFIG_KEYBIND_TYPE_ANY,
-  KEYLOGGER_CONFIG_KEYBIND_TYPE_ACTIVE,
-  KEYLOGGER_CONFIG_KEYBIND_TYPE_INACTIVE,
-  KEYLOGGER_CONFIG_KEYBIND_TYPES_QTY,
-} keylogger_config_keybind_t;
-enum keylogger_config_mode_type_t;
-enum keylogger_config_key_type_t;

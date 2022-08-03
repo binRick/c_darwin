@@ -57,10 +57,14 @@ TEST t_keylogger_config_validate_inactive_keybinds(){
 
 
 TEST t_keylogger_config_validate_configured_keybinds(){
-  size_t qty = keylogger_config->get_keybinds_qty();
+  size_t qty          = keylogger_config->get_keybinds_qty();
+  size_t active_qty   = keylogger_config->get_active_keybinds_qty();
+  size_t inactive_qty = keylogger_config->get_inactive_keybinds_qty();
 
-  ASSERT_GTm("Keylogger Keybindings failed to load", qty, 1);
   printf(AC_GREEN "keylogger config parsed %lu key bindings\n" AC_RESETALL, qty);
+  ASSERT_GTm("Keylogger Keybindings failed to load", qty, 1);
+  ASSERT_EQ(active_qty + inactive_qty, qty);
+
   PASS();
 }
 
