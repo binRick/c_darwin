@@ -26,6 +26,7 @@ if get_option('enable-binaries')
      c_args: wrec_cli_c_args,
   )
   if get_option('enable-binary-tests')
-    test('wrec', wrec_cli_exec, args: ['-h'])
+    test('wrec help', passh_program, args: [wrec_cli_exec, '--help'])
+    test('wrec list windows', passh_program, args: [wrec_cli_exec, '-m','list'])
   endif
 endif

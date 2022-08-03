@@ -30,7 +30,7 @@ static char *resize_type_name(const int RESIZE_TYPE){
 }
 ///////////////////////////////////
 #define DEFAULT_VERBOSE                        false
-#define DEFAULT_MODE                           "test"
+#define DEFAULT_MODE                           "list"
 #define DEFAULT_WINDOW_ID                      0
 #define DEFAULT_MAX_RECORD_FRAMES              100
 #define DEFAULT_MAX_RECORD_DURATION_SECONDS    30

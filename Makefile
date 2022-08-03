@@ -109,13 +109,19 @@ run-binary:
 			--ansi --border \
 			--header='Select Test Binary' \
 			--height='100%' \
-	| xargs -I % env bash -c "./%"; sleep .1; done
+	| xargs -I % env bash -c "./%"; sleep 1; done
 run-binary-nodemon:
 	@make meson-binaries | fzf --reverse | xargs -I % nodemon -w build --delay 1000 -x passh "./%"
 meson-tests-list:
 	@meson test -C build --list
 meson-tests:
-	@make meson-tests-list|fzf --reverse -m | xargs -I % env cmd="\
+	@make meson-tests-list|fzf \
+		--reverse --preview-window='follow,wrap,bottom,80%' \
+		--preview='env bash -c {} -v -a' \
+        --ansi --border \
+        --header='Select Test Binary' \
+        --height='100%'
+		--reverse -m | xargs -I % env cmd="\
 		meson test --num-processes 1 -C build -v --no-stdsplit --print-errorlogs \"%\"" \
 			env bash -c '\
 	eval "$$cmd" && \
