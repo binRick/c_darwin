@@ -18,6 +18,7 @@ keylogger_config_dirs = [
 keylogger_config_deps = [
   hidapi_dep,
   keylogger_db_dep,
+  parson_dep,
   module_dep,
   libusb_dep,
   pasteboard_dep,

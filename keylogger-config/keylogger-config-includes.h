@@ -1,8 +1,8 @@
 #pragma once
 //////////////////////////////////////
+#include "keylogger-config-types.c"
 #include "module/def.h"
 #include "module/module.h"
 #include "module/require.h"
-#include "keylogger-config-types.c"
 //////////////////////////////////////////
 //////////////////////////////////////////

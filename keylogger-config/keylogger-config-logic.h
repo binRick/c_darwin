@@ -1,26 +1,27 @@
 #pragma once
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "c_vector/include/vector.h"
+#include "keylogger-config.h"
 #include "module/def.h"
 #include "module/module.h"
 #include "module/require.h"
-#include "keylogger-config.h"
+#include "parson/parson.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #define KEYLOGGER_CONFIG_COMMON_PROPERTIES(NAME) \
   define(NAME, CLIB_MODULE);                     \
-  int mode;\
+  int  mode;                                     \
   bool is_loaded;
 #define KEYLOGGER_CONFIG_COMMON_MODULE(NAME) \
-  .mode = KEYLOGGER_CONFIG_MODE_DEBUG,\
+    .mode    = KEYLOGGER_CONFIG_MODE_DEBUG,  \
   .is_loaded = false;
 #define KEYLOGGER_CONFIG_COMMON_FUNCTIONS(NAME)     \
   int NAME ## _module_init(module(NAME) * exports); \
   void NAME ## _module_deinit(module(NAME) * exports);
 #define KEYLOGGER_CONFIG_COMMON_EXPORTS(NAME) \
-  .mode = 0,                  \
+    .mode = 0,                                \
   .init   = NAME ## _module_init,             \
   .deinit = NAME ## _module_deinit,
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,29 +48,39 @@ size_t keylogger_config_get_actions_qty(int ACTION_TYPE);
 size_t keylogger_config_get_keybind_keys_qty();
 size_t keylogger_config_get_keybinds_qty(int KEYBIND_TYPE);
 bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR);
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 module(keylogger_config) {
   KEYLOGGER_CONFIG_COMMON_PROPERTIES(keylogger_config)
-  bool (*start)(void);
-  bool (*is_started)(void);
-  bool (*stop)(void);
-  bool (*has_keybind_v)(struct Vector *KEYBINDS_VECTOR);
-  size_t (*get_keybinds_qty)(int KEYBIND_TYPE);
-  size_t (*get_keybind_keys_qty)(void);
-  size_t (*get_actions_qty)(int ACTION_TYPE);
-  module(keylogger_config_actions) *actions;
-  module(keylogger_config_keybinds) *keybinds;
-  module(keylogger_config_keybind_keys) *keybind_keys;
-  module(keylogger_config_execution) *execution;
+  bool          (*read_config)(void);
+  bool          (*parse_config)(void);
+  bool          (*start)(void);
+  bool          (*stop)(void);
+  bool          (*has_keybind_v)(struct Vector *KEYBINDS_VECTOR);
+  bool          (*get_is_started)(void);
+  unsigned long (*get_started_ts)(void);
+  size_t        (*get_keybinds_qty)(int KEYBIND_TYPE);
+  size_t        (*get_keybind_keys_qty)(void);
+  size_t        (*get_actions_qty)(int ACTION_TYPE);
+  pid_t         (*get_pid)();
+  module(keylogger_config_actions) * actions;
+  module(keylogger_config_keybinds) * keybinds;
+  module(keylogger_config_keybind_keys) * keybind_keys;
+  module(keylogger_config_execution) * execution;
+  const char                   *config_s;
   struct keylogger_execution_t *execution_state;
 };
 KEYLOGGER_CONFIG_COMMON_FUNCTIONS(keylogger_config)
 exports(keylogger_config) {
   KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config)
-  .start = NULL, .stop = NULL, .is_started = NULL,
-  .has_keybind_v = keylogger_config_has_keybind_v,
-  .get_keybinds_qty = keylogger_config_get_keybinds_qty,
+    .start              = NULL, .stop = NULL, .get_is_started = NULL, .get_started_ts = NULL, .get_pid = NULL, .read_config = NULL,
+  .actions              = NULL,
+  .keybinds             = NULL,
+  .keybind_keys         = NULL,
+  .execution            = NULL,
+  .has_keybind_v        = keylogger_config_has_keybind_v,
+  .get_keybinds_qty     = keylogger_config_get_keybinds_qty,
   .get_keybind_keys_qty = keylogger_config_get_keybind_keys_qty,
-  .get_actions_qty = keylogger_config_get_actions_qty,
+  .get_actions_qty      = keylogger_config_get_actions_qty,
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////
