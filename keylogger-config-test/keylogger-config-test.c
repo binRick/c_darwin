@@ -38,6 +38,33 @@ TEST t_keylogger_config_start(){
 }
 
 
+TEST t_keylogger_config_validate_active_keybinds(){
+  size_t qty = keylogger_config->get_active_keybinds_qty();
+
+  printf(AC_GREEN "keylogger config parsed %lu active key bindings\n" AC_RESETALL, qty);
+  ASSERT_GTEm("Keylogger Keybindings failed to load", qty, 1);
+  PASS();
+}
+
+
+TEST t_keylogger_config_validate_inactive_keybinds(){
+  size_t qty = keylogger_config->get_inactive_keybinds_qty();
+
+  printf(AC_GREEN "keylogger config parsed %lu inactive key bindings\n" AC_RESETALL, qty);
+  ASSERT_GTEm("Keylogger Keybindings failed to load", qty, 1);
+  PASS();
+}
+
+
+TEST t_keylogger_config_validate_configured_keybinds(){
+  size_t qty = keylogger_config->get_keybinds_qty();
+
+  ASSERT_GTm("Keylogger Keybindings failed to load", qty, 1);
+  printf(AC_GREEN "keylogger config parsed %lu key bindings\n" AC_RESETALL, qty);
+  PASS();
+}
+
+
 TEST t_keylogger_config_parse_config(){
   bool ok = keylogger_config->parse_config();
 
@@ -90,6 +117,9 @@ TEST t_keylogger_config_check_started(){
 SUITE(s_keylogger_config){
   RUN_TEST(t_keylogger_config_read_config);
   RUN_TEST(t_keylogger_config_parse_config);
+  RUN_TEST(t_keylogger_config_validate_configured_keybinds);
+  RUN_TEST(t_keylogger_config_validate_active_keybinds);
+  RUN_TEST(t_keylogger_config_validate_inactive_keybinds);
   RUN_TEST(t_keylogger_config_start);
   RUN_TEST(t_keylogger_config_check_started);
   RUN_TEST(t_keylogger_config_check_started_ts);
