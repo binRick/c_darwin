@@ -8,24 +8,21 @@
 #include "module/module.h"
 #include "module/require.h"
 #include "keylogger-config.h"
+//////////////////////////////////////////////////////////////////////////////////////////////////
 #define KEYLOGGER_CONFIG_COMMON_PROPERTIES(NAME) \
   define(NAME, CLIB_MODULE);                     \
   int mode;\
-  bool is_loaded;\
-//////////////////////////////////////////////////////////////////////////////////////////////////
+  bool is_loaded;
 #define KEYLOGGER_CONFIG_COMMON_MODULE(NAME) \
   .mode = KEYLOGGER_CONFIG_MODE_DEBUG,\
-  .is_loaded = false;\
-//////////////////////////////////////////////////////////////////////////////////////////////////
+  .is_loaded = false;
 #define KEYLOGGER_CONFIG_COMMON_FUNCTIONS(NAME)     \
   int NAME ## _module_init(module(NAME) * exports); \
   void NAME ## _module_deinit(module(NAME) * exports);
-//////////////////////////////////////////////////////////////////////////////////////////////////
 #define KEYLOGGER_CONFIG_COMMON_EXPORTS(NAME) \
   .mode = 0,                  \
   .init   = NAME ## _module_init,             \
   .deinit = NAME ## _module_deinit,
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 enum keylogger_config_action_type_t;
 enum keylogger_config_keybind_type_t;
@@ -64,15 +61,12 @@ module(keylogger_config) {
   module(keylogger_config_keybinds) *keybinds;
   module(keylogger_config_keybind_keys) *keybind_keys;
   module(keylogger_config_execution) *execution;
+  struct keylogger_execution_t *execution_state;
 };
 KEYLOGGER_CONFIG_COMMON_FUNCTIONS(keylogger_config)
 exports(keylogger_config) {
   KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config)
   .start = NULL, .stop = NULL, .is_started = NULL,
-  .execution = NULL,
-  .keybind_keys = NULL,
-  .keybinds = NULL,
-  .actions = NULL,
   .has_keybind_v = keylogger_config_has_keybind_v,
   .get_keybinds_qty = keylogger_config_get_keybinds_qty,
   .get_keybind_keys_qty = keylogger_config_get_keybind_keys_qty,

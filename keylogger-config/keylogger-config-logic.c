@@ -16,12 +16,15 @@
 #include "c_vector/include/vector.h"
 //////////////////////////////////////////////////////////////////////////////////////////////////
 static bool keylogger_execution_stop(){
+    printf("stopping...............\n");
     return(true);
 }
 static bool keylogger_execution_is_started(){
+    printf("checking if starte\n");
     return(true);
 }
 static bool keylogger_execution_start(){
+    printf("starting...............\n");
     return(true);
 }
 static struct Vector *keylogger_get_config_keybind_actions(int ACTION_TYPE){
@@ -55,34 +58,6 @@ bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR){
     return(false);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-module(keylogger_config) {
-  KEYLOGGER_CONFIG_COMMON_PROPERTIES(keylogger_config)
-  bool (*start)(void);
-  bool (*has_keybind_v)(struct Vector *KEYBINDS_VECTOR);
-  size_t (*get_keybinds_qty)(int KEYBIND_TYPE);
-  size_t (*get_keybind_keys_qty)(void);
-  size_t (*get_actions_qty)(int ACTION_TYPE);
-  keylogger_config_action_t *actions;
-  keylogger_config_keybind_t *keybinds;
-  keylogger_config_keybind_key_t *keybind_keys;
-  keylogger_config_execution_t *execution;
-};
-KEYLOGGER_CONFIG_COMMON_FUNCTIONS(keylogger_config)
-exports(keylogger_config) {
-  KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config)
-  .has_keybind_v = keylogger_config_has_keybind_v,
-  .get_keybinds_qty = keylogger_config_get_keybinds_qty,
-  .get_keybind_keys_qty = keylogger_config_get_keybind_keys_qty,
-  .get_actions_qty = keylogger_config_get_actions_qty,
-  .start = NULL,
-  .execution = NULL,
-  .keybind_keys = NULL,
-  .keybinds = NULL,
-  .actions = NULL,
-};
-*/
 struct keylogger_config_action_t {
     char *a;
 };
@@ -93,11 +68,16 @@ struct keylogger_config_keybind_keys_t {
 };
 struct keylogger_config_keybind_t {
 };
+//////////////////////////////////////////////////////////////////
 struct keylogger_execution_t {
     pid_t pid;
-    bool (*start)(void);
-    bool (*stop)(void);
-    bool (*is_started)(void);
+};
+module(keylogger_config_execution) {
+  KEYLOGGER_CONFIG_COMMON_PROPERTIES(keylogger_config_execution)
+  struct keylogger_execution_t state;
+  bool (*start)(void);
+  bool (*stop)(void);
+  bool (*is_started)(void);
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -109,19 +89,15 @@ exports(keylogger_config_actions) {
   KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config_actions)
 };
 
-module(keylogger_config_execution) {
-  KEYLOGGER_CONFIG_COMMON_PROPERTIES(keylogger_config_execution)
-  struct keylogger_execution_t *state;
-};
 KEYLOGGER_CONFIG_COMMON_FUNCTIONS(keylogger_config_execution)
 exports(keylogger_config_execution) {
   KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config_execution)
-      .state = &(struct keylogger_execution_t){
+      .state = {
           .pid = -1,
-          .start = keylogger_execution_start,
-          .stop = keylogger_execution_stop,
-          .is_started = keylogger_execution_is_started,
       },
+      .start = NULL,
+      .stop = NULL,
+      .is_started = NULL,
 };
 
 module(keylogger_config_keybind_keys) {
@@ -173,7 +149,10 @@ int keylogger_config_execution_module_init(module(keylogger_config_execution) *e
     printf("init module(execution) already loaded)\n");
         return(EXIT_SUCCESS);
   }
-  exports->state->pid = getpid();
+  exports->state.pid = getpid();
+  exports->start = keylogger_execution_start;
+  exports->stop = keylogger_execution_stop;
+  exports->is_started = keylogger_execution_is_started;
   exports->is_loaded = true;
   printf("init module(execution)\n");
   return 0;
@@ -188,11 +167,13 @@ int keylogger_config_module_init(module(keylogger_config) *exports) {
   exports->keybinds = require(keylogger_config_keybinds);
   exports->keybind_keys = require(keylogger_config_keybind_keys);
   exports->execution = require(keylogger_config_execution);
-  exports->start = exports->execution->state->start;
+  exports->start = exports->execution->start;
+  exports->stop = exports->execution->stop;
+  exports->is_started = exports->execution->is_started;
   printf("klc> Loaded %lu Actions\n", exports->get_actions_qty(0));
   printf("klc> Loaded %lu Keybinds\n", exports->get_keybinds_qty(0));
   printf("klc> Loaded %lu Keybind Keys\n", exports->get_keybind_keys_qty());
-//  printf("klc> Execution PID %d\n", exports->execution->state->pid);
+  printf("klc> Execution PID %d\n", exports->execution->state.pid);
   exports->is_loaded = true;
   printf("init module(config)\n");
   return 0;
