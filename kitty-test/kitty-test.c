@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#define DEBUG_PID_ENV    false
 //////////////////////////////////////////
 #include "c_greatest/greatest/greatest.h"
 #include "c_string_buffer/include/stringbuffer.h"
@@ -167,11 +166,7 @@ TEST t_kitty_module_listen_ons(void){
   PASSm(msg);
 }
 
-GREATEST_MAIN_DEFS();
-
-
-int main(int argc, char **argv) {
-  GREATEST_MAIN_BEGIN();
+SUITE(s_kitty_pid_tests){
   RUN_TEST(t_kitty_module_pids);
   RUN_TEST(t_kitty_module_pids_env);
   RUN_TEST(t_kitty_module_pids_cmdline);
@@ -182,6 +177,14 @@ int main(int argc, char **argv) {
   RUN_TEST(t_kitty_module_listen_ons);
   RUN_TEST(t_kitty_module_parse_listen_ons);
   RUN_TEST(t_kitty_module_pids_child_pids);
+}
+
+GREATEST_MAIN_DEFS();
+
+
+int main(int argc, char **argv) {
+  GREATEST_MAIN_BEGIN();
+  RUN_SUITE(s_kitty_pid_tests);
   GREATEST_MAIN_END();
   clib_module_free(KU);
   return(0);

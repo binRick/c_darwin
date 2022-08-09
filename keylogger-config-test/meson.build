@@ -31,6 +31,7 @@ if get_option('enable-binaries')
        include_directories: keylogger_config_test_inc,
        #is_parallel: false,
     )
+  if get_option('enable-keylogger-config-tests')
     test('Keylogger|List Keylogger Suites and Tests',keylogger_config_test, args: ['-l','-v'],
       #is_parallel: false,
       )
@@ -46,7 +47,6 @@ if get_option('enable-binaries')
     test('Keylogger|Check Keylogger PID',keylogger_config_test, args: ['-v','-t','_check_pid'],
       is_parallel: false,
       )
-  if get_option('enable-keylogger-config-tests')
     test('Keylogger|Validate Keylogger Key Bindings',keylogger_config_test, args: ['-v','-t','_validate_configured_keybinds'],
       #is_parallel: false,
       )
@@ -59,7 +59,6 @@ if get_option('enable-binaries')
     test('Keylogger|Test Keylogger Config Logic',keylogger_config_test, args: ['-a','-v'],
       #is_parallel: false,
       )
-  endif
     test('Keylogger|Stop Keylogger',keylogger_config_test, args: ['-t','_stop'],
       #is_parallel: false,
       )
@@ -80,4 +79,5 @@ if get_option('enable-binaries')
       workdir: join_paths(meson.current_source_dir(),'../etc'),
       #is_parallel: false,
       )
+  endif
 endif
