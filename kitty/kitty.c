@@ -13,6 +13,7 @@
 #include "subprocess.h/subprocess.h"
 #include "tiny-regex-c/re.h"
 #include "which/src/which.h"
+#include "wildcardcmp/wildcardcmp.h"
 const size_t KITTY_TCP_BUFFER_SIZE                   = 8192;
 const char   *KITTY_ESC_CODE_CLEAR                   = "\x1b_Ga=d,q=2\x1b\\";
 const char   *KITTY_ESC_QUERY                        = "\x1b_Gi=1,a=q;\x1b\\";
@@ -20,6 +21,7 @@ const char   *KITTY_ESC_CHECK_TERMINAL_CAPS          = "\x1b_Ga=q,s=1,v=1,i=1;YW
 const char   *KITTY_ESC_DELETE_ALL_VISIBLE_PLAYMENTS = "\x1b_Ga=d\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE                   = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE1                  = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
+static bool vector_contains_pid(struct Vector *pids_v, int pid);
 
 
 static bool kitty_run_at_command(char *COMMAND){
@@ -521,16 +523,67 @@ struct Vector *get_kitty_listen_ons(){
 
   for (size_t i = 0; i < vector_size(kitty_pids_v); i++) {
     kitty_process_t *KP = get_kitty_process_t((size_t)vector_get(kitty_pids_v, i));
-    if (KP->listen_on == NULL) {
+    if (KP->listen_on == NULL || strcmp(KP->listen_on, " ") == 0 || strcmp(KP->listen_on, "") == 0) {
       continue;
     }
-    if (djbhash_find(&kitty_listen_ons_h, KP->listen_on) == NULL) {
-      djbhash_set(&kitty_listen_ons_h, KP->listen_on, &KP->listen_on, DJBHASH_STRING);
-      vector_push(kitty_listen_ons, KP->listen_on);
+    if (strlen(KP->listen_on) > 2) {
+      if (djbhash_find(&kitty_listen_ons_h, KP->listen_on) == NULL) {
+        djbhash_set(&kitty_listen_ons_h, KP->listen_on, &KP->listen_on, DJBHASH_STRING);
+        vector_push(kitty_listen_ons, KP->listen_on);
+      }
     }
   }
   djbhash_destroy(&kitty_listen_ons_h);
   return(kitty_listen_ons);
+}
+
+
+int get_kitty_pid_windowid(int PID){
+  struct Vector *v = get_child_pids(PID);
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    int           pid = (int)(size_t)vector_get(v, i);
+    struct Vector *PE = get_process_env(pid);
+    for (size_t ii = 0; ii < vector_size(PE); ii++) {
+      process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+      //printf("pid:%d, %s=>%s\n",pid,E->key,E->val);
+      if (strcmp(E->key, "WINDOWID") == 0 && atoi(E->val) > 0) {
+        return(atoi(E->val));
+      }
+    }
+  }
+  return(-1);
+}
+
+
+static bool vector_contains_pid(struct Vector *pids_v, int pid){
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    if ((size_t)pid == (size_t)vector_get(pids_v, i)) {
+      return(true);
+    }
+  }
+  return(false);
+}
+
+struct Vector *get_child_pids(int PID){
+  struct Vector *v      = vector_new();
+  struct Vector *pids_v = get_all_processes();
+
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    int pid = (int)(long long)vector_get(pids_v, i);
+    if (pid < 2) {
+      continue;
+    }
+
+    int ppid   = (int)(long)get_process_ppid(pid);
+    int pppid  = (int)(long)get_process_ppid(ppid);
+    int ppppid = (int)(long)get_process_ppid(pppid);
+
+    if (ppid == PID || pppid == PID || ppppid == PID) {
+      vector_push(v, (void *)(long)pid);
+    }
+  }
+  return(v);
 }
 
 struct Vector *get_kitty_pids(){
@@ -541,26 +594,26 @@ struct Vector *get_kitty_pids(){
   struct Vector *kitty_pids_v = vector_new();
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
-    int           pid = (int)(long long)vector_get(pids_v, i);
-    struct Vector *PE = get_process_env(pid);
-    for (size_t ii = 0; ii < vector_size(PE); ii++) {
-      process_env_t *E = (process_env_t *)(vector_get(PE, ii));
-      if (
-        strcmp(E->key, "KITTY_WINDOW_ID") == 0
-        || strcmp(E->key, "KITTY_PID") == 0
-        || strcmp(E->key, "KITTY_LISTEN_ON") == 0
-        ) {
-        if (djbhash_find(&kitty_pids_h, E->val) == NULL) {
-          djbhash_set(&kitty_pids_h, E->val, &pid, DJBHASH_INT);
-          vector_push(kitty_pids_v, (void *)(size_t)pid);
-        }
-      }
-      free(E->key);
-      free(E->val);
+    int pid = (int)(long long)vector_get(pids_v, i);
+    if (vector_contains_pid(kitty_pids_v, pid) == true) {
+      continue;
     }
-    vector_release(PE);
+    struct Vector *cmdline_v = get_process_cmdline(pid);
+    bool          is_kitty   = false;
+    if (cmdline_v) {
+      char *cl = vector_get(cmdline_v, 0);
+      if (stringfn_ends_with(cl, "/kitty") == true) {
+        is_kitty = true;
+      }
+    }
+    if (is_kitty == false) {
+      continue;
+    }
+    if (get_kitty_pid_windowid(pid) < 1) {
+      continue;
+    }
+    vector_push(kitty_pids_v, (void *)(size_t)pid);
   }
-  djbhash_destroy(&kitty_pids_h);
   return(kitty_pids_v);
 }
 

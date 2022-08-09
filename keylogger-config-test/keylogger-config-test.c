@@ -1,16 +1,9 @@
 //////////////////////////////////////////////
 #include <stdbool.h>
 #include <stdio.h>
-
-//////////////////////////////////////////////
-#include "ansi-codes//ansi-codes.h"
-#include "keylogger-config-test.h"
-#include "keylogger-config.h"
-#include "module/def.h"
-#include "module/module.h"
-#include "module/require.h"
 //////////////////////////////////////////////
 #include "c_greatest/greatest/greatest.h"
+#include "keylogger-config-test.h"
 //////////////////////////////////////////////
 __attribute__((constructor))static void __test_init(void);
 
@@ -109,6 +102,24 @@ TEST t_keylogger_config_check_pid(){
 }
 
 
+TEST t_keylogger_deinit(){
+  fprintf(stdout, "=========================DEINIT=============================\n");
+  deinit_keylogger_config(keylogger_config);
+  fprintf(stdout, "=======================DEINIT OK=============================\n");
+
+  PASS();
+}
+
+
+TEST t_keylogger_init(){
+  fprintf(stdout, "=========================INIT=============================\n");
+  keylogger_config = init_keylogger_config();
+  fprintf(stdout, "=======================INIT OK=============================\n");
+
+  PASS();
+}
+
+
 TEST t_keylogger_config_check_started(){
   bool started = keylogger_config->get_is_started();
 
@@ -119,6 +130,7 @@ TEST t_keylogger_config_check_started(){
 
 
 SUITE(s_keylogger_config){
+  RUN_TEST(t_keylogger_init);
   RUN_TEST(t_keylogger_config_read_config);
   RUN_TEST(t_keylogger_config_parse_config);
   RUN_TEST(t_keylogger_config_validate_configured_keybinds);
@@ -129,7 +141,14 @@ SUITE(s_keylogger_config){
   RUN_TEST(t_keylogger_config_check_started_ts);
   RUN_TEST(t_keylogger_config_check_pid);
   RUN_TEST(t_keylogger_config_stop);
+  RUN_TEST(t_keylogger_deinit);
 }
+
+__attribute__((constructor))static void __test_init(void){
+}
+__attribute__((destructor))static void __test_deinit(void){
+}
+
 
 GREATEST_MAIN_DEFS();
 
@@ -140,12 +159,3 @@ int main(int argc, char **argv) {
   GREATEST_MAIN_END();
 }
 
-__attribute__((constructor))static void __test_init(void){
-  fprintf(stdout, "=======================TEST INIT=============================\n");
-  keylogger_config = init_keylogger_config();
-  keylogger_config = init_keylogger_config();
-}
-__attribute__((destructor))static void __test_deinit(void){
-  fprintf(stdout, "=======================TEST DEINIT=============================\n");
-  deinit_keylogger_config(keylogger_config);
-}

@@ -402,6 +402,17 @@ static bool keylogger_execution_parse_config(){
   }
   require(keylogger_config)->keybinds_v = keybinds_v;
   printf("Loaded %lu keybinds\n", vector_size(keybinds_v));
+  printf("\
+        KEYLOGGER_LOG_MODE_ERROR: %d\n\
+        KEYLOGGER_LOG_MODE_WARNING: %d\n\
+        KEYLOGGER_LOG_MODE_TRACE: %d\n\
+        KEYLOGGER_LOG_MODES_QTY: %d\n\
+        ",
+         KEYLOGGER_LOG_MODE_ERROR,
+         KEYLOGGER_LOG_MODE_WARNING,
+         KEYLOGGER_LOG_MODE_TRACE,
+         KEYLOGGER_LOG_MODES_QTY
+         );
   return(true);
 } /* keylogger_execution_parse_config */
 

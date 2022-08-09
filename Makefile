@@ -75,6 +75,7 @@ uncrustify-clean:
 	@find  . -type f -name "*unc-back*"|xargs -I % unlink %
 fix-dbg:
 	@$(SED) 's|, % s);|, %s);|g' -i $(TIDIED_FILES)
+	@$(SED) 's|, % s);|, %c);|g' -i $(TIDIED_FILES)
 	@$(SED) 's|, % lu);|, %lu);|g' -i $(TIDIED_FILES)
 	@$(SED) 's|, % d);|, %d);|g' -i $(TIDIED_FILES)
 	@$(SED) 's|, % zu);|, %zu);|g' -i $(TIDIED_FILES)
@@ -91,11 +92,16 @@ pull:
 
 dev: nodemon
 nodemon:
-	@$(PASSH) -L .nodemon.log $(NODEMON) -i build \
-		--delay 1 \
-		-i submodules -w "*/*.c" -w "*/*.h" -w Makefle -w "*/meson.build" \
+	@$(NODEMON) \
+		--delay .3 \
+		-w "*/*.c" -w "*/*.h" -w Makefle -w "*/meson.build" \
 		-e c,h,sh,Makefile,build \
-			-x sh -- -c 'passh make||true'
+		-i build \
+		-i build -i build-meson \
+		-i submodules \
+		-i .utils \
+		-i .git \
+			-x sh -- --norc --noprofile -c 'clear;make||true'
 meson-introspect-all:
 	@meson introspect --all -i meson.build
 meson-introspect-targets:

@@ -81,7 +81,11 @@ struct kitty_foreground_process_t {
   int  pid;
   char *cwd, *cmdline;
 } kitty_foreground_process_t;
-
+enum kitty_connect_types_T {
+  KITTY_CONNECT_TYPE_TCP,
+  KITTY_CONNECT_TYPE_LOCAL,
+  KITTY_CONNECT_TYPES_QTY,
+};
 struct kitty_window_t {
   int           id, lines, pid, columns, foreground_processes_qty;
   bool          is_focused, is_self;
@@ -106,6 +110,8 @@ struct Vector *get_kitty_listen_ons();
 struct Vector *get_all_processes();
 struct Vector *get_process_env(int PID);
 struct Vector *get_process_cmdline(int PID);
+struct Vector *get_child_pids(int pid);
+int get_kitty_pid_windowid(int PID);
 struct Vector *get_kitty_pids();
 bool kitty_draw_image(void);
 bool kitty_set_font_size(int FONT_SIZE);

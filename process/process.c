@@ -72,13 +72,13 @@ int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
 }
 
 
-static long get_process_ppid(unsigned long pid) {
+int get_process_ppid(int pid) {
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc(pid, &kp) == -1) {
+  if (get_kinfo_proc((long)pid, &kp) == -1) {
     return(-1);
   }
-  return((long)kp.kp_eproc.e_ppid);
+  return((int)(long)kp.kp_eproc.e_ppid);
 }
 
 

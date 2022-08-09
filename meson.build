@@ -88,4 +88,5 @@ subdir('keylogger-test')
 subdir('audit-test')
 subdir('capture-test')
 subdir('wrec-test')
+subdir('kitty-test')
 #//////////////////////////////////////////////////////////////////////

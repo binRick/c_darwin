@@ -26,6 +26,8 @@ char * pid_path(pid_t pid);
 struct Vector *get_all_processes();
 struct Vector *get_process_env(int process);
 char *get_my_cwd();
+int get_process_ppid(int pid);
+
 
 //////////////////////////////////////////
 //////////////////////////////////////////

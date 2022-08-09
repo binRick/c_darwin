@@ -1,6 +1,6 @@
 kitty_srcs = [
   'kitty.c',
-  'kitty.h',
+  'kitty-module.c',
 ]
 kitty_link_flags = []
 kitty_c_args = []
@@ -9,6 +9,7 @@ kitty_deps = [
   djbhash_dep,
   socket99_dep,
   c_stringfn_dep,
+  wildcardcmp_dep,
   c_fsio_dep,
   c_string_buffer_dep,
   subprocess_dep,
