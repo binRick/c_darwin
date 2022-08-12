@@ -115,8 +115,8 @@ static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion
   if (config->debug_mode) {
     dbg(r.ffmpeg_path, %s);
     dbg(config->animated_gif_file, %s);
-    dbg(config->frames_per_second, %lu);
-    dbg(vector_size(config->images_v), %lu);
+    dbg(config->frames_per_second, %u);
+    dbg(vector_size(config->images_v), %u);
     dbg(r.ffmpeg_cmd, %s);
   }
 
@@ -147,8 +147,8 @@ static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion
   stringbuffer_release(r.STDERR_BUFFER);
 
   dbg(r.subprocess_result, %d);
-  dbg(strlen(r.READ_STDOUT), %lu);
-  dbg(strlen(r.READ_STDERR), %lu);
+  dbg(strlen(r.READ_STDOUT), %u);
+  dbg(strlen(r.READ_STDERR), %u);
   dbg(r.READ_STDOUT, %s);
   dbg(r.READ_STDERR, %s);
   dbg(r.animated_gif_file_created, %d);
@@ -447,7 +447,7 @@ int capture_window(void *ARGS) {
 
   if (execution_args.verbose) {
     dbg(execution_args.window_id, %d);
-    dbg(vector_size(window_ids), %lu);
+    dbg(vector_size(window_ids), %u);
   }
 
   int error = pthread_create(&capture_thread, NULL, do_capture, (void *)capture_config);

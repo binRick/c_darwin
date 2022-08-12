@@ -28,3 +28,4 @@ Monokai Vivid.conf
 loc.sh
 *.log
 .bin/
+submodules/c_deps

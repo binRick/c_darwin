@@ -32,7 +32,7 @@ TEST t_capture_images(void){
   END_MEASURE(measurement_window_ids)
   MEASURE_SUMMARY(measurement_window_ids);
 
-  dbg(vector_size(window_ids), %lu);
+  dbg(vector_size(window_ids), %u);
   ASSERT_GTEm("Failed to get window ids", vector_size(window_ids), 1);
   unsigned long window_id;
   MEASURE(measurement_capture_window_ids)

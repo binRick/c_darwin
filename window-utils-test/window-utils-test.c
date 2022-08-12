@@ -179,7 +179,7 @@ SUITE(s_list_windows){
 TEST t_move_window(void *ID){
   size_t id = (size_t)ID, x = 200, y = 300;
 
-  dbg(id, %lu);
+  dbg(id, %u);
   move_window_id(id, x, y);
   PASS();
 }
