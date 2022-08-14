@@ -83,6 +83,7 @@ int main(int argc, char **argv) {
   user_supplied_keys = vector_new();
   if (argc > 1) {
     char **tmp = argv;
+    *tmp++;
     while (*tmp != NULL) {
       if (strcmp(*tmp, "-v") == 0) {
         verbose_mode = true;
