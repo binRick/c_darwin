@@ -11,6 +11,7 @@ process_include_cargs = [
   ]
 process_test_deps = [
   process_dep,
+  timestamp_dep,
   c_vector_dep,
   wildcardcmp_dep,
 ]
