@@ -52,7 +52,6 @@ struct __focused_t {
   pid_t pid;
 };
 
-
 enum logger_mode {
   LOGGER_NONE,
   LOGGER_INFO,

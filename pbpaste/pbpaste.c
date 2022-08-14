@@ -6,7 +6,6 @@
 //////////////////////////////////////////////
 static const uint32_t __murmurhashseed__ = 27362362;
 
-
 void dump_cliboard_event(const clipboard_event_t *E){
   fprintf(stdout,
 
@@ -22,7 +21,6 @@ void dump_cliboard_event(const clipboard_event_t *E){
 
           );
 }
-
 
 clipboard_event_t encode_clipboard_event(char *CLIPBOARD_CONTENT){
   size_t            LEN = strlen(CLIPBOARD_CONTENT);

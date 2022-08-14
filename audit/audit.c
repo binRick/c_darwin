@@ -32,7 +32,6 @@ char       pathbuf[PATH_MAX];
 char       hourbuff[26];
 char       timebuff[26];
 
-
 bool isRoot() {
   uid_t euid = geteuid();
 
@@ -42,14 +41,12 @@ bool isRoot() {
   return(true);
 }
 
-
 void shutDown(){
   fclose(auditFile);
 
   fprintf(stdout, "\nExiting...\n");
   exit(0);
 }
-
 
 FILE * initPipe() {
   char  *auditPipe = "/dev/auditpipe";
@@ -89,7 +86,6 @@ FILE * initPipe() {
     perror("Error ");
   }
 
-
   ioctlReturn = ioctl(
     auditFileDescriptor,
     AUDITPIPE_SET_QLIMIT,
@@ -126,7 +122,6 @@ FILE * initPipe() {
   return(auditFile);
 } /* initPipe */
 
-
 struct auditEvent getEvent(FILE *auditFile) {
   struct auditEvent curr;
 
@@ -141,7 +136,6 @@ struct auditEvent getEvent(FILE *auditFile) {
   processedLength = 0;
   tokenCount      = 0;
   int i = 1;
-
 
   while (recordBalance) {
     fetchToken = au_fetch_tok(&token, buffer + processedLength, recordBalance);
@@ -197,7 +191,6 @@ struct auditEvent getEvent(FILE *auditFile) {
   return(curr);
 } /* getEvent */
 
-
 char * getProcFromPid(pid_t pid) {
   int ret = proc_pidpath(pid, pathbuf, sizeof(pathbuf));
 
@@ -209,7 +202,6 @@ char * getProcFromPid(pid_t pid) {
   }
   return("");
 }
-
 
 void printEvent(struct auditEvent currentEvent) {
   if (
@@ -294,7 +286,6 @@ void printEvent(struct auditEvent currentEvent) {
   }
 } /* printEvent */
 
-
 char * getEventType(int event) {
   switch (event) {
   case 1:
@@ -319,7 +310,6 @@ char * getEventType(int event) {
   return("hide");
 }
 
-
 bool raiseAlertForFile(char *filePath) {
   if (filePath == NULL) {
     filePath = "";
@@ -341,7 +331,6 @@ bool raiseAlertForFile(char *filePath) {
   return(false);
 }
 
-
 bool raiseAlertForProcess(char *processPath) {
 //    if (processFilter != NULL) {
 //        if (!strcasestr(processPath, processFilter)) {
@@ -359,7 +348,6 @@ bool raiseAlertForProcess(char *processPath) {
   }
   return(true);
 }
-
 
 char * getEventString(int event){
   char ev[15];
@@ -397,14 +385,12 @@ char * getEventString(int event){
   return("N/A");
 }
 
-
 bool startsWith(const char *pre, const char *str) {
   size_t lenpre = strlen(pre),
          lenstr = strlen(str);
 
   return(lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0);
 }
-
 
 char * getCurrentTimestamp() {
   time_t    timer;
@@ -416,7 +402,6 @@ char * getCurrentTimestamp() {
   return(timebuff);
 }
 
-
 char * getCurrentTime() {
   time_t    timer;
   struct tm *tm_info;
@@ -427,7 +412,6 @@ char * getCurrentTime() {
   return(hourbuff);
 }
 
-
 int audit_main(){
   signal(SIGINT, shutDown);
 
@@ -437,7 +421,6 @@ int audit_main(){
   }
 
   auditFile = initPipe();
-
 
   int i = 0;
   while (true) {

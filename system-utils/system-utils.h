@@ -65,7 +65,6 @@ uint32_t get_display_count();
 CGDirectDisplayID get_display_id(uint32_t id);
 struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID display_id);
 
-
 #define C0     "\x1B[0m"    /* Reset  */
 #define C1     "\x1B[0;32m" /* Green  */
 #define C2     "\x1B[0;33m" /* Yellow */
@@ -74,7 +73,6 @@ struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID displa
 #define C5     "\x1B[0;36m" /* Blue   */
 #define RED    C3
 #define NOR    C0
-
 
 typedef struct mem {
   uint64_t total;

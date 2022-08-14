@@ -30,7 +30,6 @@ static authorized_tests_t authorized_tests = {
 };
 ///////////////////////////////////////////////////////////////////////
 
-
 bool request_accessibility_permissions() {
   bool                       result          = false;
   CFDictionaryKeyCallBacks   key_callbacks   = kCFTypeDictionaryKeyCallBacks;
@@ -50,7 +49,6 @@ bool request_accessibility_permissions() {
 
 ///////////////////////////////////////////////////////////////////////
 
-
 static authorized_test_t execute_authorization_test(int authorized_test_type_id){
   authorized_test_t authorized_test = authorized_tests.tests[authorized_test_type_id];
 
@@ -59,7 +57,6 @@ static authorized_test_t execute_authorization_test(int authorized_test_type_id)
   authorized_test.test_function = NULL;
   return(authorized_test);
 }
-
 
 authorized_test_t *execute_authorization_tests(){
   authorized_test_t *authorized_test_results = calloc(AUTHORIZED_TEST_TYPE_IDS_QTY, sizeof(authorized_test_t));
@@ -81,7 +78,6 @@ authorized_test_t *execute_authorization_tests(){
   return(authorized_test_results);
 }
 
-
 bool request_screen_recording_permissions() {
   CGDisplayStreamRef stream = NULL;
 
@@ -95,7 +91,6 @@ bool request_screen_recording_permissions() {
   return(true);
 }
 
-
 static bool is_authorized_for_screen_recording() {
   CGDisplayStreamFrameAvailableHandler handler = ^ (CGDisplayStreamFrameStatus status, uint64_t display_time, IOSurfaceRef frame_surface, CGDisplayStreamUpdateRef updateRef){ return; };
   CGDisplayStreamRef                   stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, 'BGRA', NULL, handler);
@@ -107,7 +102,6 @@ static bool is_authorized_for_screen_recording() {
   return(true);
 }
 
-
 static bool is_authorized_for_accessibility() {
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1090
   return(AXAPIEnabled() || AXIsProcessTrusted());
@@ -116,13 +110,11 @@ static bool is_authorized_for_accessibility() {
 #endif
 }
 
-
 int CFDictionaryGetInt(CFDictionaryRef dict, const void *key) {
   int value;
 
   return(CFNumberGetValue(CFDictionaryGetValue(dict, key), kCFNumberIntType, &value) ? value : 0);
 }
-
 
 char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   const void *dictValue;
@@ -156,4 +148,3 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   }
   return((isSuccess ? value : NULL));
 }
-

@@ -8,9 +8,7 @@
 #endif
 #include "submodules/c_greatest/greatest/greatest.h"
 
-
 //////////////////////////////////////////////
-
 
 TEST t_keylogger(){
   int res = keylogger_exec();
@@ -25,7 +23,6 @@ SUITE(s_keylogger){
   RUN_TEST(t_keylogger);
 }
 
-
 void __init(void){
   fprintf(stdout, "=======================TEST INIT=============================\n");
 }
@@ -34,7 +31,6 @@ __attribute__((constructor)) void init(void){
   __init();
 }
 
-
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
   if (isatty(STDOUT_FILENO)) {
@@ -42,4 +38,3 @@ int main(int argc, char **argv) {
   }
   GREATEST_MAIN_END();
 }
-

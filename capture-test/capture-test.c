@@ -25,7 +25,6 @@ static const char *tempdir_path = NULL;
  * ////////////////////////////////////////
  */
 
-
 TEST t_capture_images(void){
   MEASURE(measurement_window_ids)
   struct Vector *window_ids = get_windows_ids();
@@ -63,13 +62,11 @@ TEST t_capture_images(void){
   PASS();
 }
 
-
 SUITE(s_capture){
   RUN_TEST(t_capture_images);
 }
 
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   if (tempdir_path == NULL) {

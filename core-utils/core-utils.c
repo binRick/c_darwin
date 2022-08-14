@@ -3,7 +3,6 @@
 #define ASCII_ENCODING    kCFStringEncodingASCII
 #define UTF8_ENCODING     kCFStringEncodingUTF8
 
-
 char * CFStringCopyUTF8String(CFStringRef aString){
   if (aString == NULL) {
     return(NULL);
@@ -21,7 +20,6 @@ char * CFStringCopyUTF8String(CFStringRef aString){
   return(buffer);
 }
 
-
 char *cstring_from_CFString(CFStringRef cf_string) {
   CFIndex length = CFStringGetLength(cf_string);
   CFIndex size   = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
@@ -35,7 +33,6 @@ char *cstring_from_CFString(CFStringRef cf_string) {
   string[used_size] = '\0';
   return(string);
 }
-
 
 char * cstring_get_ascii_string(CFStringRef data) {
   const char *bytes = NULL;
@@ -62,7 +59,6 @@ char * cstring_get_ascii_string(CFStringRef data) {
   return(chars);
 }
 
-
 char *get_chars_from_CFString(CFStringRef cf_string) {
   CFIndex length = CFStringGetLength(cf_string);
   CFIndex size   = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
@@ -77,7 +73,6 @@ char *get_chars_from_CFString(CFStringRef cf_string) {
   return(string);
 }
 
-
 int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key){
   CFTypeRef ref;
   int32_t   value;
@@ -91,7 +86,6 @@ int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key){
   }
   return(0);
 }
-
 
 int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, size_t len){
   CFStringRef str;
@@ -135,28 +129,22 @@ int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, s
   }
 } /* get_string_property */
 
-
 unsigned short get_vendor_id(IOHIDDeviceRef device){
   return(get_int_property(device, CFSTR(kIOHIDVendorIDKey)));
 }
-
 
 unsigned short get_product_id(IOHIDDeviceRef device){
   return(get_int_property(device, CFSTR(kIOHIDProductIDKey)));
 }
 
-
 int get_serial_number(IOHIDDeviceRef device, wchar_t *buf, size_t len){
   return(get_string_property(device, CFSTR(kIOHIDSerialNumberKey), buf, len));
 }
-
 
 int get_manufacturer_string(IOHIDDeviceRef device, wchar_t *buf, size_t len){
   return(get_string_property(device, CFSTR(kIOHIDManufacturerKey), buf, len));
 }
 
-
 int get_product_string(IOHIDDeviceRef device, wchar_t *buf, size_t len){
   return(get_string_property(device, CFSTR(kIOHIDProductKey), buf, len));
 }
-

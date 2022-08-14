@@ -7,7 +7,6 @@
                                         PRINT(AC_RESETALL "\t" COLOR "Duration: " AC_RESETALL, ct_stop(__FUNCTION__)); \
                                       }while (0); }
 
-
 /*
  * const char KITTY_LS_CMD[]                        = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false}\x1b\\";
  * const char KITTY_LS_ALL_ENV_CMD[]                = "\x1bP@kitty-cmd{\"cmd\":\"ls\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"all_env_vars\":true}}\x1b\\";
@@ -22,7 +21,6 @@
  * const char KITTY_GET_NO_ANSI_TEXT[]              = "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\";
  */
 
-
 TEST t_pid_cwd(void){
   ct_start(NULL);
   char *cwd = get_process_cwd((int)getpid());
@@ -36,7 +34,6 @@ TEST t_pid_cwd(void){
   CT_STOP_AND_DEBUG(AC_BLUE);
   PASS();
 }
-
 
 TEST t_get_process_cmdline(void){
   ct_start(NULL);
@@ -58,7 +55,6 @@ TEST t_get_process_cmdline(void){
   PASS();
 }
 
-
 TEST t_kitty_pids_connect(void){
   ct_start(NULL);
   struct Vector *KittyProcesses_v = get_kitty_pids();
@@ -69,7 +65,6 @@ TEST t_kitty_pids_connect(void){
   CT_STOP_AND_DEBUG(AC_RED);
   PASS();
 } /* t_kitty_pids */
-
 
 TEST t_kitty_get_text(void){
   struct Vector *kitty_listen_ons = get_kitty_listen_ons();
@@ -87,7 +82,6 @@ TEST t_kitty_get_text(void){
   }
   PASS();
 }
-
 
 TEST t_kitty_listen_ons(void){
   struct Vector *kitty_listen_ons = get_kitty_listen_ons();
@@ -142,7 +136,6 @@ TEST t_kitty_listen_ons(void){
  *    // dbg(kitty_text_ansi_cursor_screen, %s);
  *    dbg(strlen(kitty_text_ansi_cursor_screen), %lu);
  */
-
 
       struct Vector *COLOR_TYPES_V = kitty_get_color_types(KLO->host, KLO->port);
       //dbg(vector_size(COLOR_TYPES_V), %lu);
@@ -215,7 +208,6 @@ TEST t_kitty_listen_ons(void){
   PASS();
 } /* t_kitty_listen_ons */
 
-
 TEST t_kitty_pids(void){
   ct_start(NULL);
   struct Vector *kitty_pids_v = get_kitty_pids();
@@ -242,7 +234,6 @@ TEST t_kitty_pids(void){
   PASS();
 } /* t_kitty_pids */
 
-
 TEST t_pids_iterate(void){
   ct_start(NULL);
   struct Vector *pids_v = get_all_processes();
@@ -268,6 +259,11 @@ TEST t_pids_iterate(void){
       continue;
     }
     struct Vector *PE = get_process_env(pid);
+    for (size_t ii = 0; ii < vector_size(PE); ii++) {
+      process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+
+      printf("%d|%s=\"%s\"\n", pid, E->key, E->val);
+    }
     if (PE == NULL) {
       if (cwd) {
         free(cwd);
@@ -307,7 +303,6 @@ TEST t_pids_iterate(void){
   CT_STOP_AND_DEBUG(AC_CYAN);
 } /* t_pids_iterate */
 
-
 TEST t_pids(void){
   ct_start(NULL);
   struct Vector *pids_v = get_all_processes();
@@ -330,7 +325,6 @@ TEST t_pids(void){
 
   PASS();
 }
-
 
 TEST t_process_env(void){
   ct_start(NULL);
@@ -364,7 +358,6 @@ TEST t_process_env(void){
   PASS();
 }
 
-
 SUITE(s_process){
   ct_start(NULL);
   RUN_TEST(t_process_env);
@@ -381,7 +374,6 @@ SUITE(s_process){
 }
 
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();

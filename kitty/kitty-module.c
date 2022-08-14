@@ -6,9 +6,7 @@
 //////////////////////////////////////
 #define KITTY_MODULE_DEBUG_MODE    true
 
-
 //////////////////////////////////////
-
 
 int kitty_utils_module_init(module(kitty_utils) *exports) {
   if (exports->mode >= KITTY_LOG_DEBUG) {
@@ -26,10 +24,8 @@ int kitty_utils_module_init(module(kitty_utils) *exports) {
   exports->listen_ons_v   = get_kitty_listen_ons();
   exports->listen_ons_qty = vector_size(exports->listen_ons_v);
 
-
   return(0);
 }
-
 
 //////////////////////////////////////
 void kitty_utils_module_deinit(module(kitty_utils) *exports) {

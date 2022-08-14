@@ -5,7 +5,6 @@
 #include "system-utils-test.h"
 #include "system-utils/system-utils.h"
 
-
 //////////////////////////////////////////
 static int get_argmax() {
   int    argmax;
@@ -18,7 +17,6 @@ static int get_argmax() {
   return(0);
 }
 
-
 //////////////////////////////////////////
 TEST t_display_id(void){
   CGDirectDisplayID display_id = get_display_id(0);
@@ -30,7 +28,6 @@ TEST t_display_id(void){
   PASS();
 }
 
-
 TEST t_display_count(void){
   int display_count = get_display_count();
 
@@ -41,7 +38,6 @@ TEST t_display_count(void){
   PASS();
 }
 
-
 TEST t_devices_count(void){
   size_t qty = get_devices_count();
 
@@ -51,7 +47,6 @@ TEST t_devices_count(void){
           );
   PASS();
 }
-
 
 TEST t_get_pid_info(void){
   pid_t             pid = getpid();
@@ -79,7 +74,6 @@ TEST t_get_pid_info(void){
   PASS();
 }
 
-
 TEST t_get_cpu(void){
   double usage = get_cpu();
   double time  = get_cpu_time();
@@ -94,30 +88,25 @@ TEST t_get_cpu(void){
   PASS();
 }
 
-
 TEST t_get_gpu(void){
   get_gpu();
   PASS();
 }
-
 
 TEST t_get_disk(void){
   get_disk();
   PASS();
 }
 
-
 TEST t_get_model(void){
   get_model();
   PASS();
 }
 
-
 TEST t_get_mem(void){
   get_mem();
   PASS();
 }
-
 
 TEST t_display_size(void){
   CGDirectDisplayID              display_id = get_display_id(0);
@@ -178,14 +167,12 @@ SUITE(s_devices_count){
   PASS();
 }
 
-
 SUITE(s_display_size){
   RUN_TEST(t_display_size);
   PASS();
 }
 
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();

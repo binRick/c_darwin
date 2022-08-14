@@ -2,7 +2,6 @@
 #define DEBUG_KITTEN_LISTEN_ON    false
 #include "wrec-test/wrec-test.h"
 
-
 TEST t_wrec0(void){
   int res = wrec0();
 
@@ -10,14 +9,12 @@ TEST t_wrec0(void){
   PASS();
 }
 
-
 SUITE(s_wrec0){
   RUN_TEST(t_wrec0);
   PASS();
 }
 
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();

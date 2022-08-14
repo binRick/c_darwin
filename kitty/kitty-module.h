@@ -27,7 +27,6 @@ module(kitty_utils) {
   ///////////////////////////////////////////////////
 };
 
-
 int  kitty_utils_module_init(module(kitty_utils) * exports);
 void kitty_utils_module_deinit(module(kitty_utils) * exports);
 

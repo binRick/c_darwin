@@ -29,7 +29,6 @@ struct img_data {
 
 static void debug_resize(const char *FILE_NAME, char *RESIZE_BY, int RESIZE_VALUE, int ORIGINAL_WIDTH, int ORIGINAL_HEIGHT, int RESIZE_FACTOR, int RESIZE_WIDTH, int RESIZE_HEIGHT);
 
-
 static bool cgimage_save_png(const CGImageRef image, const char *filename) {
   //MEASURE(measurement_cgimage_save_png)
   bool                  success = false;
@@ -54,7 +53,6 @@ static bool cgimage_save_png(const CGImageRef image, const char *filename) {
   CFRelease(url);
   return(fsio_file_exists(filename));
 }
-
 
 void CGImageDumpInfo(CGImageRef image, bool shouldPrintPixelData) {
   size_t          width              = CGImageGetWidth(image);
@@ -98,7 +96,6 @@ void CGImageDumpInfo(CGImageRef image, bool shouldPrintPixelData) {
   printf("\n");
 } /* CGImageDumpInfo */
 
-
 static CFStringRef image_file_name(const char *file_extension) {
   if (tempdir_path == NULL) {
     tempdir_path = gettempdir();
@@ -113,7 +110,6 @@ static CFStringRef image_file_name(const char *file_extension) {
            tm.tm_hour, tm.tm_min, tm.tm_sec, file_extension);
   return(CFStringCreateWithCString(kCFAllocatorDefault, c_file_name, kCFStringEncodingUTF8));
 }
-
 
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
@@ -130,7 +126,6 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   CGContextRelease(context);
   return(newImageRef);
 }
-
 
 CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
   CFDictionaryRef W   = window_id_to_window(WINDOW_ID);
@@ -149,7 +144,6 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
   return(img);
 }
 
-
 static void debug_resize(const char *FILE_NAME, char *RESIZE_BY, int RESIZE_VALUE, int ORIGINAL_WIDTH, int ORIGINAL_HEIGHT, int RESIZE_FACTOR, int RESIZE_WIDTH, int RESIZE_HEIGHT){
   char *msg;
 
@@ -159,7 +153,6 @@ static void debug_resize(const char *FILE_NAME, char *RESIZE_BY, int RESIZE_VALU
   fprintf(stderr, "%s\n", msg);
   free(msg);
 }
-
 
 bool capture_to_file_image_resize_factor(const int WINDOW_ID, const char *FILE_NAME, int RESIZE_FACTOR){
   CGImageRef img           = capture_window_id_cgimageref(WINDOW_ID);
@@ -177,7 +170,6 @@ bool capture_to_file_image_resize_factor(const int WINDOW_ID, const char *FILE_N
   return(fsio_file_exists(FILE_NAME));
 }
 
-
 bool capture_to_file_image_resize_height(const int WINDOW_ID, const char *FILE_NAME, int RESIZE_HEIGHT){
   CGImageRef img           = capture_window_id_cgimageref(WINDOW_ID);
   size_t     width         = CGImageGetWidth(img);
@@ -194,7 +186,6 @@ bool capture_to_file_image_resize_height(const int WINDOW_ID, const char *FILE_N
   return(fsio_file_exists(FILE_NAME));
 }
 
-
 bool capture_to_file_image_resize_width(const int WINDOW_ID, const char *FILE_NAME, int RESIZE_WIDTH){
   CGImageRef img           = capture_window_id_cgimageref(WINDOW_ID);
   size_t     width         = CGImageGetWidth(img);
@@ -210,7 +201,6 @@ bool capture_to_file_image_resize_width(const int WINDOW_ID, const char *FILE_NA
   assert(cgimage_save_png(scaled_img, FILE_NAME) == true);
   return(fsio_file_exists(FILE_NAME));
 }
-
 
 bool capture_to_file_image(const int WINDOW_ID, const char *FILE_NAME){
   //MEASURE(measurement_capture_window_id_cgimageref)

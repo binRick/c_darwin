@@ -6,7 +6,6 @@
 #include "window-utils.h"
 bool RUNNING = true;
 
-
 void show_focus(){
   focused_t *fp = get_focused_process();
 
@@ -17,7 +16,6 @@ void show_focus(){
           fp->pid
           );
 }
-
 
 TEST t_set_currently_focused_app(void) {
   int pid = get_focused_pid();
@@ -36,7 +34,6 @@ TEST t_set_currently_focused_app(void) {
   PASS();
 }
 
-
 TEST t_get_currently_focused_app(void) {
   focused_t *fp = get_focused_process();
 
@@ -48,7 +45,6 @@ TEST t_get_currently_focused_app(void) {
   PASS();
 }
 
-
 SUITE(s_get_currently_focused) {
   RUN_TEST(t_get_currently_focused_app);
   PASS();
@@ -59,9 +55,7 @@ SUITE(s_set_currently_focused) {
   PASS();
 }
 
-
 GREATEST_MAIN_DEFS();
-
 
 int do_test(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
@@ -70,7 +64,6 @@ int do_test(int argc, char **argv) {
   GREATEST_MAIN_END();
   return(0);
 }
-
 
 int main(int argc, char **argv) {
   (void)argc; (void)argv;

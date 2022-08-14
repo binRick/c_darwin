@@ -10,7 +10,7 @@
 ////////////////////////////////////////////////////
 int select_window(void);
 
-static struct args_t args = {
+static struct args_t     args = {
   .mode                        = DEFAULT_MODE,
   .verbose                     = DEFAULT_VERBOSE,
   .window_id                   = DEFAULT_WINDOW_ID,
@@ -24,7 +24,6 @@ static struct args_t args = {
   .resize_value                = DEFAULT_RESIZE_VALUE,
   .application_name_glob       = DEFAULT_APPLICATION_NAME_GLOB,
 };
-
 
 static struct modes_t    modes[] = {
   { .name = "debug_args",    .description = "Debug Arguments", .handler = debug_args     },
@@ -78,7 +77,6 @@ static struct cag_option options[] = {
 };
 ////////////////////////////////////////////////////
 
-
 static int iterate_modes(){
   struct modes_t *m = modes;
 
@@ -95,7 +93,6 @@ static int iterate_modes(){
   return(1);
 }
 
-
 int main(int argc, char **argv) {
   parse_args(argc, argv);
   if ((argc >= 2) && (strcmp(argv[1], "--test") == 0)) {
@@ -104,7 +101,6 @@ int main(int argc, char **argv) {
 
   return(iterate_modes());
 } /* main */
-
 
 int debug_args(){
   fprintf(stderr,
@@ -137,7 +133,6 @@ int debug_args(){
 
   return(EXIT_SUCCESS);
 }
-
 
 static int parse_args(int argc, char *argv[]){
   cag_option_context context;
@@ -178,10 +173,8 @@ static int parse_args(int argc, char *argv[]){
   return(EXIT_SUCCESS);
 } /* parse_args */
 
-
 int select_window(void){
-  int res = -1;
-
+  int               res = -1;
 
   struct fzf_exec_t *fe = exec_fzf_setup();
 
@@ -192,7 +185,6 @@ int select_window(void){
     window_t *w = (window_t *)vector_get(windows, i);
     vector_push(fe->input_options, w->app_name);
   }
-
 
   fe->header       = "Select Window";
   fe->debug_mode   = true;

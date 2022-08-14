@@ -10,9 +10,7 @@ int do_test(int argc, char **argv);
 //////////////////////////////////////////
 bool RUNNING = true;
 
-
 //////////////////////////////////////////
-
 
 TEST test_currently_focused_app(void) {
   module(logger) * logger = require(logger);
@@ -31,11 +29,9 @@ TEST test_currently_focused_app(void) {
   PASS();
 }
 
-
 SUITE(the_suite) {
   RUN_TEST(test_currently_focused_app);
 }
-
 
 void __show_focus(){
   module(logger) * logger = require(logger);
@@ -58,7 +54,6 @@ void __show_focus(){
 
 GREATEST_MAIN_DEFS();
 
-
 int do_test(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
   for (int i = 0; i < TEST_ITERATIONS; i++) {
@@ -67,7 +62,6 @@ int do_test(int argc, char **argv) {
   GREATEST_MAIN_END();
   return(0);
 }
-
 
 int main(int argc, char **argv) {
   (void)argc; (void)argv;

@@ -17,7 +17,6 @@ enum resize_type_t {
   RESIZE_NONE,
 } resize_type_t;
 
-
 static char *resize_type_name(const int RESIZE_TYPE){
   char *RESIZE_TYPE_NAME = "UNKNOWN";
 
@@ -79,4 +78,3 @@ static int parse_args(int argc, char *argv[]);
 int debug_args();
 
 ///////////////////////////////////
-

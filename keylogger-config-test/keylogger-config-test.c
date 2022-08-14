@@ -11,9 +11,7 @@ __attribute__((destructor))static void __test_deinit(void);
 
 module(keylogger_config) * keylogger_config;
 
-
 //////////////////////////////////////////////
-
 
 TEST t_keylogger_config_stop(){
   bool ok = keylogger_config->stop();
@@ -22,14 +20,12 @@ TEST t_keylogger_config_stop(){
   PASS();
 }
 
-
 TEST t_keylogger_config_start(){
   bool ok = keylogger_config->start();
 
   ASSERT_EQm("Keylogger Failed to Start", ok, true);
   PASS();
 }
-
 
 TEST t_keylogger_config_validate_active_keybinds(){
   size_t qty = keylogger_config->get_active_keybinds_qty();
@@ -39,7 +35,6 @@ TEST t_keylogger_config_validate_active_keybinds(){
   PASS();
 }
 
-
 TEST t_keylogger_config_validate_inactive_keybinds(){
   size_t qty = keylogger_config->get_inactive_keybinds_qty();
 
@@ -47,7 +42,6 @@ TEST t_keylogger_config_validate_inactive_keybinds(){
   ASSERT_GTEm("Keylogger Keybindings failed to load", qty, 1);
   PASS();
 }
-
 
 TEST t_keylogger_config_validate_configured_keybinds(){
   size_t qty          = keylogger_config->get_keybinds_qty();
@@ -61,7 +55,6 @@ TEST t_keylogger_config_validate_configured_keybinds(){
   PASS();
 }
 
-
 TEST t_keylogger_config_parse_config(){
   bool ok = keylogger_config->parse_config();
 
@@ -70,7 +63,6 @@ TEST t_keylogger_config_parse_config(){
   PASS();
 }
 
-
 TEST t_keylogger_config_read_config(){
   bool ok = keylogger_config->read_config();
 
@@ -78,7 +70,6 @@ TEST t_keylogger_config_read_config(){
   printf(AC_GREEN "keylogger config read OK!\n" AC_RESETALL);
   PASS();
 }
-
 
 TEST t_keylogger_config_check_started_ts(){
   if (keylogger_config->get_is_started() == false) {
@@ -92,7 +83,6 @@ TEST t_keylogger_config_check_started_ts(){
   PASS();
 }
 
-
 TEST t_keylogger_config_check_pid(){
   pid_t pid = keylogger_config->get_pid();
 
@@ -100,7 +90,6 @@ TEST t_keylogger_config_check_pid(){
   printf(AC_GREEN "keylogger pid %d OK!\n" AC_RESETALL, pid);
   PASS();
 }
-
 
 TEST t_keylogger_deinit(){
   fprintf(stdout, "=========================DEINIT=============================\n");
@@ -110,7 +99,6 @@ TEST t_keylogger_deinit(){
   PASS();
 }
 
-
 TEST t_keylogger_init(){
   fprintf(stdout, "=========================INIT=============================\n");
   keylogger_config = init_keylogger_config();
@@ -119,7 +107,6 @@ TEST t_keylogger_init(){
   PASS();
 }
 
-
 TEST t_keylogger_config_check_started(){
   bool started = keylogger_config->get_is_started();
 
@@ -127,7 +114,6 @@ TEST t_keylogger_config_check_started(){
   ASSERT_EQm("Keylogger Failed to Start", started, true);
   PASS();
 }
-
 
 SUITE(s_keylogger_config){
   RUN_TEST(t_keylogger_init);
@@ -149,13 +135,10 @@ __attribute__((constructor))static void __test_init(void){
 __attribute__((destructor))static void __test_deinit(void){
 }
 
-
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_keylogger_config);
   GREATEST_MAIN_END();
 }
-

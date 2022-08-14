@@ -39,7 +39,6 @@ struct Vector *get_windows(){
   return(windows);
 }
 
-
 window_t *get_window_id(const int WINDOW_ID){
   window_t *w = malloc(sizeof(window_t));
 
@@ -57,10 +56,8 @@ window_t *get_window_id(const int WINDOW_ID){
   w->is_visible   = false;
   get_kinfo_proc(w->pid, &w->pid_info);
 
-
   return(w);
 }
-
 
 CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   CFArrayRef      windowList;
@@ -83,7 +80,6 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   return(NULL);
 }
 
-
 char *get_window_id_title(const int WINDOW_ID){
   char *window_title = malloc(128);
 
@@ -91,13 +87,11 @@ char *get_window_id_title(const int WINDOW_ID){
   return(window_title);
 }
 
-
 void move_window_id(const int WINDOW_ID, const int X, const int Y){
   CGPoint position = CGPointMake(X, Y);
 
   fprintf(stderr, "moving window #%d to %fx%f\n", WINDOW_ID, position.x, position.y);
 }
-
 
 int get_pid_window_id(const int PID){
   int             WINDOW_ID = -1;
@@ -138,7 +132,6 @@ struct Vector *get_windows_ids(void){
   return(ids_v);
 }
 
-
 uint32_t getWindowId(AXUIElementRef window) {
   CGWindowID _windowId;
 
@@ -148,7 +141,6 @@ uint32_t getWindowId(AXUIElementRef window) {
 
   return(-1);
 }
-
 
 void MoveWindow(CFDictionaryRef window, void *ctxPtr) {
   MoveWinCtx     *ctx = (MoveWinCtx *)ctxPtr;
@@ -196,12 +188,10 @@ void MoveWindow(CFDictionaryRef window, void *ctxPtr) {
   ctx->movedWindow = 1;
 } /* MoveWindow */
 
-
 static int emptyWindowNameAllowed(char *appName) {
   log_debug("emptyWindowNameAllowed.......");
   return(0 == strcmp(appName, "Messages"));
 }
-
 
 CGPoint CGWindowGetPosition(CFDictionaryRef window) {
   log_debug("CGWindowGetPosition.......");
@@ -211,7 +201,6 @@ CGPoint CGWindowGetPosition(CFDictionaryRef window) {
   return(CGPointMake(x, y));
 }
 
-
 CGSize CGWindowGetSize(CFDictionaryRef window) {
   log_debug("CGWindowGetSize.......");
   CFDictionaryRef bounds = CFDictionaryGetValue(window, kCGWindowBounds);
@@ -219,7 +208,6 @@ CGSize CGWindowGetSize(CFDictionaryRef window) {
   int             height = CFDictionaryGetInt(bounds, CFSTR("Height"));
   return(CGSizeMake(width, height));
 }
-
 
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   log_debug("AXWindowFromCGWindow.......");
@@ -259,7 +247,6 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   return(foundAppWindow);
 } /* AXWindowFromCGWindow */
 
-
 int is_full_screen(void){
   CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
   CFIndex    i, n;
@@ -280,7 +267,6 @@ int is_full_screen(void){
   return(0);
 }
 
-
 void AXWindowGetValue(AXUIElementRef window,
                       CFStringRef    attrName,
                       void           *valuePtr) {
@@ -293,14 +279,12 @@ void AXWindowGetValue(AXUIElementRef window,
   CFRelease(attrValue);
 }
 
-
 CGPoint AXWindowGetPosition(AXUIElementRef window) {
   CGPoint position;
 
   AXWindowGetValue(window, kAXPositionAttribute, &position);
   return(position);
 }
-
 
 void AXWindowSetPosition(AXUIElementRef window, CGPoint position) {
   log_debug("AXWindowSetPosition.......");
@@ -310,7 +294,6 @@ void AXWindowSetPosition(AXUIElementRef window, CGPoint position) {
   CFRelease(attrValue);
 }
 
-
 CGSize AXWindowGetSize(AXUIElementRef window) {
   log_debug("AXWindowGetSize.......");
   CGSize size;
@@ -319,7 +302,6 @@ CGSize AXWindowGetSize(AXUIElementRef window) {
   return(size);
 }
 
-
 void AXWindowSetSize(AXUIElementRef window, CGSize size) {
   log_debug("AXWindowSetSize.......");
   AXValueRef attrValue = AXValueCreate(kAXValueCGSizeType, &size);
@@ -327,7 +309,6 @@ void AXWindowSetSize(AXUIElementRef window, CGSize size) {
   AXUIElementSetAttributeValue(window, kAXSizeAttribute, attrValue);
   CFRelease(attrValue);
 }
-
 
 int get_windows_qty(void){
   int        qty        = -1;
@@ -341,7 +322,6 @@ int get_windows_qty(void){
   CFRelease(windowList);
   return(qty);
 }
-
 
 int EnumerateWindows(char *pattern,
                      void ( *callback )(CFDictionaryRef window, void *callback_data),
@@ -413,7 +393,6 @@ skip:
   return(count);
 } /* EnumerateWindows */
 
-
 char *windowTitle(char *appName, char *windowName) {
   size_t titleSize;
   char   *title;
@@ -435,7 +414,6 @@ char *windowTitle(char *appName, char *windowName) {
 
   return(title);
 }
-
 
 void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
   LsWinCtx    *ctx = (LsWinCtx *)ctxPtr;
@@ -487,7 +465,6 @@ void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
   free(appName);
 } /* PrintWindow */
 
-
 int get_front_window_pid(void){
   int        pid;
   CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
@@ -510,7 +487,6 @@ int get_front_window_pid(void){
   CFRelease(windows);
   return(-1);
 }
-
 
 CGWindowID CGWindowWithInfo(AXUIElementRef window, CGPoint location) {
   AXError    error;
@@ -579,7 +555,6 @@ CGWindowID CGWindowWithInfo(AXUIElementRef window, CGPoint location) {
   return(windowID);
 } /* CGWindowWithInfo */
 
-
 CGRect CGWindowGetBounds(CGWindowID windowID) {
   CGRect     bounds;
 
@@ -600,19 +575,16 @@ CGRect CGWindowGetBounds(CGWindowID windowID) {
   return(bounds);
 }
 
-
 void _set_window_size(AXUIElementRef ax_window, CGSize *size) {
   AXValueRef ax_size = AXValueCreate(kAXValueCGSizeType, size);
 
   AXUIElementSetAttributeValue(ax_window, kAXSizeAttribute, ax_size);
 }
 
-
 void _set_window_position(AXUIElementRef ax_window, CGPoint *position) {
   AXValueRef ax_position = AXValueCreate(kAXValueCGPointType, position);
   AXError    error       = AXUIElementSetAttributeValue(ax_window, kAXPositionAttribute, ax_position);
 }
-
 
 CGWindowID CGWindowAtPosition(CGPoint position) {
   CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
@@ -651,7 +623,6 @@ CGWindowID CGWindowAtPosition(CGPoint position) {
 
   return(windowID);
 }
-
 
 char *front_window_owner(void) {
   CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);

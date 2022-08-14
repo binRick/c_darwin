@@ -21,9 +21,7 @@
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"
 
-
 ////////////////////////////////////////
-
 
 TEST t_windows_search(void *NAME){
   LsWinCtx ctx;
@@ -50,7 +48,6 @@ TEST t_windows_search(void *NAME){
   PASS();
 }
 
-
 TEST t_authorized_tests(void){
   authorized_test_t *authorized_test_results = execute_authorization_tests();
 
@@ -58,7 +55,6 @@ TEST t_authorized_tests(void){
     ASSERT_EQm(authorized_test_results[i].name, authorized_test_results[i].authorized, true);
   }
 }
-
 
 TEST t_windows_qty(void){
   int qty = get_windows_qty();
@@ -74,7 +70,6 @@ SUITE(s_windows){
   RUN_TESTp(t_windows_search, (void *)"kitty");
   RUN_TESTp(t_windows_search, (void *)"chrome");
 }
-
 
 TEST t_list_windows(){
   ft_table_t *table = ft_create_table();
@@ -162,11 +157,9 @@ TEST t_list_windows(){
   }
   char *dur = ct_stop("");
 
-
   printf("\n%s\n", ft_to_string(table));
   dbg(dur, %s);
   ft_destroy_table(table);
-
 
   PASS();
 } /* t_list_windows */
@@ -174,7 +167,6 @@ TEST t_list_windows(){
 SUITE(s_list_windows){
   RUN_TEST(t_list_windows);
 }
-
 
 TEST t_move_window(void *ID){
   size_t id = (size_t)ID, x = 200, y = 300;
@@ -190,7 +182,6 @@ SUITE(s_move_window){
 }
 
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   (void)argc; (void)argv;

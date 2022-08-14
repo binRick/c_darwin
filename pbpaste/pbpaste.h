@@ -18,6 +18,5 @@ typedef struct {
 
 char *pbpaste_exec(void);
 
-
 clipboard_event_t encode_clipboard_event(char *CLIPBOARD_CONTENT);
 void dump_cliboard_event(const clipboard_event_t *E);

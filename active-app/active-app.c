@@ -1,7 +1,6 @@
 #pragma once
 #include "active-app.h"
 
-
 void resize_current_window(int p1, int p2, int p3, int p4){
   int pid = get_frontmost_application();
 
@@ -23,7 +22,6 @@ void resize_current_window(int p1, int p2, int p3, int p4){
   AXUIElementSetAttributeValue(win, kAXPositionAttribute, objc_point);
   AXUIElementSetAttributeValue(win, kAXSizeAttribute, objc_size);
 }
-
 
 int get_frontmost_application(){
   CFArrayRef window_list = CGWindowListCopyWindowInfo(
@@ -86,14 +84,12 @@ struct screen_size get_window_size(){
   return(ret);
 }
 
-
 ProcessSerialNumber PID2PSN(pid_t pid) {
   ProcessSerialNumber tempPSN;
 
   GetProcessForPID(pid, &tempPSN);
   return(tempPSN);
 }
-
 
 pid_t PSN2PID(ProcessSerialNumber psn) {
   pid_t tempPID;
@@ -102,23 +98,19 @@ pid_t PSN2PID(ProcessSerialNumber psn) {
   return(tempPID);
 }
 
-
 int get_focused_pid(){
   return((int)(PSN2PID(get_focused_ProcessSerialNumber())));
 }
 
-
 bool set_focused_pid(int pid){
   return(set_focused_ProcessSerialNumber(PID2PSN((pid_t)pid)));
 }
-
 
 bool set_focused_ProcessSerialNumber(ProcessSerialNumber PSN){
   OSErr err = SetFrontProcess(&PSN);
 
   return((err == noErr));
 }
-
 
 ProcessSerialNumber get_focused_ProcessSerialNumber(){
   focused_t           *f           = malloc(sizeof(focused_t));
@@ -133,7 +125,6 @@ ProcessSerialNumber get_focused_ProcessSerialNumber(){
   GetProcessInformation(&psn, &info);
   return(psn);
 }
-
 
 focused_t * get_focused_process(){
   focused_t           *f           = malloc(sizeof(focused_t));
@@ -158,4 +149,3 @@ focused_t * get_focused_process(){
   }
   return(f);
 }
-

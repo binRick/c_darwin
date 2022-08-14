@@ -11,7 +11,6 @@
 #include <sys/sysctl.h>
 #include <sys/time.h>
 
-
 #include <assert.h>
 #include <dirent.h>
 #include <dirent.h>
@@ -31,7 +30,6 @@
 #include <time.h>
 #include <unistd.h>
 
-
 #define GET_PID(proc)       (proc)->kp_proc.p_pid
 #define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)
 #define ERROR_CHECK(fun) \
@@ -41,14 +39,12 @@
     }                    \
   } while (0)
 
-
 char *pid_path(pid_t pid){
   char *pathbuf = malloc(PATH_MAX);
 
   proc_pidpath(pid, pathbuf, sizeof(pathbuf));
   return(pathbuf);
 }
-
 
 int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   int    mib[4];
@@ -71,7 +67,6 @@ int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   return(0);
 }
 
-
 int get_process_ppid(int pid) {
   struct kinfo_proc kp;
 
@@ -80,7 +75,6 @@ int get_process_ppid(int pid) {
   }
   return((int)(long)kp.kp_eproc.e_ppid);
 }
-
 
 struct kinfo_proc *proc_info_for_pid(pid_t pid) {
   struct kinfo_proc *list = NULL;
@@ -99,7 +93,6 @@ ERROR:
   return(NULL);
 }
 
-
 static int get_argmax() {
   int    argmax, mib[] = { CTL_KERN, KERN_ARGMAX };
   size_t size = sizeof(argmax);
@@ -109,7 +102,6 @@ static int get_argmax() {
   }
   return(0);
 }
-
 
 struct Vector *get_process_cmdline(int process){
   struct Vector *cmdline_v = vector_new();
@@ -167,7 +159,6 @@ struct Vector *get_process_cmdline(int process){
   }
   return(cmdline_v);
 } /* get_process_cmdline */
-
 
 char *get_process_cwd(int process){
   if (process < 0) {
@@ -253,7 +244,6 @@ struct Vector *get_process_env(int process){
     }
   }
 
-
   for (size_t i = 0; i < vector_size(vector); i++) {
     EnvSplit = stringfn_split(vector_get(vector, i), '=');
     process_env_t *pe = malloc(sizeof(process_env_t));
@@ -299,7 +289,6 @@ struct Vector *get_process_env(int process){
   vector_release(vector);
   return(process_env_v);
 } /* get_process_env */
-
 
 char *get_my_cwd(){
   struct stat   Odir;

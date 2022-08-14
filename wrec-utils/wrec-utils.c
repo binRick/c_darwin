@@ -80,7 +80,6 @@ struct animated_gif_conversion_result_t {
   char                 stdout_buffer[READ_BUFFER_SIZE], stderr_buffer[READ_BUFFER_SIZE];
 };
 
-
 static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion_config_t *config){
   if (tempdir_path == NULL) {
     tempdir_path = gettempdir();
@@ -181,7 +180,6 @@ static struct recorded_frame_t *get_latest_recorded_frame(struct capture_config_
   return((struct recorded_frame_t *)vector_get(capture_config->recorded_frames_v, vector_size(capture_config->recorded_frames_v) - 1));
 }
 
-
 size_t get_ms_since_last_recorded_frame(struct capture_config_t *capture_config){
   struct recorded_frame_t *latest_recoded_frame = get_latest_recorded_frame(capture_config);
 
@@ -191,11 +189,9 @@ size_t get_ms_since_last_recorded_frame(struct capture_config_t *capture_config)
   return(timestamp() - latest_recoded_frame->timestamp + latest_recoded_frame->record_dur);
 }
 
-
 size_t get_next_frame_interval_ms(struct capture_config_t *capture_config){
   return(1000 / capture_config->frames_per_second);
 }
-
 
 size_t get_next_frame_timestamp(struct capture_config_t *capture_config){
   struct recorded_frame_t *latest_recoded_frame = get_latest_recorded_frame(capture_config);
@@ -206,7 +202,6 @@ size_t get_next_frame_timestamp(struct capture_config_t *capture_config){
   return(get_latest_recorded_frame(capture_config)->timestamp + get_next_frame_interval_ms(capture_config));
 }
 
-
 size_t get_ms_until_next_frame(struct capture_config_t *capture_config){
   struct recorded_frame_t *latest_recoded_frame = get_latest_recorded_frame(capture_config);
 
@@ -216,7 +211,6 @@ size_t get_ms_until_next_frame(struct capture_config_t *capture_config){
   return(get_next_frame_timestamp(capture_config) - timestamp());
 }
 
-
 size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
   struct recorded_frame_t *first_recorded_frame = get_first_recorded_frame(capture_config);
 
@@ -225,7 +219,6 @@ size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
   }
   return(timestamp() - first_recorded_frame->timestamp);
 }
-
 
 ////////////////////////////////////////////////////////////
 void do_capture(void *CAPTURE_CONFIG){
@@ -333,7 +326,6 @@ void do_capture(void *CAPTURE_CONFIG){
   chan_send(done_chan, (void *)NULL);
 } /* do_capture */
 
-
 void wait_for_control_d(){
   struct StringBuffer       *sb;
   struct libterminput_state ctx = { 0 };
@@ -383,7 +375,6 @@ void wait_for_control_d(){
   chan_send(done_chan, (void *)NULL);
 } /* wait_for_control_d */
 
-
 bool read_captured_frames(struct capture_config_t *capture_config) {
   if (tempdir_path == NULL) {
     tempdir_path = gettempdir();
@@ -422,7 +413,6 @@ bool read_captured_frames(struct capture_config_t *capture_config) {
   assert(fsio_file_exists(animated_gif_file) == true);
   return(true);
 }
-
 
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
@@ -465,7 +455,6 @@ int capture_window(void *ARGS) {
   chan_recv(done_chan, (void *)NULL);
   chan_dispose(done_chan);
 
-
   if (execution_args.verbose) {
     fprintf(stderr, AC_RESETALL AC_GREEN "Capture Stopped\n");
   }
@@ -483,7 +472,6 @@ int capture_window(void *ARGS) {
 
   return(0);
 } /* capture_window */
-
 
 int list_windows(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
@@ -580,7 +568,6 @@ int list_windows(void *ARGS) {
 
   return(0);
 } /* list_windows */
-
 
 int wrec0() {
   printf("wrec0............\n");

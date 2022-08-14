@@ -8,7 +8,6 @@
 #include "pasteboard-test/pasteboard-test.h"
 #include "pasteboard/pasteboard.h"
 
-
 /*
  * ////////////////////////////////////////
  *  BENCHMARK_QTY(benchmark_name, 3)
@@ -23,7 +22,6 @@
  * ////////////////////////////////////////
  */
 
-
 TEST t_pasteboard_benchmark(void){
   char *pasteboard_content;
 
@@ -37,7 +35,6 @@ TEST t_pasteboard_benchmark(void){
 
   free(pasteboard_content);
 }
-
 
 TEST t_pasteboard(void){
   MEASURE(pasteboard_measurement)
@@ -67,16 +64,13 @@ TEST t_pasteboard(void){
   PASS();
 }
 
-
 SUITE(s_pasteboard){
   RUN_TEST(t_pasteboard);
   RUN_TEST(t_pasteboard_benchmark);
   PASS();
 }
 
-
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();

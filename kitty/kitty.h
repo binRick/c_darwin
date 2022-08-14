@@ -27,7 +27,6 @@
 #define KITTY_GET_NO_ANSI_TEXT                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
 #define KITTY_SELF_LS                          "@ ls"                 "\x1bP@kitty-cmd{\"cmd\":\"get-text\",\"version\":[0,25,2],\"no_response\":false,\"payload\":{\"ansi\":false}}\x1b\\"
 
-
 ////////////////////////////////////////////////////////////////////////
 struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE);
 struct kitty_process_communication_result_t *kitty_process_communication(struct Vector *CMD_VECTOR);
@@ -125,4 +124,3 @@ char *get_process_cwd(int PID);
 void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG);
 char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT);
 struct Vector *kitty_get_color_types(const char *HOST, const int PORT);
-

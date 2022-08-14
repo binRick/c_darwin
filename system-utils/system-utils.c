@@ -59,7 +59,6 @@ static const struct {
   { "kern.hostname",            "Hostname"  },
 };
 
-
 size_t get_devices_count(){
   IOHIDManagerRef mgr;
   int             i;
@@ -75,13 +74,11 @@ size_t get_devices_count(){
   return(num_devices);
 }
 
-
 CGImageRef display_screen_snapshot(void) {
   CGDirectDisplayID current_display = get_current_display_id();
 
   return(CGDisplayCreateImage(current_display));
 }
-
 
 /*
  * pid_stats_t * get_pid_stats(const int pid){
@@ -152,7 +149,6 @@ CGImageRef display_screen_snapshot(void) {
  * }
  */
 
-
 double get_cpu_time( ){
 #if defined (_POSIX_TIMERS) && (_POSIX_TIMERS > 0)
   /* Prefer high-res POSIX timers, when available. */
@@ -200,7 +196,6 @@ double get_cpu_time( ){
   return(-1);                   /* Failed. */
 } /* getCPUTime */
 
-
 double get_cpu() {
   static double  lastT       = -1.0;
   static double  lastCPUTime = -1.0;
@@ -228,7 +223,6 @@ double get_cpu() {
   return(percent);
 }
 
-
 uint32_t os_get_core_count() {
   uint32_t count;
   size_t   size = sizeof(count);
@@ -236,7 +230,6 @@ uint32_t os_get_core_count() {
   sysctlbyname("hw.logicalcpu", &count, &size, NULL, 0);
   return(count);
 }
-
 
 static void get_sysctl(enum sysctls ctl) {
   size_t len;
@@ -252,11 +245,9 @@ static void get_sysctl(enum sysctls ctl) {
   }
 }
 
-
 static inline CGPoint get_darwin_mouse_point() {
 //  return(CGEventGetLocation(dml_r->event));
 }
-
 
 DarwinMouseLocation_t * get_darwin_mouse_location(){
   /*
@@ -284,7 +275,6 @@ DarwinMouseLocation_t * get_darwin_mouse_location(){
   //return(l);
 }
 
-
 static const char *display_name_from_displayID(CGDirectDisplayID displayID, CFStringRef countryCode) {
   char *displayProductName = 0;
 
@@ -309,7 +299,6 @@ static const char *display_name_from_displayID(CGDirectDisplayID displayID, CFSt
 
   return(displayProductName);
 }
-
 
 CGDirectDisplayID get_current_display_id() {
   // displays[] Quartz display ID's
@@ -364,7 +353,6 @@ struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID displa
   return(res);
 }
 
-
 uint32_t get_display_count(){
   uint32_t          displays_count;
 
@@ -374,7 +362,6 @@ uint32_t get_display_count(){
 
   return(displays_count);
 }
-
 
 CGDirectDisplayID get_display_id(uint32_t id){
   uint32_t          displays_count;
@@ -390,7 +377,6 @@ CGDirectDisplayID get_display_id(uint32_t id){
   return(display_id);
 }
 
-
 void get_disk(void) {
   struct statvfs info;
 
@@ -403,7 +389,6 @@ void get_disk(void) {
            perc * 100, (float)total / 1e+09);
   }
 }
-
 
 void get_gpu(void) {
   io_iterator_t Iterator;
@@ -478,7 +463,6 @@ void get_gpu(void) {
   }
 } /* gpu */
 
-
 static void uptime(time_t *nowp) {
   struct timeval boottime;
   time_t         uptime;
@@ -526,7 +510,6 @@ static void uptime(time_t *nowp) {
   }
 } /* uptime */
 
-
 void uv_loadavg(double avg[3]) {
   struct loadavg info;
   size_t         size    = sizeof(info);
@@ -540,7 +523,6 @@ void uv_loadavg(double avg[3]) {
   avg[1] = (double)info.ldavg[1] / info.fscale;
   avg[2] = (double)info.ldavg[2] / info.fscale;
 }
-
 
 int uv_resident_set_memory(size_t *rss) {
   mach_msg_type_number_t count;
@@ -559,9 +541,7 @@ int uv_resident_set_memory(size_t *rss) {
   return(0);
 }
 
-
 #define __unused    __attribute__((__unused__))
-
 
 char *osdep_get_name(int fd, __unused char *tty) {
 #ifdef __MAC_10_7
@@ -599,7 +579,6 @@ char *osdep_get_name(int fd, __unused char *tty) {
 #endif
 }
 
-
 char *osdep_get_cwd(int fd) {
   static char               wd[PATH_MAX];
   struct proc_vnodepathinfo pathinfo;
@@ -619,7 +598,6 @@ char *osdep_get_cwd(int fd) {
   return(NULL);
 }
 
-
 static const struct {
   const char *ctls;
   const char *names;
@@ -631,7 +609,6 @@ static const struct {
   { "kern.osrelease",           "Release"   }, /* OSREL    */
   { "kern.hostname",            "Hostname"  }, /* HOSTNAME */
 };
-
 
 void get_model(){
   size_t len = 0;
@@ -645,7 +622,6 @@ void get_model(){
     free(model);
   }
 }
-
 
 void get_mem(void) {
   size_t                 len;
@@ -673,4 +649,3 @@ void get_mem(void) {
     }
   }
 }
-

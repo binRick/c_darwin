@@ -8,7 +8,6 @@ static inline int  logger_Update();
 static inline int  logger_GetPID();
 static inline char *logger_GetName();
 
-
 static inline int logger_Update(){
   require(logger)->_fp = malloc(sizeof(__focused_t));
   char                *processName = malloc(1024);
@@ -34,7 +33,6 @@ static inline int logger_Update(){
   return(ok);
 }
 
-
 int logger_init(module(logger) *exports) {
   clib_module_init(logger, exports);
   exports->mode    = LOGGER_NONE;
@@ -48,21 +46,17 @@ int logger_init(module(logger) *exports) {
   return(0);
 }
 
-
 void logger_deinit(module(logger) *exports) {
   clib_module_deinit(logger);
 }
-
 
 static inline int logger_GetPID(){
   return(require(logger)->PID);
 }
 
-
 static inline char *logger_GetName(){
   return(require(logger)->Name);
 }
-
 
 static inline void logger_info(char *message) {
   if (require(logger)->mode >= LOGGER_INFO) {
@@ -70,13 +64,11 @@ static inline void logger_info(char *message) {
   }
 }
 
-
 static inline void logger_error(char *message) {
   if (require(logger)->mode >= LOGGER_ERROR) {
     fprintf(stderr, "error: %s\n", message);
   }
 }
-
 
 static inline void logger_debug(char *message) {
   if (require(logger)->mode >= LOGGER_DEBUG) {

@@ -40,7 +40,6 @@ struct screen_size {
 #include <sys/time.h>
 #include <sys/types.h>
 
-
 focused_t * get_focused_process();
 bool set_focused_process(focused_t *);
 bool set_focused_pid(int pid);

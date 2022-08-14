@@ -24,7 +24,6 @@
 #include "submodules/tiny-regex-c/re.h"
 #define STDOUT_READ_BUFFER_SIZE    1024
 
-
 char *pbpaste_exec(void){
   const char          *command_line[] = { "/bin/sh", "-c", "pbpaste", NULL };
   char                *READ_STDOUT,

@@ -5,7 +5,6 @@
 static size_t MAX_PASTEBOARD_CONTENT_LENGTH = CLIPBOARD_MAX_SIZE_KB * 1024 + 1;
 static PasteboardRef pasteboard_reference;
 
-
 int clipwrite(char *dat) {
   CFDataRef           cfdata;
   PasteboardSyncFlags flags;
@@ -39,7 +38,6 @@ int clipwrite(char *dat) {
   return(1);
 }
 
-
 /*
  * void Clipboard_SetText(const cc_string *value) {
  * PasteboardRef pbRef;
@@ -64,7 +62,6 @@ int clipwrite(char *dat) {
  * PasteboardPutItemFlavor(pbRef, 1, FMT_UTF8, cfData, 0);
  * }
  */
-
 
 char *read_clipboard(void) {
   if (CLIPBOARD_DEBUG_MODE) {

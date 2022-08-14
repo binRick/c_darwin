@@ -17,15 +17,12 @@ static void __kitty_test_destructor(void) __attribute__((destructor));
 
 static module(kitty_utils) * KU;
 
-
 //////////////////////////////////////////
-
 
 TEST t_kitty_module_pids(void){
   asprintf(&msg, "%lu Kitty PIDs", vector_size(KU->pids_v));
   PASSm(msg);
 }
-
 
 TEST t_kitty_module_pids_child_pids(void){
   for (size_t i = 0; i < KU->pids_qty; i++) {
@@ -40,7 +37,6 @@ TEST t_kitty_module_pids_child_pids(void){
   PASS();
 }
 
-
 TEST t_kitty_module_pids_windowid(void){
   size_t              cwds_qty = 0;
   struct StringBuffer *sb      = stringbuffer_new();
@@ -53,7 +49,6 @@ TEST t_kitty_module_pids_windowid(void){
   stringbuffer_release(sb);
   PASS();
 }
-
 
 TEST t_kitty_module_pids_cwd(void){
   size_t              cwds_qty = 0;
@@ -72,7 +67,6 @@ TEST t_kitty_module_pids_cwd(void){
   stringbuffer_release(sb);
   PASSm(msg);
 }
-
 
 TEST t_kitty_module_pids_cmdline(void){
   size_t              cmdlines_qty = 0;
@@ -95,7 +89,6 @@ TEST t_kitty_module_pids_cmdline(void){
   PASSm(msg);
 }
 
-
 TEST t_kitty_module_pids_env(void){
   size_t              env_vars_qty = 0;
   struct StringBuffer *sb          = stringbuffer_new();
@@ -109,12 +102,16 @@ TEST t_kitty_module_pids_env(void){
     if (i < KU->pids_qty - 1) {
       stringbuffer_append_string(sb, ", ");
     }
+    for (size_t ii = 0; ii < vector_size(pid_envs_v); ii++) {
+      process_env_t *E = (process_env_t *)(vector_get(pid_envs_v, ii));
+
+      printf("%d|%s=\"%s\"\n", pid, E->key, E->val);
+    }
   }
   asprintf(&msg, "Acquired %lu env vars from %lu Kitty PIDs: %s", env_vars_qty, vector_size(KU->pids_v), stringbuffer_to_string(sb));
   stringbuffer_release(sb);
   PASSm(msg);
 }
-
 
 TEST t_kitty_module_iterate_pids(void){
   struct StringBuffer *sb = stringbuffer_new();
@@ -130,7 +127,6 @@ TEST t_kitty_module_iterate_pids(void){
   stringbuffer_release(sb);
   PASSm(msg);
 }
-
 
 TEST t_kitty_module_parse_listen_ons(void){
   struct StringBuffer *sb = stringbuffer_new();
@@ -150,7 +146,6 @@ TEST t_kitty_module_parse_listen_ons(void){
   stringbuffer_release(sb);
   PASSm(msg);
 }
-
 
 TEST t_kitty_module_listen_ons(void){
   struct StringBuffer *sb = stringbuffer_new();
@@ -181,7 +176,6 @@ SUITE(s_kitty_pid_tests){
 
 GREATEST_MAIN_DEFS();
 
-
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_kitty_pid_tests);
@@ -197,4 +191,3 @@ static void __attribute__((destructor)) __kitty_test_destructor(){
 static void __attribute__((constructor)) __kitty_test_constructor(){
   KU = require(kitty_utils);
 }
-

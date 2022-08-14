@@ -124,7 +124,6 @@ exports(keylogger_config_keybinds) {
   KEYLOGGER_CONFIG_COMMON_EXPORTS(keylogger_config_keybinds)
 };
 
-
 int keylogger_config_keybinds_module_init(module(keylogger_config_keybinds) *exports) {
   if (exports->is_loaded == true) {
     printf("init module(keybinds) already loaded)\n");
@@ -135,7 +134,6 @@ int keylogger_config_keybinds_module_init(module(keylogger_config_keybinds) *exp
   printf("init module(keybinds)\n");
   return(0);
 }
-
 
 int keylogger_config_keybind_keys_module_init(module(keylogger_config_keybind_keys) *exports) {
   if (exports->is_loaded == true) {
@@ -148,7 +146,6 @@ int keylogger_config_keybind_keys_module_init(module(keylogger_config_keybind_ke
   return(0);
 }
 
-
 int keylogger_config_actions_module_init(module(keylogger_config_actions) *exports) {
   if (exports->is_loaded == true) {
     printf("init module(actions) already loaded)\n");
@@ -160,13 +157,11 @@ int keylogger_config_actions_module_init(module(keylogger_config_actions) *expor
   return(0);
 }
 
-
 void keylogger_config_execution_module_deinit(module(keylogger_config_execution) *exports) {
   clib_module_deinit(keylogger_config_execution);
   printf("deinit module(execution)\n");
   exports->is_loaded = false;
 }
-
 
 int keylogger_config_execution_module_init(module(keylogger_config_execution) *exports) {
   if (exports->is_loaded == true) {
@@ -189,7 +184,6 @@ int keylogger_config_execution_module_init(module(keylogger_config_execution) *e
   return(0);
 }
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 void keylogger_config_actions_module_deinit(module(keylogger_config_actions) *exports) {
   clib_module_deinit(keylogger_config_actions);
@@ -197,20 +191,17 @@ void keylogger_config_actions_module_deinit(module(keylogger_config_actions) *ex
   exports->is_loaded = false;
 }
 
-
 void keylogger_config_keybinds_module_deinit(module(keylogger_config_keybinds) *exports) {
   clib_module_deinit(keylogger_config_keybinds);
   printf("deinit module(keybind)\n");
   exports->is_loaded = false;
 }
 
-
 void keylogger_config_keybind_keys_module_deinit(module(keylogger_config_keybind_keys) *exports) {
   clib_module_deinit(keylogger_config_keybind_keys);
   printf("deinit module(keybind keys)\n");
   exports->is_loaded = false;
 }
-
 
 void keylogger_config_module_deinit(module(keylogger_config) *exports) {
   if (exports->is_loaded != true) {
@@ -240,18 +231,15 @@ __attribute__((destructor))static void __keylogger_config_destructor(void){
 
 #define KEYLOGGER_IS_STARTED    ()
 
-
 static bool keylogger_execution_get_is_started(){
   return(true);
 // return(require(keylogger_execution)->state.started == true);
 }
 
-
 void deinit_keylogger_config(module(keylogger_config) *keylogger_config){
   printf("klc> Unloadin\n");
   clib_module_free(keylogger_config);
 }
-
 
 int keylogger_config_module_init(module(keylogger_config) *exports) {
   clib_module_init(keylogger_config, exports);
@@ -294,7 +282,6 @@ int keylogger_config_module_init(module(keylogger_config) *exports) {
   return(0);
 }
 
-
 static pid_t keylogger_execution_get_pid(){
   printf("getting pid\n");
   get_keylogger_config_execution()->state.pid    = getpid();
@@ -302,19 +289,16 @@ static pid_t keylogger_execution_get_pid(){
   return(require(keylogger_config_execution)->state.pid);
 }
 
-
 static unsigned long keylogger_execution_get_started_ts(void){
   printf("getting ts\n");
   return(require(keylogger_config_execution)->state.started_ts);
 }
-
 
 static bool keylogger_execution_start(){
   printf("starting...............\n");
   require(keylogger_config_execution)->state.started_ts = timestamp();
   return(true);
 }
-
 
 static bool keylogger_execution_read_config(void){
   printf("READING CONFIG...............\n");
@@ -323,7 +307,6 @@ static bool keylogger_execution_read_config(void){
   require(keylogger_config)->config_s = cfg;
   return(true);
 }
-
 
 static bool keylogger_execution_parse_config(){
   if (require(keylogger_config)->config_s == NULL) {
@@ -416,7 +399,6 @@ static bool keylogger_execution_parse_config(){
   return(true);
 } /* keylogger_execution_parse_config */
 
-
 static bool keylogger_execution_stop(){
   printf("stopping...............\n");
   return(true);
@@ -429,11 +411,9 @@ static struct Vector *keylogger_get_config_keybind_actions(int ACTION_TYPE){
   return(v);
 }
 
-
 static bool keylogger_config_run_action(struct keylogger_config_keybind_action_t *KEYBIND_ACTION_TO_RUN){
   return(false);
 }
-
 
 static bool keylogger_config_keybind_is_active(struct keylogger_config_keybind_t *KEYBIND){
   return(false);
@@ -498,11 +478,9 @@ struct Vector *keylogger_config_get_inactive_keybinds_v(void){
   return(v);
 }
 
-
 size_t keylogger_config_get_active_keybinds_qty(void){
   return(vector_size(keylogger_config_get_active_keybinds_v()));
 }
-
 
 size_t keylogger_config_get_inactive_keybinds_qty(void){
   return(vector_size(keylogger_config_get_inactive_keybinds_v()));
@@ -512,21 +490,17 @@ struct Vector *keylogger_config_get_keybinds_v(){
   return(require(keylogger_config)->keybinds_v);
 }
 
-
 size_t keylogger_config_get_keybinds_qty(){
   return(vector_size(require(keylogger_config)->keybinds_v));
 }
-
 
 size_t keylogger_config_get_keybind_actions_qty(int ACTION_TYPE){
   return(vector_size(require(keylogger_config)->get_keybind_actions_v()));
 }
 
-
 size_t keylogger_config_get_keybind_keys_qty(){
   return(vector_size(require(keylogger_config)->get_keybind_keys_v()));
 }
-
 
 bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR){
   return(false);

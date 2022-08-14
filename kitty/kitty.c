@@ -23,10 +23,8 @@ const char   *KITTY_ESC_DRAW_IMAGE                   = "\x1b_Ga=T,f=100,s=192,v=
 const char   *KITTY_ESC_DRAW_IMAGE1                  = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 static bool vector_contains_pid(struct Vector *pids_v, int pid);
 
-
 static bool kitty_run_at_command(char *COMMAND){
 }
-
 
 bool kitty_set_tab_color(char *MODE, char *COLOR){
   char *s;
@@ -46,7 +44,6 @@ bool kitty_set_tab_color(char *MODE, char *COLOR){
   return(r);
 }
 
-
 bool kitty_send_text(char *TEXT){
   char *s;
 
@@ -65,7 +62,6 @@ bool kitty_send_text(char *TEXT){
   return(r);
 }
 
-
 bool kitty_set_layout(char *LAYOUT){
   char          *font_size_s;
   struct Vector *v = vector_new();
@@ -82,7 +78,6 @@ bool kitty_set_layout(char *LAYOUT){
   return(r);
 }
 
-
 char *kitty_list_fonts(){
   struct Vector *v = vector_new();
 
@@ -96,7 +91,6 @@ char *kitty_list_fonts(){
 
   return(r);
 }
-
 
 char *kitty_query_terminal(){
   struct Vector *v = vector_new();
@@ -113,7 +107,6 @@ char *kitty_query_terminal(){
   return(r);
 }
 
-
 char *kitty_ls_kittens(){
   struct Vector *v = vector_new();
 
@@ -127,7 +120,6 @@ char *kitty_ls_kittens(){
 
   return(r);
 }
-
 
 char *kitty_get_ls(){
   char          *font_size_s;
@@ -144,7 +136,6 @@ char *kitty_get_ls(){
   return(r);
 }
 
-
 char *kitty_get_colors(){
   char          *font_size_s;
   struct Vector *v = vector_new();
@@ -159,7 +150,6 @@ char *kitty_get_colors(){
 
   return(r);
 }
-
 
 char *kitty_get_last_cmd_output(){
   char          *font_size_s;
@@ -176,7 +166,6 @@ char *kitty_get_last_cmd_output(){
 
   return(r);
 }
-
 
 char *kitty_get_text(){
   char          *font_size_s;
@@ -197,7 +186,6 @@ char *kitty_get_text(){
   return(r);
 }
 
-
 bool kitty_set_window_title(char *TAB_TITLE){
   char          *font_size_s;
   struct Vector *v = vector_new();
@@ -212,7 +200,6 @@ bool kitty_set_window_title(char *TAB_TITLE){
   return(true);
 }
 
-
 bool kitty_set_tab_title(char *TAB_TITLE){
   char          *font_size_s;
   struct Vector *v = vector_new();
@@ -226,7 +213,6 @@ bool kitty_set_tab_title(char *TAB_TITLE){
   printf("%s\n", cmd_result->stderr_buffer);
   return(true);
 }
-
 
 bool kitty_set_font_size(int FONT_SIZE){
   char *font_size_s;
@@ -268,7 +254,6 @@ struct kitty_process_communication_result_t *kitty_process_communication(struct 
   r->stderr_bytes_read = 0;
   r->stdout_bytes_read = 0;
 
-
   subprocess_create(cmd_arr, 0, r->subprocess);
   printf("created.\n");
 
@@ -301,7 +286,6 @@ struct kitty_process_communication_result_t *kitty_process_communication(struct 
   return(r);
 } /* kitty_process_communication */
 
-
 kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
   struct StringFNStrings KittyListenOnSplit = stringfn_split(KITTY_LISTEN_ON, ':');
 
@@ -314,7 +298,6 @@ kitty_listen_on_t *parse_kitten_listen_on(char *KITTY_LISTEN_ON){
   stringfn_release_strings_struct(KittyListenOnSplit);
   return(KLO);
 }
-
 
 struct Vector *kitty_get_color_types(const char *HOST, const int PORT){
   struct Vector          *color_types  = vector_new();
@@ -337,7 +320,6 @@ struct Vector *kitty_get_color_types(const char *HOST, const int PORT){
   }
   return(color_types);
 }
-
 
 char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT){
   char                   *COLOR        = NULL;
@@ -364,7 +346,6 @@ char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT){
   return(COLOR);
 }
 
-
 char *kitty_cmd_data(const char *CMD_OUTPUT){
   JSON_Value  *V = json_parse_string(CMD_OUTPUT);
   JSON_Object *O = json_value_get_object(V);
@@ -374,7 +355,6 @@ char *kitty_cmd_data(const char *CMD_OUTPUT){
 
   return(CMD_DATA);
 }
-
 
 char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
   socket99_config cfg = { .host = HOST, .port = PORT };
@@ -416,7 +396,6 @@ char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
   stringbuffer_release(SB);
   return(KITTY_RESPONSE);
 }
-
 
 void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
   socket99_config cfg = { .host = HOST, .port = PORT };
@@ -537,7 +516,6 @@ struct Vector *get_kitty_listen_ons(){
   return(kitty_listen_ons);
 }
 
-
 int get_kitty_pid_windowid(int PID){
   struct Vector *v = get_child_pids(PID);
 
@@ -554,7 +532,6 @@ int get_kitty_pid_windowid(int PID){
   }
   return(-1);
 }
-
 
 static bool vector_contains_pid(struct Vector *pids_v, int pid){
   for (size_t i = 0; i < vector_size(pids_v); i++) {
@@ -618,7 +595,6 @@ struct Vector *get_kitty_pids(){
 }
 
 #define DEBUG_GET_KITTY_PROCESS_T    false
-
 
 kitty_process_t *get_kitty_process_t(const size_t PID){
   kitty_process_t *KP = malloc(sizeof(kitty_process_t));
@@ -744,13 +720,11 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
   return(kitty_procs_v);
 } /* get_kitty_procs */
 
-
 bool kitty_draw_image(void){
   int wrote = fprintf(stdout, "%s\n", KITTY_ESC_DRAW_IMAGE);
 
   return((wrote > 0) ? true : false);
 }
-
 
 bool kitty_clear_screen(void){
   int wrote = fprintf(stdout, "%s", KITTY_ESC_CODE_CLEAR);

@@ -65,7 +65,6 @@ struct Vector *split_keys_by_plus_v(const char *STR){
   return(v);
 }
 
-
 bool compare_key_vectors(struct Vector *v0, struct Vector *v1){
   size_t matches_qty;
 
@@ -200,7 +199,6 @@ unsigned long
   kb_events_qty              = 0
 ;
 
-
 /**********************************/
 static bool IsMouseEvent(CGEventType type) {
   return(
@@ -219,7 +217,6 @@ static bool IsMouseEvent(CGEventType type) {
     || type == kCGEventRightMouseDragged
     );
 }
-
 
 /**********************************/
 static volatile CGEventMask kb_events = (
@@ -249,18 +246,15 @@ static volatile CGEventMask mouse_and_kb_events = (
   | CGEventMaskBit(kCGEventRightMouseDragged)
   );
 
-
 /**********************************/
 static int tap_events(){
   CFRunLoopRun();
   return(0);
 }
 
-
 bool isKeyboardEvent(CGEventType type) {
   return((type == kCGEventKeyDown) || (type == kCGEventKeyUp));
 }
-
 
 bool isMouseCursorEvent(CGEventType type) {
   return((type == kCGEventLeftMouseDown)
@@ -269,7 +263,6 @@ bool isMouseCursorEvent(CGEventType type) {
          || (type == kCGEventRightMouseUp)
          || (type == kCGEventMouseMoved));
 }
-
 
 static int setup_event_tap(){
   CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, mouse_and_kb_events, event_handler, NULL);
@@ -285,7 +278,6 @@ static int setup_event_tap(){
   return(0);
 }
 
-
 /**********************************/
 int keylogger_init(){
   assert(keylogger_init_db() == 0);
@@ -297,9 +289,7 @@ int keylogger_init(){
   return(0);
 }
 
-
 /**********************************/
-
 
 void key_not_down(const size_t KEYCODE){
   for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
@@ -311,7 +301,6 @@ void key_not_down(const size_t KEYCODE){
   return;
 }
 
-
 bool key_is_down(const size_t KEYCODE){
   for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
     if ((size_t)vector_get(ctx.downkeys_v, i) == KEYCODE) {
@@ -320,7 +309,6 @@ bool key_is_down(const size_t KEYCODE){
   }
   return(false);
 }
-
 
 char *down_keys_csv(){
   struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
@@ -386,7 +374,6 @@ struct Vector *get_usb_devices_v(){
   libusb_exit(NULL);
   return(usb_devices_v);
 } /* get_usb_devices_v */
-
 
 CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
   unsigned long TS = (unsigned long)timestamp();
@@ -493,7 +480,6 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
 
   return(event);
 } /* CGEventCallback */
-
 
 static const char *convertKeyboardCode(int keyCode) {
   switch ((int)keyCode) {
@@ -726,7 +712,6 @@ static const char *convertKeyboardCode(int keyCode) {
   fprintf(stderr, "UNKNOWN KEY: %d\n", keyCode);
   return("[unknown]");
 } /* convertKeyCode */
-
 
 /**********************************/
 int keylogger_exec() {

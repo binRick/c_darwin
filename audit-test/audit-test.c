@@ -5,7 +5,6 @@
 #include "audit/audit.h"
 #include "print.h"
 
-
 TEST t_audit(void){
   int res = audit_main();
 
@@ -13,14 +12,12 @@ TEST t_audit(void){
   PASS();
 }
 
-
 SUITE(s_audit){
   RUN_TEST(t_audit);
   PASS();
 }
 
 GREATEST_MAIN_DEFS();
-
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();

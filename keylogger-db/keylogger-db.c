@@ -49,7 +49,6 @@ static unsigned long     last_ts     = 0;
       ASSERT_DB_STATEMENT(DB_STATEMENT);                  \
     } while (0); }
 
-
 void __at_exit(void){
   if (exited == true) {
     return(0);
@@ -60,7 +59,6 @@ void __at_exit(void){
   exit(0);
 }
 
-
 int keylogger_db_delete(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
 
@@ -68,7 +66,6 @@ int keylogger_db_delete(void){
   EXEC_AND_ASSERT_DB_STATEMENT(db_st);
   return(0);
 }
-
 
 int keylogger_create_db(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
@@ -120,7 +117,6 @@ CREATE TABLE IF NOT EXISTS events(\
   return(0);
 }
 
-
 int keylogger_init_db(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
 
@@ -128,7 +124,6 @@ int keylogger_init_db(void){
   ASSERT_DB_STATEMENT(db_st);
   return(0);
 }
-
 
 size_t keylogger_get_db_size(){
   int64_t        page_size = 0, page_count = 0, size_bytes = 0;
@@ -157,7 +152,6 @@ size_t keylogger_get_db_size(){
   return(size_bytes);
 }
 
-
 size_t keylogger_get_table_sql(const char *TABLE){
   db_statement_t db_st = NEW_DB_STATEMENT();
   char           *sql  = malloc(1024);
@@ -166,7 +160,6 @@ size_t keylogger_get_table_sql(const char *TABLE){
   free(sql);
   return(db_st.qty);
 }
-
 
 size_t keylogger_count_table_rows(const char *TABLE){
   db_statement_t db_st = NEW_DB_STATEMENT();
@@ -188,7 +181,6 @@ size_t keylogger_count_table_rows(const char *TABLE){
   return(db_st.qty);
 }
 
-
 int keylogger_select_db(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
 
@@ -208,7 +200,6 @@ int keylogger_select_db(void){
 
   return(0);
 }
-
 
 int keylogger_insert_db_window_row(){
   unsigned long  cur_ts = timestamp();
@@ -250,7 +241,6 @@ int keylogger_insert_db_window_row(){
 
   return(0);
 }
-
 
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   unsigned long cur_ts = timestamp();
@@ -385,7 +375,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   return(0);
 } /* keylogger_insert_db_row */
 
-
 int keylogger_close_db(void){
   db_statement_t db_st = NEW_DB_STATEMENT();
 
@@ -393,7 +382,6 @@ int keylogger_close_db(void){
   ASSERT_DB_STATEMENT(db_st);
   return(0);
 }
-
 
 static void __init(void){
   fprintf(stdout, "=======================DB INIT=============================\n");

@@ -8,7 +8,6 @@
 #endif
 #include "progress.c/progress.h"
 
-
 static void db_progress_start(progress_data_t *data) {
   assert(data);
   fprintf(stdout,
@@ -24,11 +23,9 @@ static void db_progress_start(progress_data_t *data) {
   progress_write(data->holder);
 }
 
-
 static void db_progress(progress_data_t *data) {
   progress_write(data->holder);
 }
-
 
 static void db_progress_end(progress_data_t *data) {
   fprintf(stdout,
