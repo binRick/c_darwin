@@ -1,7 +1,4 @@
-#include "c_stringfn/include/stringfn.h"
-#include "kitty-ls.h"
-#include "timestamp/timestamp.h"
-#include "wildcardcmp/wildcardcmp.h"
+#include "ls-proc.h"
 struct Vector *user_supplied_keys;
 bool          verbose_mode = false;
 

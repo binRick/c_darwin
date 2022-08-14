@@ -90,4 +90,5 @@ subdir('capture-test')
 subdir('wrec-test')
 subdir('kitty-test')
 subdir('kitty-ls')
+subdir('ls-proc')
 #//////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
-process_test_srcs = [
-  'kitty-ls.c',
-  'kitty-ls.h',
+ls_proc_srcs = [
+  'ls-proc.c',
+  'ls-proc.h',
 ]
 process_include_dirs = [
   '.',
@@ -9,23 +9,24 @@ process_include_dirs = [
 ]
 process_include_cargs = [
   ]
-process_test_deps = [
+ls_proc_deps = [
   process_dep,
   timestamp_dep,
   c_vector_dep,
+  cargs_dep,
   c_stringfn_dep,
   wildcardcmp_dep,
 ]
 if get_option('enable-binaries')
-  process_test_exec = executable('kitty-ls',
-     process_test_srcs,
-     dependencies: process_test_deps,
+  ls_proc_exec = executable('ls-proc',
+     ls_proc_srcs,
+     dependencies: ls_proc_deps,
      include_directories: process_include_dirs,
      c_args: process_include_cargs,
      install: true,
      install_dir: '/usr/local/bin',
   )
   if get_option('enable-binary-tests')
-    #test('kitty-ls', passh_program, args: [process_test_exec])
+    #    test('ls-proc Help', passh_program, args: [ls_proc_exec])
   endif
 endif

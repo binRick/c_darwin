@@ -1,6 +1,7 @@
 kitty_srcs = [
   'kitty.c',
   'kitty-module.c',
+  'kitty-color.c',
 ]
 kitty_link_flags = []
 kitty_c_args = []
