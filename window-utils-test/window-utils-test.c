@@ -16,7 +16,7 @@
 #include "c_timer/include/c_timer.h"
 #include "capture/capture.h"
 #include "string-utils/string-utils.h"
-#include "submodules/c_deps/submodules/dbg/dbg.h"
+#include "submodules/c_deps/submodules/c_dbg/dbg.h"
 #include "submodules/libfort/src/fort.h"
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"

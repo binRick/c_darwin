@@ -46,6 +46,19 @@ char *pid_path(pid_t pid){
   return(pathbuf);
 }
 
+struct Vector *get_process_ppids(int pid){
+  int _pid = pid;
+  struct Vector *v = vector_new();
+  while(true){
+    int _ppid = get_process_ppid(_pid);
+    vector_push(v,(void*)(size_t)_ppid);
+    if(_ppid==1) break;
+    _pid = _ppid;
+  }
+
+  return(v);
+}
+
 int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   int    mib[4];
   size_t len;

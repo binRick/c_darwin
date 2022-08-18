@@ -1,5 +1,5 @@
 #define DEBUG_MODE    false
-#include "dbg.h"
+#include "c_dbg/dbg.h"
 //#include "debug-memory/debug_memory.h"
 #include "bench/bench.h"
 #include "bytes/bytes.h"

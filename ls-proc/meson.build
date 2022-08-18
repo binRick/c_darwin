@@ -1,6 +1,6 @@
 ls_proc_srcs = [
   'ls-proc.c',
-  'ls-proc.h',
+  'ls-proc-args.c',
 ]
 process_include_dirs = [
   '.',
@@ -8,13 +8,18 @@ process_include_dirs = [
   inc,
 ]
 process_include_cargs = [
+  '-Wno-bugprone-sizeof-expression',
   ]
 ls_proc_deps = [
   process_dep,
   timestamp_dep,
   c_vector_dep,
+  c_dbg_dep,
+  debug_print_h_dep,
+  generic_print_dep,
   cargs_dep,
   c_stringfn_dep,
+  str_flatten_c_dep,
   wildcardcmp_dep,
 ]
 if get_option('enable-binaries')

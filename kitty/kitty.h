@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 ////////////////////////////////////////////////////////////////////////
-#include "kitty/kitty-color.h"
 #include "c_vector/include/vector.h"
+#include "kitty/kitty-color.h"
 #include "parson/parson.h"
 #include "process/process.h"
 #include "subprocess.h/subprocess.h"

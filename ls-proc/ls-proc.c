@@ -1,103 +1,109 @@
+#include "c_dbg/c_dbg.h"
+#include "debug_print_h/include/debug_print.h"
+#include "generic-print/print.h"
+#include "ls-proc-args.h"
 #include "ls-proc.h"
-struct Vector *user_supplied_keys;
-bool          verbose_mode = false;
 
-int ls_kitty(){
+bool match_item(char *MATCH_WILDCARD, char *ITEM){
+  return(wildcardcmp(MATCH_WILDCARD, ITEM));
+}
+
+bool match_item_v(struct Vector *MATCH_WILDCARD_V, char *ITEM){
+  if (vector_size(MATCH_WILDCARD_V) == 0) {
+    return(false);
+  }
+  for (size_t ii = 0; ii < vector_size(MATCH_WILDCARD_V); ii++) {
+    bool m = match_item((char *)vector_get(MATCH_WILDCARD_V, ii), ITEM);
+    if (m == true) {
+      return(true);
+    }
+  }
+
+  return(false);
+}
+
+int ls_procs(){
   long unsigned started                = timestamp();
   struct Vector *saved                 = vector_new();
   struct Vector *pids_v                = get_all_processes();
-  size_t        searched_env_vars      = 0;
-  size_t        searched_env_var_bytes = 0;
   size_t        PIDS_QTY               = vector_size(pids_v);
 
   for (size_t i = 0; i < PIDS_QTY; i++) {
-    int pid = (int)(long long)vector_get(pids_v, i);
+    bool pid_match = false;
+    int  pid       = (int)(long long)vector_get(pids_v, i);
     if (pid <= 1) {
       continue;
     }
-    struct Vector *PE = get_process_env(pid);
-    searched_env_vars += vector_size(PE);
-    for (size_t ii = 0; ii < vector_size(PE); ii++) {
-      process_env_t *E = (process_env_t *)(vector_get(PE, ii));
-      searched_env_var_bytes += strlen(E->key) + strlen(E->val);
-      bool          match = false;
-      if (
-        wildcardcmp("KITTY_LISTEN_ON", E->key)
-        ||
-        wildcardcmp("KITTY_TYPE", E->key)
-        ||
-        wildcardcmp("KITTY_PID", E->key)
-        ) {
-        match = true;
-      }
-      if (match == false) {
-        for (size_t u = 0; u < vector_size(user_supplied_keys); u++) {
-          if (wildcardcmp((char *)vector_get(user_supplied_keys, u), E->key)) {
-            match = true;
-          }else if (wildcardcmp(stringfn_to_uppercase((char *)vector_get(user_supplied_keys, u)), E->key)) {
-            match = true;
-          }
-          if (wildcardcmp((char *)vector_get(user_supplied_keys, u), E->key)) {
-            match = true;
-          }else if (wildcardcmp(stringfn_to_uppercase((char *)vector_get(user_supplied_keys, u)), E->key)) {
-            match = true;
-          }
-          if (pid == atoi((char *)vector_get(user_supplied_keys, u))) {
-            match = true;
-          }
-        }
-      }
-      if (match == true) {
-        char *result;
-        bool found = false;
-        asprintf(&result, "%d %s %s", pid, E->key, E->val);
-        for (size_t j = 0; j < vector_size(saved); j++) {
-          if (strcmp(result, (char *)vector_get(saved, j)) == 0) {
-            found = true;
-          }
-        }
-        if (found == false) {
-          vector_push(saved, (void *)result);
-        }
-      }
+    if (pid_match == false) {
+      char          *pid_s;
+      asprintf(&pid_s, "%d", pid);
+      pid_match = match_item_v(ctx.pids, pid_s);
     }
-    vector_release(PE);
-  }
-  for (size_t j = 0; j < vector_size(saved); j++) {
-    char *msg = (char *)vector_get(saved, j);
-    if (msg) {
-      printf("%s\n", msg);
-      free(msg);
+    if (pid_match == false){
+      struct Vector *pid_cmdline_v = get_process_cmdline(pid);
+      char          *pid_cmdline   = FLATTEN_VECTOR(pid_cmdline_v);
+      pid_match = match_item_v(ctx.cmd_lines, pid_cmdline);
+    }
+    if (pid_match == false) {
+      pid_match = match_item_v(ctx.cwds, get_process_cwd(pid));
+    }
+    if (pid_match == false) {
+      struct Vector *ppids_v = get_process_ppids(pid);
+      for (size_t ii = 0; ii < vector_size(ppids_v) && (pid_match == false); ii++) {
+        int ppid = (int)(size_t)vector_get(ppids_v,i);
+        char          *ppid_s;
+        asprintf(&ppid_s, "%d", ppid);
+        pid_match = match_item_v(ctx.ppids, ppid_s);
+      }
+      if(ppids_v)
+        vector_release(ppids_v);
+    }
+    if (pid_match == false) {
+      struct Vector *process_env_v     = get_process_env(pid);
+      for (size_t ii = 0; ii < vector_size(process_env_v) && (pid_match == false); ii++) {
+        process_env_t *process_env_key_val = (process_env_t *)(vector_get(process_env_v, ii));
+        if (pid_match == false) {
+          pid_match = match_item_v(ctx.env_keys, process_env_key_val->key);
+        }
+        if (pid_match == false) {
+          pid_match = match_item_v(ctx.env_vals, process_env_key_val->val);
+        }
+      }
+      if(process_env_v)
+        vector_release(process_env_v);
+    }
+    if ((true == ctx.verbose) || (true == pid_match)) {
+      PRINT(pid,
+        "pid match:", pid_match?"Yes":"No"
+        );
     }
   }
-  long unsigned dur_ms = timestamp() - started;
-
-  if (verbose_mode) {
-    fprintf(stderr, "Acquired %lu results from %lu env vars, %lu pids, and %lu bytes of env vars in %ldms using %lu user supplied search items\n", vector_size(saved), searched_env_vars, vector_size(pids_v), searched_env_var_bytes, dur_ms, vector_size(user_supplied_keys));
-  }
-  vector_release(saved);
-  vector_release(pids_v);
-  vector_release(user_supplied_keys);
   return(EXIT_SUCCESS);
-} /* ls_kitty */
+} /* ls_procs */
 
 int main(int argc, char **argv) {
-  user_supplied_keys = vector_new();
-  if (argc > 1) {
-    char **tmp = argv;
-    *tmp++;
-    while (*tmp != NULL) {
-      if (strcmp(*tmp, "-v") == 0) {
-        verbose_mode = true;
-        fprintf(stderr, ">Verbose Mode Enabled\n");
-      }else{
-        vector_push(user_supplied_keys, *tmp);
-        if (verbose_mode) {
-          fprintf(stderr, ">Added env key/value glob and pid match for '%s'\n", *tmp);
-        }
-      }
-      *tmp++;
-    }
-  }
-  return(ls_kitty());
+  parse_args(argc, argv);
+  return(ls_procs());
 }
+/*
+ * int _main(int argc, char **argv) {
+ * user_supplied_keys = vector_new();
+ * if (argc > 1) {
+ *  char **tmp = argv;
+ * tmp++;
+ *  while (*tmp != NULL) {
+ *    if (strcmp(*tmp, "-v") == 0) {
+ *      verbose_mode = true;
+ *      fprintf(stderr, ">Verbose Mode Enabled\n");
+ *    }else{
+ *      vector_push(user_supplied_keys, *tmp);
+ *      if (verbose_mode) {
+ *        fprintf(stderr, ">Added env key/value glob and pid match for '%s'\n", *tmp);
+ *      }
+ *    }
+ * tmp++;
+ *  }
+ * }
+ * return(ls_procs());
+ * }
+ */

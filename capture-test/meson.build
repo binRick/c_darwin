@@ -17,6 +17,7 @@ capture_test_deps = [
   c_timer_dep,
   ansi_codes_dep,
   tiny_regex_c_dep,
+  c_dbg_dep,
   socket99_dep,
   c_string_buffer_dep,
   c_stringfn_dep,
