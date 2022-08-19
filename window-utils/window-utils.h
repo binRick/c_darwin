@@ -29,6 +29,7 @@ typedef struct window_t {
   pid_t             pid;
   int               window_id, layer;
   CGPoint           position;
+  int               pos_x, pos_y, width, height;
   CGSize            size;
   CFDictionaryRef   window;
   CGRect            rect;
@@ -75,5 +76,5 @@ void move_window_id(const int WINDOW_ID, const int X, const int Y);
 char *get_window_id_title(const int WINDOW_ID);
 window_t *get_window_id(const int WINDOW_ID);
 CFDictionaryRef window_id_to_window(const int WINDOW_ID);
-
+window_t *get_pid_window(const int PID);
 ///////////////////////////////////////////////////

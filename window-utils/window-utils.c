@@ -15,6 +15,18 @@
 static int emptyWindowNameAllowed(char *appName);
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
 
+window_t *get_pid_window(const int PID){
+  struct Vector *windows = get_windows();
+
+  for (size_t i = 0; i < vector_size(windows); i++) {
+    window_t *w = vector_get(windows, i);
+    if (w->pid == PID) {
+      return(w);
+    }
+  }
+  return(NULL);
+}
+
 struct Vector *get_windows(){
   struct Vector *windows      = vector_new();
   struct Vector *window_ids   = get_windows_ids();
@@ -40,7 +52,9 @@ struct Vector *get_windows(){
 }
 
 window_t *get_window_id(const int WINDOW_ID){
-  window_t *w = malloc(sizeof(window_t));
+  window_t *w            = malloc(sizeof(window_t));
+  int      focused_pid   = get_frontmost_application();
+  CGRect   displayBounds = CGDisplayBounds(CGMainDisplayID());
 
   w->window_id    = WINDOW_ID;
   w->window       = window_id_to_window(w->window_id);
@@ -51,9 +65,12 @@ window_t *get_window_id(const int WINDOW_ID){
   w->position     = CGWindowGetPosition(w->window);
   w->size         = CGWindowGetSize(w->window);
   CFNumberGetValue(CFDictionaryGetValue(w->window, kCGWindowOwnerPID), kCFNumberIntType, &w->pid);
+  w->rect         = CGRectMake(w->position.x, w->position.y, w->size.width, w->size.height);
+  w->width        = (int)(w->size.width);
+  w->height       = (int)(w->size.height);
   w->is_minimized = false;
-  w->is_focused   = false;
-  w->is_visible   = false;
+  w->is_focused   = (focused_pid == w->pid) ? true : false;
+  w->is_visible   = (CGRectContainsRect(displayBounds, w->rect) == true) ? true : false;
   get_kinfo_proc(w->pid, &w->pid_info);
 
   return(w);
@@ -77,6 +94,7 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
     }
     return(window);
   }
+  printf("window %d not found\n", WINDOW_ID);
   return(NULL);
 }
 
@@ -102,7 +120,7 @@ int get_pid_window_id(const int PID){
     (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
-  for (int i = 0; i < CFArrayGetCount(windowList); i++) {
+  for (int i = 0; i < CFArrayGetCount(windowList) && (WINDOW_ID == -1); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     if (CFDictionaryGetInt(window, kCGWindowOwnerPID) == PID) {
       WINDOW_ID = CFDictionaryGetInt(window, kCGWindowNumber);

@@ -107,7 +107,12 @@ char *rectangle_get_todo_app(){
   char *cmd;
 
   asprintf(&cmd, "defaults read %s todoApplication -string", RECTANGLE_CONFIG_KEY);
-  char *todo_app = rectangle_run_cmd(cmd);
+  char                   *todo_app = stringfn_mut_trim(rectangle_run_cmd(cmd));
+  struct StringFNStrings lines     = stringfn_split_lines_and_trim(todo_app);
+
+  if (lines.count > 1) {
+    todo_app = lines.strings[0];
+  }
 
   return(todo_app);
 }
@@ -158,10 +163,6 @@ int rectangle_get_pid(){
     vector_release(pids_v);
   }
   return(rectangle_pid);
-}
-
-int rectangle_test(){
-  printf("rectangle test\n");
 }
 
 char *rectangle_run_cmd(char *CMD){

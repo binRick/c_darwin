@@ -17,9 +17,11 @@
 //////////////////////////////////////
 struct ctx_t {
   bool verbose, todo_switch;
-  char *app;
+  char *app, *mode;
   int  width;
 };
 //////////////////////////////////////
 static int parse_args(int argc, char *argv[]);
+int configure_todo();
+int info_todo();
 //////////////////////////////////////

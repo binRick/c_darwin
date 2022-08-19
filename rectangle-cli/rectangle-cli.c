@@ -12,9 +12,15 @@ static struct ctx_t      ctx = {
   .app         = NULL,
   .width       = -1,
   .todo_switch = false,
+  .mode        = "configure",
 };
 
 static struct cag_option options[] = {
+  { .identifier     = 'm',
+    .access_letters = "m",
+    .access_name    = "mode",
+    .value_name     = "MODE",
+    .description    = "Mode", },
   { .identifier     = 'w',
     .access_letters = "w",
     .access_name    = "width",
@@ -30,8 +36,8 @@ static struct cag_option options[] = {
     .access_name    = "switch",
     .value_name     = NULL,
     .description    = "Switch to Todo App", },
-  { .identifier     = 'V',
-    .access_letters = "V",
+  { .identifier     = 'v',
+    .access_letters = "v",
     .access_name    = "verbose",
     .value_name     = NULL,
     .description    = "Verbose Mode", },
@@ -43,11 +49,33 @@ static struct cag_option options[] = {
 };
 
 const size_t             sleep_recheck_pid_ms = 500;
+int                      orig_focused_pid;
 
-int main(const int argc, const char **argv) {
+int info_todo(){
+  int             pid = get_focused_pid();
+  struct window_t *W  = get_pid_window(pid);
+
+  fprintf(stdout, "=========================================\n");
+  fprintf(stdout, "Rectangle PID              :         %d\n", rectangle_get_pid());
+  fprintf(stdout, "Current Todo App           :         %s\n", rectangle_get_todo_app());
+  fprintf(stdout, "Current Todo Width         :         %d\n", rectangle_get_todo_width());
+  fprintf(stdout, "Todo Mode Enabled          :         %s\n", rectangle_get_todo_mode_enabled() ? "Yes" : "No");
+  fprintf(stdout, "=========================================\n");
+  fprintf(stdout, "Focused Window PID         :         %d\n", W->pid);
+  fprintf(stdout, "Focused Window ID          :         %d\n", W->window_id);
+  fprintf(stdout, "Focused Window Name        :         %s\n", W->window_name);
+  fprintf(stdout, "Focused App Name           :         %s\n", W->app_name);
+  fprintf(stdout, "Focused Window Position    :         %dx%d\n", (int)W->position.x, (int)W->position.y);
+  fprintf(stdout, "Focused Window Layer       :         %d\n", W->layer);
+  fprintf(stdout, "Focused Window Size        :         %dx%d\n", W->width, W->height);
+  fprintf(stdout, "Focused Window Focused     :         %s\n", W->is_focused ? "Yes" : "No");
+  fprintf(stdout, "Focused Window Visible     :         %s\n", W->is_visible ? "Yes" : "No");
+  fprintf(stdout, "=========================================\n");
+  return(EXIT_SUCCESS);
+}
+
+int configure_todo(){
   int orig_focused_pid = get_focused_pid();
-
-  parse_args(argc, argv);
 
   if (ctx.app) {
     assert(rectangle_set_todo_app(ctx.app) == true);
@@ -57,27 +85,40 @@ int main(const int argc, const char **argv) {
   }
   if ((ctx.width > 0) || ctx.app) {
     assert(rectangle_kill() == true);
-    usleep(1000 * 10);
+    usleep(1000 * 100);
     assert(rectangle_run() == true);
     size_t started_ms = (size_t)timestamp();
-    usleep(1000 * 10);
+    usleep(1000 * 100);
     int    cur_focused_pid = get_focused_pid();
     if (ctx.todo_switch == false) {
-      is_authorized_for_accessibility();
       size_t dur_ms = ((size_t)timestamp()) - started_ms;
       if (dur_ms < sleep_recheck_pid_ms) {
         usleep(1000 * (sleep_recheck_pid_ms - dur_ms));
       }
       set_focused_pid(orig_focused_pid);
-      usleep(1000 * 10);
+      usleep(1000 * 100);
       cur_focused_pid = get_focused_pid();
       assert((cur_focused_pid == orig_focused_pid));
-      if (ctx.verbose) {
+      if (ctx.verbose == true) {
         printf("orig focused pid:\t%d\n", orig_focused_pid);
         printf("cur focused pid:\t%d\n", cur_focused_pid);
       }
     }
   }
+  return(EXIT_SUCCESS);
+}
+
+int main(const int argc, const char **argv) {
+  parse_args(argc, argv);
+  usleep(1000 * 100);
+  is_authorized_for_accessibility();
+  usleep(1000 * 100);
+  if (strcmp(ctx.mode, "configure") == 0) {
+    return(configure_todo());
+  }else if (strcmp(ctx.mode, "info") == 0) {
+    return(info_todo());
+  }
+  return(1);
 }
 
 static int parse_args(int argc, char *argv[]){
@@ -90,6 +131,7 @@ static int parse_args(int argc, char *argv[]){
     case 'v': ctx.verbose     = true; break;
     case 'w': ctx.width       = atoi(cag_option_get_value(&context)); break;
     case 'a': ctx.app         = cag_option_get_value(&context); break;
+    case 'm': ctx.mode        = cag_option_get_value(&context); break;
     case 's': ctx.todo_switch = true; break;
     case 'h':
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "Usage: rec [OPTION]\n" AC_RESETALL);
