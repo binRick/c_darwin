@@ -25,6 +25,8 @@
 typedef bool (*authorized_test_function_t)(void);
 typedef struct authorized_test_t    authorized_test_t;
 typedef struct authorized_tests_t   authorized_tests_t;
+bool is_authorized_for_screen_recording();
+bool is_authorized_for_accessibility();
 ///////////////////////////////////////////////////////////////////////
 int CFDictionaryGetInt(CFDictionaryRef dict, const void *key);
 char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key);

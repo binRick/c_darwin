@@ -4,16 +4,15 @@
 #include "ls-proc-args.h"
 #include "str-flatten.c/src/str-flatten.h"
 
-
-static struct output_field_name_t output_fields[] = {
-  [OUTPUT_FIELD_PID] = { .name = "pid" },
-  [OUTPUT_FIELD_PPIDS] = { .name = "ppids" },
-  [OUTPUT_FIELD_CWD] = { .name = "cwd" },
+static struct output_field_name_t     output_fields[] = {
+  [OUTPUT_FIELD_PID]     = { .name = "pid"     },
+  [OUTPUT_FIELD_PPIDS]   = { .name = "ppids"   },
+  [OUTPUT_FIELD_CWD]     = { .name = "cwd"     },
   [OUTPUT_FIELD_CMDLINE] = { .name = "cmdline" },
   [OUTPUT_FIELD_ENV_KEY] = { .name = "env_key" },
   [OUTPUT_FIELD_ENV_VAL] = { .name = "env_val" },
-  [OUTPUT_FIELD_ENV] = { .name = "env" },
-  [OUTPUT_FIELDS_QTY] = { NULL },
+  [OUTPUT_FIELD_ENV]     = { .name = "env"     },
+  [OUTPUT_FIELDS_QTY]    = { NULL },
 };
 
 static struct output_mode_type_name_t output_modes[] = {
@@ -72,16 +71,16 @@ int get_output_name_mode_id(char *OUTPUT_MODE_NAME){
 }
 
 struct ctx_t ctx = {
-  .verbose     = false,
-  .mode        = NULL,
-  .output_mode = 0,
+  .verbose       = false,
+  .mode          = NULL,
+  .output_mode   = 0,
   .output_fields = NULL,
-  .env_keys    = NULL,
-  .env_vals    = NULL,
-  .cwds        = NULL,
-  .pids        = NULL,
-  .ppids       = NULL,
-  .cmd_lines   = NULL,
+  .env_keys      = NULL,
+  .env_vals      = NULL,
+  .cwds          = NULL,
+  .pids          = NULL,
+  .ppids         = NULL,
+  .cmd_lines     = NULL,
 };
 
 int mode_debug_args(void){
@@ -194,13 +193,13 @@ struct cag_option options[] = {
 };
 
 int parse_args(int argc, char *argv[]){
-  ctx.env_keys  = vector_new();
-  ctx.env_vals  = vector_new();
-  ctx.cwds      = vector_new();
-  ctx.output_fields      = vector_new();
-  ctx.pids      = vector_new();
-  ctx.ppids     = vector_new();
-  ctx.cmd_lines = vector_new();
+  ctx.env_keys      = vector_new();
+  ctx.env_vals      = vector_new();
+  ctx.cwds          = vector_new();
+  ctx.output_fields = vector_new();
+  ctx.pids          = vector_new();
+  ctx.ppids         = vector_new();
+  ctx.cmd_lines     = vector_new();
   cag_option_context context;
 
   cag_option_prepare(&context, options, CAG_ARRAY_SIZE(options), argc, argv);

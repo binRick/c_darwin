@@ -14,6 +14,7 @@
 #include "c_vector/include/vector.h"
 #include "cargs.h"
 #include "ls-proc-args.h"
+#include "ls-proc-args.h"
 #include "ls-proc.h"
 #include "process/process.h"
 #include "socket99/socket99.h"
@@ -22,3 +23,7 @@
 #include "tiny-regex-c/re.h"
 #include "wildcardcmp/wildcardcmp.h"
 ////////////////////////////////////////////////////////
+
+bool match_item(char *MATCH_WILDCARD, char *ITEM);
+bool match_item_v(struct Vector *MATCH_WILDCARD_V, char *ITEM);
+int ls_procs();

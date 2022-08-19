@@ -6,11 +6,9 @@
 #include <CoreVideo/CVPixelBuffer.h>
 #include <stdbool.h>
 ///////////////////////////////////////////////////////////////////////
-static bool is_authorized_for_screen_recording();
-static bool is_authorized_for_accessibility();
 
 ///////////////////////////////////////////////////////////////////////
-static authorized_tests_t authorized_tests = {
+authorized_tests_t authorized_tests = {
   .tests             = {
     [AUTHORIZED_ACCESSIBILITY] =    {
       .id            = AUTHORIZED_ACCESSIBILITY,
@@ -49,7 +47,7 @@ bool request_accessibility_permissions() {
 
 ///////////////////////////////////////////////////////////////////////
 
-static authorized_test_t execute_authorization_test(int authorized_test_type_id){
+authorized_test_t execute_authorization_test(int authorized_test_type_id){
   authorized_test_t authorized_test = authorized_tests.tests[authorized_test_type_id];
 
   authorized_test.ts            = timestamp();
@@ -91,7 +89,7 @@ bool request_screen_recording_permissions() {
   return(true);
 }
 
-static bool is_authorized_for_screen_recording() {
+bool is_authorized_for_screen_recording() {
   CGDisplayStreamFrameAvailableHandler handler = ^ (CGDisplayStreamFrameStatus status, uint64_t display_time, IOSurfaceRef frame_surface, CGDisplayStreamUpdateRef updateRef){ return; };
   CGDisplayStreamRef                   stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, 'BGRA', NULL, handler);
 
@@ -102,7 +100,7 @@ static bool is_authorized_for_screen_recording() {
   return(true);
 }
 
-static bool is_authorized_for_accessibility() {
+bool is_authorized_for_accessibility() {
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1090
   return(AXAPIEnabled() || AXIsProcessTrusted());
 #else

@@ -92,3 +92,6 @@ subdir('kitty-test')
 subdir('kitty-ls')
 subdir('ls-proc')
 #//////////////////////////////////////////////////////////////////////
+subdir('rectangle')
+subdir('rectangle-test')
+subdir('rectangle-cli')

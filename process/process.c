@@ -47,12 +47,15 @@ char *pid_path(pid_t pid){
 }
 
 struct Vector *get_process_ppids(int pid){
-  int _pid = pid;
-  struct Vector *v = vector_new();
-  while(true){
+  int           _pid = pid;
+  struct Vector *v   = vector_new();
+
+  while (true) {
     int _ppid = get_process_ppid(_pid);
-    vector_push(v,(void*)(size_t)_ppid);
-    if(_ppid==1) break;
+    vector_push(v, (void *)(size_t)_ppid);
+    if (_ppid == 1) {
+      break;
+    }
     _pid = _ppid;
   }
 

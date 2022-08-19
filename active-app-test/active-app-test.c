@@ -60,7 +60,7 @@ GREATEST_MAIN_DEFS();
 int do_test(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_get_currently_focused);
-  //RUN_SUITE(s_set_currently_focused);
+  RUN_SUITE(s_set_currently_focused);
   GREATEST_MAIN_END();
   return(0);
 }
