@@ -36,6 +36,7 @@ typedef struct window_t {
   char              *app_name, *window_name, *window_title, *owner_name;
   bool              is_focused, is_visible, is_minimized;
   struct kinfo_proc pid_info;
+  AXUIElementRef    *app;
 } window_t;
 
 typedef struct {
@@ -77,4 +78,7 @@ char *get_window_id_title(const int WINDOW_ID);
 window_t *get_window_id(const int WINDOW_ID);
 CFDictionaryRef window_id_to_window(const int WINDOW_ID);
 window_t *get_pid_window(const int PID);
+int get_display_width();
+bool resize_window(const CFDictionaryRef WINDOW, const int WIDTH, const int HEIGHT);
+bool move_window(CFDictionaryRef w, const int X, const int Y);
 ///////////////////////////////////////////////////

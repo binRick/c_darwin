@@ -16,7 +16,7 @@
 #include "rectangle/rectangle.h"
 //////////////////////////////////////
 struct ctx_t {
-  bool verbose, todo_switch;
+  bool verbose, todo_switch, resize_non_todo_windows;
   char *app, *mode;
   int  width;
 };

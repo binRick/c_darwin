@@ -31,6 +31,11 @@ static struct cag_option options[] = {
     .access_name    = "app",
     .value_name     = "TODO_APP",
     .description    = "Todo App", },
+  { .identifier     = 'r',
+    .access_letters = "r",
+    .access_name    = "resize-non-todo-windows",
+    .value_name     = NULL,
+    .description    = "Resize Non Todo Windows", },
   { .identifier     = 's',
     .access_letters = "s",
     .access_name    = "switch",
@@ -50,6 +55,51 @@ static struct cag_option options[] = {
 
 const size_t             sleep_recheck_pid_ms = 500;
 int                      orig_focused_pid;
+
+int resize_non_todo_windows(){
+  int           display_width = get_display_width();
+  int           todo_width    = rectangle_get_todo_width();
+  int           todo_pid      = rectangle_get_pid();
+  char          *todo_app     = rectangle_get_todo_app();
+  int           new_width     = display_width - todo_width;
+  int           new_x         = 0;
+  int           new_y         = 25;
+  struct Vector *windows      = get_windows();
+
+  for (int i = 0; i < vector_size(windows); i++) {
+    struct window_t *w = vector_get(windows, i);
+    if (strcmp(w->app_name, todo_app) == 0) {
+      continue;
+    }
+    if (w->pid == todo_pid) {
+      continue;
+    }
+    if ((w->width == new_width) && ((int)w->position.x == new_x) && ((int)w->position.y) == new_y) {
+      continue;
+    }
+    if (w->layer != 0) {
+      continue;
+    }
+    if (w->is_visible != true) {
+      continue;
+    }
+    if (ctx.verbose == true) {
+      printf("Resizing %s> %d|%d from %dx%d to %dx%d | moving from %dx%d to %dx%d\n",
+             w->app_name,
+             w->pid, w->window_id,
+             w->width, w->height,
+             new_width, w->height,
+             (int)w->position.x, (int)w->position.y,
+             new_x, new_y
+             );
+    }
+    move_window(w->window, new_x, new_y);
+    usleep(1000 * 1);
+    resize_window(w->window, new_width, w->height);
+    usleep(1000 * 10);
+  }
+  return(EXIT_SUCCESS);
+} /* resize_non_todo_windows */
 
 int info_todo(){
   int             pid = get_focused_pid();
@@ -71,6 +121,8 @@ int info_todo(){
   fprintf(stdout, "Focused Window Focused     :         %s\n", W->is_focused ? "Yes" : "No");
   fprintf(stdout, "Focused Window Visible     :         %s\n", W->is_visible ? "Yes" : "No");
   fprintf(stdout, "=========================================\n");
+  fprintf(stdout, "Display Width              :         %d\n", get_display_width());
+  fprintf(stdout, "=========================================\n");
   return(EXIT_SUCCESS);
 }
 
@@ -85,10 +137,10 @@ int configure_todo(){
   }
   if ((ctx.width > 0) || ctx.app) {
     assert(rectangle_kill() == true);
-    usleep(1000 * 100);
+    usleep(1000 * 50);
     assert(rectangle_run() == true);
     size_t started_ms = (size_t)timestamp();
-    usleep(1000 * 100);
+    usleep(1000 * 50);
     int    cur_focused_pid = get_focused_pid();
     if (ctx.todo_switch == false) {
       size_t dur_ms = ((size_t)timestamp()) - started_ms;
@@ -96,7 +148,7 @@ int configure_todo(){
         usleep(1000 * (sleep_recheck_pid_ms - dur_ms));
       }
       set_focused_pid(orig_focused_pid);
-      usleep(1000 * 100);
+      usleep(1000 * 50);
       cur_focused_pid = get_focused_pid();
       assert((cur_focused_pid == orig_focused_pid));
       if (ctx.verbose == true) {
@@ -104,6 +156,9 @@ int configure_todo(){
         printf("cur focused pid:\t%d\n", cur_focused_pid);
       }
     }
+  }
+  if (ctx.resize_non_todo_windows == true) {
+    resize_non_todo_windows();
   }
   return(EXIT_SUCCESS);
 }
@@ -117,6 +172,8 @@ int main(const int argc, const char **argv) {
     return(configure_todo());
   }else if (strcmp(ctx.mode, "info") == 0) {
     return(info_todo());
+  }else if (strcmp(ctx.mode, "resize") == 0) {
+    return(resize_non_todo_windows());
   }
   return(1);
 }
@@ -128,11 +185,12 @@ static int parse_args(int argc, char *argv[]){
   while (cag_option_fetch(&context)) {
     char identifier = cag_option_get(&context);
     switch (identifier) {
-    case 'v': ctx.verbose     = true; break;
-    case 'w': ctx.width       = atoi(cag_option_get_value(&context)); break;
-    case 'a': ctx.app         = cag_option_get_value(&context); break;
-    case 'm': ctx.mode        = cag_option_get_value(&context); break;
-    case 's': ctx.todo_switch = true; break;
+    case 'v': ctx.verbose                 = true; break;
+    case 'w': ctx.width                   = atoi(cag_option_get_value(&context)); break;
+    case 'r': ctx.resize_non_todo_windows = true; break;
+    case 'a': ctx.app                     = cag_option_get_value(&context); break;
+    case 'm': ctx.mode                    = cag_option_get_value(&context); break;
+    case 's': ctx.todo_switch             = true; break;
     case 'h':
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "Usage: rec [OPTION]\n" AC_RESETALL);
       cag_option_print(options, CAG_ARRAY_SIZE(options), stdout);

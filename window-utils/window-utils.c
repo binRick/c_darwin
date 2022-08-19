@@ -27,6 +27,14 @@ window_t *get_pid_window(const int PID){
   return(NULL);
 }
 
+int get_display_width(){
+  int    w             = -1;
+  CGRect displayBounds = CGDisplayBounds(CGMainDisplayID());
+
+  w = displayBounds.size.width;
+  return(w);
+}
+
 struct Vector *get_windows(){
   struct Vector *windows      = vector_new();
   struct Vector *window_ids   = get_windows_ids();
@@ -75,6 +83,29 @@ window_t *get_window_id(const int WINDOW_ID){
 
   return(w);
 }
+
+bool move_window(CFDictionaryRef w, const int X, const int Y){
+  CFArrayRef     appWindowList;
+  AXUIElementRef app = AXWindowFromCGWindow(w);
+  CGPoint        newPosition;
+  CGSize         size          = CGSizeMake(X, Y);
+  CGRect         displayBounds = CGDisplayBounds(CGMainDisplayID());
+
+  newPosition.x = X;
+  newPosition.y = Y;
+  AXWindowSetPosition(app, newPosition);
+  return(true);
+}
+
+bool resize_window(CFDictionaryRef w, const int WIDTH, const int HEIGHT){
+  CFArrayRef     appWindowList;
+  AXUIElementRef app       = AXWindowFromCGWindow(w);
+  CGSize         size      = CGSizeMake(WIDTH, HEIGHT);
+  AXValueRef     attrValue = AXValueCreate(kAXValueCGSizeType, &size);
+
+  AXUIElementSetAttributeValue(app, kAXSizeAttribute, attrValue);
+  return(true);
+} /* resize_window_id */
 
 CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   CFArrayRef      windowList;
