@@ -75,6 +75,7 @@ subdir('keylogger-config')
 subdir('keylogger-config-test')
 subdir('wrec-utils')
 subdir('wrec-cli')
+subdir('osx-keys')
 #//////////////////////////////////////////////////////////////////////
 subdir('system-utils-test')
 subdir('active-app-test')

@@ -20,6 +20,21 @@ static char *EXECUTABLE_PATH_DIRNAME;
 static bool DEBUG_MODE_ENABLED = false;
 char        *starting_todo_app = NULL;
 
+TEST t_rectangle_get_todo_keys(){
+  struct keycode_modifier_t *kcm = rectangle_get_todo_keys();
+
+  printf("keycode: %d\n", kcm->key_code);
+  printf("key modifier: %d\n", kcm->key_modifier);
+  ASSERT_GTEm("Rectangle keycode not valid", kcm->key_code, 0);
+  ASSERT_GTEm("Rectangle keymodifier not valid", kcm->key_modifier, 0);
+
+  printf("keycode_s: %s\n", kcm->key_code_s);
+  printf("key_modifier_s: %s\n", kcm->key_modifier_s);
+  printf("keys: %s\n", kcm->keys);
+
+  PASS();
+}
+
 TEST t_rectangle_set_todo_app(void *NEW_APP){
   char       *msg     = NULL;
   const char *new_app = (const char *)NEW_APP;
@@ -175,6 +190,7 @@ SUITE(s_rectangle_test) {
   RUN_TEST(t_rectangle_get_todo_mode_enabled);
   RUN_TEST(t_rectangle_kill);
   RUN_TEST(t_rectangle_run);
+  RUN_TEST(t_rectangle_get_todo_keys);
 }
 
 GREATEST_MAIN_DEFS();

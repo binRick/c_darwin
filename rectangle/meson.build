@@ -9,6 +9,7 @@ rectangle_dirs = [
 rectangle_deps = [
   c_vector_dep,
   c_fsio_dep,
+  osx_keys_dep,
   c_stringfn_dep,
   ansi_codes_dep,
   debug_memory_dep,

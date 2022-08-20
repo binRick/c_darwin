@@ -1,4 +1,5 @@
 ////////////////////////////////////////////
+#include "osx-keys/osx-keys.h"
 #include "rectangle/rectangle.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
@@ -23,8 +24,37 @@
 static void __attribute__((constructor)) __constructor__rectangle_test();
 static void __attribute__((destructor)) __destructor__rectangle_test();
 
-static char *RECTANGLE_APP_PATH   = "/Applications/Rectangle.app";
-static char *RECTANGLE_CONFIG_KEY = "com.knollsoft.Rectangle";
+static char *RECTANGLE_APP_PATH    = "/Applications/Rectangle.app";
+static char *RECTANGLE_CONFIG_KEY  = "com.knollsoft.Rectangle";
+static char *RECTANGLE_REFLOW_KEYS = "/usr/libexec/PlistBuddy -c 'print reflowTodo:keyCode' -c 'print reflowTodo:modifierFlags' ~/Library/Preferences/com.knollsoft.Rectangle.plist";
+
+struct keycode_modifier_t *rectangle_get_todo_keys(){
+  char *cmd;
+
+  asprintf(&cmd, "%s", RECTANGLE_REFLOW_KEYS);
+  char                      *keycode_modifier = rectangle_run_cmd(cmd);
+  struct StringFNStrings    lines             = stringfn_split_lines_and_trim(keycode_modifier);
+  struct keycode_modifier_t *kcm              = malloc(sizeof(struct keycode_modifier_t));
+
+  kcm->key_code     = atoi(lines.strings[0]);
+  kcm->key_modifier = atoi(lines.strings[1]);
+  stringfn_release_strings_struct(lines);
+
+  asprintf(&kcm->key_code_s, "%s", convertKeyboardCode(kcm->key_code));
+  asprintf(&kcm->key_modifier_s, "%s", convertKeyboardCode(kcm->key_modifier));
+  char *keys;
+
+  asprintf(&keys, "%s-%s", kcm->key_modifier_s, kcm->key_code_s);
+  stringfn_mut_replace(keys, '[', ' ');
+  stringfn_mut_replace(keys, ']', ' ');
+  asprintf(&kcm->keys, "%s", stringfn_remove(keys, " "));
+
+  if (keys) {
+    free(keys);
+  }
+
+  return(kcm);
+}
 
 bool rectangle_set_todo_width(const int NEW_TODO_WIDTH){
   char *cmd;
@@ -53,7 +83,7 @@ bool rectangle_run(){
   }
   char *cmd;
 
-  asprintf(&cmd, "open %s", RECTANGLE_APP_PATH);
+  asprintf(&cmd, "open -F -g -j -a '%s'", RECTANGLE_APP_PATH);
   rectangle_run_cmd(cmd);
   pid = rectangle_get_pid();
   bool ok = (pid > 2) ? true : false;
@@ -62,14 +92,22 @@ bool rectangle_run(){
 }
 
 bool rectangle_kill(){
-  int pid = rectangle_get_pid();
+  bool ok;
+  int  pid = 0;
 
-  if (pid <= 1) {
-    return(true);
+  while (pid != -1) {
+    pid = rectangle_get_pid();
+    if (pid == -1) {
+      break;
+    }
+    if (pid > 1) {
+      int res = kill(pid, SIGINT);
+      ok  = (res == 0) ? true : false;
+      pid = rectangle_get_pid();
+    }
   }
-  int  res = kill(pid, SIGINT);
-  bool ok  = (res == 0) ? true : false;
-
+  pid = rectangle_get_pid();
+  ok  = (pid == -1) ? true : false;
   return(ok);
 }
 

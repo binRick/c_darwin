@@ -23,6 +23,12 @@
 #include <termios.h>
 #include <unistd.h>
 //////////////////////////////////////
+struct keycode_modifier_t {
+  int  key_code, key_modifier;
+  char *key_code_s, *key_modifier_s;
+  char *keys;
+};
+//////////////////////////////////////
 static char *RECTANGLE_APP_PATH;
 static char *RECTANGLE_CONFIG_KEY;
 //////////////////////////////////////
@@ -38,4 +44,5 @@ char *rectangle_get_todo_app();
 int rectangle_get_todo_width();
 bool rectangle_set_todo_width(const int NEW_TODO_WIDTH);
 bool rectangle_set_todo_app(const char *NEW_TODO_APP);
+struct keycode_modifier_t *rectangle_get_todo_keys();
 //////////////////////////////////////
