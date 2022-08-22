@@ -115,7 +115,6 @@ int get_kitty_pid_windowid(int PID);
 struct Vector *get_kitty_pids();
 bool kitty_draw_image(void);
 bool kitty_set_font_size(int FONT_SIZE);
-static bool kitty_run_at_command(char *COMMAND);
 struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
 
 char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG);

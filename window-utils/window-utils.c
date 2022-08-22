@@ -1,19 +1,44 @@
 #pragma once
-#include "app-utils/app-utils.h"
-#include "window-utils/window-utils.h"
-#ifndef LOGLEVEL
-#define LOGLEVEL    DEFAULT_LOGLEVEL
-#endif
 #include "active-app/active-app.h"
+#include "app-utils/app-utils.h"
+#include "core-utils/core-utils.h"
 #include "parson/parson.h"
 #include "process/process.h"
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
-#ifndef APPLICATION_NAME
-#define APPLICATION_NAME    "UNDEFINED"
-#endif
+#include "window-utils/window-utils.h"
 static int emptyWindowNameAllowed(char *appName);
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
+
+char *window_title(char *windowRef){
+  char      *title = NULL;
+  CFTypeRef value  = NULL;
+
+  AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, &value);
+
+  if (value) {
+    title = cstring_from_CFString(value);
+    CFRelease(value);
+  } else {
+    title = cstring_from_CFString("");
+  }
+
+  return(title);
+}
+
+CGPoint window_ax_origin(char *windowRef){
+  CGPoint   origin       = {};
+  CFTypeRef position_ref = NULL;
+
+  AXUIElementCopyAttributeValue(windowRef, kAXPositionAttribute, &position_ref);
+
+  if (position_ref) {
+    AXValueGetValue(position_ref, kAXValueTypeCGPoint, &origin);
+    CFRelease(position_ref);
+  }
+
+  return(origin);
+}
 
 window_t *get_pid_window(const int PID){
   struct Vector *windows = get_windows();
@@ -98,7 +123,6 @@ bool move_window(CFDictionaryRef w, const int X, const int Y){
 }
 
 bool resize_window(CFDictionaryRef w, const int WIDTH, const int HEIGHT){
-  CFArrayRef     appWindowList;
   AXUIElementRef app       = AXWindowFromCGWindow(w);
   CGSize         size      = CGSizeMake(WIDTH, HEIGHT);
   AXValueRef     attrValue = AXValueCreate(kAXValueCGSizeType, &size);
@@ -115,7 +139,6 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
     (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
-  int count = 0;
 
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
@@ -261,18 +284,12 @@ CGSize CGWindowGetSize(CFDictionaryRef window) {
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   log_debug("AXWindowFromCGWindow.......");
   CGWindowID     targetWindowId, actualWindowId;
-  CFStringRef    targetWindowName, actualWindowTitle;
-  CGPoint        targetPosition, actualPosition;
-  CGSize         targetSize, actualSize;
   pid_t          pid;
   AXUIElementRef app, appWindow, foundAppWindow;
   int            i;
   CFArrayRef     appWindowList;
 
-  targetWindowId   = CFDictionaryGetInt(window, kCGWindowNumber);
-  targetWindowName = CFDictionaryGetValue(window, kCGWindowName);
-  targetPosition   = CGWindowGetPosition(window);
-  targetSize       = CGWindowGetSize(window);
+  targetWindowId = CFDictionaryGetInt(window, kCGWindowNumber);
 
   pid = CFDictionaryGetInt(window, kCGWindowOwnerPID);
   app = AXUIElementCreateApplication(pid);
@@ -446,7 +463,7 @@ char *windowTitle(char *appName, char *windowName) {
   size_t titleSize;
   char   *title;
 
-  log_info("%s> windowTitle: |app:%s|window:%s", APPLICATION_NAME, appName, windowName);
+  log_info("%s> windowTitle: |app:%s|window:%s", appName, appName, windowName);
 
   if (!appName || !*appName) {
     title  = (char *)malloc(1);

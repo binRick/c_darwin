@@ -5,64 +5,6 @@
 static size_t MAX_PASTEBOARD_CONTENT_LENGTH = CLIPBOARD_MAX_SIZE_KB * 1024 + 1;
 static PasteboardRef pasteboard_reference;
 
-int clipwrite(char *dat) {
-  CFDataRef           cfdata;
-  PasteboardSyncFlags flags;
-
-  if (pasteboard_reference == NULL) {
-    return(0);
-  }
-//  runeseprint(rsnarf, rsnarf + nelem(rsnarf), "%s", snarf);
-  if (PasteboardClear(pasteboard_reference) != noErr) {
-    fprintf(stderr, "apple pasteboard clear failed\n");
-    return(0);
-  }
-  flags = PasteboardSynchronize(pasteboard_reference);
-  if ((flags & kPasteboardModified) || !(flags & kPasteboardClientIsOwner)) {
-    fprintf(stderr, "apple pasteboard cannot assert ownership\n");
-    return(0);
-  }
-/*  cfdata = CFDataCreate(kCFAllocatorDefault, (uchar *)rsnarf, runestrlen(rsnarf) * 2);
- * if (cfdata == nil) {
- *  fprintf(stderr, "apple pasteboard cfdatacreate failed\n");
- *  return(0);
- * }
- * if (PasteboardPutItemFlavor(pasteboard_reference, (PasteboardItemID)1,
- *                            CFSTR("public.utf16-plain-text"), cfdata, 0) != noErr) {
- *  fprintf(stderr, "apple pasteboard putitem failed\n");
- *  CFRelease(cfdata);
- *  return(0);
- * }
- * CFRelease(cfdata);
- */
-  return(1);
-}
-
-/*
- * void Clipboard_SetText(const cc_string *value) {
- * PasteboardRef pbRef;
- * CFDataRef     cfData;
- * UInt8         str[800];
- * int           len;
- * OSStatus      err;
- *
- * pbRef = Window_GetPasteboard();
- * err   = PasteboardClear(pbRef);
- * if (err) {
- *  Logger_Abort2(err, "Clearing Pasteboard");
- * }
- * PasteboardSynchronize(pbRef);
- *
- * len    = Platform_EncodeUtf8(str, value);
- * cfData = CFDataCreate(NULL, str, len);
- * if (!cfData) {
- *  Logger_Abort("CFDataCreate() returned null pointer");
- * }
- *
- * PasteboardPutItemFlavor(pbRef, 1, FMT_UTF8, cfData, 0);
- * }
- */
-
 char *read_clipboard(void) {
   if (CLIPBOARD_DEBUG_MODE) {
     fprintf(stderr, "clipread>\n");
@@ -70,7 +12,7 @@ char *read_clipboard(void) {
   CFDataRef cfdata;
   OSStatus  err = noErr;
   ItemCount nitems;
-  int       i;
+  size_t    i;
   char      *s;
 
   if (pasteboard_reference == NULL) {

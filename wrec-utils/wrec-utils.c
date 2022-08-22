@@ -30,6 +30,13 @@ static struct args_t   execution_args;
 static pthread_mutex_t *capture_config_mutex;
 static pthread_t       capture_thread, wait_ctrl_d_thread;
 static chan_t          *done_chan;
+static const char      *EXCLUDED_WINDOW_APP_NAMES[] = {
+  "Control Center",
+  "Rectangle",
+  "SystemUIServer",
+  "Window Server",
+  NULL,
+};
 ////////////////////////////////////////////////////////////
 static struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {
@@ -116,10 +123,11 @@ static void do_capture(void *CAPTURE_CONFIG){
       }
       break;
     }
-    size_t sleep_ms = get_ms_until_next_frame(capture_config);
     size_t since    = get_ms_since_last_recorded_frame(capture_config);
+    size_t sleep_ms = get_ms_until_next_frame(capture_config);
     sleep_ms = (since > 0) ? (sleep_ms - since) : sleep_ms;
     sleep_ms = (sleep_ms > 10000000) ? 0 : sleep_ms;
+    sleep_ms = (size_t)(((float)(sleep_ms * 1000) * (float)(.98)) / 1000);
 
     if (execution_args.verbose == true) {
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "    [Frame Capture]     latest frame ts: %" PRIu64 " (running for %lu/%lums) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums" AC_RESETALL "\n",
@@ -317,23 +325,33 @@ int list_windows(void *ARGS) {
               "Layer",
               "Focused",
               "Visible",
-              "Minimized",
-              "PPID"
-              "Match Cmp"
-              "Name Match"
-
+              "Minimized"
               );
 
   struct Vector *windows = get_windows();
-
   for (size_t i = 0; i < vector_size(windows); i++) {
     window_t *w         = (window_t *)vector_get(windows, i);
     int      NAME_MATCH = wildcardcmp(execution_args.application_name_glob, strip_non_ascii(w->app_name));
     if (NAME_MATCH == 0) {
       continue;
     }
+    if ((int)w->position.y < 25 && (int)w->size.height < 50 && w->layer > 0) {
+      continue;
+    }
+    char **tmp           = EXCLUDED_WINDOW_APP_NAMES;
+    bool excluded_window = false;
+    while (*tmp != NULL && excluded_window == false) {
+      if (strcmp(*tmp, w->app_name) == 0) {
+        excluded_window = true;
+      }
+
+      tmp++;
+    }
+    if (excluded_window) {
+      continue;
+    }
     ft_printf_ln(table,
-                 "%.20s|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s|%d",
+                 "%.20s|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
                  strip_non_ascii(w->app_name),
                  w->pid,
                  w->window_id,
@@ -342,8 +360,7 @@ int list_windows(void *ARGS) {
                  w->layer,
                  int_to_string(w->is_focused),
                  int_to_string(w->is_visible),
-                 int_to_string(w->is_minimized),
-                 w->pid_info.kp_eproc.e_ppid
+                 int_to_string(w->is_minimized)
                  );
 
     ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
@@ -377,11 +394,6 @@ int list_windows(void *ARGS) {
       ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
     }else{
       ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }
-    if (w->pid_info.kp_eproc.e_ppid > 1) {
-      ft_set_cell_prop(table, i + 1, 9, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else{
-      ft_set_cell_prop(table, i + 1, 9, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
     }
   }
 

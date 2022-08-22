@@ -1,19 +1,21 @@
 #pragma once
 #include "ansi-codes/ansi-codes.h"
+#include "c_fsio/include/fsio.h"
+#include "c_string_buffer/include/stringbuffer.h"
+#include "c_stringfn/include/stringfn.h"
 #include "c_vector/include/vector.h"
-//#include "c_dbg/dbg.h"
 #include "djbhash/src/djbhash.h"
-#include "fsio.h"
 #include "kitty/kitty.h"
 #include "parson.h"
 #include "process/process.h"
 #include "socket99/socket99.h"
-#include "stringbuffer.h"
-#include "stringfn.h"
 #include "subprocess.h/subprocess.h"
 #include "tiny-regex-c/re.h"
 #include "which/src/which.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <unistd.h>
 const size_t KITTY_TCP_BUFFER_SIZE                   = 8192;
 const char   *KITTY_ESC_CODE_CLEAR                   = "\x1b_Ga=d,q=2\x1b\\";
 const char   *KITTY_ESC_QUERY                        = "\x1b_Gi=1,a=q;\x1b\\";
@@ -22,9 +24,6 @@ const char   *KITTY_ESC_DELETE_ALL_VISIBLE_PLAYMENTS = "\x1b_Ga=d\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE                   = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE1                  = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 static bool vector_contains_pid(struct Vector *pids_v, int pid);
-
-static bool kitty_run_at_command(char *COMMAND){
-}
 
 bool kitty_set_tab_color(char *MODE, char *COLOR){
   char *s;
@@ -63,7 +62,6 @@ bool kitty_send_text(char *TEXT){
 }
 
 bool kitty_set_layout(char *LAYOUT){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -122,7 +120,6 @@ char *kitty_ls_kittens(){
 }
 
 char *kitty_get_ls(){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -137,7 +134,6 @@ char *kitty_get_ls(){
 }
 
 char *kitty_get_colors(){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -152,7 +148,6 @@ char *kitty_get_colors(){
 }
 
 char *kitty_get_last_cmd_output(){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -168,7 +163,6 @@ char *kitty_get_last_cmd_output(){
 }
 
 char *kitty_get_text(){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -187,7 +181,6 @@ char *kitty_get_text(){
 }
 
 bool kitty_set_window_title(char *TAB_TITLE){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -201,7 +194,6 @@ bool kitty_set_window_title(char *TAB_TITLE){
 }
 
 bool kitty_set_tab_title(char *TAB_TITLE){
-  char          *font_size_s;
   struct Vector *v = vector_new();
 
   vector_push(v, "@");
@@ -235,7 +227,6 @@ struct kitty_process_communication_result_t *kitty_process_communication(struct 
 
   r->subprocess      = malloc(sizeof(struct subprocess_s));
   r->kitty_exec_path = (char *)which_path("kitty", getenv("PATH"));
-  char          *kitty_command;
   struct Vector *v = vector_new();
 
   vector_push(v, r->kitty_exec_path);
@@ -305,7 +296,7 @@ struct Vector *kitty_get_color_types(const char *HOST, const int PORT){
   struct StringFNStrings Lines         = stringfn_split_lines(kitty_colors);
   struct StringFNStrings LineWords;
 
-  for (size_t i = 0; i < Lines.count; i++) {
+  for (size_t i = 0; i < (size_t)Lines.count; i++) {
     LineWords = stringfn_split_words(Lines.strings[i]);
     if (LineWords.count != 2 || strlen(LineWords.strings[0]) < 1) {
       continue;
@@ -327,7 +318,7 @@ char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT){
   struct StringFNStrings Lines         = stringfn_split_lines(kitty_colors);
   struct StringFNStrings LineWords;
 
-  for (size_t i = 0; i < Lines.count; i++) {
+  for (size_t i = 0; i < (size_t)Lines.count; i++) {
     LineWords = stringfn_split_words(Lines.strings[i]);
     if (LineWords.count != 2) {
       continue;
@@ -365,7 +356,7 @@ char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
     return(NULL);
   }
   struct StringBuffer *SB = stringbuffer_new_with_options(KITTY_TCP_BUFFER_SIZE, true);
-  size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
+  size_t              total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
 
   do {
     total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
@@ -377,8 +368,7 @@ char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
     if (recvd < 1) {
       break;
     }
-    buf[recvd]   = '\0';
-    total_recvd += recvd;
+    buf[recvd] = '\0';
     stringbuffer_append_string(SB, buf);
     free(buf);
     if ((int)(buf[strlen(buf) - 1]) == 92) {
@@ -406,7 +396,7 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
     return;
   }
   struct StringBuffer *SB = stringbuffer_new_with_options(KITTY_TCP_BUFFER_SIZE, true);
-  size_t              total_recvd = 0, total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
+  size_t              total_sent = 0, msg_size = strlen(KITTY_MSG), recvd = 0;
 
   do {
     total_sent += send(res.fd, KITTY_MSG, strlen(KITTY_MSG), 0);
@@ -418,8 +408,7 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
     if (recvd < 1) {
       break;
     }
-    buf[recvd]   = '\0';
-    total_recvd += recvd;
+    buf[recvd] = '\0';
     stringbuffer_append_string(SB, buf);
     free(buf);
     if ((int)(buf[strlen(buf) - 1]) == 92) {
@@ -459,12 +448,11 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
   JSON_Value *V_IS_FOCUSED = json_object_get_value(V101, "is_focused");
 
   assert(json_type(V_IS_FOCUSED) == 6);
-  bool       IS_FOCUSED = json_value_get_boolean(V_IS_FOCUSED);
-  JSON_Value *V_TABS    = json_object_get_value(V101, "tabs");
-  JSON_Array *TABS      = json_value_get_array(V_TABS);
+  JSON_Value *V_TABS = json_object_get_value(V101, "tabs");
+  JSON_Array *TABS   = json_value_get_array(V_TABS);
 
   assert(json_array_get_count(TABS) > 0);
-  for (int ii = 0; ii < json_array_get_count(TABS); ii++) {
+  for (size_t ii = 0; ii < json_array_get_count(TABS); ii++) {
     JSON_Value  *TABv = json_array_get_value(TABS, ii);
     assert(json_type(TABv) == 4);
     JSON_Object *TAB = json_value_get_object(TABv);
@@ -481,13 +469,13 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
     //dbg(json_object_get_string(TAB, "title"), %s);
     //  dbg(json_object_get_boolean(TAB, "is_focused"), %d);
 //    dbg(json_object_get_string(TAB, "layout"), %s);
-    for (int iii = 0; iii < json_object_get_count(TAB); iii++) {
+    for (size_t iii = 0; iii < json_object_get_count(TAB); iii++) {
       // dbg(json_object_get_name(TAB, iii), %s);
     }
   }
 } /* kitty_command */
 
-struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v){
+struct Vector *connect_kitty_processes(__attribute__((unused)) struct Vector *KittyProcesses_v){
   struct Vector *ConnectedKittyProcesses_v = vector_new();
 
   return(ConnectedKittyProcesses_v);
@@ -648,9 +636,7 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
   JSON_Value  *kitty_windows_v;
   JSON_Array  *kitty_windows_a;
   JSON_Value  *kitty_foreground_process_v;
-  JSON_Object *kitty_foreground_process_o;
   JSON_Array  *kitty_foreground_process_a;
-  JSON_Array  *kitty_cmdline_a;
   JSON_Value  *kitty_cmdline_v;
   JSON_Object *kitty_cmdline_o;
   JSON_Array  *kitty_fg_cmdline_a;
@@ -658,7 +644,6 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
   JSON_Object *kitty_fg_cmdline_o;
   JSON_Value  *kitty_window_v;
   JSON_Object *kitty_window_o;
-  char        *kitty_cmdline_s;
 
   for (size_t kitty_process_index = 0; kitty_process_index < json_array_get_count(A); kitty_process_index++) {
     kitty_process_v = json_array_get_value(A, kitty_process_index);
@@ -671,7 +656,7 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
     kp->tabs_v     = vector_new();
     kitty_tabs_v   = json_object_get_value(kitty_process_o, "tabs");
     kitty_tabs_a   = json_value_get_array(kitty_tabs_v);
-    for (size_t kitty_tab_index = 0; kitty_tab_index < kp->tabs_qty; kitty_tab_index++) {
+    for (size_t kitty_tab_index = 0; kitty_tab_index < (size_t)kp->tabs_qty; kitty_tab_index++) {
       kitty_tab_v = json_array_get_value(kitty_tabs_a, kitty_tab_index);
       kitty_tab_o = json_value_get_object(kitty_tab_v);
       struct kitty_tab_t *kt = calloc(1, sizeof(struct kitty_tab_t));
@@ -683,11 +668,10 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
       kt->windows_v   = vector_new();
       kitty_windows_v = json_object_get_value(kitty_tab_o, "windows");
       kitty_windows_a = json_value_get_array(kitty_windows_v);
-      for (size_t kitty_window_index = 0; kitty_window_index < kt->windows_qty; kitty_window_index++) {
+      for (size_t kitty_window_index = 0; kitty_window_index < (size_t)kt->windows_qty; kitty_window_index++) {
         kitty_window_v             = json_array_get_value(kitty_windows_a, kitty_window_index);
         kitty_window_o             = json_value_get_object(kitty_window_v);
         kitty_foreground_process_v = json_object_get_value(kitty_window_o, "foreground_processes");
-        kitty_foreground_process_o = json_value_get_object(kitty_foreground_process_v);
         kitty_foreground_process_a = json_value_get_array(kitty_foreground_process_v);
         struct kitty_window_t *kw = calloc(1, sizeof(struct kitty_window_t));
         kw->foreground_processes_qty = json_array_get_count(kitty_foreground_process_a);
@@ -699,18 +683,16 @@ struct Vector *get_kitty_procs(const char *KITTY_LS_RESPONSE){
         kw->is_focused               = json_object_get_boolean(kitty_window_o, "is_focused");
         kw->cwd                      = json_object_get_string(kitty_window_o, "cwd");
         kw->title                    = json_object_get_string(kitty_window_o, "title");
-        for (size_t kitty_cmdline_index = 0; kitty_cmdline_index < kw->foreground_processes_qty; kitty_cmdline_index++) {
+        for (size_t kitty_cmdline_index = 0; kitty_cmdline_index < (size_t)kw->foreground_processes_qty; kitty_cmdline_index++) {
           kitty_cmdline_v    = json_array_get_value(kitty_foreground_process_a, kitty_cmdline_index);
           kitty_cmdline_o    = json_value_get_object(kitty_cmdline_v);
           kitty_fg_cmdline_v = json_object_get_value(kitty_cmdline_o, "cmdline");
           kitty_fg_cmdline_o = json_value_get_object(kitty_fg_cmdline_v);
           kitty_fg_cmdline_a = json_value_get_array(kitty_fg_cmdline_v);
           for (size_t kitty_fg_cmdline_index = 0; kitty_fg_cmdline_index < json_array_get_count(kitty_fg_cmdline_a); kitty_fg_cmdline_index++) {
-            kitty_cmdline_s = json_array_get_string(kitty_fg_cmdline_a, kitty_fg_cmdline_index);
-            //dbg(kitty_cmdline_s, %s);
+            //kitty_cmdline_s = json_array_get_string(kitty_fg_cmdline_a, kitty_fg_cmdline_index);
           }
         }
-//              kw->cmdline = stringfn_join(, " ", 0, json_array_get_count(cmdline_a));
         vector_push(kt->windows_v, kw);
       }
       vector_push(kp->tabs_v, kt);

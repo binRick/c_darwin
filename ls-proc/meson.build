@@ -8,7 +8,6 @@ process_include_dirs = [
   inc,
 ]
 process_include_cargs = [
-  '-Wno-bugprone-sizeof-expression',
   ]
 ls_proc_deps = [
   process_dep,

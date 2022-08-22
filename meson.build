@@ -27,6 +27,8 @@ inc = [include_directories(
   'submodules/c_deps/submodules/dbg.h',
   'submodules/c_deps/submodules/tiny-regex-c',
   'submodules/c_deps/submodules',
+  'submodules/c_deps/submodules/c_ansi',
+  'submodules/c_deps/submodules/c_ansi/ansi-codes',
   'submodules/c_deps/submodules/iowow/src',
   'submodules/c_deps/submodules/iowow/src/kv',
   'submodules/c_deps/submodules/iowow/src/fs',

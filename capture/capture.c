@@ -11,6 +11,7 @@
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "capture/capture.h"
+#include "log.h/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
 ///////////////////////////////////////////////////////
@@ -158,28 +159,44 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
   CGRect frame       = {};
   int    _connection = CGSMainConnectionID();
   CGSGetWindowBounds(_connection, WID, &frame);
+  int    capture_rect_x      = frame.origin.x;
+  int    capture_rect_y      = frame.origin.y;
+  int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
+  int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
   if (DEBUG_IMAGE_RESIZE) {
-    printf("size  : %dx%d\n", (int)W_SIZE.height, (int)W_SIZE.width);
-    printf("frame : %dx%d\n", (int)frame.size.width, (int)frame.size.height);
-    printf("origin: %dx%d\n", (int)frame.origin.x, (int)frame.origin.y);
+    log_debug(
+      "\n\t|window size          :   %dx%d"
+      "\n\t|frame  size          :   %dx%d"
+      "\n\t|frame  origin        :   %dx%d"
+      "\n\t|capture rect"
+      "\n\t               x      :    %d"
+      "\n\t               y      :    %d"
+      "\n\t               width  :    %d"
+      "\n\t               height :    %d"
+      "\n",
+      (int)W_SIZE.height, (int)W_SIZE.width,
+      (int)frame.size.width, (int)frame.size.height,
+      (int)frame.origin.x, (int)frame.origin.y,
+      capture_rect_x, capture_rect_y,
+      capture_rect_width, capture_rect_height
+      );
   }
 
-  CGImageRef img = CGWindowListCreateImage(
-    CGRectMake(frame.origin.x, frame.origin.y, (int)W_SIZE.width - frame.origin.x, (int)W_SIZE.height - frame.origin.y),
-    kCGWindowListOptionIncludingWindow,
-    WID,
-    kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution
-    );
+  CGImageRef img = CGWindowListCreateImage(CGRectMake(capture_rect_x, capture_rect_y, capture_rect_width, capture_rect_height),
+                                           kCGWindowListOptionIncludingWindow,
+                                           WID,
+                                           kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution
+                                           );
   assert(img != NULL);
   CGContextRelease(W);
   return(img);
-}
+} /* capture_window_id_cgimageref */
 
 static void debug_resize(int WINDOW_ID,
                          char *FILE_NAME,
                          int RESIZE_TYPE, int RESIZE_VALUE,
                          int ORIGINAL_WIDTH, int ORIGINAL_HEIGHT,
-                         long unsigned CAPTURE_DURATION_MS, long unsigned SAVE_DURATION_MS)                                                                  {
+                         long unsigned CAPTURE_DURATION_MS, long unsigned SAVE_DURATION_MS) {
   char *msg;
 
   asprintf(&msg,
@@ -201,7 +218,7 @@ static void debug_resize(int WINDOW_ID,
            CAPTURE_DURATION_MS, SAVE_DURATION_MS
            );
 
-  fprintf(stderr, "%s\n", msg);
+  log_debug("%s\n", msg);
 
   free(msg);
 }

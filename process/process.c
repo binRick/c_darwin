@@ -1,34 +1,31 @@
 #pragma once
-//#include "debug-memory/debug_memory.h"
 #include "process.h"
-#include <ctype.h>
-#include <libproc.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
 
+////////////////////////
 #include <assert.h>
-#include <dirent.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <libproc.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/stat.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+////////////////////////
 
 #define GET_PID(proc)       (proc)->kp_proc.p_pid
 #define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)
@@ -196,7 +193,7 @@ struct Vector *get_all_processes(){
   pid_t         *processes_buffer = malloc(processes_len);
   size_t        processes_qty     = proc_listallpids(processes_buffer, processes_len);
 
-  for (pid_t i = 0; i < processes_qty; i++) {
+  for (size_t i = 0; i < processes_qty; i++) {
     if ((long long)processes_buffer[i] > 0) {
       vector_push(processes_v, (void *)(long long)processes_buffer[i]);
     }
@@ -214,18 +211,11 @@ struct Vector *get_process_env(int process){
   struct Vector          *vector = vector_new();
   struct StringFNStrings EnvSplit;
   int                    env_res = -1, nargs;
-  char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *arg_start, *env_start, *s;
-  size_t                 argmax, size;
-
-  int
-    mib_env[]    = { CTL_KERN, KERN_PROCARGS2, (pid_t)process },
-    mib_argmax[] = { CTL_KERN, KERN_ARGMAX }
-  ;
+  char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *env_start, *s;
+  size_t                 argmax;
 
   argmax   = get_argmax();
-  size     = sizeof(argmax);
   procargs = (char *)malloc(argmax);
-  env_res  = sysctl(mib_env, 3, procargs, &argmax, NULL, 0);
   arg_end  = &procargs[argmax];
   memcpy(&nargs, procargs, sizeof(nargs));
   arg_ptr = procargs + sizeof(nargs);
@@ -271,7 +261,7 @@ struct Vector *get_process_env(int process){
     }
     vector_push(process_env_v, pe);
   }
-  if (DEBUG_PID_ENV) {
+  if (true == DEBUG_PID_ENV) {
     fprintf(stderr,
             "process:%d\n"
             "argmax:%lu\n"
@@ -310,11 +300,11 @@ char *get_my_cwd(){
   struct stat   Odir;
   struct dirent *d_stat;
 
-  long int      inode, pinode;
+  long int      inode = -1, pinode;
   DIR           *cur_dir;
   char          nameofdir[225];
 
-  while (inode > 2) {
+  while (inode > 2 || inode == -1) {
     lstat(".", &Odir);
     inode = Odir.st_ino;
     chdir("..");

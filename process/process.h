@@ -7,15 +7,6 @@
 #include "c_vector/include/vector.h"
 #include "kitty/kitty.h"
 #include "stringfn.h"
-/*
- #include "fsio.h"
- #include "parson.h"
- #include "socket99/socket99.h"
- #include "str-replace.h"
- #include "stringbuffer.h"
- #include "tiny-regex-c/re.h"
- */
-//////////////////////////////////////////
 //////////////////////////////////////////
 int *get_all_pids();
 int *get_app_pids();
@@ -29,5 +20,4 @@ char *get_my_cwd();
 int get_process_ppid(int pid);
 struct Vector *get_process_ppids(int pid);
 
-//////////////////////////////////////////
 //////////////////////////////////////////

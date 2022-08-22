@@ -324,9 +324,9 @@ static bool keylogger_execution_parse_config(){
   printf(AC_YELLOW "%lu keybinds!\n" AC_RESETALL, keybinds_qty);
   for (size_t i = 0; i < keybinds_qty; i++) {
     struct keylogger_config_keybind_t *kb = malloc(sizeof(struct keylogger_config_keybind_t));
-    struct Vector                     *keybind_keys_v = vector_new, *keybind_actions_v = vector_new();
-    kb->actions_v = vector_new();
-    kb->keys_v    = vector_new();
+    struct Vector                     __attribute__((unused)) * keybind_keys_v = vector_new, __attribute__((unused)) * keybind_actions_v = vector_new ();
+    kb->actions_v                                                              = vector_new();
+    kb->keys_v                                                                 = vector_new();
     JSON_Value  *kb_v = json_array_get_value(keybinds_a, i);
     JSON_Object *kb_o = json_value_get_object(kb_v);
     kb->name   = json_object_dotget_string(kb_o, "name");
@@ -405,25 +405,25 @@ static bool keylogger_execution_stop(){
 }
 static bool keylogger_execution_start();
 
-static struct Vector *keylogger_get_config_keybind_actions(int ACTION_TYPE){
+__attribute__((unused))static struct Vector *keylogger_get_config_keybind_actions(__attribute__((unused)) int ACTION_TYPE){
   struct Vector *v = vector_new();
 
   return(v);
 }
 
-static bool keylogger_config_run_action(struct keylogger_config_keybind_action_t *KEYBIND_ACTION_TO_RUN){
+__attribute__((unused))static bool keylogger_config_run_action(__attribute__((unused)) struct keylogger_config_keybind_action_t *KEYBIND_ACTION_TO_RUN){
   return(false);
 }
 
-static bool keylogger_config_keybind_is_active(struct keylogger_config_keybind_t *KEYBIND){
+__attribute__((unused))static bool keylogger_config_keybind_is_active(__attribute__((unused)) struct keylogger_config_keybind_t *KEYBIND){
   return(false);
 }
-static struct Vector *keylogger_get_config_keybinds(int KEYBIND_TYPE){
+__attribute__((unused))static struct Vector *keylogger_get_config_keybinds(__attribute__((unused)) int KEYBIND_TYPE){
   struct Vector *v = vector_new();
 
   return(v);
 }
-static struct Vector *keylogger_get_config_keybind_keys(int KEY_TYPE){
+__attribute__((unused))static struct Vector *keylogger_get_config_keybind_keys(__attribute__((unused)) int KEY_TYPE){
   struct Vector *v = vector_new();
 
   return(v);
@@ -494,7 +494,7 @@ size_t keylogger_config_get_keybinds_qty(){
   return(vector_size(require(keylogger_config)->keybinds_v));
 }
 
-size_t keylogger_config_get_keybind_actions_qty(int ACTION_TYPE){
+size_t keylogger_config_get_keybind_actions_qty(__attribute__((unused)) int ACTION_TYPE){
   return(vector_size(require(keylogger_config)->get_keybind_actions_v()));
 }
 
@@ -502,6 +502,6 @@ size_t keylogger_config_get_keybind_keys_qty(){
   return(vector_size(require(keylogger_config)->get_keybind_keys_v()));
 }
 
-bool keylogger_config_has_keybind_v(struct Vector *KEYBINDS_VECTOR){
+bool keylogger_config_has_keybind_v(__attribute__((unused)) struct Vector *KEYBINDS_VECTOR){
   return(false);
 }

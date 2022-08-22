@@ -66,7 +66,7 @@ int resize_non_todo_windows(){
   int           new_y         = 25;
   struct Vector *windows      = get_windows();
 
-  for (int i = 0; i < vector_size(windows); i++) {
+  for (size_t i = 0; i < vector_size(windows); i++) {
     struct window_t *w = vector_get(windows, i);
     if (strcmp(w->app_name, todo_app) == 0) {
       continue;

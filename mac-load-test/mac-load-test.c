@@ -27,7 +27,7 @@ void MAC_Handler(OnRect, NSRect rect) {
   }
 }
 
-void MAC_Handler(OnClose, NSNotification *notification) {
+void MAC_Handler(OnClose, __attribute__((unused)) NSNotification *notification) {
   stop_(sharedApplication(_(NSApplication)), self);
 }
 

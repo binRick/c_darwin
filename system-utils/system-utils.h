@@ -46,19 +46,11 @@ struct DarwinMouseLocation_t {
 };
 ///////////////////////////
 
-static void get_sysctl(enum sysctls);
 void get_disk(void);
-static void get_pkg_count(void);
-static void get_uptime(time_t *t);
 void get_gpu(void);
 double get_cpu();
 double get_cpu_time(void);
-static void curtime(void);
-static void host(void);
-static void kernel(void);
 void get_os(void);
-static void cpu(void);
-static void battery(void);
 size_t get_devices_count();
 
 uint32_t get_display_count();

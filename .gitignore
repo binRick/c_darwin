@@ -30,3 +30,11 @@ loc.sh
 .bin/
 submodules/c_deps
 *-cache.db
+.meson-build-warnings.log
+.iowow.db
+MyGif.gif
+.pngs
+.cmd.sh
+.utils
+.meson.build*.log
+.meson-build*.log

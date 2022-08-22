@@ -57,10 +57,7 @@ struct screen_size get_window_size(){
     return((struct screen_size){ 0, 0, 0, 0 });
   }
 
-  AXUIElementRef app = AXUIElementCreateApplication(pid);
   AXUIElementRef win;
-
-  AXError        error = AXUIElementCopyAttributeValue(app, kAXMainWindowAttribute, (CFTypeRef *)&win);
 
   CGPoint        point;
   CFTypeRef      objc_point;
@@ -113,7 +110,6 @@ bool set_focused_ProcessSerialNumber(ProcessSerialNumber PSN){
 }
 
 ProcessSerialNumber get_focused_ProcessSerialNumber(){
-  focused_t           *f           = malloc(sizeof(focused_t));
   char                *processName = malloc(1024);
   ProcessSerialNumber psn;
   ProcessInfoRec      info;
@@ -123,6 +119,7 @@ ProcessSerialNumber get_focused_ProcessSerialNumber(){
   info.processName       = processName;
   GetFrontProcess(&psn);
   GetProcessInformation(&psn, &info);
+  free(processName);
   return(psn);
 }
 

@@ -245,10 +245,6 @@ static void get_sysctl(enum sysctls ctl) {
   }
 }
 
-static inline CGPoint get_darwin_mouse_point() {
-//  return(CGEventGetLocation(dml_r->event));
-}
-
 DarwinMouseLocation_t * get_darwin_mouse_location(){
   /*
    *   exports->location = malloc(sizeof(DarwinMouseLocation_t));
@@ -462,53 +458,6 @@ void get_gpu(void) {
     }
   }
 } /* gpu */
-
-static void uptime(time_t *nowp) {
-  struct timeval boottime;
-  time_t         uptime;
-  int            days, hrs, mins, secs;
-  int            mib[2];
-  size_t         size;
-  char           buf[256];
-
-  if (strftime(buf, sizeof(buf), NULL, localtime(nowp))) {
-    mib[0] = CTL_KERN;
-  }
-
-  mib[1] = KERN_BOOTTIME;
-  size   = sizeof(boottime);
-
-  if (sysctl(mib, 2, &boottime, &size, NULL, 0) != -1
-      && boottime.tv_sec) {
-    uptime = *nowp - boottime.tv_sec;
-
-    if (uptime > 60) {
-      uptime += 30;
-    }
-
-    days    = (int)uptime / 86400;
-    uptime %= 86400;
-    hrs     = (int)uptime / 3600;
-    uptime %= 3600;
-    mins    = (int)uptime / 60;
-    secs    = uptime % 60;
-    printf("Uptime    : ");
-
-    if (days > 0) {
-      printf("%d day%s", days, days > 1 ? "s " : " ");
-    }
-
-    if (hrs > 0 && mins > 0) {
-      printf("%02d:%02d", hrs, mins);
-    }else if (hrs == 0 && mins > 0) {
-      printf("0:%02d", mins);
-    }else{
-      printf("0:00");
-    }
-
-    putchar('\n');
-  }
-} /* uptime */
 
 void uv_loadavg(double avg[3]) {
   struct loadavg info;
