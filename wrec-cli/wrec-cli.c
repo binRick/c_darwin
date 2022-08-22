@@ -27,7 +27,6 @@ static struct args_t     args = {
 
 static struct modes_t    modes[] = {
   { .name = "debug_args",    .description = "Debug Arguments", .handler = debug_args     },
-  { .name = "wrec0",         .description = "Wrec0",           .handler = wrec0          },
   { .name = "list",          .description = "List Windows",    .handler = list_windows   },
   { .name = "record",        .description = "Capture Window",  .handler = capture_window },
   { .name = "select_window", .description = "Select Window",   .handler = select_window  },

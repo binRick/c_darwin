@@ -10,144 +10,27 @@
 #include "wrec-cli/wrec-cli.h"
 #include "wrec-utils/wrec-utils.h"
 /////////////////////////////////////
-#include "assertf/assertf.h"
-#include "b64.c/b64.h"
-#include "bench/bench.h"
 #include "bytes/bytes.h"
-#include "c_dbg/dbg.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "capture/capture.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
-#include "generic-print/print.h"
 #include "libterminput/libterminput.h"
 #include "ms/ms.h"
-#ifdef _GNU_SOURCE
-#undef _GNU_SOURCE
-#endif
-#include "progress.c/progress.h"
-#include "rwimg/readimage.h"
-#include "rwimg/writeimage.h"
 #include "strdup/strdup.h"
-#include "subprocess.h/subprocess.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
-#include "which/src/which.h"
 #include "wildcardcmp/wildcardcmp.h"
+/////////////////////////////////////
 #include "wrec-cli/wrec-cli.h"
-#define PROGRESS_ENABLED      false
-#define FFMPEG_LOOP_QTY       -1
-#define FFMPEG_CROP_HEIGHT    50
-#define READ_BUFFER_SIZE      1024 * 16
 ////////////////////////////////////////////////////////////
-static void db_progress_start(progress_data_t *data);
-static void db_progress(progress_data_t *data);
-static void db_progress_end(progress_data_t *data);
-
-static const char *tempdir_path = NULL;
-
-////////////////////////////////////////////////////////////
-struct args_t   execution_args;
-pthread_mutex_t *capture_config_mutex;
-pthread_t       capture_thread, wait_ctrl_d_thread;
-chan_t          *done_chan;
-////////////////////////////////////////////////////////////
-/*
- * struct animated_gif_conversion_config_t {
- * struct Vector *images_v;
- * char          *animated_gif_file;
- * size_t        frames_per_second;
- * size_t        window_id;
- * char          *ffmpeg_log_level;
- * int           ffmpeg_crop_height;
- * int           ffmpeg_loop_qty;
- * bool          debug_mode;
- * };*/
-/*
- * struct animated_gif_conversion_result_t {
- * struct Vector        *images_v;
- * char                 *ffmpeg_path, *ffmpeg_cmd;
- * size_t               window_id;
- * struct subprocess_s  subprocess;
- * int                  subprocess_result;
- * int                  subprocess_join_result;
- * int                  subprocess_exited;
- * bool                 animated_gif_file_created;
- * char                 *READ_STDOUT, *READ_STDERR;
- * struct  StringBuffer *STDOUT_BUFFER, *STDERR_BUFFER;
- * size_t               stdout_bytes_read, stderr_bytes_read;
- * char                 stdout_buffer[READ_BUFFER_SIZE], stderr_buffer[READ_BUFFER_SIZE];
- * };*/
-/*
- * static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion_config_t *config){
- * if (tempdir_path == NULL) {
- *  tempdir_path = gettempdir();
- * }
- * struct animated_gif_conversion_result_t r = {
- *  .ffmpeg_path               = (char *)which_path("ffmpeg", getenv("PATH")),
- *  .ffmpeg_cmd                = NULL,
- *  .subprocess_result         = -1,
- *  .subprocess_exited         = -1,
- *  .subprocess                = NULL,
- *  .animated_gif_file_created = false,
- *  .STDOUT_BUFFER             = stringbuffer_new(),
- *  .STDERR_BUFFER             = stringbuffer_new(),
- *  .stdout_bytes_read         = 0,
- *  .stderr_bytes_read         = 0,
- *  .stdout_buffer             = { 0 },
- *  .stderr_buffer             = { 0 },
- * };
- *
- * asprintf(&r.ffmpeg_cmd, "env AV_LOG_FORCE_COLOR=1 '%s' -stats -y -f image2 -framerate '%lu' -i '%s/window-%lu-%%d.png' -loglevel '%s' -vf 'crop=in_w:in_h-%d' -loop '%d' '%s'",
- *         r.ffmpeg_path,
- *         config->frames_per_second,
- *         tempdir_path,
- *         config->window_id,
- *         config->ffmpeg_log_level,
- *         FFMPEG_CROP_HEIGHT,
- *         FFMPEG_LOOP_QTY,
- *         config->animated_gif_file
- *         );
- * const char *command_line[] = { "/bin/sh", "--norc", "--noprofile", "-c", r.ffmpeg_cmd, NULL };
- *
- * r.subprocess_result = subprocess_create(command_line, 0, &r.subprocess);
- * assert_eq(r.subprocess_result, 0, %d);
- *
- * size_t bytes_read = 0;
- *
- * do {
- *  bytes_read = subprocess_read_stdout(&r.subprocess, r.stdout_buffer, READ_BUFFER_SIZE - 1);
- *  stringbuffer_append_string(r.STDOUT_BUFFER, r.stdout_buffer);
- *  r.stdout_bytes_read += bytes_read;
- * } while (bytes_read != 0);
- * bytes_read = 0;
- * do {
- *  bytes_read = subprocess_read_stderr(&r.subprocess, r.stderr_buffer, READ_BUFFER_SIZE - 1);
- *  stringbuffer_append_string(r.STDERR_BUFFER, r.stderr_buffer);
- *  r.stderr_bytes_read += bytes_read;
- * } while (bytes_read != 0);
- *
- * r.subprocess_join_result    = subprocess_join(&r.subprocess, &r.subprocess_exited);
- * r.animated_gif_file_created = fsio_file_exists(config->animated_gif_file);
- *
- * r.READ_STDOUT = stringbuffer_to_string(r.STDOUT_BUFFER);
- * r.READ_STDERR = stringbuffer_to_string(r.STDERR_BUFFER);
- *
- * stringbuffer_release(r.STDOUT_BUFFER);
- * stringbuffer_release(r.STDERR_BUFFER);
- *
- * assert_eq(r.subprocess_result, 0, %d);
- * assert_eq(r.subprocess_exited, 0, %d);
- * assert_eq(r.animated_gif_file_created, true, %d);
- *
- * free(r.READ_STDOUT);
- * free(r.READ_STDERR);
- *
- * return(r.animated_gif_file_created);
- * }
- */
-
 #define RECORDED_FRAMES_QTY    vector_size(capture_config->recorded_frames_v)
+static const char      *tempdir_path = NULL;
+static struct args_t   execution_args;
+static pthread_mutex_t *capture_config_mutex;
+static pthread_t       capture_thread, wait_ctrl_d_thread;
+static chan_t          *done_chan;
+////////////////////////////////////////////////////////////
 static struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {
     return(&(struct recorded_frame_t){
@@ -174,11 +57,11 @@ size_t get_ms_since_last_recorded_frame(struct capture_config_t *capture_config)
   return(timestamp() - latest_recoded_frame->timestamp + latest_recoded_frame->record_dur);
 }
 
-size_t get_next_frame_interval_ms(struct capture_config_t *capture_config){
+static size_t get_next_frame_interval_ms(struct capture_config_t *capture_config){
   return(1000 / capture_config->frames_per_second);
 }
 
-size_t get_next_frame_timestamp(struct capture_config_t *capture_config){
+static size_t get_next_frame_timestamp(struct capture_config_t *capture_config){
   struct recorded_frame_t *latest_recoded_frame = get_latest_recorded_frame(capture_config);
 
   if (latest_recoded_frame->timestamp == 0) {
@@ -187,7 +70,7 @@ size_t get_next_frame_timestamp(struct capture_config_t *capture_config){
   return(get_latest_recorded_frame(capture_config)->timestamp + get_next_frame_interval_ms(capture_config));
 }
 
-size_t get_ms_until_next_frame(struct capture_config_t *capture_config){
+static size_t get_ms_until_next_frame(struct capture_config_t *capture_config){
   struct recorded_frame_t *latest_recoded_frame = get_latest_recorded_frame(capture_config);
 
   if (latest_recoded_frame->timestamp == 0) {
@@ -196,7 +79,7 @@ size_t get_ms_until_next_frame(struct capture_config_t *capture_config){
   return(get_next_frame_timestamp(capture_config) - timestamp());
 }
 
-size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
+static size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
   struct recorded_frame_t *first_recorded_frame = get_first_recorded_frame(capture_config);
 
   if (first_recorded_frame->timestamp == 0) {
@@ -206,7 +89,7 @@ size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
 }
 
 ////////////////////////////////////////////////////////////
-void do_capture(void *CAPTURE_CONFIG){
+static void do_capture(void *CAPTURE_CONFIG){
   if (tempdir_path == NULL) {
     tempdir_path = gettempdir();
   }
@@ -215,37 +98,20 @@ void do_capture(void *CAPTURE_CONFIG){
   pthread_mutex_lock(capture_config_mutex);
   bool active = capture_config->active;
 
-  if (execution_args.verbose) {
+  if (execution_args.verbose == true) {
     printf("capturing max %d frames, %d seconds.......\n", capture_config->max_record_frames_qty, capture_config->max_record_duration_seconds);
   }
+  capture_config->started_timestamp = timestamp();
   pthread_mutex_unlock(capture_config_mutex);
-  if (PROGRESS_ENABLED) {
-    /*
-     * progress_t  *progress = progress_new(capture_config->max_record_duration_seconds, PROGRESS_BAR_WIDTH);
-     * {
-     * progress->fmt         = "    Progress (:percent) => {:bar} [:elapsed]";
-     * progress->bg_bar_char = BG_PROGRESS_BAR_CHAR;
-     * progress->bar_char    = PROGRESS_BAR_CHAR;
-     * progress_on(progress, PROGRESS_EVENT_START, db_progress_start);
-     * progress_on(progress, PROGRESS_EVENT_PROGRESS, db_progress);
-     * progress_on(progress, PROGRESS_EVENT_END, db_progress_end);
-     * }
-     */
-  }
-  int cur = 0;
-
   while (true) {
     pthread_mutex_lock(capture_config_mutex);
-    if (capture_config->started_timestamp == 0) {
-      capture_config->started_timestamp = timestamp();
-    }
     active =
       (capture_config->active)
-      && (RECORDED_FRAMES_QTY <= capture_config->max_record_frames_qty)
+      && ((size_t)RECORDED_FRAMES_QTY <= (size_t)(capture_config->max_record_frames_qty))
       && ((size_t)(get_recorded_duration_ms(capture_config) / 1000) < ((size_t)capture_config->max_record_duration_seconds));
     pthread_mutex_unlock(capture_config_mutex);
     if (!active) {
-      if (execution_args.verbose) {
+      if (execution_args.verbose == true) {
         printf("active changed to false.....\n");
       }
       break;
@@ -255,7 +121,7 @@ void do_capture(void *CAPTURE_CONFIG){
     sleep_ms = (since > 0) ? (sleep_ms - since) : sleep_ms;
     sleep_ms = (sleep_ms > 10000000) ? 0 : sleep_ms;
 
-    if (execution_args.verbose) {
+    if (execution_args.verbose == true) {
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "    [Frame Capture]     latest frame ts: %" PRIu64 " (running for %lu/%lums) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums" AC_RESETALL "\n",
               get_latest_recorded_frame(capture_config)->timestamp,
               get_recorded_duration_ms(capture_config), (size_t)capture_config->max_record_duration_seconds * 1000,
@@ -271,7 +137,6 @@ void do_capture(void *CAPTURE_CONFIG){
     asprintf(&SCREENSHOT_FILE, "%s/window-%d-%lu.png", tempdir_path, capture_config->window_id, RECORDED_FRAMES_QTY);
     bool   ok;
     size_t ts = timestamp();
-    //MEASURE(measurement_capture_to_file_image)
 
     switch (execution_args.resize_type) {
     case RESIZE_BY_WIDTH:
@@ -288,33 +153,25 @@ void do_capture(void *CAPTURE_CONFIG){
       ok = capture_to_file_image(capture_config->window_id, SCREENSHOT_FILE);
       break;
     }
-    //END_MEASURE(measurement_capture_to_file_image)
-    //MEASURE_SUMMARY(measurement_capture_to_file_image);
-    assert(ok == true);
-    struct recorded_frame_t *f = malloc(sizeof(struct recorded_frame_t));
+    if (ok != true || fsio_file_size(SCREENSHOT_FILE) < 100) {
+      continue;
+    }
+    struct recorded_frame_t *f = calloc(1, sizeof(struct recorded_frame_t));
     f->timestamp  = timestamp();
     f->record_dur = f->timestamp - ts;
     f->file       = SCREENSHOT_FILE;
 
     pthread_mutex_lock(capture_config_mutex);
     vector_push(capture_config->recorded_frames_v, f);
-    if (PROGRESS_ENABLED) {
-      //progress_value(progress, cur + 1);
-      cur++;
-    }
     pthread_mutex_unlock(capture_config_mutex);
   }
-  if (execution_args.verbose) {
+  if (execution_args.verbose == true) {
     printf("do capture done\n");
-  }
-  if (PROGRESS_ENABLED) {
-    //progress_value(progress, capture_config->max_record_duration_seconds);
-    //progress_free(progress);
   }
   chan_send(done_chan, (void *)NULL);
 } /* do_capture */
 
-void wait_for_control_d(){
+static void wait_for_control_d(){
   struct StringBuffer       *sb;
   struct libterminput_state ctx = { 0 };
   union libterminput_input  input;
@@ -343,11 +200,11 @@ void wait_for_control_d(){
         stringbuffer_append_string(sb, "ctrl+");
       }
       stringbuffer_append_string(sb, input.keypress.symbol);
-      if (execution_args.verbose) {
+      if (execution_args.verbose == true) {
         printf("keypress:'%s'\n", stringbuffer_to_string(sb));
       }
       if (strcmp(stringbuffer_to_string(sb), "ctrl+D") == 0) {
-        if (execution_args.verbose) {
+        if (execution_args.verbose == true) {
           printf("stopping........\n");
         }
         break;
@@ -363,54 +220,37 @@ void wait_for_control_d(){
   chan_send(done_chan, (void *)NULL);
 } /* wait_for_control_d */
 
-bool read_captured_frames(struct capture_config_t *capture_config) {
+static int read_captured_frames(struct capture_config_t *capture_config) {
   if (tempdir_path == NULL) {
     tempdir_path = gettempdir();
   }
   struct Vector *images_v = vector_new();
-//  char          *animated_gif_file;
-  //asprintf(&animated_gif_file, "%s/window-%d-animation.gif", tempdir_path, capture_config->window_id);
   for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
     struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
     f->file_size = fsio_file_size(f->file);
-    fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
-            i,
-            f->timestamp,
-            bytes_to_string(fsio_file_size(f->file)),
-            f->file,
-            f->record_dur
-            );
+    if (execution_args.verbose == true) {
+      fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
+              i,
+              f->timestamp,
+              bytes_to_string(fsio_file_size(f->file)),
+              f->file,
+              f->record_dur
+              );
+    }
 
     vector_push(images_v, (char *)f->file);
   }
-  /*
-   * if (fsio_file_exists(animated_gif_file)) {
-   * fsio_remove(animated_gif_file);
-   * }
-   * assert(fsio_file_exists(animated_gif_file) == false);
-   * struct animated_gif_conversion_config_t *animated_gif_conversion_config = malloc(sizeof(struct animated_gif_conversion_config_t));
-   *
-   * animated_gif_conversion_config->frames_per_second = capture_config->frames_per_second;
-   * animated_gif_conversion_config->animated_gif_file = animated_gif_file;
-   * animated_gif_conversion_config->images_v          = images_v;
-   * animated_gif_conversion_config->window_id         = capture_config->window_id;
-   * animated_gif_conversion_config->ffmpeg_log_level  = "warning";
-   * animated_gif_conversion_config->debug_mode        = execution_args.verbose;
-   * convert_images_to_animated_gif_ffmpeg(animated_gif_conversion_config);
-   * free(animated_gif_conversion_config);
-   * assert(fsio_file_exists(animated_gif_file) == true);
-   */
-  return(true);
+  return(0);
 }
 
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   done_chan      = chan_init(0);
 
-  capture_config_mutex = malloc(sizeof(pthread_mutex_t));
+  capture_config_mutex = calloc(1, sizeof(pthread_mutex_t));
 
   pthread_mutex_init(capture_config_mutex, NULL);
-  struct capture_config_t *capture_config = malloc(sizeof(struct capture_config_t));
+  struct capture_config_t *capture_config = calloc(1, sizeof(struct capture_config_t));
 
   pthread_mutex_lock(capture_config_mutex);
   capture_config->active                      = true;
@@ -438,7 +278,7 @@ int capture_window(void *ARGS) {
   chan_recv(done_chan, (void *)NULL);
   chan_dispose(done_chan);
 
-  if (execution_args.verbose) {
+  if (execution_args.verbose == true) {
     fprintf(stderr, AC_RESETALL AC_GREEN "Capture Stopped\n");
   }
   pthread_mutex_lock(capture_config_mutex);
@@ -446,14 +286,11 @@ int capture_window(void *ARGS) {
   capture_config->active = false;
   pthread_mutex_unlock(capture_config_mutex);
   pthread_join(&capture_thread, NULL);
-  if (execution_args.verbose) {
+  if (execution_args.verbose == true) {
     fprintf(stderr, AC_RESETALL AC_GREEN "Captured %lu frames\n", vector_size(capture_config->recorded_frames_v));
   }
 
-  int ok = read_captured_frames(capture_config);
-  assert(ok == true);
-
-  return(0);
+  return(read_captured_frames(capture_config));
 } /* capture_window */
 
 int list_windows(void *ARGS) {
@@ -551,8 +388,3 @@ int list_windows(void *ARGS) {
 
   return(0);
 } /* list_windows */
-
-int wrec0() {
-  printf("wrec0............\n");
-  return(0);
-}

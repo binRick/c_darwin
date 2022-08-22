@@ -25,7 +25,6 @@
 #include "tiny-regex-c/re.h"
 #include "window-utils/window-utils.h"
 //////////////////////////////////////////
-int wrec0();
 int list_windows();
 int capture_window();
 

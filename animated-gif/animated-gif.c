@@ -127,11 +127,10 @@ end_tinydir:
     f           = &(ft->sorted_images[i]);
     next_f      = (i < (ft->sorted_images_qty - 1)) ? (&(ft->sorted_images[i + 1])) : (NULL);
     f->frame_ms = (next_f != NULL && (next_f->file_creation_ts > 0) && (f->file_creation_ts > 0))
-      ? (((next_f->file_creation_ts - f->file_creation_ts)) / (1000))
+      ? (((next_f->file_creation_ts - f->file_creation_ts)) / (1000 * 1000))
       : 0;
     ft->total_ms += f->frame_ms;
   }
-  f                       = NULL;
   ft->avg_ms              = ft->total_ms / (ft->sorted_images_qty - 1);
   ft->total_ms            = 0;
   msf_gif_alpha_threshold = ft->msf_gif_alpha_threshold;
@@ -141,11 +140,9 @@ end_tinydir:
     if (!f) {
       continue;
     }
-    f->started_ms = timestamp();
     f->frame_ms   = (f->frame_ms > 0) ? f->frame_ms : (ft->avg_ms);
     ft->total_ms += f->frame_ms;
   }
-  f = NULL;
   if (ft->verbose_mode) {
     printf(AC_YELLOW "Creating %dx%d Animated gif with %lu images of %s, %lu avg interval" AC_RESETALL "\n",
            ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size),
@@ -154,15 +151,13 @@ end_tinydir:
   }
   ft->avg_ms = ft->total_ms / ft->sorted_images_qty;
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {
-    f      = &(ft->sorted_images[i]);
-    ft->fp = fopen(f->file_path, "r");
+    f             = &(ft->sorted_images[i]);
+    f->started_ms = timestamp();
+    ft->fp        = fopen(f->file_path, "r");
     if (!ft->fp) {
       continue;
     }
-    int h, w;
-    f->stb_pixels               = stbi_load_from_file(ft->fp, &w, &h, &f->stb_format, ft->stb_req_format);
-    f->image_dimensions->width  = w;
-    f->image_dimensions->height = h;
+    f->stb_pixels = stbi_load_from_file(ft->fp, &(f->image_dimensions->width), &(f->image_dimensions->height), &f->stb_format, ft->stb_req_format);
     fclose(ft->fp);
     if (!f->stb_pixels) {
       continue;
@@ -189,7 +184,6 @@ end_tinydir:
              );
     }
   }
-  f = NULL;
   MsfGifResult gifResult = msf_gif_end(gifState);
 
   if (gifResult.data != NULL) {
@@ -197,15 +191,17 @@ end_tinydir:
     if (ft->fp) {
       fwrite(gifResult.data, gifResult.dataSize, 1, ft->fp);
       fclose(ft->fp);
-      ft->success = true;
+      ft->animated_gif_file_size = fsio_file_size(ft->animated_gif_file_name);
+      if (ft->animated_gif_file_size > 0) {
+        ft->success = true;
+      }
     }
     msf_gif_free(gifResult);
   }
-  ft->dur_ms                 = timestamp() - ft->started_ms;
-  ft->animated_gif_file_size = fsio_file_size(ft->animated_gif_file_name);
-  if (ft->success) {
+  ft->dur_ms = timestamp() - ft->started_ms;
+  if (true == ft->success) {
     if (ft->verbose_mode) {
-      printf(AC_GREEN "Rendered %s Animated Gif %s (%s, %dx%d, %lu frames, %.1fFPS) from %lu images (%lu million pixels, %lu million colors, %s) in %s!" AC_RESETALL "\n",
+      printf(AC_GREEN "Rendered %s Animated Gif %s (%s, %dx%d, %lu frames, avg %.1fFPS) from %lu images (%lu million pixels, %lu million colors, %s) in %s!" AC_RESETALL "\n",
              milliseconds_to_string(ft->total_ms),
              ft->animated_gif_file_name,
              bytes_to_string(ft->animated_gif_file_size),
