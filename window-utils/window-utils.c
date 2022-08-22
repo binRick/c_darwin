@@ -9,6 +9,7 @@
 #include "window-utils/window-utils.h"
 static int emptyWindowNameAllowed(char *appName);
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
+const bool DEBUG_MODE = false;
 
 char *window_title(char *windowRef){
   char      *title = NULL;
@@ -110,11 +111,8 @@ window_t *get_window_id(const int WINDOW_ID){
 }
 
 bool move_window(CFDictionaryRef w, const int X, const int Y){
-  CFArrayRef     appWindowList;
   AXUIElementRef app = AXWindowFromCGWindow(w);
   CGPoint        newPosition;
-  CGSize         size          = CGSizeMake(X, Y);
-  CGRect         displayBounds = CGDisplayBounds(CGMainDisplayID());
 
   newPosition.x = X;
   newPosition.y = Y;
@@ -261,28 +259,26 @@ void MoveWindow(CFDictionaryRef window, void *ctxPtr) {
 } /* MoveWindow */
 
 static int emptyWindowNameAllowed(char *appName) {
-  log_debug("emptyWindowNameAllowed.......");
   return(0 == strcmp(appName, "Messages"));
 }
 
 CGPoint CGWindowGetPosition(CFDictionaryRef window) {
-  log_debug("CGWindowGetPosition.......");
   CFDictionaryRef bounds = CFDictionaryGetValue(window, kCGWindowBounds);
   int             x      = CFDictionaryGetInt(bounds, CFSTR("X"));
   int             y      = CFDictionaryGetInt(bounds, CFSTR("Y"));
+
   return(CGPointMake(x, y));
 }
 
 CGSize CGWindowGetSize(CFDictionaryRef window) {
-  log_debug("CGWindowGetSize.......");
   CFDictionaryRef bounds = CFDictionaryGetValue(window, kCGWindowBounds);
   int             width  = CFDictionaryGetInt(bounds, CFSTR("Width"));
   int             height = CFDictionaryGetInt(bounds, CFSTR("Height"));
+
   return(CGSizeMake(width, height));
 }
 
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
-  log_debug("AXWindowFromCGWindow.......");
   CGWindowID     targetWindowId, actualWindowId;
   pid_t          pid;
   AXUIElementRef app, appWindow, foundAppWindow;
@@ -338,8 +334,6 @@ void AXWindowGetValue(AXUIElementRef window,
                       void           *valuePtr) {
   AXValueRef attrValue;
 
-  log_debug("AXWindowGetValue.......");
-
   AXUIElementCopyAttributeValue(window, attrName, (CFTypeRef *)&attrValue);
   AXValueGetValue(attrValue, AXValueGetType(attrValue), valuePtr);
   CFRelease(attrValue);
@@ -353,7 +347,6 @@ CGPoint AXWindowGetPosition(AXUIElementRef window) {
 }
 
 void AXWindowSetPosition(AXUIElementRef window, CGPoint position) {
-  log_debug("AXWindowSetPosition.......");
   AXValueRef attrValue = AXValueCreate(kAXValueCGPointType, &position);
 
   AXUIElementSetAttributeValue(window, kAXPositionAttribute, attrValue);
@@ -361,7 +354,6 @@ void AXWindowSetPosition(AXUIElementRef window, CGPoint position) {
 }
 
 CGSize AXWindowGetSize(AXUIElementRef window) {
-  log_debug("AXWindowGetSize.......");
   CGSize size;
 
   AXWindowGetValue(window, kAXSizeAttribute, &size);
@@ -369,7 +361,6 @@ CGSize AXWindowGetSize(AXUIElementRef window) {
 }
 
 void AXWindowSetSize(AXUIElementRef window, CGSize size) {
-  log_debug("AXWindowSetSize.......");
   AXValueRef attrValue = AXValueCreate(kAXValueCGSizeType, &size);
 
   AXUIElementSetAttributeValue(window, kAXSizeAttribute, attrValue);
@@ -392,7 +383,6 @@ int get_windows_qty(void){
 int EnumerateWindows(char *pattern,
                      void ( *callback )(CFDictionaryRef window, void *callback_data),
                      void *callback_data) {
-  log_debug("EnumerateWindows.......");
   int             patternLen, subPatternLen, count, i, layer;
   char            *subPattern, *starL, *starR, *appName, *windowName, *title;
   CFArrayRef      windowList;
@@ -461,24 +451,24 @@ skip:
 
 char *windowTitle(char *appName, char *windowName) {
   size_t titleSize;
-  char   *title;
-
-  log_info("%s> windowTitle: |app:%s|window:%s", appName, appName, windowName);
+  char   *windowTitle;
 
   if (!appName || !*appName) {
-    title  = (char *)malloc(1);
-    *title = '\0';
+    windowTitle = NULL;
   } else if (!windowName || !*windowName) {
-    titleSize = strlen(appName) + 1;
-    title     = (char *)malloc(titleSize);
-    strncpy(title, appName, titleSize);
+    titleSize   = strlen(appName) + 1;
+    windowTitle = (char *)malloc(titleSize);
+    strncpy(windowTitle, appName, titleSize);
   } else {
-    titleSize = strlen(appName) + strlen(" - ") + strlen(windowName) + 1;
-    title     = (char *)malloc(titleSize);
-    snprintf(title, titleSize, "%s - %s", appName, windowName);
+    titleSize   = strlen(appName) + strlen(" - ") + strlen(windowName) + 1;
+    windowTitle = (char *)malloc(titleSize);
+    snprintf(windowTitle, titleSize, "%s - %s", appName, windowName);
+  }
+  if (DEBUG_MODE == true) {
+    log_info("     |appName:%s|windowName:%s|windowTitle:%s|", appName, windowName, windowTitle);
   }
 
-  return(title);
+  return(windowTitle);
 }
 
 void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
@@ -505,7 +495,7 @@ void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
       json_object_dotset_number(root_object, "position.y", (int)position.y);
       pretty_serialized_string = json_serialize_to_string_pretty(root_value);
       serialized_string        = json_serialize_to_string(root_value);
-      log_info(AC_RESETALL AC_REVERSED AC_YELLOW_BLACK "%s" AC_RESETALL, pretty_serialized_string);
+      fprintf(stderr, AC_RESETALL AC_REVERSED AC_YELLOW_BLACK "%s" AC_RESETALL, pretty_serialized_string);
       fprintf(stdout, "%s", serialized_string);
     }else if (ctx->longDisplay) {
       fprintf(stdout,
@@ -703,7 +693,7 @@ char *front_window_owner(void) {
     if (window_layer == 0) {
       char        *window_owner;
       CFStringRef window_owner_ref = CFDictionaryGetValue(window, kCGWindowOwnerName);
-      //window_owner = CFStringCopyUTF8String(window_owner_ref);
+      window_owner = cstring_from_CFString(window_owner_ref);
       CFRelease(window_owner_ref);
       return(window_owner);
     }

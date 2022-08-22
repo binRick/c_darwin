@@ -42,39 +42,6 @@ extern CFStringRef CGSCopyManagedDisplayForSpace(const int cid, uint64_t spid);
 extern void CGSShowSpaces(int cid, CFArrayRef spaces);
 extern void CGSHideSpaces(int cid, CFArrayRef spaces);
 
-typedef struct {
-  const char   *text;
-  unsigned int length;
-} Token;
-
-static float token_to_float(Token token){
-  float result = 0.0f;
-  char  buffer[token.length + 1];
-
-  memcpy(buffer, token.text, token.length);
-  buffer[token.length] = '\0';
-  sscanf(buffer, "%f", &result);
-  return(result);
-}
-
-static Token get_token(const char **message){
-  Token token;
-
-  token.text = *message;
-  while (**message && !isspace(**message)) {
-    ++(*message);
-  }
-  token.length = *message - token.text;
-
-  if (isspace(**message)) {
-    ++(*message);
-  } else {
-    // NOTE(koekeishiya): don't go past the null-terminator
-  }
-
-  return(token);
-}
-
 ///////////////////////////////////////////////////////
 static bool cgimage_save_png(const CGImageRef image, const char *filename) {
   bool                  success = false;
@@ -163,24 +130,22 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
   int    capture_rect_y      = frame.origin.y;
   int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
   int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
-  if (DEBUG_IMAGE_RESIZE) {
-    log_debug(
-      "\n\t|window size          :   %dx%d"
-      "\n\t|frame  size          :   %dx%d"
-      "\n\t|frame  origin        :   %dx%d"
-      "\n\t|capture rect"
-      "\n\t               x      :    %d"
-      "\n\t               y      :    %d"
-      "\n\t               width  :    %d"
-      "\n\t               height :    %d"
-      "\n",
-      (int)W_SIZE.height, (int)W_SIZE.width,
-      (int)frame.size.width, (int)frame.size.height,
-      (int)frame.origin.x, (int)frame.origin.y,
-      capture_rect_x, capture_rect_y,
-      capture_rect_width, capture_rect_height
-      );
-  }
+  log_debug(
+    "\n\t|window size          :   %dx%d"
+    "\n\t|frame  size          :   %dx%d"
+    "\n\t|frame  origin        :   %dx%d"
+    "\n\t|capture rect"
+    "\n\t               x      :    %d"
+    "\n\t               y      :    %d"
+    "\n\t               width  :    %d"
+    "\n\t               height :    %d"
+    "\n",
+    (int)W_SIZE.height, (int)W_SIZE.width,
+    (int)frame.size.width, (int)frame.size.height,
+    (int)frame.origin.x, (int)frame.origin.y,
+    capture_rect_x, capture_rect_y,
+    capture_rect_width, capture_rect_height
+    );
 
   CGImageRef img = CGWindowListCreateImage(CGRectMake(capture_rect_x, capture_rect_y, capture_rect_width, capture_rect_height),
                                            kCGWindowListOptionIncludingWindow,
@@ -305,4 +270,116 @@ char *resize_type_name(const int RESIZE_TYPE){
   }
   return(RESIZE_TYPE_NAME);
 }
+
+struct capture_result_t *request_window_capture(struct capture_request_t *capture_request){
+  struct capture_result_t *res = calloc(1, sizeof(struct capture_result_t));
+  {
+    res->data                = calloc(1, sizeof(struct capture_result_data_t));
+    res->data->file_path     = NULL;
+    res->request             = capture_request;
+    res->success             = false;
+    res->save_file_success   = false;
+    res->capture_dur         = 0;
+    res->resize_dur          = 0;
+    res->write_file_dur      = 0;
+    res->total_dur           = 0;
+    res->request_received    = timestamp();
+    res->request->debug_mode = (res->request->debug_mode == true)
+                      ? true
+                      : (getenv("DEBUG") != NULL)
+                        ? true
+                        : false;
+  }
+
+  {
+    res->capture_started          = timestamp();
+    res->data->captured_image_ref = capture_window_id_cgimageref(res->request->window_id);
+    res->data->captured_width     = CGImageGetWidth(res->data->captured_image_ref);
+    res->data->captured_height    = CGImageGetHeight(res->data->captured_image_ref);
+    res->capture_dur              = timestamp() - res->capture_started;
+  }
+  {
+    if (false) {
+      res->data->resized_image_ref = resize_cgimage(
+        res->data->captured_image_ref, res->data->resized_width, res->data->resized_height
+        );
+    }
+    res->data->resized_width  = CGImageGetWidth(res->data->resized_image_ref);
+    res->data->resized_height = CGImageGetWidth(res->data->resized_image_ref);
+    res->resize_dur           = timestamp() - res->resize_started;
+  }
+  {
+    switch (res->request->resize_type) {
+    case RESIZE_BY_FACTOR:
+      res->resize_started          = timestamp();
+      res->request->width          = res->data->captured_width / res->request->resize_factor;
+      res->request->height         = res->data->captured_height / res->request->resize_factor;
+      res->data->resized_image_ref = resize_cgimage(res->data->captured_image_ref,
+                                                    res->request->width, res->request->height
+                                                    );
+      res->data->resized_width  = CGImageGetWidth(res->data->resized_image_ref);
+      res->data->resized_height = CGImageGetWidth(res->data->resized_image_ref);
+      break;
+
+    case RESIZE_BY_NONE:
+      res->data->resized_image_ref = res->data->captured_image_ref;
+    case RESIZE_BY_WIDTH:
+    case RESIZE_BY_HEIGHT:
+    default:
+      goto RETURN_FAILURE;
+      break;
+    }
+  }
+  {
+    switch (res->request->mode) {
+    case CAPTURE_REQUEST_MODE_WRITE_FILE_RETURN_RESULT:
+    case CAPTURE_REQUEST_MODE_WRITE_FILE_CALLBACK_RESULT:
+      res->write_file_started = timestamp();
+      res->save_file_success  = cgimage_save_png(res->data->resized_image_ref, res->request->file_path);
+      res->write_file_dur     = timestamp() - res->write_file_started;
+      if (res->save_file_success != true || fsio_file_exists(res->request->file_path) != true) {
+        goto RETURN_FAILURE;
+      }
+      res->data->file_path = res->request->file_path;
+      res->data->file_size = fsio_file_size(res->data->file_path);
+      res->success         = true;
+      if (res->request->mode == CAPTURE_REQUEST_MODE_CALLBACK_RESULT) {
+        goto CALLBACK_RESULT;
+      }
+      break;
+
+    case CAPTURE_REQUEST_MODE_RETURN_RESULT:
+      if (1 != 1) {
+        goto RETURN_FAILURE;
+      }
+
+      res->success = true;
+      break;
+
+    case CAPTURE_REQUEST_MODE_CALLBACK_RESULT:
+      if (1 != 1) {
+        goto RETURN_FAILURE;
+      }
+      res->success = true;
+      break;
+
+    default:
+      goto RETURN_FAILURE;
+      break;
+    }
+  }
+
+  res->total_dur = timestamp() - res->request_received;
+  return(res);
+
+CALLBACK_RESULT:
+  res->total_dur = res->request_received - timestamp();
+  res->request->callback_function(res);
+  return(res);
+
+RETURN_FAILURE:
+  res->success = false;
+  return(res);
+} /* request_capture */
+
 ///////////////////////////////////////////////////////
