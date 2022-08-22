@@ -25,7 +25,19 @@
 #include "tiny-regex-c/re.h"
 #include "window-utils/window-utils.h"
 //////////////////////////////////////////
+enum resize_type_t {
+  RESIZE_BY_WIDTH,
+  RESIZE_BY_HEIGHT,
+  RESIZE_BY_FACTOR,
+  RESIZE_BY_NONE,
+  RESIZE_TYPES_QTY
+} resize_type_t;
+struct img_data {
+  size_t  width;
+  size_t  height;
+  uint8_t *rgba;
+};
+//////////////////////////////////////////
 int list_windows();
 int capture_window();
-
 //////////////////////////////////////////

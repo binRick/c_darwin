@@ -9,5 +9,5 @@ unsigned char *capture_to_file_image_data(const int WINDOW_ID);
 bool capture_to_file_image_resize_factor(const int WINDOW_ID, const char *FILE_NAME, int RESIZE_FACTOR);
 bool capture_to_file_image_resize_width(const int WINDOW_ID, const char *FILE_NAME, int RESIZE_WIDTH);
 bool capture_to_file_image_resize_height(const int WINDOW_ID, const char *FILE_NAME, int RESIZE_HEIGHT);
-
+char *resize_type_name(const int RESIZE_TYPE);
 //////////////////////////////////////////////////////

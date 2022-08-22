@@ -1,4 +1,5 @@
 #pragma once
+#include "capture/capture.h"
 #include "cargs/include/cargs.h"
 #include "wrec-utils/wrec-utils.h"
 #include <ctype.h>
@@ -10,24 +11,6 @@
 #include <string.h>
 #include <sys/time.h>
 ///////////////////////////////////
-enum resize_type_t {
-  RESIZE_BY_WIDTH,
-  RESIZE_BY_HEIGHT,
-  RESIZE_BY_FACTOR,
-  RESIZE_NONE,
-} resize_type_t;
-
-static char *resize_type_name(const int RESIZE_TYPE){
-  char *RESIZE_TYPE_NAME = "UNKNOWN";
-
-  switch (RESIZE_TYPE) {
-  case RESIZE_BY_WIDTH:  RESIZE_TYPE_NAME  = "WIDTH"; break;
-  case RESIZE_BY_HEIGHT:  RESIZE_TYPE_NAME = "HEIGHT"; break;
-  case RESIZE_BY_FACTOR:  RESIZE_TYPE_NAME = "FACTOR"; break;
-  }
-  return(RESIZE_TYPE_NAME);
-}
-///////////////////////////////////
 #define DEFAULT_VERBOSE                        false
 #define DEFAULT_MODE                           "list"
 #define DEFAULT_WINDOW_ID                      0
@@ -37,7 +20,7 @@ static char *resize_type_name(const int RESIZE_TYPE){
 #define DEFAULT_MODE_LIST                      false
 #define DEFAULT_MODE_CAPTURE                   false
 #define DEFAULT_MODE_DEBUG_ARGS                false
-#define DEFAULT_RESIZE_TYPE                    RESIZE_NONE
+#define DEFAULT_RESIZE_TYPE                    RESIZE_BY_NONE
 #define DEFAULT_RESIZE_VALUE                   1
 #define DEFAULT_APPLICATION_NAME_GLOB          "*"
 ///////////////////////////////////

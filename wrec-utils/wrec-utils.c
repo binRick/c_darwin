@@ -137,7 +137,9 @@ static void do_capture(void *CAPTURE_CONFIG){
     asprintf(&SCREENSHOT_FILE, "%s/window-%d-%lu.png", tempdir_path, capture_config->window_id, RECORDED_FRAMES_QTY);
     bool   ok;
     size_t ts = timestamp();
-
+    if (execution_args.resize_type == RESIZE_BY_FACTOR && execution_args.resize_value == 1) {
+      execution_args.resize_type = RESIZE_BY_NONE;
+    }
     switch (execution_args.resize_type) {
     case RESIZE_BY_WIDTH:
       ok = capture_to_file_image_resize_width(capture_config->window_id, SCREENSHOT_FILE, execution_args.resize_value);
@@ -148,7 +150,7 @@ static void do_capture(void *CAPTURE_CONFIG){
     case RESIZE_BY_FACTOR:
       ok = capture_to_file_image_resize_factor(capture_config->window_id, SCREENSHOT_FILE, execution_args.resize_value);
       break;
-    case RESIZE_NONE:
+    case RESIZE_BY_NONE:
     default:
       ok = capture_to_file_image(capture_config->window_id, SCREENSHOT_FILE);
       break;
