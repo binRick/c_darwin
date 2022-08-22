@@ -25,8 +25,8 @@ void __attribute__((constructor)) __constructor__msf_gif_test();
 void __attribute__((destructor)) __destructor__msf_gif_test();
 void __msf_gif_test__setup_executable_path(const char **argv);
 struct file_time_t {
-  long unsigned             ts, render_ms, started_ms, frame_centiseconds;
-  char                      *path;
+  long unsigned             file_creation_ts, stb_render_ms, started_ms, frame_centiseconds;
+  char                      *file_path;
   size_t                    file_size;
   int                       stb_format, stb_depth, stb_pitch;
   unsigned char             *stb_pixels;
@@ -47,12 +47,13 @@ struct file_times_t {
   tinydir_file       *td_file;
   tinydir_dir        *td_dir;
   char               *animated_gif_file_name;
+  bool               success;
 };
 
 int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2){
-  int ret = (e1->ts > e2->ts)
+  int ret = (e1->file_creation_ts > e2->file_creation_ts)
               ? 1
-              : (e1->ts < e2->ts)
+              : (e1->file_creation_ts < e2->file_creation_ts)
                 ? -1
                 : 0;
 
@@ -63,18 +64,20 @@ TEST t_tinydir_0(void *PATH){
   struct file_time_t  *f, *next_f;
   struct file_times_t *ft = malloc(sizeof(struct file_times_t));
   {
+    ft->success                = false;
+    ft->started_ms             = timestamp();
     ft->gifState               = calloc(1, sizeof(MsfGifState));
     ft->td_file                = calloc(1, sizeof(tinydir_file));
     ft->td_dir                 = calloc(1, sizeof(tinydir_dir));
+    ft->files_v                = vector_new();
     ft->animated_gif_file_name = "MyGif.gif";
     ft->stb_req_format         = STBI_rgb_alpha;
-    ft->started_ms             = timestamp();
     ft->total_ms               = 0;
+    ft->avg_ms                 = 0;
     ft->max_width              = 0;
     ft->max_height             = 0;
     ft->sorted_images_qty      = 0;
     ft->sorted_images_size     = 0;
-    ft->files_v                = vector_new();
   }
 
   if (tinydir_open(ft->td_dir, (char *)PATH) == -1) {
@@ -91,11 +94,11 @@ TEST t_tinydir_0(void *PATH){
     if (!ft->td_file->is_dir) {
       f            = calloc(1, sizeof(struct file_time_t));
       f->file_info = calloc(1, sizeof(struct stat));
-      f->path      = strdup(ft->td_file->path);
-      if (!f->path) {
+      f->file_path = strdup(ft->td_file->path);
+      if (!f->file_path) {
         continue;
       }
-      f->file_size = fsio_file_size(f->path);
+      f->file_size = fsio_file_size(f->file_path);
       if (f->file_size < 32) {
         continue;
       }
@@ -103,8 +106,8 @@ TEST t_tinydir_0(void *PATH){
       if (!f->file_info) {
         continue;
       }
-      f->ts               = (f->file_info->st_birthtimespec.tv_sec * 1000000000) + f->file_info->st_birthtimespec.tv_nsec;
-      f->image_dimensions = get_png_dimensions(f->path);
+      f->file_creation_ts = (f->file_info->st_birthtimespec.tv_sec * 1000000000) + f->file_info->st_birthtimespec.tv_nsec;
+      f->image_dimensions = get_png_dimensions(f->file_path);
       if (!f->image_dimensions) {
         continue;
       }
@@ -136,15 +139,14 @@ end_tinydir:
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {
     f                     = &(ft->sorted_images[i]);
     next_f                = (i < ft->sorted_images_qty) ? (&(ft->sorted_images[i + 1])) : (NULL);
-    f->frame_centiseconds = (next_f != NULL && next_f->ts > 0 && f->ts > 0) ? ((next_f->ts - f->ts) / 1000000 / 10) : 0;
+    f->frame_centiseconds = (next_f != NULL && next_f->file_creation_ts > 0 && f->file_creation_ts > 0) ? ((next_f->file_creation_ts - f->file_creation_ts) / 1000000 / 10) : 0;
     ft->total_ms         += f->frame_centiseconds * 10;
-    printf("Sorted File #%lu :: %s :: %ld :: %dx%d ::\n",
-           i + 1, f->path, f->ts, f->image_dimensions->width, f->image_dimensions->height
-           );
   }
-  ft->avg_ms = ft->total_ms / ft->sorted_images_qty;
-
-  printf("Creating %dx%d Animated gif with %lu images of %s\n", ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size));
+  ft->avg_ms   = ft->total_ms / (ft->sorted_images_qty - 1);
+  ft->total_ms = 0;
+  printf(AC_YELLOW "Creating %dx%d Animated gif with %lu images of %s" AC_RESETALL "\n",
+         ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size)
+         );
   msf_gif_begin(ft->gifState, ft->max_width, ft->max_height);
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {
     f = &(ft->sorted_images[i]);
@@ -153,7 +155,8 @@ end_tinydir:
     }
     f->started_ms         = timestamp();
     f->frame_centiseconds = (f->frame_centiseconds > 0) ? f->frame_centiseconds : (ft->avg_ms / 10);
-    ft->fp                = fopen(ft->sorted_images[i].path, "r");
+    ft->total_ms         += f->frame_centiseconds * 10;
+    ft->fp                = fopen(ft->sorted_images[i].file_path, "r");
     if (!ft->fp) {
       continue;
     }
@@ -166,35 +169,42 @@ end_tinydir:
     f->stb_pitch = (ft->stb_req_format == STBI_rgb) ? (3 * f->image_dimensions->height) : (4 * f->image_dimensions->width);
     msf_gif_frame(ft->gifState, f->stb_pixels, (int)f->frame_centiseconds, f->stb_depth, f->stb_pitch);
     free(f->stb_pixels);
-    f->render_ms = timestamp() - f->started_ms;
-    printf("Added %s (%dx%d) %s frame of %lu centiseconds (%s) in %s\n",
+    f->stb_render_ms = timestamp() - f->started_ms;
+    printf(AC_YELLOW "Added %s (%dx%d) %s %s frame in %s" AC_RESETALL "\n",
            bytes_to_string(f->file_size),
            f->image_dimensions->width, f->image_dimensions->height,
-           bytes_to_string(f->file_size), f->frame_centiseconds,
+           bytes_to_string(f->file_size),
            milliseconds_to_string(f->frame_centiseconds * 10),
-           milliseconds_to_string(f->render_ms)
+           milliseconds_to_string(f->stb_render_ms)
            );
   }
   ft->result = msf_gif_end(ft->gifState);
-  ft->dur_ms = timestamp() - ft->started_ms;
   if (ft->result.data != NULL) {
     ft->fp = fopen(ft->animated_gif_file_name, "wb");
     if (ft->fp) {
       fwrite(ft->result.data, ft->result.dataSize, 1, ft->fp);
       fclose(ft->fp);
+      ft->success = true;
     }
     msf_gif_free(ft->result);
   }
-  printf(AC_GREEN "Rendered %s byte %s %dx%d %s from %lu images of %s in %s!" AC_RESETALL "\n",
-         bytes_to_string(ft->result.dataSize),
-         milliseconds_to_string(ft->total_ms),
-         ft->max_width, ft->max_height,
-         ft->animated_gif_file_name,
-         ft->sorted_images_qty,
-         bytes_to_string(ft->sorted_images_size),
-         milliseconds_to_string(ft->dur_ms)
-         );
-  PASS();
+  ft->dur_ms = timestamp() - ft->started_ms;
+  if (ft->success) {
+    printf(AC_GREEN "Rendered %s %dx%d %s Animated GIF of %lu frames " AC_BLUE "%s" AC_GREEN " @ %.1fFPS from %lu images of %s in %s!" AC_RESETALL "\n",
+           bytes_to_string(ft->result.dataSize),
+           ft->max_width, ft->max_height,
+           milliseconds_to_string(ft->total_ms),
+           ft->sorted_images_qty,
+           ft->animated_gif_file_name,
+           (float)(((float)1) / ((float)((((float)(ft->total_ms * 1000) / ((float)ft->sorted_images_qty)))) / (1000 * 1000))),
+           vector_size(ft->files_v),
+           bytes_to_string(ft->sorted_images_size),
+           milliseconds_to_string(ft->dur_ms)
+           );
+    PASS();
+  }else{
+    FAIL();
+  }
 } /* t_tinydir_0 */
 
 GREATEST_MAIN_DEFS();

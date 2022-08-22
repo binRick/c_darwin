@@ -16,7 +16,6 @@
 #include "bytes/bytes.h"
 #include "c_dbg/dbg.h"
 #include "c_string_buffer/include/stringbuffer.h"
-#include "c_string_buffer/include/stringbuffer.h"
 #include "capture/capture.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
@@ -53,114 +52,100 @@ pthread_mutex_t *capture_config_mutex;
 pthread_t       capture_thread, wait_ctrl_d_thread;
 chan_t          *done_chan;
 ////////////////////////////////////////////////////////////
-
-struct animated_gif_conversion_config_t {
-  struct Vector *images_v;
-  char          *animated_gif_file;
-  size_t        frames_per_second;
-  size_t        window_id;
-  char          *ffmpeg_log_level;
-  int           ffmpeg_crop_height;
-  int           ffmpeg_loop_qty;
-  bool          debug_mode;
-};
-
-struct animated_gif_conversion_result_t {
-  struct Vector        *images_v;
-  char                 *ffmpeg_path, *ffmpeg_cmd;
-  size_t               window_id;
-  struct subprocess_s  subprocess;
-  int                  subprocess_result;
-  int                  subprocess_join_result;
-  int                  subprocess_exited;
-  bool                 animated_gif_file_created;
-  char                 *READ_STDOUT, *READ_STDERR;
-  struct  StringBuffer *STDOUT_BUFFER, *STDERR_BUFFER;
-  size_t               stdout_bytes_read, stderr_bytes_read;
-  char                 stdout_buffer[READ_BUFFER_SIZE], stderr_buffer[READ_BUFFER_SIZE];
-};
-
-static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion_config_t *config){
-  if (tempdir_path == NULL) {
-    tempdir_path = gettempdir();
-  }
-  struct animated_gif_conversion_result_t r = {
-    .ffmpeg_path               = (char *)which_path("ffmpeg", getenv("PATH")),
-    .ffmpeg_cmd                = NULL,
-    .subprocess_result         = -1,
-    .subprocess_exited         = -1,
-    .subprocess                = NULL,
-    .animated_gif_file_created = false,
-    .STDOUT_BUFFER             = stringbuffer_new(),
-    .STDERR_BUFFER             = stringbuffer_new(),
-    .stdout_bytes_read         = 0,
-    .stderr_bytes_read         = 0,
-    .stdout_buffer             = { 0 },
-    .stderr_buffer             = { 0 },
-  };
-
-  asprintf(&r.ffmpeg_cmd, "env AV_LOG_FORCE_COLOR=1 '%s' -stats -y -f image2 -framerate '%lu' -i '%s/window-%lu-%%d.png' -loglevel '%s' -vf 'crop=in_w:in_h-%d' -loop '%d' '%s'",
-           r.ffmpeg_path,
-           config->frames_per_second,
-           tempdir_path,
-           config->window_id,
-           config->ffmpeg_log_level,
-           FFMPEG_CROP_HEIGHT,
-           FFMPEG_LOOP_QTY,
-           config->animated_gif_file
-           );
-  const char *command_line[] = { "/bin/sh", "--norc", "--noprofile", "-c", r.ffmpeg_cmd, NULL };
-
-  if (config->debug_mode) {
-    dbg(r.ffmpeg_path, %s);
-    dbg(config->animated_gif_file, %s);
-    dbg(config->frames_per_second, %u);
-    dbg(vector_size(config->images_v), %u);
-    dbg(r.ffmpeg_cmd, %s);
-  }
-
-  r.subprocess_result = subprocess_create(command_line, 0, &r.subprocess);
-  assert_eq(r.subprocess_result, 0, %d);
-
-  size_t bytes_read = 0;
-
-  do {
-    bytes_read = subprocess_read_stdout(&r.subprocess, r.stdout_buffer, READ_BUFFER_SIZE - 1);
-    stringbuffer_append_string(r.STDOUT_BUFFER, r.stdout_buffer);
-    r.stdout_bytes_read += bytes_read;
-  } while (bytes_read != 0);
-  bytes_read = 0;
-  do {
-    bytes_read = subprocess_read_stderr(&r.subprocess, r.stderr_buffer, READ_BUFFER_SIZE - 1);
-    stringbuffer_append_string(r.STDERR_BUFFER, r.stderr_buffer);
-    r.stderr_bytes_read += bytes_read;
-  } while (bytes_read != 0);
-
-  r.subprocess_join_result    = subprocess_join(&r.subprocess, &r.subprocess_exited);
-  r.animated_gif_file_created = fsio_file_exists(config->animated_gif_file);
-
-  r.READ_STDOUT = stringbuffer_to_string(r.STDOUT_BUFFER);
-  r.READ_STDERR = stringbuffer_to_string(r.STDERR_BUFFER);
-
-  stringbuffer_release(r.STDOUT_BUFFER);
-  stringbuffer_release(r.STDERR_BUFFER);
-
-  dbg(r.subprocess_result, %d);
-  dbg(strlen(r.READ_STDOUT), %u);
-  dbg(strlen(r.READ_STDERR), %u);
-  dbg(r.READ_STDOUT, %s);
-  dbg(r.READ_STDERR, %s);
-  dbg(r.animated_gif_file_created, %d);
-
-  assert_eq(r.subprocess_result, 0, %d);
-  assert_eq(r.subprocess_exited, 0, %d);
-  assert_eq(r.animated_gif_file_created, true, %d);
-
-  free(r.READ_STDOUT);
-  free(r.READ_STDERR);
-
-  return(r.animated_gif_file_created);
-} /* convert_images_to_animated_gif_ffmpeg */
+/*
+ * struct animated_gif_conversion_config_t {
+ * struct Vector *images_v;
+ * char          *animated_gif_file;
+ * size_t        frames_per_second;
+ * size_t        window_id;
+ * char          *ffmpeg_log_level;
+ * int           ffmpeg_crop_height;
+ * int           ffmpeg_loop_qty;
+ * bool          debug_mode;
+ * };*/
+/*
+ * struct animated_gif_conversion_result_t {
+ * struct Vector        *images_v;
+ * char                 *ffmpeg_path, *ffmpeg_cmd;
+ * size_t               window_id;
+ * struct subprocess_s  subprocess;
+ * int                  subprocess_result;
+ * int                  subprocess_join_result;
+ * int                  subprocess_exited;
+ * bool                 animated_gif_file_created;
+ * char                 *READ_STDOUT, *READ_STDERR;
+ * struct  StringBuffer *STDOUT_BUFFER, *STDERR_BUFFER;
+ * size_t               stdout_bytes_read, stderr_bytes_read;
+ * char                 stdout_buffer[READ_BUFFER_SIZE], stderr_buffer[READ_BUFFER_SIZE];
+ * };*/
+/*
+ * static bool convert_images_to_animated_gif_ffmpeg(struct animated_gif_conversion_config_t *config){
+ * if (tempdir_path == NULL) {
+ *  tempdir_path = gettempdir();
+ * }
+ * struct animated_gif_conversion_result_t r = {
+ *  .ffmpeg_path               = (char *)which_path("ffmpeg", getenv("PATH")),
+ *  .ffmpeg_cmd                = NULL,
+ *  .subprocess_result         = -1,
+ *  .subprocess_exited         = -1,
+ *  .subprocess                = NULL,
+ *  .animated_gif_file_created = false,
+ *  .STDOUT_BUFFER             = stringbuffer_new(),
+ *  .STDERR_BUFFER             = stringbuffer_new(),
+ *  .stdout_bytes_read         = 0,
+ *  .stderr_bytes_read         = 0,
+ *  .stdout_buffer             = { 0 },
+ *  .stderr_buffer             = { 0 },
+ * };
+ *
+ * asprintf(&r.ffmpeg_cmd, "env AV_LOG_FORCE_COLOR=1 '%s' -stats -y -f image2 -framerate '%lu' -i '%s/window-%lu-%%d.png' -loglevel '%s' -vf 'crop=in_w:in_h-%d' -loop '%d' '%s'",
+ *         r.ffmpeg_path,
+ *         config->frames_per_second,
+ *         tempdir_path,
+ *         config->window_id,
+ *         config->ffmpeg_log_level,
+ *         FFMPEG_CROP_HEIGHT,
+ *         FFMPEG_LOOP_QTY,
+ *         config->animated_gif_file
+ *         );
+ * const char *command_line[] = { "/bin/sh", "--norc", "--noprofile", "-c", r.ffmpeg_cmd, NULL };
+ *
+ * r.subprocess_result = subprocess_create(command_line, 0, &r.subprocess);
+ * assert_eq(r.subprocess_result, 0, %d);
+ *
+ * size_t bytes_read = 0;
+ *
+ * do {
+ *  bytes_read = subprocess_read_stdout(&r.subprocess, r.stdout_buffer, READ_BUFFER_SIZE - 1);
+ *  stringbuffer_append_string(r.STDOUT_BUFFER, r.stdout_buffer);
+ *  r.stdout_bytes_read += bytes_read;
+ * } while (bytes_read != 0);
+ * bytes_read = 0;
+ * do {
+ *  bytes_read = subprocess_read_stderr(&r.subprocess, r.stderr_buffer, READ_BUFFER_SIZE - 1);
+ *  stringbuffer_append_string(r.STDERR_BUFFER, r.stderr_buffer);
+ *  r.stderr_bytes_read += bytes_read;
+ * } while (bytes_read != 0);
+ *
+ * r.subprocess_join_result    = subprocess_join(&r.subprocess, &r.subprocess_exited);
+ * r.animated_gif_file_created = fsio_file_exists(config->animated_gif_file);
+ *
+ * r.READ_STDOUT = stringbuffer_to_string(r.STDOUT_BUFFER);
+ * r.READ_STDERR = stringbuffer_to_string(r.STDERR_BUFFER);
+ *
+ * stringbuffer_release(r.STDOUT_BUFFER);
+ * stringbuffer_release(r.STDERR_BUFFER);
+ *
+ * assert_eq(r.subprocess_result, 0, %d);
+ * assert_eq(r.subprocess_exited, 0, %d);
+ * assert_eq(r.animated_gif_file_created, true, %d);
+ *
+ * free(r.READ_STDOUT);
+ * free(r.READ_STDERR);
+ *
+ * return(r.animated_gif_file_created);
+ * }
+ */
 
 #define RECORDED_FRAMES_QTY    vector_size(capture_config->recorded_frames_v)
 static struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
@@ -266,6 +251,8 @@ void do_capture(void *CAPTURE_CONFIG){
       break;
     }
     size_t sleep_ms = get_ms_until_next_frame(capture_config);
+    size_t since    = get_ms_since_last_recorded_frame(capture_config);
+    sleep_ms = (since > 0) ? (sleep_ms - since) : sleep_ms;
 
     if (execution_args.verbose) {
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "    [Frame Capture]     latest frame ts: %" PRIu64 " (running for %lu/%lums) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums" AC_RESETALL "\n",
@@ -380,9 +367,8 @@ bool read_captured_frames(struct capture_config_t *capture_config) {
     tempdir_path = gettempdir();
   }
   struct Vector *images_v = vector_new();
-  char          *animated_gif_file;
-
-  asprintf(&animated_gif_file, "%s/window-%d-animation.gif", tempdir_path, capture_config->window_id);
+//  char          *animated_gif_file;
+  //asprintf(&animated_gif_file, "%s/window-%d-animation.gif", tempdir_path, capture_config->window_id);
   for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
     struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
     f->file_size = fsio_file_size(f->file);
@@ -396,28 +382,29 @@ bool read_captured_frames(struct capture_config_t *capture_config) {
 
     vector_push(images_v, (char *)f->file);
   }
-  if (fsio_file_exists(animated_gif_file)) {
-    fsio_remove(animated_gif_file);
-  }
-  assert(fsio_file_exists(animated_gif_file) == false);
-  struct animated_gif_conversion_config_t *animated_gif_conversion_config = malloc(sizeof(struct animated_gif_conversion_config_t));
-
-  animated_gif_conversion_config->frames_per_second = capture_config->frames_per_second;
-  animated_gif_conversion_config->animated_gif_file = animated_gif_file;
-  animated_gif_conversion_config->images_v          = images_v;
-  animated_gif_conversion_config->window_id         = capture_config->window_id;
-  animated_gif_conversion_config->ffmpeg_log_level  = "warning";
-  animated_gif_conversion_config->debug_mode        = execution_args.verbose;
-  convert_images_to_animated_gif_ffmpeg(animated_gif_conversion_config);
-  free(animated_gif_conversion_config);
-  assert(fsio_file_exists(animated_gif_file) == true);
+  /*
+   * if (fsio_file_exists(animated_gif_file)) {
+   * fsio_remove(animated_gif_file);
+   * }
+   * assert(fsio_file_exists(animated_gif_file) == false);
+   * struct animated_gif_conversion_config_t *animated_gif_conversion_config = malloc(sizeof(struct animated_gif_conversion_config_t));
+   *
+   * animated_gif_conversion_config->frames_per_second = capture_config->frames_per_second;
+   * animated_gif_conversion_config->animated_gif_file = animated_gif_file;
+   * animated_gif_conversion_config->images_v          = images_v;
+   * animated_gif_conversion_config->window_id         = capture_config->window_id;
+   * animated_gif_conversion_config->ffmpeg_log_level  = "warning";
+   * animated_gif_conversion_config->debug_mode        = execution_args.verbose;
+   * convert_images_to_animated_gif_ffmpeg(animated_gif_conversion_config);
+   * free(animated_gif_conversion_config);
+   * assert(fsio_file_exists(animated_gif_file) == true);
+   */
   return(true);
 }
 
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
-  struct Vector *window_ids = get_windows_ids();
-  done_chan = chan_init(0);
+  done_chan      = chan_init(0);
 
   capture_config_mutex = malloc(sizeof(pthread_mutex_t));
 
@@ -434,11 +421,6 @@ int capture_window(void *ARGS) {
   capture_config->resize_type                 = execution_args.resize_type;
   capture_config->resize_value                = execution_args.resize_value;
   pthread_mutex_unlock(capture_config_mutex);
-
-  if (execution_args.verbose) {
-    dbg(execution_args.window_id, %d);
-    dbg(vector_size(window_ids), %u);
-  }
 
   int error = pthread_create(&capture_thread, NULL, do_capture, (void *)capture_config);
   if (error) {
