@@ -1,6 +1,7 @@
 #define MSF_GIF_IMPL
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
+#define MINIMUM_PNG_FILE_SIZE    67
 #include <stdint.h>
 #include <sys/stat.h>
 ////////////////////////////////////////////
@@ -9,6 +10,8 @@
 #include "ms/ms.h"
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
+#include "stb/stb_image_resize.h"
+#include "stb/stb_image_write.h"
 #include "submodules/log.h/log.h"
 #include "submodules/tinydir/tinydir.h"
 #include "timestamp//timestamp.h"
@@ -72,6 +75,7 @@ TEST t_tinydir_0(void *PATH){
     ft->files_v                = vector_new();
     ft->animated_gif_file_name = "MyGif.gif";
     ft->stb_req_format         = STBI_rgb_alpha;
+//    ft->stb_req_format         = STBI_rgb;
     ft->total_ms               = 0;
     ft->animated_gif_file_size = 0;
     ft->pixels_qty             = 0;
@@ -95,6 +99,9 @@ TEST t_tinydir_0(void *PATH){
     }
 
     if (!ft->td_file->is_dir) {
+      if (!stringfn_ends_with(ft->td_file->path, ".png")) {
+        continue;
+      }
       f            = calloc(1, sizeof(struct file_time_t));
       f->file_info = calloc(1, sizeof(struct stat));
       f->file_path = strdup(ft->td_file->path);
@@ -102,7 +109,7 @@ TEST t_tinydir_0(void *PATH){
         continue;
       }
       f->file_size = fsio_file_size(f->file_path);
-      if (f->file_size < 32) {
+      if (f->file_size < MINIMUM_PNG_FILE_SIZE) {
         continue;
       }
       stat(ft->td_file->path, f->file_info);
@@ -163,18 +170,55 @@ end_tinydir:
     if (!ft->fp) {
       continue;
     }
-    f->stb_pixels = stbi_load_from_file(ft->fp, &f->image_dimensions->width, &f->image_dimensions->height, &f->stb_format, ft->stb_req_format);
+    int h, w;
+    f->stb_pixels               = stbi_load_from_file(ft->fp, &w, &h, &f->stb_format, ft->stb_req_format);
+    f->image_dimensions->width  = w;
+    f->image_dimensions->height = h;
     fclose(ft->fp);
     if (!f->stb_pixels) {
       continue;
     }
-    f->stb_depth    = (ft->stb_req_format == STBI_rgb) ? 24 : 32;
-    f->stb_pitch    = (ft->stb_req_format == STBI_rgb) ? (3 * f->image_dimensions->width) : (4 * f->image_dimensions->width);
+    f->stb_depth    = (f->stb_format == 4) ? 32 : 24;
+    f->stb_pitch    = (f->stb_format == 4) ? (4 * f->image_dimensions->width) : (3 * f->image_dimensions->width);
     f->pixels_qty   = f->image_dimensions->width * f->image_dimensions->height;
     f->colors_qty   = f->stb_pitch * f->image_dimensions->height;
     ft->pixels_qty += f->pixels_qty;
     ft->colors_qty += f->colors_qty;
-    msf_gif_frame(ft->gifState, f->stb_pixels, (int)f->frame_centiseconds, f->stb_depth, f->stb_pitch);
+//    f->stb_depth = 8;
+//    f->stb_pitch = 0;
+    msf_gif_alpha_threshold = 1;
+    char *w_p0, *w_p1, *w_p2;
+    int  comp = 4;
+/*
+ * asprintf(&w_p0,"%s-%dx%d-comp-%d-pitch-%d-stb_format-%d-p0.png",
+ *  f->file_path,
+ *  f->image_dimensions->width,f->image_dimensions->height,
+ *  comp,
+ *  f->stb_pitch,
+ *  f->stb_format
+ *  );
+ * asprintf(&w_p1,"%s.bmp",w_p0);
+ * asprintf(&w_p2,"%s-stb.png",w_p0);
+ *  stbi_write_bmp(
+ *      w_p1,
+ *      f->image_dimensions->width,
+ *      f->image_dimensions->height,
+ *      comp,
+ *      f->stb_pixels);
+ *  stbi_write_png(
+ *      w_p0,
+ *      f->image_dimensions->width,
+ *      f->image_dimensions->height,
+ *      comp,
+ *      f->stb_pixels,
+ *      f->stb_pitch
+ *      );
+ */
+    msf_gif_frame(ft->gifState, f->stb_pixels,
+                  (int)f->frame_centiseconds,
+                  f->stb_depth,
+                  f->stb_pitch
+                  );
     free(f->stb_pixels);
     f->stb_render_ms = timestamp() - f->started_ms;
     printf(AC_YELLOW "Added %s (%dx%d) %s %s frame in %s" AC_RESETALL "\n",

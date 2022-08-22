@@ -253,6 +253,7 @@ void do_capture(void *CAPTURE_CONFIG){
     size_t sleep_ms = get_ms_until_next_frame(capture_config);
     size_t since    = get_ms_since_last_recorded_frame(capture_config);
     sleep_ms = (since > 0) ? (sleep_ms - since) : sleep_ms;
+    sleep_ms = (sleep_ms > 10000000) ? 0 : sleep_ms;
 
     if (execution_args.verbose) {
       fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "    [Frame Capture]     latest frame ts: %" PRIu64 " (running for %lu/%lums) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums" AC_RESETALL "\n",
