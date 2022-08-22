@@ -1,5 +1,19 @@
 #pragma once
+#ifndef ANIMATED_GIF_C
+#define ANIMATED_GIF_C
 #include "animated-gif/animated-gif.h"
+////////////////////////////////////////////
+#include "ansi-codes/ansi-codes.h"
+#include "bytes/bytes.h"
+#include "c_fsio/include/fsio.h"
+#include "c_img/src/img.h"
+#include "c_stringfn/include/stringfn.h"
+#include "c_vector/include/vector.h"
+#include "ms/ms.h"
+#include "msf_gif/msf_gif.h"
+#include "stb/stb_image.h"
+#include "tempdir.c/tempdir.h"
+#include "timestamp/timestamp.h"
 
 ////////////////////////////////////////////
 int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
@@ -15,11 +29,12 @@ int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
 int load_pngs_create_animated_gif(const char *PATH){
   char                *ANIMATED_GIF_FILE = "MyGif.gif";
   struct file_time_t  *f, *next_f;
-  struct file_times_t *ft = malloc(sizeof(struct file_times_t));
+  struct file_times_t *ft       = malloc(sizeof(struct file_times_t));
+  MsfGifState         *gifState = calloc(1, sizeof(MsfGifState));
+  MsfGifResult        gifResult = {};
   {
     ft->success                = false;
     ft->started_ms             = timestamp();
-    ft->gifState               = calloc(1, sizeof(MsfGifState));
     ft->td_file                = calloc(1, sizeof(tinydir_file));
     ft->td_dir                 = calloc(1, sizeof(tinydir_dir));
     ft->files_v                = vector_new();
@@ -106,7 +121,7 @@ end_tinydir:
   printf(AC_YELLOW "Creating %dx%d Animated gif with %lu images of %s" AC_RESETALL "\n",
          ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size)
          );
-  msf_gif_begin(ft->gifState, ft->max_width, ft->max_height);
+  msf_gif_begin(gifState, ft->max_width, ft->max_height);
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {
     f = &(ft->sorted_images[i]);
     if (!f) {
@@ -134,7 +149,7 @@ end_tinydir:
     ft->pixels_qty         += f->pixels_qty;
     ft->colors_qty         += f->colors_qty;
     msf_gif_alpha_threshold = 1;
-    msf_gif_frame(ft->gifState, f->stb_pixels,
+    msf_gif_frame(gifState, f->stb_pixels,
                   (int)f->frame_centiseconds,
                   f->stb_depth,
                   f->stb_pitch
@@ -149,15 +164,15 @@ end_tinydir:
            milliseconds_to_string(f->stb_render_ms)
            );
   }
-  ft->result = msf_gif_end(ft->gifState);
-  if (ft->result.data != NULL) {
+  gifResult = msf_gif_end(gifState);
+  if (gifResult.data != NULL) {
     ft->fp = fopen(ft->animated_gif_file_name, "wb");
     if (ft->fp) {
-      fwrite(ft->result.data, ft->result.dataSize, 1, ft->fp);
+      fwrite(gifResult.data, gifResult.dataSize, 1, ft->fp);
       fclose(ft->fp);
       ft->success = true;
     }
-    msf_gif_free(ft->result);
+    msf_gif_free(gifResult);
   }
   ft->dur_ms                 = timestamp() - ft->started_ms;
   ft->animated_gif_file_size = fsio_file_size(ft->animated_gif_file_name);
@@ -178,8 +193,4 @@ end_tinydir:
   return((ft->success == true) ? 0 : 1);
 } /* load_pngs_create_animated_gif */
 
-int main(int argc, char **argv) {
-  (void)argc; (void)argv;
-  char *pngs_dir = gettempdir();
-  return(load_pngs_create_animated_gif(pngs_dir));
-}
+#endif

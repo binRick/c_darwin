@@ -29,3 +29,4 @@ loc.sh
 *.log
 .bin/
 submodules/c_deps
+*-cache.db
