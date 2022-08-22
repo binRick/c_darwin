@@ -16,6 +16,7 @@ msf_gif_test_deps = [
   timestamp_dep,
   ms_dep,
   bytes_dep,
+  tempdir_dep,
   c_stringfn_dep,
   tinydir_dep,
   logh_dep,

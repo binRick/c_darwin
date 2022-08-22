@@ -1,59 +1,8 @@
-#define MSF_GIF_IMPL
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define MINIMUM_PNG_FILE_SIZE    67
-#include <stdint.h>
-#include <sys/stat.h>
-////////////////////////////////////////////
-#include "bytes/bytes.h"
-#include "c_img/src/img.h"
-#include "ms/ms.h"
-#include "msf_gif/msf_gif.h"
-#include "stb/stb_image.h"
-#include "stb/stb_image_resize.h"
-#include "stb/stb_image_write.h"
-#include "submodules/log.h/log.h"
-#include "submodules/tinydir/tinydir.h"
-#include "timestamp//timestamp.h"
-////////////////////////////////////////////
+#pragma once
 #include "msf-gif-test/msf-gif-test.h"
-////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "c_fsio/include/fsio.h"
-#include "c_greatest/greatest/greatest.h"
-#include "c_stringfn/include/stringfn.h"
-#include "c_vector/include/vector.h"
-////////////////////////////////////////////
-void __attribute__((constructor)) __constructor__msf_gif_test();
-void __attribute__((destructor)) __destructor__msf_gif_test();
-void __msf_gif_test__setup_executable_path(const char **argv);
-struct file_time_t {
-  long unsigned             file_creation_ts, stb_render_ms, started_ms, frame_centiseconds;
-  char                      *file_path;
-  size_t                    file_size, pixels_qty, colors_qty;
-  int                       stb_format, stb_depth, stb_pitch;
-  unsigned char             *stb_pixels;
-  struct image_dimensions_t *image_dimensions;
-  struct stat               *file_info;
-};
-struct file_times_t {
-  struct Vector      *files_v;
-  struct file_time_t **files;
-  long unsigned      render_ms, started_ms, total_ms, dur_ms, avg_ms;
-  int                max_width, max_height;
-  MsfGifState        *gifState;
-  struct file_time_t *sorted_images;
-  size_t             sorted_images_qty, sorted_images_size, pixels_qty, colors_qty, animated_gif_file_size;
-  FILE               *fp;
-  MsfGifResult       result;
-  int                stb_req_format;
-  tinydir_file       *td_file;
-  tinydir_dir        *td_dir;
-  char               *animated_gif_file_name;
-  bool               success;
-};
 
-int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2){
+////////////////////////////////////////////
+int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
   int ret = (e1->file_creation_ts > e2->file_creation_ts)
               ? 1
               : (e1->file_creation_ts < e2->file_creation_ts)
@@ -63,7 +12,8 @@ int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2){
   return(ret);
 }
 
-TEST t_tinydir_0(void *PATH){
+int load_pngs_create_animated_gif(const char *PATH){
+  char                *ANIMATED_GIF_FILE = "MyGif.gif";
   struct file_time_t  *f, *next_f;
   struct file_times_t *ft = malloc(sizeof(struct file_times_t));
   {
@@ -73,9 +23,8 @@ TEST t_tinydir_0(void *PATH){
     ft->td_file                = calloc(1, sizeof(tinydir_file));
     ft->td_dir                 = calloc(1, sizeof(tinydir_dir));
     ft->files_v                = vector_new();
-    ft->animated_gif_file_name = "MyGif.gif";
+    ft->animated_gif_file_name = ANIMATED_GIF_FILE;
     ft->stb_req_format         = STBI_rgb_alpha;
-//    ft->stb_req_format         = STBI_rgb;
     ft->total_ms               = 0;
     ft->animated_gif_file_size = 0;
     ft->pixels_qty             = 0;
@@ -144,7 +93,7 @@ end_tinydir:
     ft->sorted_images_qty++;
     ft->sorted_images_size += ft->sorted_images[i].file_size;
   }
-  qsort(ft->sorted_images, ft->sorted_images_qty, sizeof(struct file_time_t), compare_file_time_t);
+  qsort(ft->sorted_images, ft->sorted_images_qty, sizeof(struct file_time_t), compare_file_time_items);
 
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {
     f                     = &(ft->sorted_images[i]);
@@ -178,42 +127,13 @@ end_tinydir:
     if (!f->stb_pixels) {
       continue;
     }
-    f->stb_depth    = (f->stb_format == 4) ? 32 : 24;
-    f->stb_pitch    = (f->stb_format == 4) ? (4 * f->image_dimensions->width) : (3 * f->image_dimensions->width);
-    f->pixels_qty   = f->image_dimensions->width * f->image_dimensions->height;
-    f->colors_qty   = f->stb_pitch * f->image_dimensions->height;
-    ft->pixels_qty += f->pixels_qty;
-    ft->colors_qty += f->colors_qty;
-//    f->stb_depth = 8;
-//    f->stb_pitch = 0;
+    f->stb_depth            = (f->stb_format == 4) ? 32 : 24;
+    f->stb_pitch            = (f->stb_format == 4) ? (4 * f->image_dimensions->width) : (3 * f->image_dimensions->width);
+    f->pixels_qty           = f->image_dimensions->width * f->image_dimensions->height;
+    f->colors_qty           = f->stb_pitch * f->image_dimensions->height;
+    ft->pixels_qty         += f->pixels_qty;
+    ft->colors_qty         += f->colors_qty;
     msf_gif_alpha_threshold = 1;
-    char *w_p0, *w_p1, *w_p2;
-    int  comp = 4;
-/*
- * asprintf(&w_p0,"%s-%dx%d-comp-%d-pitch-%d-stb_format-%d-p0.png",
- *  f->file_path,
- *  f->image_dimensions->width,f->image_dimensions->height,
- *  comp,
- *  f->stb_pitch,
- *  f->stb_format
- *  );
- * asprintf(&w_p1,"%s.bmp",w_p0);
- * asprintf(&w_p2,"%s-stb.png",w_p0);
- *  stbi_write_bmp(
- *      w_p1,
- *      f->image_dimensions->width,
- *      f->image_dimensions->height,
- *      comp,
- *      f->stb_pixels);
- *  stbi_write_png(
- *      w_p0,
- *      f->image_dimensions->width,
- *      f->image_dimensions->height,
- *      comp,
- *      f->stb_pixels,
- *      f->stb_pitch
- *      );
- */
     msf_gif_frame(ft->gifState, f->stb_pixels,
                   (int)f->frame_centiseconds,
                   f->stb_depth,
@@ -254,24 +174,12 @@ end_tinydir:
            bytes_to_string(ft->sorted_images_size),
            milliseconds_to_string(ft->dur_ms)
            );
-    PASS();
-  }else{
-    FAIL();
   }
-} /* t_tinydir_0 */
-
-GREATEST_MAIN_DEFS();
-
-SUITE(s_tinydir){
-  RUN_TESTp(t_tinydir_0, ".pngs");
-  PASS();
-}
+  return((ft->success == true) ? 0 : 1);
+} /* load_pngs_create_animated_gif */
 
 int main(int argc, char **argv) {
-  GREATEST_MAIN_BEGIN();
   (void)argc; (void)argv;
-  RUN_SUITE(s_tinydir);
-
-  GREATEST_MAIN_END();
-  return(0);
+  char *pngs_dir = gettempdir();
+  return(load_pngs_create_animated_gif(pngs_dir));
 }
