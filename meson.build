@@ -99,6 +99,7 @@ subdir('wrec-test')
 subdir('kitty-test')
 subdir('kitty-ls')
 subdir('ls-proc')
+subdir('animated-gif')
 #//////////////////////////////////////////////////////////////////////
 subdir('rectangle')
 subdir('rectangle-test')
