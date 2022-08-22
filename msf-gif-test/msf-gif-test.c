@@ -27,7 +27,7 @@ void __msf_gif_test__setup_executable_path(const char **argv);
 struct file_time_t {
   long unsigned             file_creation_ts, stb_render_ms, started_ms, frame_centiseconds;
   char                      *file_path;
-  size_t                    file_size;
+  size_t                    file_size, pixels_qty, colors_qty;
   int                       stb_format, stb_depth, stb_pitch;
   unsigned char             *stb_pixels;
   struct image_dimensions_t *image_dimensions;
@@ -40,7 +40,7 @@ struct file_times_t {
   int                max_width, max_height;
   MsfGifState        *gifState;
   struct file_time_t *sorted_images;
-  size_t             sorted_images_qty, sorted_images_size;
+  size_t             sorted_images_qty, sorted_images_size, pixels_qty, colors_qty, animated_gif_file_size;
   FILE               *fp;
   MsfGifResult       result;
   int                stb_req_format;
@@ -73,6 +73,9 @@ TEST t_tinydir_0(void *PATH){
     ft->animated_gif_file_name = "MyGif.gif";
     ft->stb_req_format         = STBI_rgb_alpha;
     ft->total_ms               = 0;
+    ft->animated_gif_file_size = 0;
+    ft->pixels_qty             = 0;
+    ft->colors_qty             = 0;
     ft->avg_ms                 = 0;
     ft->max_width              = 0;
     ft->max_height             = 0;
@@ -165,8 +168,12 @@ end_tinydir:
     if (!f->stb_pixels) {
       continue;
     }
-    f->stb_depth = (ft->stb_req_format == STBI_rgb) ? 24 : 32;
-    f->stb_pitch = (ft->stb_req_format == STBI_rgb) ? (3 * f->image_dimensions->height) : (4 * f->image_dimensions->width);
+    f->stb_depth    = (ft->stb_req_format == STBI_rgb) ? 24 : 32;
+    f->stb_pitch    = (ft->stb_req_format == STBI_rgb) ? (3 * f->image_dimensions->width) : (4 * f->image_dimensions->width);
+    f->pixels_qty   = f->image_dimensions->width * f->image_dimensions->height;
+    f->colors_qty   = f->stb_pitch * f->image_dimensions->height;
+    ft->pixels_qty += f->pixels_qty;
+    ft->colors_qty += f->colors_qty;
     msf_gif_frame(ft->gifState, f->stb_pixels, (int)f->frame_centiseconds, f->stb_depth, f->stb_pitch);
     free(f->stb_pixels);
     f->stb_render_ms = timestamp() - f->started_ms;
@@ -188,16 +195,18 @@ end_tinydir:
     }
     msf_gif_free(ft->result);
   }
-  ft->dur_ms = timestamp() - ft->started_ms;
+  ft->dur_ms                 = timestamp() - ft->started_ms;
+  ft->animated_gif_file_size = fsio_file_size(ft->animated_gif_file_name);
   if (ft->success) {
-    printf(AC_GREEN "Rendered %s %dx%d %s Animated GIF of %lu frames " AC_BLUE "%s" AC_GREEN " @ %.1fFPS from %lu images of %s in %s!" AC_RESETALL "\n",
-           bytes_to_string(ft->result.dataSize),
-           ft->max_width, ft->max_height,
+    printf(AC_GREEN "Rendered %s Animated Gif %s (%s, %dx%d, %lu frames, %.1fFPS) from %lu images (%lu million pixels, %lu million colors, %s) in %s!" AC_RESETALL "\n",
            milliseconds_to_string(ft->total_ms),
-           ft->sorted_images_qty,
            ft->animated_gif_file_name,
+           bytes_to_string(ft->animated_gif_file_size),
+           ft->max_width, ft->max_height,
+           ft->sorted_images_qty,
            (float)(((float)1) / ((float)((((float)(ft->total_ms * 1000) / ((float)ft->sorted_images_qty)))) / (1000 * 1000))),
            vector_size(ft->files_v),
+           ft->pixels_qty / 1000 / 1000, ft->colors_qty / 1000 / 1000,
            bytes_to_string(ft->sorted_images_size),
            milliseconds_to_string(ft->dur_ms)
            );
