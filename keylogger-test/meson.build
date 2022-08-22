@@ -19,7 +19,7 @@ if get_option('enable-binaries')
      dependencies: keylogger_test_deps,
      include_directories: keylogger_test_inc,
   )
-  if get_option('enable-binary-tests')
+  #if get_option('enable-binary-tests')
     #    test('keylogger-test', keylogger_test, args: [])
-  endif
+  #endif
 endif

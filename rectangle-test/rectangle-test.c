@@ -179,7 +179,7 @@ SUITE(s_rectangle_test) {
   RUN_TEST(t_rectangle_get_todo_app);
   RUN_TESTp(t_rectangle_set_todo_app, (void *)"net.kovidgoyal.kitty");
   RUN_TEST(t_rectangle_get_todo_app);
-  RUN_TESTp(t_rectangle_set_todo_app, (void *)"rich");
+  RUN_TESTp(t_rectangle_set_todo_app, (void *)"richard1");
   RUN_TEST(t_rectangle_get_todo_app);
   RUN_TEST(t_rectangle_run);
   RUN_TEST(t_rectangle_get_pid);

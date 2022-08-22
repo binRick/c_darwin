@@ -1,4 +1,8 @@
-////////////////////////////////////////////
+#include "iowow/src/fs/iwfile.h"
+#include "iowow/src/iowow.h"
+#include "iowow/src/kv/iwkv.h"
+#include "iowow/src/log/iwlog.h"
+#include "iowow/src/platform/iwp.h"
 #include "osx-keys/osx-keys.h"
 #include "rectangle/rectangle.h"
 ////////////////////////////////////////////
@@ -17,17 +21,25 @@
 #include "tiny-regex-c/re.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include <signal.h>
+#define IOWOW_ENABLED              false
 ////////////////////////////////////////////
 #define DEBUG_STDOUT               false
 #define STDOUT_READ_BUFFER_SIZE    1024 * 16
 ////////////////////////////////////////////
-static void __attribute__((constructor)) __constructor__rectangle_test();
-static void __attribute__((destructor)) __destructor__rectangle_test();
+static void __attribute__((constructor)) __constructor__rectangle();
+static void __attribute__((destructor)) __destructor__rectangle();
 
-static char *RECTANGLE_APP_PATH    = "/Applications/Rectangle.app";
-static char *RECTANGLE_CONFIG_KEY  = "com.knollsoft.Rectangle";
-static char *RECTANGLE_REFLOW_KEYS = "/usr/libexec/PlistBuddy -c 'print reflowTodo:keyCode' -c 'print reflowTodo:modifierFlags' ~/Library/Preferences/com.knollsoft.Rectangle.plist";
+static char      *RECTANGLE_APP_PATH    = "/Applications/Rectangle.app";
+static char      *RECTANGLE_CONFIG_KEY  = "com.knollsoft.Rectangle";
+static char      *RECTANGLE_REFLOW_KEYS = "/usr/libexec/PlistBuddy -c 'print reflowTodo:keyCode' -c 'print reflowTodo:modifierFlags' ~/Library/Preferences/com.knollsoft.Rectangle.plist";
+static IWKV_OPTS opts                   = {
+  .path   = ".rectangle-cache.db",
+  .oflags = IWFS_DEFAULT_LOCKMODE,
+};
+static IWKV      iwkv;
+static IWDB      mydb;
 
+int test_iowow();
 struct keycode_modifier_t *rectangle_get_todo_keys(){
   char *cmd;
 
@@ -204,6 +216,7 @@ int rectangle_get_pid(){
 }
 
 char *rectangle_run_cmd(char *CMD){
+  test_iowow();
   char                 *READ_STDOUT;
   int                  exited, result;
   struct subprocess_s  subprocess;
@@ -230,8 +243,60 @@ char *rectangle_run_cmd(char *CMD){
   return(READ_STDOUT);
 }
 
-static void __attribute__((constructor)) __constructor__rectangle_test(){
+static void __attribute__((constructor)) __constructor__rectangle(){
+  if (IOWOW_ENABLED == true) {
+    iwrc rc;
+
+    rc = iwkv_open(&opts, &iwkv);
+    if (rc) {
+      iwlog_ecode_error3(rc);
+      exit(rc);
+    }
+    rc = iwkv_db(iwkv, 1, 0, &mydb);
+    if (rc) {
+      iwlog_ecode_error2(rc, "Failed to open mydb");
+      exit(rc);
+    }
+  }
 }
 
-static void __attribute__((destructor)) __destructor__rectangle_test(){
+static void __attribute__((destructor)) __destructor__rectangle(){
+  iwkv_close(&iwkv);
 }
+
+int test_iowow() {
+  if (IOWOW_ENABLED == true) {
+    iwrc     rc;
+    IWKV_val key, val;
+
+    key.data = "foo";
+    key.size = strlen(key.data);
+    val.data = 0;
+    val.size = 0;
+    rc       = iwkv_get(mydb, &key, &val);
+    if (rc == 0) {
+      printf("got!\n");
+      fprintf(stdout, "get: %.*s => %.*s\n",
+              (int)key.size, (char *)key.data,
+              (int)val.size, (char *)val.data);
+    }else{
+      printf("absent!\n");
+
+      asprintf(&val.data, "%lu", (size_t)timestamp());
+      val.size = strlen(val.data);
+
+      fprintf(stdout, "put: %.*s => %.*s\n",
+              (int)key.size, (char *)key.data,
+              (int)val.size, (char *)val.data);
+
+      rc = iwkv_put(mydb, &key, &val, 0);
+      if (rc) {
+        iwlog_ecode_error3(rc);
+        exit(rc);
+      }
+    }
+
+    iwkv_val_dispose(&val);
+  }
+  return(0);
+} /* test_iowow */

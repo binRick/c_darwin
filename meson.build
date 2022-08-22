@@ -27,6 +27,13 @@ inc = [include_directories(
   'submodules/c_deps/submodules/dbg.h',
   'submodules/c_deps/submodules/tiny-regex-c',
   'submodules/c_deps/submodules',
+  'submodules/c_deps/submodules/iowow/src',
+  'submodules/c_deps/submodules/iowow/src/kv',
+  'submodules/c_deps/submodules/iowow/src/fs',
+  'submodules/c_deps/submodules/iowow/src/log',
+  'submodules/c_deps/submodules/iowow/src/json',
+  'submodules/c_deps/submodules/iowow/src/platform',
+  'submodules/c_deps/submodules/iowow',
   'submodules/c_deps/submodules/c_vector/src',
   'submodules/c_deps/submodules/c_vector/include',
   'app-utils',
@@ -96,3 +103,5 @@ subdir('ls-proc')
 subdir('rectangle')
 subdir('rectangle-test')
 subdir('rectangle-cli')
+subdir('mac-load-test')
+subdir('msf-gif-test')

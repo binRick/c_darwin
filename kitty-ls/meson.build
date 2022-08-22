@@ -25,7 +25,7 @@ if get_option('enable-binaries')
      install: true,
      install_dir: '/usr/local/bin',
   )
-  if get_option('enable-binary-tests')
+  #if get_option('enable-binary-tests')
     #test('kitty-ls', passh_program, args: [process_test_exec])
-  endif
+  #endif
 endif

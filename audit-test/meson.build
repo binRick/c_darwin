@@ -31,7 +31,7 @@ if get_option('enable-binaries')
      include_directories: audit_include_dirs,
      c_args: audit_include_cargs,
   )
-  if get_option('enable-binary-tests')
+  #if get_option('enable-binary-tests')
     #    test('audit-test', passh_program, args: [audit_test_exec])
-  endif
+  #endif
 endif

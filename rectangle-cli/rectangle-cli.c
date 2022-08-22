@@ -71,6 +71,11 @@ int resize_non_todo_windows(){
     if (strcmp(w->app_name, todo_app) == 0) {
       continue;
     }
+    char *todo_app_app;
+    asprintf(&todo_app_app, "%s.app", todo_app);
+    if (strcmp(w->app_name, todo_app_app) == 0) {
+      continue;
+    }
     if (w->pid == todo_pid) {
       continue;
     }
@@ -84,7 +89,8 @@ int resize_non_todo_windows(){
       continue;
     }
     if (ctx.verbose == true) {
-      printf("Resizing %s> %d|%d from %dx%d to %dx%d | moving from %dx%d to %dx%d\n",
+      printf("[todo:%s] Resizing %s> %d|%d from %dx%d to %dx%d | moving from %dx%d to %dx%d\n",
+             todo_app,
              w->app_name,
              w->pid, w->window_id,
              w->width, w->height,

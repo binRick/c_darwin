@@ -67,6 +67,7 @@ int do_test(int argc, char **argv) {
 
 int main(int argc, char **argv) {
   (void)argc; (void)argv;
+  is_authorized_for_accessibility();
   if ((argc >= 2) && (strcmp(argv[1], "--watch") == 0)) {
     while (RUNNING == true) {
       show_focus();
