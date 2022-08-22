@@ -7,12 +7,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/stat.h>
-////////////////////////////////////////////
-#include "submodules/tinydir/tinydir.h"
 #include <stdio.h>
 ////////////////////////////////////////////
-struct file_time_t;
-int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2);
+#include "submodules/tinydir/tinydir.h"
+////////////////////////////////////////////
 int load_pngs_create_animated_gif(const char *PATH);
 ////////////////////////////////////////////
 struct file_time_t {
@@ -24,6 +22,7 @@ struct file_time_t {
   struct image_dimensions_t *image_dimensions;
   struct stat               *file_info;
 };
+int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2);
 struct file_times_t {
   struct Vector      *files_v;
   struct file_time_t **files;

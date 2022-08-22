@@ -26,12 +26,12 @@ int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
   return(ret);
 }
 
-int load_pngs_create_animated_gif(const char *PATH){
+int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
+  printf("ok:%s\n",ANIMATED_PNGS_DIR);
   char                *ANIMATED_GIF_FILE = "MyGif.gif";
   struct file_time_t  *f, *next_f;
   struct file_times_t *ft       = malloc(sizeof(struct file_times_t));
   MsfGifState         *gifState = calloc(1, sizeof(MsfGifState));
-  MsfGifResult        gifResult = {};
   {
     ft->success                = false;
     ft->started_ms             = timestamp();
@@ -51,11 +51,11 @@ int load_pngs_create_animated_gif(const char *PATH){
     ft->sorted_images_size     = 0;
   }
 
-  if (tinydir_open(ft->td_dir, (char *)PATH) == -1) {
+  if (tinydir_open(ft->td_dir, ANIMATED_PNGS_DIR) == -1) {
     perror("Error opening file");
     goto end_tinydir;
   }
-
+printf("opened %s\n",ANIMATED_PNGS_DIR);
   while (ft->td_dir->has_next) {
     if (tinydir_readfile(ft->td_dir, ft->td_file) == -1) {
       perror("Error getting file");
@@ -63,19 +63,20 @@ int load_pngs_create_animated_gif(const char *PATH){
     }
 
     if (!ft->td_file->is_dir) {
+      f->file_size = fsio_file_size(ft->td_file->path);
+      if (f->file_size < MINIMUM_PNG_FILE_SIZE) {
+        continue;
+      }
+      puts(ft->td_dir->path);
       if (!stringfn_ends_with(ft->td_file->path, ".png")) {
         continue;
       }
       f            = calloc(1, sizeof(struct file_time_t));
-      f->file_info = calloc(1, sizeof(struct stat));
       f->file_path = strdup(ft->td_file->path);
       if (!f->file_path) {
         continue;
       }
-      f->file_size = fsio_file_size(f->file_path);
-      if (f->file_size < MINIMUM_PNG_FILE_SIZE) {
-        continue;
-      }
+      f->file_info = calloc(1, sizeof(struct stat));
       stat(ft->td_file->path, f->file_info);
       if (!f->file_info) {
         continue;
@@ -164,7 +165,7 @@ end_tinydir:
            milliseconds_to_string(f->stb_render_ms)
            );
   }
-  gifResult = msf_gif_end(gifState);
+  MsfGifResult gifResult = msf_gif_end(gifState);
   if (gifResult.data != NULL) {
     ft->fp = fopen(ft->animated_gif_file_name, "wb");
     if (ft->fp) {
