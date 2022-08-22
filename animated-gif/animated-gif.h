@@ -4,17 +4,19 @@
 #define MSF_GIF_IMPL
 #define STB_IMAGE_IMPLEMENTATION
 #define MINIMUM_PNG_FILE_SIZE    67
+#define MINIMUM_PNG_WIDTH        10
+#define MINIMUM_PNG_HEIGHT       10
 #include <stdbool.h>
 #include <stdint.h>
-#include <sys/stat.h>
 #include <stdio.h>
+#include <sys/stat.h>
 ////////////////////////////////////////////
 #include "submodules/tinydir/tinydir.h"
 ////////////////////////////////////////////
 int load_pngs_create_animated_gif(const char *PATH);
 ////////////////////////////////////////////
 struct file_time_t {
-  long unsigned             file_creation_ts, stb_render_ms, started_ms, frame_centiseconds;
+  long unsigned             file_creation_ts, stb_render_ms, started_ms, frame_ms;
   char                      *file_path;
   size_t                    file_size, pixels_qty, colors_qty;
   int                       stb_format, stb_depth, stb_pitch;
@@ -35,7 +37,8 @@ struct file_times_t {
   tinydir_file       *td_file;
   tinydir_dir        *td_dir;
   char               *animated_gif_file_name;
-  bool               success;
+  bool               success, verbose_mode;
+  int                msf_gif_alpha_threshold;
 };
 
 #endif
