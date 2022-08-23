@@ -12,6 +12,8 @@ wrec_capture_test_deps = [
   wrec_common_dep,
   libbeaufort_dep,
   c_greatest_dep,
+  metalang99_dep,
+  interface99_dep,
  wrec_capture_dep,
   c_vector_dep,
   kitty_dep,
