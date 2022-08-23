@@ -5,6 +5,7 @@ wrec_cli_link_flags = []
 wrec_cli_c_args = []
 wrec_cli_deps = [
   wrec_common_dep,
+  wrec_utils_dep,
   ansi_codes_dep,
   wrec_capture_dep,
   cargs_dep,

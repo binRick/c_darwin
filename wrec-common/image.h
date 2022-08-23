@@ -1,11 +1,12 @@
 #pragma once
-#include <ApplicationServices/ApplicationServices.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
+#define STB_IMAGE_IMPLEMENTATION
 #include "c_img/src/img.h"
 #include "tinydir/tinydir.h"
 #include "wrec-common/qoi.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 ////////////////////////////////////////////////////////////////////////////////
 struct loaded_png_file_t *load_png_file_pixels(char *png_file);
 struct image_dimensions_t *get_png_file_dimensions(char *path);

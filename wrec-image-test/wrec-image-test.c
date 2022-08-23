@@ -1,6 +1,5 @@
 #include "wrec-image-test/wrec-image-test.h"
 char *tempdir = NULL;
-////////////////////////////////////////////
 TEST t_wrec_image_test(void){
   MEASURE(measurement_capture_and_process_screenshot_rgb_data)
 

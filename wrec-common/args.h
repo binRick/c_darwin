@@ -1,7 +1,7 @@
 #pragma once
-#include <stdlib.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 struct modes_t {
   char *name;
   char *description;

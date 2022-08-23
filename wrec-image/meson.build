@@ -1,5 +1,6 @@
 wrec_image_srcs = [
   'wrec-image.c',
+  'wrec-image-qoi.c',
 ]
 wrec_image_link_flags = []
 wrec_image_c_args = []
@@ -9,6 +10,7 @@ wrec_image_deps = [
   c_vector_dep,
   c_string_buffer_dep,
   qoi_dep,
+  stb_dep,
   c_fsio_dep,  
   bytes_dep,
   logh_dep,

@@ -1,8 +1,7 @@
 #pragma once
-int list_windows();
 #include "app-utils/app-utils.h"
-#include "window-utils/window-utils.h"
 #include "string-utils/string-utils.h"
+#include "window-utils/window-utils.h"
 ///////////////////////////////////////
 #include "wrec-common/def.h"
 ///////////////////////////////////////
@@ -14,12 +13,12 @@ int list_windows();
 ///////////////////////////////////////
 #include "wrec-common/image.h"
 ///////////////////////////////////////
-#include "log.h/log.h"
-#include "ms/ms.h"
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
+#include "log.h/log.h"
+#include "ms/ms.h"
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////////////////////////////////////////////////
 int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2);

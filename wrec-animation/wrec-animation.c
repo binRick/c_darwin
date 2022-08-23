@@ -1,9 +1,10 @@
 #pragma once
-#include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////
 #define MSF_GIF_IMPL
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
+#include "wrec-animation/wrec-animation.h"
+
 ////////////////////////////////////////////////////
 int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
   char                *ANIMATED_GIF_FILE = "MyGif.gif";

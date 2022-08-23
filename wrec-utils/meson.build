@@ -9,6 +9,7 @@ wrec_utils_deps = [
   c_stringfn_dep,
   c_vector_dep,
   c_string_buffer_dep,
+  fort_dep,
   wildcardcmp_dep,
   c_fsio_dep,  
   libterminput_dep,

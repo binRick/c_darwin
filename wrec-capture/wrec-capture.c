@@ -2,15 +2,15 @@
 static void wait_for_control_d();
 #include <termios.h>
 ///////////////////////////////////////////////////////
-#include "wrec-common/wrec-common.h"
+#include "c_string_buffer/include/stringbuffer.h"
 #include "chan/src/chan.h"
 #include "libterminput/libterminput.h"
-#include "c_string_buffer/include/stringbuffer.h"
 #include "tempdir.c/tempdir.h"
+#include "wrec-common/wrec-common.h"
 #include "wrec-utils/wrec-utils.h"
 ///////////////////////////////////////////////////////
-static bool DEBUG_IMAGE_RESIZE         = false;
-static bool VERBOSE_DEBUG_IMAGE_RESIZE = false;
+static bool            DEBUG_IMAGE_RESIZE         = false;
+static bool            VERBOSE_DEBUG_IMAGE_RESIZE = false;
 static struct args_t   execution_args;
 static pthread_mutex_t *capture_config_mutex;
 static pthread_t       capture_thread, wait_ctrl_d_thread;
@@ -66,6 +66,7 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
 
 int read_captured_frames(struct capture_config_t *capture_config) {
   struct Vector *images_v = vector_new();
+
   for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
     struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
     f->file_size = fsio_file_size(f->file);
@@ -115,6 +116,7 @@ static void CGImageDumpInfo(CGImageRef image) {
          ((bitmapInfo & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big) ? "YES" : "NO");
   printf("==================================================================================================\n");
 } /* CGImageDumpInfo */
+
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
   CGContextRef context = CGBitmapContextCreate(NULL, width, height,
@@ -325,6 +327,7 @@ bool capture_to_file_image(const int WINDOW_ID, const char *FILE_NAME){
   COMMON_RESIZE_AND_SAVE(RESIZE_BY_NONE, RESIZE_WIDTH, RESIZE_HEIGHT)
   COMMON_RESIZE_RETURN()
 }
+
 ///////////////////////////////////////////////////////
 void do_capture(void *CAPTURE_CONFIG){
   char                    *tempdir_path   = gettempdir();
@@ -408,6 +411,7 @@ void do_capture(void *CAPTURE_CONFIG){
   }
   chan_send(done_chan, (void *)NULL);
 } /* do_capture */
+
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   done_chan      = chan_init(0);
@@ -458,8 +462,6 @@ int capture_window(void *ARGS) {
   return(read_captured_frames(capture_config));
 } /* capture_window */
 
-
-
 static void wait_for_control_d(){
   struct StringBuffer       *sb;
   struct libterminput_state ctx = { 0 };
@@ -508,6 +510,7 @@ static void wait_for_control_d(){
 
   chan_send(done_chan, (void *)NULL);
 } /* wait_for_control_d */
+
 char *resize_type_name(const int RESIZE_TYPE){
   char *RESIZE_TYPE_NAME = "UNKNOWN";
 
