@@ -21,7 +21,6 @@
 #include "submodules/tinydir/tinydir.h"
 #include "tempdir.c/tempdir.h"
 #include "window-utils/window-utils.h"
-#include "wrec-common/wrec-common.h"
 ///////////////////////////////////
 int load_pngs_create_animated_gif(const char *PATH);
 ///////////////////////////////////

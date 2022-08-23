@@ -12,8 +12,6 @@
 #include <sys/sysctl.h>
 #include <sys/time.h>
 ////////////////////////////////////////////////////////
-#include "wrec-common/wrec-common.h"
-////////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "c_vector/vector/vector.h"
 #include "djbhash/src/djbhash.h"

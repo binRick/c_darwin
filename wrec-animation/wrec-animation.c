@@ -10,7 +10,6 @@
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
-#include "c_img/src/img.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "chan/src/chan.h"

@@ -21,6 +21,7 @@
 ////////////////////////////////////////////
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
+#include "c_img/src/img.h"
 #include "c_vector/vector/vector.h"
 #include "libfort/lib/fort.h"
 #include "string-utils/string-utils.h"
@@ -28,6 +29,14 @@
 #include "tempdir.c/tempdir.h"
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////
+struct loaded_png_file_t {
+  int                       width, height, stb_format, stb_req_format;
+  unsigned char             *pixels;
+  char                      *path;
+  size_t                    size;
+  unsigned long             dur;
+  struct image_dimensions_t image_dimensions;
+};
 struct file_time_t {
   long unsigned             file_creation_ts, stb_render_ms, started_ms, frame_ms;
   char                      *file_path;

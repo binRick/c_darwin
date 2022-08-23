@@ -29,7 +29,6 @@ wrec_animation_deps = [
   window_utils_dep,
   msf_gif_dep,
   stb_dep,
-  c_img_dep,
   tempdir_dep,
 ]
 wrec_animation_dirs = [
