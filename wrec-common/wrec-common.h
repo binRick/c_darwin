@@ -1,4 +1,5 @@
 #pragma once
+int list_windows();
 #include "app-utils/app-utils.h"
 #include "window-utils/window-utils.h"
 #include "string-utils/string-utils.h"
@@ -9,9 +10,9 @@
 ///////////////////////////////////////
 #include "wrec-common/qoi.h"
 ///////////////////////////////////////
-#include "wrec-common/args.h"
-///////////////////////////////////////
 #include "wrec-common/capture.h"
+///////////////////////////////////////
+#include "wrec-common/args.h"
 ///////////////////////////////////////
 #include "wrec-common/image.h"
 ///////////////////////////////////////

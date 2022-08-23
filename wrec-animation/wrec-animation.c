@@ -1,7 +1,7 @@
 #pragma once
-#define MSF_GIF_IMPL
 #include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////
+#define MSF_GIF_IMPL
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
 ////////////////////////////////////////////////////

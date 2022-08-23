@@ -15,6 +15,7 @@ wrec_image_test_deps = [
   debug_memory_dep,
   wrec_capture_dep,
   bench_dep,
+  wrec_utils_dep,
   wrec_common_dep,
   wrec_image_dep,
 ]

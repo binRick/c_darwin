@@ -1,30 +1,12 @@
 #pragma once
-#include <stdio.h>
-#define DEBUG_PID_ENV    false
-#include <ctype.h>
-#include <libproc.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/sysctl.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
-////////////////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "c_vector/vector/vector.h"
-#include "djbhash/src/djbhash.h"
-#include "fsio.h"
-#include "parson.h"
-#include "str-replace.h"
-#include "string-utils/string-utils.h"
-#include "stringbuffer.h"
-#include "stringfn.h"
-#include "submodules/libfort/src/fort.h"
-#include "tiny-regex-c/re.h"
-#include "window-utils/window-utils.h"
 //////////////////////////////////////////
-int list_windows();
-int capture_window();
+#include "wrec-common/wrec-common.h"
 //////////////////////////////////////////
+struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config);
+struct recorded_frame_t *get_latest_recorded_frame(struct capture_config_t *capture_config);
+size_t get_ms_since_last_recorded_frame(struct capture_config_t *capture_config);
+size_t get_next_frame_interval_ms(struct capture_config_t *capture_config);
+size_t get_next_frame_timestamp(struct capture_config_t *capture_config);
+size_t get_ms_until_next_frame(struct capture_config_t *capture_config);
+size_t get_recorded_duration_ms(struct capture_config_t *capture_config);
+size_t get_ms_until_next_frame(struct capture_config_t *capture_config);

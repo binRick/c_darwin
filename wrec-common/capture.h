@@ -6,6 +6,7 @@
 /////////////////////////////
 CGImageRef capture_window_id_cgimageref(const int WINDOW_ID);
 bool capture_to_file_image(const int WINDOW_ID, const char *FILE_NAME);
+int capture_window();
 /////////////////////////////
 enum resize_type_t {
   RESIZE_BY_WIDTH,

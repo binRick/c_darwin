@@ -1,5 +1,4 @@
 ////////////////////////////////////////////
-#include "wrec-capture/wrec-capture.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-image-test/wrec-image-test.h"
 #include "wrec-image/wrec-image.h"

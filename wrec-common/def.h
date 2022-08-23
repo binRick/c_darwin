@@ -2,7 +2,6 @@
 #ifndef WREC_COMMON_DEF
 #define WREC_COMMON_DEF
 #define STB_IMAGE_IMPLEMENTATION
-///////////////////////////////////////
 #define MINIMUM_PNG_FILE_SIZE    67
 #define MINIMUM_PNG_WIDTH        10
 #define MINIMUM_PNG_HEIGHT       10
@@ -18,5 +17,9 @@
 #define DEFAULT_RESIZE_TYPE                    RESIZE_BY_NONE
 #define DEFAULT_RESIZE_VALUE                   1
 #define DEFAULT_APPLICATION_NAME_GLOB          "*"
-///////////////////////////////////////
+#define DEBUG_PID_ENV    false
+//////////////////////////////////////////////////////////////////////////////////
+#define STR_ENDS_WITH(S, E)    (strcmp(S + strlen(S) - (sizeof(E) - 1), E) == 0)
+#define RECORDED_FRAMES_QTY    vector_size(capture_config->recorded_frames_v)
+//////////////////////////////////////////////////////////////////////////////////
 #endif

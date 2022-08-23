@@ -27,6 +27,7 @@ wrec_capture_test_deps = [
   bench_dep,
   c_fsio_dep,
   bytes_dep,
+  wrec_utils_dep,
   ms_dep,
   tempdir_dep,
   debug_memory_dep,

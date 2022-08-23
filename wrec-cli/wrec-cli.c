@@ -1,32 +1,25 @@
 ////////////////////////////////////////////////////
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-////////////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "exec-fzf/exec-fzf.h"
 #include "wrec-cli/wrec-cli.h"
 ////////////////////////////////////////////////////
+#include "exec-fzf/exec-fzf.h"
+////////////////////////////////////////////////////
+static struct args_t     args = {
+    .mode                        = DEFAULT_MODE,
+    .verbose                     = DEFAULT_VERBOSE,
+    .window_id                   = DEFAULT_WINDOW_ID,
+    .max_recorded_frames         = DEFAULT_MAX_RECORD_FRAMES,
+    .max_record_duration_seconds = DEFAULT_MAX_RECORD_DURATION_SECONDS,
+    .frames_per_second           = DEFAULT_FRAMES_PER_SECOND,
+    .mode_list                   = DEFAULT_MODE_LIST,
+    .mode_capture                = DEFAULT_MODE_CAPTURE,
+    .mode_debug_args             = DEFAULT_MODE_DEBUG_ARGS,
+    .resize_type                 = DEFAULT_RESIZE_TYPE,
+    .resize_value                = DEFAULT_RESIZE_VALUE,
+    .application_name_glob       = DEFAULT_APPLICATION_NAME_GLOB,
+  };
 static int select_window(void);
 static int parse_args(int argc, char *argv[]);
 static int debug_args();
-////////////////////////////////////////////////////
-static struct args_t     args = {
-  .mode                        = DEFAULT_MODE,
-  .verbose                     = DEFAULT_VERBOSE,
-  .window_id                   = DEFAULT_WINDOW_ID,
-  .max_recorded_frames         = DEFAULT_MAX_RECORD_FRAMES,
-  .max_record_duration_seconds = DEFAULT_MAX_RECORD_DURATION_SECONDS,
-  .frames_per_second           = DEFAULT_FRAMES_PER_SECOND,
-  .mode_list                   = DEFAULT_MODE_LIST,
-  .mode_capture                = DEFAULT_MODE_CAPTURE,
-  .mode_debug_args             = DEFAULT_MODE_DEBUG_ARGS,
-  .resize_type                 = DEFAULT_RESIZE_TYPE,
-  .resize_value                = DEFAULT_RESIZE_VALUE,
-  .application_name_glob       = DEFAULT_APPLICATION_NAME_GLOB,
-};
-
 static struct modes_t    modes[] = {
   { .name = "debug_args",    .description = "Debug Arguments", .handler = debug_args     },
   { .name = "list",          .description = "List Windows",    .handler = list_windows   },
@@ -34,7 +27,6 @@ static struct modes_t    modes[] = {
   { .name = "select_window", .description = "Select Window",   .handler = select_window  },
   { 0 },
 };
-
 static struct cag_option options[] = {
   { .identifier     = 'm',
     .access_letters = "m",
@@ -76,8 +68,6 @@ static struct cag_option options[] = {
     .access_name    = "help",
     .description    = "Shows the command help" }
 };
-////////////////////////////////////////////////////
-
 static int iterate_modes(){
   struct modes_t *m = modes;
 
