@@ -33,8 +33,8 @@ if get_option('enable-binaries')
      c_args: wrec_animation_test_c_args,
      install: false,
   )
-  #test('wrec-animation-test', 
-  #  wrec_animation_test_exec, args: ['-v','-a'],
-  #  workdir: wrec_animation_test_test_dir,
-  #)
+  test('wrec-animation-test', 
+    wrec_animation_test_exec, args: ['-v','-a'],
+    workdir: wrec_animation_test_test_dir,
+  )
 endif

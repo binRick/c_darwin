@@ -3,7 +3,6 @@ wrec_image_test_srcs = [
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 wrec_image_test_include_dirs = [
-  '.',
   inc,
 ]
 wrec_image_test_deps = [
@@ -12,11 +11,8 @@ wrec_image_test_deps = [
   c_fsio_dep,
   c_stringfn_dep,
   ansi_codes_dep,
-  debug_memory_dep,
   wrec_capture_dep,
   bench_dep,
-  wrec_utils_dep,
-  wrec_common_dep,
   wrec_image_dep,
 ]
 wrec_image_test_c_args = [
@@ -35,8 +31,8 @@ if get_option('enable-binaries')
      c_args: wrec_image_test_c_args,
      install: false,
   )
-  #test('wrec-image-test', 
-  #  wrec_image_test_exec, args: ['-v','-a'],
-  #  workdir: wrec_image_test_test_dir,
-  #)
+  test('wrec-image-test', 
+    wrec_image_test_exec, args: ['-v','-a'],
+    workdir: wrec_image_test_test_dir,
+  )
 endif

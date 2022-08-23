@@ -10,17 +10,9 @@ wrec_cli_deps = [
   cargs_dep,
   wrec_utils_dep,
   exec_fzf_dep,
-  progress_dep,
 ]
 wrec_cli_dirs = [
-  '.',
   inc,
-  '../submodules/c_deps/submodules/c_fsio',
-  '../submodules/c_deps/submodules/c_fsio/include',
-  '../submodules/c_deps/submodules/reproc/reproc/include/reproc',
-  '../submodules/c_deps/submodules/reproc/reproc/include',
-  '../submodules/c_deps/submodules/reproc/reproc',
-  '../submodules/c_deps/submodules/reproc',
 ]
 
 
