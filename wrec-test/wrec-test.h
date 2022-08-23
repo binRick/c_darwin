@@ -8,7 +8,7 @@
 #include "submodules/c_deps/submodules/c_stringfn/include/stringfn.h"
 #include "submodules/c_deps/submodules/c_stringfn/include/stringfn.h"
 #include "submodules/c_deps/submodules/c_timer/include/c_timer.h"
-#include "submodules/c_deps/submodules/c_vector/include/vector.h"
+#include "submodules/c_deps/submodules/c_vector/vector/vector.h"
 #include "submodules/c_deps/submodules/socket99/socket99.h"
 #include "submodules/c_deps/submodules/tiny-regex-c/re.h"
 #include "wrec-test/wrec-test.h"

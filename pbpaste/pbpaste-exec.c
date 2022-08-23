@@ -11,7 +11,7 @@
 #include "submodules/c_eventemitter/include/eventemitter.h"
 #include "submodules/c_forever/include/forever.h"
 #include "submodules/c_string_buffer/include/stringbuffer.h"
-#include "submodules/c_vector/include/vector.h"
+#include "submodules/c_vector/vector/vector.h"
 #include "submodules/c_workqueue/include/workqueue.h"
 #include "submodules/libbeaufort/include/beaufort.h"
 #include "submodules/microtar/src/microtar.h"

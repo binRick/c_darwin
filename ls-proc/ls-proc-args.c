@@ -1,6 +1,6 @@
 #pragma once
 #include "c_string_buffer/include/stringbuffer.h"
-#include "c_vector/include/vector.h"
+#include "c_vector/vector/vector.h"
 #include "ls-proc-args.h"
 #include "str-flatten.c/src/str-flatten.h"
 

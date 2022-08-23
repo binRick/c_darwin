@@ -27,6 +27,10 @@ inc = [include_directories(
   'submodules/c_deps/submodules/dbg.h',
   'submodules/c_deps/submodules/tiny-regex-c',
   'submodules/c_deps/submodules',
+  'submodules/c_deps/submodules/reproc',
+  'submodules/c_deps/submodules/reproc/reproc',
+  'submodules/c_deps/submodules/reproc/reproc/include',
+  'submodules/c_deps/submodules/reproc/reproc/include/reproc',
   'submodules/c_deps/submodules/c_ansi',
   'submodules/c_deps/submodules/c_ansi/ansi-codes',
   'submodules/c_deps/submodules/iowow/src',
@@ -36,8 +40,8 @@ inc = [include_directories(
   'submodules/c_deps/submodules/iowow/src/json',
   'submodules/c_deps/submodules/iowow/src/platform',
   'submodules/c_deps/submodules/iowow',
-  'submodules/c_deps/submodules/c_vector/src',
-  'submodules/c_deps/submodules/c_vector/include',
+  'submodules/c_deps/submodules/c_vector/vector',
+  'submodules/c_deps/submodules/c_vector/vector',
   'app-utils',
   'system-utils',
   'submodules/c_deps/submodules/hidapi/hidapi',
@@ -50,6 +54,7 @@ inc = [include_directories(
   'submodules/c_deps/submodules/c_fsio/include',
   'submodules/c_deps/submodules/c_stringfn/include',
   'submodules/c_deps/submodules/parson',
+  'submodules/c_deps/submodules/libbeaufort',
   'submodules/c_deps/submodules/str-replace.c/src',
   'submodules/c_deps/submodules/occurrences.c',
   'window-utils',
@@ -77,13 +82,19 @@ subdir('process')
 subdir('kitty')
 subdir('window-utils')
 subdir('audit')
-subdir('capture')
+#//////////////////////////////////////////////////////////////////////
+subdir('wrec-common')
+subdir('wrec-capture')
 subdir('wrec-utils')
+subdir('wrec-cli')
+subdir('wrec-animation')
+subdir('wrec-capture-test')
+subdir('wrec-animation-test')
+#//////////////////////////////////////////////////////////////////////
 subdir('keylogger-db')
 subdir('keylogger')
 subdir('keylogger-config')
 subdir('keylogger-config-test')
-subdir('wrec-cli')
 subdir('osx-keys')
 #//////////////////////////////////////////////////////////////////////
 subdir('system-utils-test')
@@ -96,16 +107,12 @@ subdir('pbpaste-test')
 subdir('process-test')
 subdir('keylogger-test')
 subdir('audit-test')
-subdir('capture-test')
 subdir('kitty-test')
 subdir('kitty-ls')
 subdir('ls-proc')
-subdir('animated-gif')
 #//////////////////////////////////////////////////////////////////////
 subdir('rectangle')
 subdir('rectangle-test')
 subdir('rectangle-cli')
 subdir('mac-load-test')
-#subdir('msf-gif-test')
-subdir('animated-gif-test')
 subdir('wrec-test')

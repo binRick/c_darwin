@@ -6,9 +6,9 @@
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_stringfn/include/stringfn.h"
-#include "capture/capture.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+#include "wrec-capture/wrec-capture.h"
 #include "wrec-cli/wrec-cli.h"
 #include "wrec-test/wrec-test.h"
 #include "wrec-utils/wrec-utils.h"
@@ -54,14 +54,14 @@ TEST t_return_no_resize_factor_write_file(void *REQ){
   }
   {
     /*
-    ASSERT_GTm("requested file path too small", fsio_file_size(req->file_path), 128);
-    ASSERT_LTm("requested file path too big", fsio_file_size(req->file_path), 1024 * 1024 * 64);
-    ASSERT_EQm("requested file path does not exist", fsio_file_exists(req->file_path), true);
-    ASSERT_EQm("requested file not successful save", res->save_file_success, true);
-    */
+     * ASSERT_GTm("requested file path too small", fsio_file_size(req->file_path), 128);
+     * ASSERT_LTm("requested file path too big", fsio_file_size(req->file_path), 1024 * 1024 * 64);
+     * ASSERT_EQm("requested file path does not exist", fsio_file_exists(req->file_path), true);
+     * ASSERT_EQm("requested file not successful save", res->save_file_success, true);
+     */
   }
-  PASSm("Requested No Resize File Write OK");
 
+  PASSm("Requested No Resize File Write OK");
 }
 
 TEST t_return_resize_factor_write_file(void *REQ){
@@ -105,7 +105,7 @@ TEST t_return_resize_factor_write_file(void *REQ){
   }
   {
     /*
-    */
+     */
     ASSERT_LTm("requested resize factor invalid", res->request->resize_factor, 99999);
     ASSERT_GTm("requested resize factor invalid", res->request->resize_factor, 0);
     ASSERT_LTm("requested file path too big", fsio_file_size(req->file_path), 1024 * 1024 * 64);

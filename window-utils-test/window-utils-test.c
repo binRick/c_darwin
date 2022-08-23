@@ -14,12 +14,12 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_timer/include/c_timer.h"
-#include "capture/capture.h"
 #include "string-utils/string-utils.h"
 #include "submodules/c_deps/submodules/c_dbg/dbg.h"
 #include "submodules/libfort/src/fort.h"
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"
+#include "wrec-capture/wrec-capture.h"
 
 ////////////////////////////////////////
 

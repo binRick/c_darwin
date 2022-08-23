@@ -16,7 +16,7 @@ window_utils_test_deps = [
   c_greatest_dep,
   dbg_dep,
   c_timer_dep,
-  capture_dep,
+ wrec_capture_dep,
   c_fsio_dep,
   fort_dep,
 ]

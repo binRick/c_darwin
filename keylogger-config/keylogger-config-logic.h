@@ -1,5 +1,5 @@
 #pragma once
-#include "c_vector/include/vector.h"
+#include "c_vector/vector/vector.h"
 #include "keylogger-config.h"
 #include "module/def.h"
 #include "module/module.h"

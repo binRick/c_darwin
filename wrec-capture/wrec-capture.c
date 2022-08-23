@@ -10,37 +10,16 @@
 #include "bench/bench.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
-#include "capture/capture.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
+#include "wrec-capture/wrec-capture.h"
 ///////////////////////////////////////////////////////
 #include "core-utils/core-utils.h"
 #include "wrec-utils/wrec-utils.h"
 ///////////////////////////////////////////////////////
 static bool DEBUG_IMAGE_RESIZE         = false;
 static bool VERBOSE_DEBUG_IMAGE_RESIZE = false;
-
-extern int CGSMainConnectionID(void);
-extern CGError CGSGetConnectionPSN(int cid, ProcessSerialNumber *psn);
-extern CGError CGSSetWindowAlpha(int cid, uint32_t wid, float alpha);
-extern CGError CGSSetWindowListAlpha(int cid, const uint32_t *window_list, int window_count, float alpha, float duration)
-;
-extern CGError CGSSetWindowLevelForGroup(int cid, uint32_t wid, int level);
-extern OSStatus CGSMoveWindowWithGroup(const int cid, const uint32_t wid, CGPoint *point);
-extern CGError CGSReassociateWindowsSpacesByGeometry(int cid, CFArrayRef window_list);
-extern CGError CGSGetWindowOwner(int cid, uint32_t wid, int *window_cid);
-extern CGError CGSSetWindowTags(int cid, uint32_t wid, const int tags[2], size_t maxTagSize);
-extern CGError CGSClearWindowTags(int cid, uint32_t wid, const int tags[2], size_t maxTagSize);
-extern CGError CGSGetWindowBounds(int cid, uint32_t wid, CGRect *frame);
-extern CGError CGSGetWindowTransform(int cid, uint32_t wid, CGAffineTransform *t);
-extern CGError CGSSetWindowTransform(int cid, uint32_t wid, CGAffineTransform t);
-extern void CGSManagedDisplaySetCurrentSpace(int cid, CFStringRef display_ref, uint64_t spid);
-extern uint64_t CGSManagedDisplayGetCurrentSpace(int cid, CFStringRef display_ref);
-extern CFArrayRef CGSCopyManagedDisplaySpaces(const int cid);
-extern CFStringRef CGSCopyManagedDisplayForSpace(const int cid, uint64_t spid);
-extern void CGSShowSpaces(int cid, CFArrayRef spaces);
-extern void CGSHideSpaces(int cid, CFArrayRef spaces);
 
 ///////////////////////////////////////////////////////
 static bool cgimage_save_png(const CGImageRef image, const char *filename) {
@@ -114,80 +93,6 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   return(newImageRef);
 }
 
-CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
-  assert(WINDOW_ID > 0);
-  CFDictionaryRef W = window_id_to_window(WINDOW_ID);
-  assert(W != NULL);
-  int             WID = (int)CFDictionaryGetInt(W, kCGWindowNumber);
-  assert(WID > 0);
-  assert(WID == WINDOW_ID);
-  CGSize W_SIZE = CGWindowGetSize(W);
-
-  CGRect frame       = {};
-  int    _connection = CGSMainConnectionID();
-  CGSGetWindowBounds(_connection, WID, &frame);
-  int    capture_rect_x      = frame.origin.x;
-  int    capture_rect_y      = frame.origin.y;
-  int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
-  int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
-  log_debug(
-    "\n\t|window size          :   %dx%d"
-    "\n\t|frame  size          :   %dx%d"
-    "\n\t|frame  origin        :   %dx%d"
-    "\n\t|capture rect"
-    "\n\t               x      :    %d"
-    "\n\t               y      :    %d"
-    "\n\t               width  :    %d"
-    "\n\t               height :    %d"
-    "\n",
-    (int)W_SIZE.height, (int)W_SIZE.width,
-    (int)frame.size.width, (int)frame.size.height,
-    (int)frame.origin.x, (int)frame.origin.y,
-    capture_rect_x, capture_rect_y,
-    capture_rect_width, capture_rect_height
-    );
-
-  CGImageRef img = CGWindowListCreateImage(CGRectMake(capture_rect_x, capture_rect_y, capture_rect_width, capture_rect_height),
-                                           kCGWindowListOptionIncludingWindow,
-                                           WID,
-                                           kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution
-                                           );
-  assert(img != NULL);
-  CGContextRelease(W);
-  return(img);
-} /* capture_window_id_cgimageref */
-
-static void debug_resize(int WINDOW_ID,
-                         char *FILE_NAME,
-                         int RESIZE_TYPE, int RESIZE_VALUE,
-                         int ORIGINAL_WIDTH, int ORIGINAL_HEIGHT,
-                         long unsigned CAPTURE_DURATION_MS, long unsigned SAVE_DURATION_MS) {
-  char *msg;
-
-  asprintf(&msg,
-           "<%d> [debug_resize] "
-           "\n\t|RESIZE_TYPE:%d"
-           "|RESIZE_VALUE:%s"
-           "\n\t|WINDOW_ID:%d"
-           "|FILE_NAME:%s"
-           "|FILE_SIZE:%ld"
-           "\n\t|ORIGINAL_WIDTH:%d|ORIGINAL_HEIGHT:%d"
-           "\n\t|CAPTURE_DUR_MS:%ld|SAVE_DURATION_MS:%ld",
-           getpid(),
-           RESIZE_TYPE,
-           resize_type_name(RESIZE_VALUE),
-           WINDOW_ID,
-           FILE_NAME,
-           fsio_file_size(FILE_NAME),
-           ORIGINAL_WIDTH, ORIGINAL_HEIGHT,
-           CAPTURE_DURATION_MS, SAVE_DURATION_MS
-           );
-
-  log_debug("%s\n", msg);
-
-  free(msg);
-}
-
 ///////////////////////////////////////////////////////
 #define COMMON_RESIZE_AND_SAVE(RESIZE_TYPE, RESIZE_VALUE, RESIZE_HEIGHT) \
   resized_img  = resize_cgimage(img, RESIZE_WIDTH, RESIZE_HEIGHT);       \
@@ -257,18 +162,6 @@ bool capture_to_file_image(const int WINDOW_ID, const char *FILE_NAME){
   int RESIZE_HEIGHT = height;
   COMMON_RESIZE_AND_SAVE(RESIZE_BY_NONE, RESIZE_WIDTH, RESIZE_HEIGHT)
   COMMON_RESIZE_RETURN()
-}
-
-char *resize_type_name(const int RESIZE_TYPE){
-  char *RESIZE_TYPE_NAME = "UNKNOWN";
-
-  switch (RESIZE_TYPE) {
-  case RESIZE_BY_WIDTH:  RESIZE_TYPE_NAME  = "WIDTH"; break;
-  case RESIZE_BY_HEIGHT:  RESIZE_TYPE_NAME = "HEIGHT"; break;
-  case RESIZE_BY_FACTOR:  RESIZE_TYPE_NAME = "FACTOR"; break;
-  case RESIZE_BY_NONE:  RESIZE_TYPE_NAME   = "NONE"; break;
-  }
-  return(RESIZE_TYPE_NAME);
 }
 
 struct capture_result_t *request_window_capture(struct capture_request_t *capture_request){

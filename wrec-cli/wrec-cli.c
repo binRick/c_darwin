@@ -8,8 +8,10 @@
 #include "exec-fzf/exec-fzf.h"
 #include "wrec-cli/wrec-cli.h"
 ////////////////////////////////////////////////////
-int select_window(void);
-
+static int select_window(void);
+static int parse_args(int argc, char *argv[]);
+static int debug_args();
+////////////////////////////////////////////////////
 static struct args_t     args = {
   .mode                        = DEFAULT_MODE,
   .verbose                     = DEFAULT_VERBOSE,
@@ -30,7 +32,7 @@ static struct modes_t    modes[] = {
   { .name = "list",          .description = "List Windows",    .handler = list_windows   },
   { .name = "record",        .description = "Capture Window",  .handler = capture_window },
   { .name = "select_window", .description = "Select Window",   .handler = select_window  },
-  { NULL },
+  { 0 },
 };
 
 static struct cag_option options[] = {
@@ -172,7 +174,7 @@ static int parse_args(int argc, char *argv[]){
   return(EXIT_SUCCESS);
 } /* parse_args */
 
-int select_window(void){
+static int select_window(void){
   int               res = -1;
 
   struct fzf_exec_t *fe = exec_fzf_setup();

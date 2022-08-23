@@ -11,7 +11,7 @@
 //////////////////////////////////////
 #include "active-app/active-app.h"
 #include "ansi-codes/ansi-codes.h"
-#include "c_vector/include/vector.h"
+#include "c_vector/vector/vector.h"
 #include "cargs/include/cargs.h"
 #include "rectangle/rectangle.h"
 //////////////////////////////////////

@@ -4,6 +4,7 @@ wrec_cli_srcs = [
 wrec_cli_link_flags = []
 wrec_cli_c_args = []
 wrec_cli_deps = [
+  wrec_common_dep,
   ansi_codes_dep,
   cargs_dep,
   wrec_utils_dep,
@@ -11,10 +12,14 @@ wrec_cli_deps = [
   progress_dep,
 ]
 wrec_cli_dirs = [
-  '../submodules/c_deps/submodules/c_fsio/include',
   '.',
-  '../submodules/c_deps/submodules/c_fsio',
   inc,
+  '../submodules/c_deps/submodules/c_fsio',
+  '../submodules/c_deps/submodules/c_fsio/include',
+  '../submodules/c_deps/submodules/reproc/reproc/include/reproc',
+  '../submodules/c_deps/submodules/reproc/reproc/include',
+  '../submodules/c_deps/submodules/reproc/reproc',
+  '../submodules/c_deps/submodules/reproc',
 ]
 
 

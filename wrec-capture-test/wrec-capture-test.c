@@ -1,14 +1,13 @@
 #define DEBUG_MODE    false
-#include "c_dbg/dbg.h"
-//#include "debug-memory/debug_memory.h"
 #include "bench/bench.h"
 #include "bytes/bytes.h"
+#include "c_dbg/dbg.h"
 #include "c_fsio/include/fsio.h"
-#include "capture-test.h"
 #include "generic-print/print.h"
 #include "ms/ms.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+#include "wrec-capture-test.h"
 static const char *tempdir_path = NULL;
 
 /*

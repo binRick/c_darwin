@@ -1,9 +1,10 @@
-capture_srcs = [
-  'capture.c',
+wrec_capture_srcs = [
+  'wrec-capture.c',
 ]
-capture_link_flags = []
-capture_c_args = []
-capture_deps = [
+wrec_capturelink_flags = []
+wrec_capturec_args = []
+wrec_capture_deps = [
+  wrec_common_dep,
   ansi_codes_dep,
   core_utils_dep,
   bench_dep,
@@ -28,21 +29,21 @@ capture_deps = [
   debug_memory_dep,  
   kitty_dep,  
 ]
-capture_dirs = [
+wrec_capture_dirs = [
   '../submodules/c_deps/submodules/c_fsio/include',
   '.',
   '../submodules/c_deps/submodules/c_fsio',
   inc,
 ]
-capture_lib =static_library('capture',
-  capture_srcs,
+wrec_capture_lib =static_library('wrec-capture',
+  wrec_capture_srcs,
   install: false,
-  dependencies: capture_deps,
-  c_args: capture_c_args,
-  include_directories: capture_dirs,
+  dependencies: wrec_capture_deps,
+  c_args: wrec_capturec_args,
+  include_directories: wrec_capture_dirs,
 )
-capture_dep = declare_dependency(
-  include_directories: capture_dirs,
-  link_with: capture_lib,
-  link_args: capture_link_flags,
+wrec_capture_dep = declare_dependency(
+  include_directories: wrec_capture_dirs,
+  link_with: wrec_capture_lib,
+  link_args: wrec_capturelink_flags,
 )

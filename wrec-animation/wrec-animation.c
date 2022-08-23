@@ -1,24 +1,35 @@
-#pragma once
-#ifndef ANIMATED_GIF_C
-#define ANIMATED_GIF_C
-#include "animated-gif/animated-gif.h"
-////////////////////////////////////////////
+////////////////////////////////////////////////////
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+////////////////////////////////////////////////////
+#define STB_IMAGE_IMPLEMENTATION
+#define MSF_GIF_IMPL
+////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_img/src/img.h"
+#include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
-#include "c_vector/include/vector.h"
+#include "chan/src/chan.h"
+#include "chan/src/queue.h"
+#include "libbeaufort/include/beaufort.h"
+#include "libfort/lib/fort.h"
+#include "libterminput/libterminput.h"
+#include "log.h/log.h"
 #include "ms/ms.h"
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
+#include "strdup/strdup.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+#include "wildcardcmp/wildcardcmp.h"
+#include "wrec-capture/wrec-capture.h"
+#include "wrec-common/wrec-common.h"
 
-////////////////////////////////////////////
-static int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2);
-
-////////////////////////////////////////////
+////////////////////////////////////////////////////
 int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
   char                *ANIMATED_GIF_FILE = "MyGif.gif";
   struct file_time_t  *f, *next_f;
@@ -217,15 +228,3 @@ end_tinydir:
   }
   return((ft->success == true) ? 0 : 1);
 } /* load_pngs_create_animated_gif */
-
-static int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
-  int ret = (e1->file_creation_ts > e2->file_creation_ts)
-              ? 1
-              : (e1->file_creation_ts < e2->file_creation_ts)
-                ? -1
-                : 0;
-
-  return(ret);
-}
-
-#endif

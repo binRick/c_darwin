@@ -4,6 +4,7 @@ wrec_utils_srcs = [
 wrec_utils_link_flags = []
 wrec_utils_c_args = []
 wrec_utils_deps = [
+  wrec_common_dep,
   ansi_codes_dep,
   djbhash_dep,
   c_stringfn_dep,
@@ -30,7 +31,7 @@ wrec_utils_deps = [
   dbg_dep,
   c_timer_dep,
   progress_dep,
-  capture_dep,
+ wrec_capture_dep,
   bench_dep,
   ms_dep,
   tempdir_dep,

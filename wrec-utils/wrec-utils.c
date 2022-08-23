@@ -8,11 +8,11 @@
 #include <unistd.h>
 /////////////////////////////////////
 #include "wrec-cli/wrec-cli.h"
+#include "wrec-common/wrec-common.h"
 #include "wrec-utils/wrec-utils.h"
 /////////////////////////////////////
 #include "bytes/bytes.h"
 #include "c_string_buffer/include/stringbuffer.h"
-#include "capture/capture.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
 #include "libterminput/libterminput.h"
@@ -21,22 +21,15 @@
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
-/////////////////////////////////////
-#include "wrec-cli/wrec-cli.h"
+#include "wrec-capture/wrec-capture.h"
+////////////////////////////////////////////////////////////
+extern const char *EXCLUDED_WINDOW_APP_NAMES[];
 ////////////////////////////////////////////////////////////
 #define RECORDED_FRAMES_QTY    vector_size(capture_config->recorded_frames_v)
-static const char      *tempdir_path = NULL;
 static struct args_t   execution_args;
 static pthread_mutex_t *capture_config_mutex;
 static pthread_t       capture_thread, wait_ctrl_d_thread;
 static chan_t          *done_chan;
-static const char      *EXCLUDED_WINDOW_APP_NAMES[] = {
-  "Control Center",
-  "Rectangle",
-  "SystemUIServer",
-  "Window Server",
-  NULL,
-};
 ////////////////////////////////////////////////////////////
 static struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {
@@ -97,9 +90,7 @@ static size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
 
 ////////////////////////////////////////////////////////////
 static void do_capture(void *CAPTURE_CONFIG){
-  if (tempdir_path == NULL) {
-    tempdir_path = gettempdir();
-  }
+  char                    *tempdir_path   = gettempdir();
   struct capture_config_t *capture_config = (struct capture_config_t *)CAPTURE_CONFIG;
 
   pthread_mutex_lock(capture_config_mutex);
@@ -230,29 +221,6 @@ static void wait_for_control_d(){
   chan_send(done_chan, (void *)NULL);
 } /* wait_for_control_d */
 
-static int read_captured_frames(struct capture_config_t *capture_config) {
-  if (tempdir_path == NULL) {
-    tempdir_path = gettempdir();
-  }
-  struct Vector *images_v = vector_new();
-  for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
-    struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
-    f->file_size = fsio_file_size(f->file);
-    if (execution_args.verbose == true) {
-      fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
-              i,
-              f->timestamp,
-              bytes_to_string(fsio_file_size(f->file)),
-              f->file,
-              f->record_dur
-              );
-    }
-
-    vector_push(images_v, (char *)f->file);
-  }
-  return(0);
-}
-
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   done_chan      = chan_init(0);
@@ -302,103 +270,3 @@ int capture_window(void *ARGS) {
 
   return(read_captured_frames(capture_config));
 } /* capture_window */
-
-int list_windows(void *ARGS) {
-  execution_args = *(struct args_t *)ARGS;
-  ft_table_t *table = ft_create_table();
-  ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
-  ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
-  ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
-  ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
-
-  ft_write_ln(table,
-              "Application",
-              "PID",
-              "Window ID",
-              "Size",
-              "Position",
-              "Layer",
-              "Focused",
-              "Visible",
-              "Minimized"
-              );
-
-  struct Vector *windows = get_windows();
-  for (size_t i = 0; i < vector_size(windows); i++) {
-    window_t *w         = (window_t *)vector_get(windows, i);
-    int      NAME_MATCH = wildcardcmp(execution_args.application_name_glob, strip_non_ascii(w->app_name));
-    if (NAME_MATCH == 0) {
-      continue;
-    }
-    if ((int)w->position.y < 25 && (int)w->size.height < 50 && w->layer > 0) {
-      continue;
-    }
-    char **tmp           = EXCLUDED_WINDOW_APP_NAMES;
-    bool excluded_window = false;
-    while (*tmp != NULL && excluded_window == false) {
-      if (strcmp(*tmp, w->app_name) == 0) {
-        excluded_window = true;
-      }
-
-      tmp++;
-    }
-    if (excluded_window) {
-      continue;
-    }
-    ft_printf_ln(table,
-                 "%.20s|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
-                 strip_non_ascii(w->app_name),
-                 w->pid,
-                 w->window_id,
-                 (int)w->size.height, (int)w->size.width,
-                 (int)w->position.x, (int)w->position.y,
-                 w->layer,
-                 int_to_string(w->is_focused),
-                 int_to_string(w->is_visible),
-                 int_to_string(w->is_minimized)
-                 );
-
-    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
-    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_UNDERLINED);
-    ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-
-    if (w->position.x != 0 || w->position.y != 0) {
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else{
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }
-    if (w->layer != 0) {
-      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }else{
-      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }
-    if (w->is_focused) {
-      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else{
-      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }
-    if (w->is_visible) {
-      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else{
-      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }
-    if (w->is_minimized) {
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else{
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }
-  }
-
-  printf("\n%s\n", ft_to_string(table));
-  ft_destroy_table(table);
-
-  return(0);
-} /* list_windows */

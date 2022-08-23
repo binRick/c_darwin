@@ -11,7 +11,7 @@
 #include <string.h>
 #include <sys/time.h>
 //////////////////////////////////////
-#include "submodules/c_vector/include/vector.h"
+#include "submodules/c_vector/vector/vector.h"
 /*
  #include "deps/deps.h"
  #include "int/int.h"

@@ -13,14 +13,14 @@
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
-#include "c_vector/include/vector.h"
+#include "c_vector/vector/vector.h"
 #include "keylogger-config-logic.h"
 #include "module/def.h"
 #include "module/module.h"
 #include "module/require.h"
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////////////////
-#include "c_vector/include/vector.h"
+#include "c_vector/vector/vector.h"
 //////////////////////////////////////////////////////////////////////////////////////////////////
 enum keylogger_config_action_type_t {
   KEYLOGGER_CONFIG_ACTION_TYPE_EXECUTE,

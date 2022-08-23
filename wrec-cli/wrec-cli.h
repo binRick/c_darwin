@@ -1,7 +1,4 @@
 #pragma once
-#include "capture/capture.h"
-#include "cargs/include/cargs.h"
-#include "wrec-utils/wrec-utils.h"
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -10,6 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+///////////////////////////////////
+#include "cargs/include/cargs.h"
+#include "wrec-capture/wrec-capture.h"
+#include "wrec-common/wrec-common.h"
+#include "wrec-utils/wrec-utils.h"
 ///////////////////////////////////
 #define DEFAULT_VERBOSE                        false
 #define DEFAULT_MODE                           "list"
@@ -23,41 +25,4 @@
 #define DEFAULT_RESIZE_TYPE                    RESIZE_BY_NONE
 #define DEFAULT_RESIZE_VALUE                   1
 #define DEFAULT_APPLICATION_NAME_GLOB          "*"
-///////////////////////////////////
-struct modes_t {
-  char *name;
-  char *description;
-  int  (*handler)(void *);
-} modes_t;
-struct args_t {
-  char   *mode;
-  bool   verbose;
-  int    window_id;
-  size_t max_recorded_frames;
-  size_t max_record_duration_seconds;
-  int    frames_per_second;
-  bool   mode_capture;
-  bool   mode_list;
-  bool   mode_debug_args;
-  int    resize_type;
-  int    resize_value;
-  char   *application_name_glob;
-};
-struct recorded_frame_t {
-  int64_t timestamp;
-  char    *file, *hash_enc;
-  size_t  file_size, record_dur;
-};
-struct capture_config_t {
-  bool          active;
-  int           max_record_frames_qty, max_record_duration_seconds, frames_per_second, window_id;
-  int64_t       started_timestamp, ended_timestamp;
-  int           resize_type;
-  int           resize_value;
-  struct Vector *recorded_frames_v;
-};
-///////////////////////////////////
-static int parse_args(int argc, char *argv[]);
-int debug_args();
-
 ///////////////////////////////////

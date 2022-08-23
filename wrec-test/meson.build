@@ -9,9 +9,10 @@ wrec_include_dirs = [
 wrec_include_cargs = [
   ]
 wrec_test_deps = [
+  wrec_common_dep,
   c_greatest_dep,
   wrec_utils_dep,
-  capture_dep,
+ wrec_capture_dep,
   tempdir_dep,
   c_fsio_dep,
   c_stringfn_dep,

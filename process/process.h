@@ -4,7 +4,7 @@
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
-#include "c_vector/include/vector.h"
+#include "c_vector/vector/vector.h"
 #include "kitty/kitty.h"
 #include "stringfn.h"
 //////////////////////////////////////////
