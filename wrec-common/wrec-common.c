@@ -4,6 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 ////////////////////////////////////////////////////
+#define DEBUG_WINDOWS    false
+////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -180,22 +182,24 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
   int    capture_rect_y      = frame.origin.y;
   int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
   int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
-  log_debug(
-    "\n\t|window size          :   %dx%d"
-    "\n\t|frame  size          :   %dx%d"
-    "\n\t|frame  origin        :   %dx%d"
-    "\n\t|capture rect"
-    "\n\t               x      :    %d"
-    "\n\t               y      :    %d"
-    "\n\t               width  :    %d"
-    "\n\t               height :    %d"
-    "\n",
-    (int)W_SIZE.height, (int)W_SIZE.width,
-    (int)frame.size.width, (int)frame.size.height,
-    (int)frame.origin.x, (int)frame.origin.y,
-    capture_rect_x, capture_rect_y,
-    capture_rect_width, capture_rect_height
-    );
+  if (true == DEBUG_WINDOWS) {
+    log_debug(
+      "\n\t|window size          :   %dx%d"
+      "\n\t|frame  size          :   %dx%d"
+      "\n\t|frame  origin        :   %dx%d"
+      "\n\t|capture rect"
+      "\n\t               x      :    %d"
+      "\n\t               y      :    %d"
+      "\n\t               width  :    %d"
+      "\n\t               height :    %d"
+      "\n",
+      (int)W_SIZE.height, (int)W_SIZE.width,
+      (int)frame.size.width, (int)frame.size.height,
+      (int)frame.origin.x, (int)frame.origin.y,
+      capture_rect_x, capture_rect_y,
+      capture_rect_width, capture_rect_height
+      );
+  }
 
   CGImageRef img = CGWindowListCreateImage(CGRectMake(capture_rect_x, capture_rect_y, capture_rect_width, capture_rect_height),
                                            kCGWindowListOptionIncludingWindow,

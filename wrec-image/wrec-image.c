@@ -98,13 +98,13 @@ void *qoi_encode_to_memory(const void *pixels, int width, int height){
   unsigned long started       = timestamp();
   int           encoded_bytes = 0;
 
-  qoi_desc desc = {
+  qoi_desc      desc = {
     .width      = width,
     .height     = height,
     .channels   = 4,
     .colorspace = QOI_SRGB,
   };
-  void     *qoi_pixels = qoi_encode(pixels, &desc, &encoded_bytes);
+  void          *qoi_pixels = qoi_encode(pixels, &desc, &encoded_bytes);
 
   if (!pixels) {
     log_error("Couldn't encode %dx%d pixels", width, height);
