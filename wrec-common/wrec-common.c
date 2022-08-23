@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 ////////////////////////////////////////////////////
-#define DEBUG_WINDOWS    (getenv("DEBUG") != NULL)
+#define DEBUG_WINDOWS (getenv("DEBUG") != NULL)
 ////////////////////////////////////////////////////
 #include "wrec-capture/wrec-capture.h"
 #include "wrec-common/wrec-common.h"
@@ -23,6 +23,7 @@
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "wrec-common/extern.h"
 ////////////////////////////////////////////////////
 const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Control Center",

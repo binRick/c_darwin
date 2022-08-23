@@ -9,8 +9,7 @@
 #include "libterminput/libterminput.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "tempdir.c/tempdir.h"
-////////////////////////////////////////////////////////////
-extern const char *EXCLUDED_WINDOW_APP_NAMES[];
+#include "wrec-common/extern.h"
 ////////////////////////////////////////////////////////////
 struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {

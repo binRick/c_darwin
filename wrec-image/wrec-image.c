@@ -3,9 +3,9 @@
 #define QOI_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 ////////////////////////////////////////////////////
+#include "wrec-image/wrec-image.h"
 #include "stb/stb_image.h"
 #include "qoi/qoi.h"
-////////////////////////////////////////////////////
 #include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////
 struct image_dimensions_t *get_png_file_dimensions(char *path){

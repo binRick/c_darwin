@@ -10,13 +10,60 @@
 ///////////////////////////////////////////////////////
 static bool DEBUG_IMAGE_RESIZE         = false;
 static bool VERBOSE_DEBUG_IMAGE_RESIZE = false;
-///////////////////////////////////////////////////////
 static struct args_t   execution_args;
 static pthread_mutex_t *capture_config_mutex;
 static pthread_t       capture_thread, wait_ctrl_d_thread;
 static chan_t          *done_chan;
 ///////////////////////////////////////////////////////
 
+void wait_for_control_d(){
+  struct StringBuffer       *sb;
+  struct libterminput_state ctx = { 0 };
+  union libterminput_input  input;
+  int                       r;
+  struct termios            stty, saved_stty;
+
+  if (tcgetattr(STDERR_FILENO, &stty)) {
+    perror("tcgetattr STDERR_FILENO");
+    return(1);
+  }
+  saved_stty    = stty;
+  stty.c_lflag &= (tcflag_t) ~(ECHO | ICANON);
+  if (tcsetattr(STDERR_FILENO, TCSAFLUSH, &stty)) {
+    perror("tcsetattr STDERR_FILENO TCSAFLUSH");
+    return(1);
+  }
+
+  fprintf(stderr, AC_RESETALL AC_YELLOW "Control+d to stop capture" AC_RESETALL "\n");
+  while ((r = libterminput_read(STDIN_FILENO, &input, &ctx)) > 0) {
+    sb = stringbuffer_new_with_options(32, true);
+    if (input.type == LIBTERMINPUT_KEYPRESS) {
+      if (input.keypress.mods & LIBTERMINPUT_SHIFT) {
+        stringbuffer_append_string(sb, "shift+");
+      }
+      if (input.keypress.mods & LIBTERMINPUT_CTRL) {
+        stringbuffer_append_string(sb, "ctrl+");
+      }
+      stringbuffer_append_string(sb, input.keypress.symbol);
+      if (execution_args.verbose == true) {
+        printf("keypress:'%s'\n", stringbuffer_to_string(sb));
+      }
+      if (strcmp(stringbuffer_to_string(sb), "ctrl+D") == 0) {
+        if (execution_args.verbose == true) {
+          printf("stopping........\n");
+        }
+        break;
+      }
+    }
+    stringbuffer_release(sb);
+  }
+  if (r < 0) {
+    perror("libterminput_read STDIN_FILENO");
+  }
+  tcsetattr(STDERR_FILENO, TCSAFLUSH, &saved_stty);
+
+  chan_send(done_chan, (void *)NULL);
+} /* wait_for_control_d */
 static void CGImageDumpInfo(CGImageRef image) {
   size_t width               = CGImageGetWidth(image),
          height              = CGImageGetHeight(image),
@@ -344,54 +391,6 @@ void do_capture(void *CAPTURE_CONFIG){
   }
   chan_send(done_chan, (void *)NULL);
 } /* do_capture */
-void wait_for_control_d(){
-  struct StringBuffer       *sb;
-  struct libterminput_state ctx = { 0 };
-  union libterminput_input  input;
-  int                       r;
-  struct termios            stty, saved_stty;
-
-  if (tcgetattr(STDERR_FILENO, &stty)) {
-    perror("tcgetattr STDERR_FILENO");
-    return(1);
-  }
-  saved_stty    = stty;
-  stty.c_lflag &= (tcflag_t) ~(ECHO | ICANON);
-  if (tcsetattr(STDERR_FILENO, TCSAFLUSH, &stty)) {
-    perror("tcsetattr STDERR_FILENO TCSAFLUSH");
-    return(1);
-  }
-
-  fprintf(stderr, AC_RESETALL AC_YELLOW "Control+d to stop capture" AC_RESETALL "\n");
-  while ((r = libterminput_read(STDIN_FILENO, &input, &ctx)) > 0) {
-    sb = stringbuffer_new_with_options(32, true);
-    if (input.type == LIBTERMINPUT_KEYPRESS) {
-      if (input.keypress.mods & LIBTERMINPUT_SHIFT) {
-        stringbuffer_append_string(sb, "shift+");
-      }
-      if (input.keypress.mods & LIBTERMINPUT_CTRL) {
-        stringbuffer_append_string(sb, "ctrl+");
-      }
-      stringbuffer_append_string(sb, input.keypress.symbol);
-      if (execution_args.verbose == true) {
-        printf("keypress:'%s'\n", stringbuffer_to_string(sb));
-      }
-      if (strcmp(stringbuffer_to_string(sb), "ctrl+D") == 0) {
-        if (execution_args.verbose == true) {
-          printf("stopping........\n");
-        }
-        break;
-      }
-    }
-    stringbuffer_release(sb);
-  }
-  if (r < 0) {
-    perror("libterminput_read STDIN_FILENO");
-  }
-  tcsetattr(STDERR_FILENO, TCSAFLUSH, &saved_stty);
-
-  chan_send(done_chan, (void *)NULL);
-} /* wait_for_control_d */
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   done_chan      = chan_init(0);
