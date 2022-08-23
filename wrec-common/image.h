@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "c_img/src/img.h"
-#include "submodules/tinydir/tinydir.h"
+#include "tinydir/tinydir.h"
 ////////////////////////////////////////////////////////////////////////////////
 struct loaded_png_file_t {
   int                       width, height, stb_format, stb_req_format;

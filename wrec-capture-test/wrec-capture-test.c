@@ -1,16 +1,5 @@
 #define DEBUG_MODE    false
-#include "bench/bench.h"
-#include "bytes/bytes.h"
-#include "c_fsio/include/fsio.h"
-#include "log.h/log.h"
-#include "ms/ms.h"
-#include "tempdir.c/tempdir.h"
-#include "timestamp/timestamp.h"
 #include "wrec-capture-test.h"
-#include "wrec-capture/croak.h"
-#include "wrec-capture/droid.h"
-#include "wrec-capture/frog.h"
-#include "wrec-capture/shape.h"
 static const char *tempdir = NULL;
 
 TEST t_frog(void){
