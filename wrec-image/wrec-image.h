@@ -1,25 +1,4 @@
 #pragma once
-////////////////////////////////////////////
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-////////////////////////////////////////////
-#include "app-utils/app-utils.h"
-#include "bytes/bytes.h"
-#include "c_vector/vector/vector.h"
-#include "libfort/lib/fort.h"
-#include "string-utils/string-utils.h"
-#include "submodules/tinydir/tinydir.h"
-#include "tempdir.c/tempdir.h"
 #include "wrec-common/wrec-common.h"
 ///////////////////////////////////////
 struct loaded_png_file_t *load_png_file_pixels(char *png_file);

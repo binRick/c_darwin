@@ -12,8 +12,16 @@
 #include "wrec-common/args.h"
 ///////////////////////////////////////
 #include "wrec-common/capture.h"
+///////////////////////////////////////
 #include "wrec-common/image.h"
 ///////////////////////////////////////
+#include "log.h/log.h"
+#include "ms/ms.h"
+#include "ansi-codes/ansi-codes.h"
+#include "bytes/bytes.h"
+#include "c_fsio/include/fsio.h"
+#include "c_stringfn/include/stringfn.h"
+#include "timestamp/timestamp.h"
 ////////////////////////////////////////////////////////////////////////////////////////
 int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2);
 int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2);
