@@ -2,9 +2,6 @@
 #include <stdbool.h>
 #include <string.h>
 ////////////////////////////////////////////////////
-#define DEBUG_WINDOWS (getenv("DEBUG") != NULL)
-////////////////////////////////////////////////////
-#include "wrec-capture/wrec-capture.h"
 #include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
@@ -12,43 +9,21 @@
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
-#include "chan/src/chan.h"
-#include "chan/src/queue.h"
 #include "libfort/lib/fort.h"
-#include "libterminput/libterminput.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "msf_gif/msf_gif.h"
-#include "strdup/strdup.h"
-#include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "wrec-common/extern.h"
 ////////////////////////////////////////////////////
-const char *EXCLUDED_WINDOW_APP_NAMES[] = {
+static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Control Center",
   "Rectangle",
   "SystemUIServer",
   "Window Server",
   NULL,
 };
-int read_captured_frames(struct capture_config_t *capture_config) {
-  struct Vector *images_v = vector_new();
-
-  for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
-    struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
-    f->file_size = fsio_file_size(f->file);
-    fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
-            i,
-            f->timestamp,
-            bytes_to_string(fsio_file_size(f->file)),
-            f->file,
-            f->record_dur
-            );
-    vector_push(images_v, (char *)f->file);
-  }
-  return(0);
-}
 
 int list_windows(void *ARGS) {
   struct args_t execution_args = *(struct args_t *)ARGS;
@@ -151,63 +126,6 @@ int list_windows(void *ARGS) {
 
   return(0);
 } /* list_windows */
-
-char *resize_type_name(const int RESIZE_TYPE){
-  char *RESIZE_TYPE_NAME = "UNKNOWN";
-
-  switch (RESIZE_TYPE) {
-  case RESIZE_BY_WIDTH:  RESIZE_TYPE_NAME  = "WIDTH"; break;
-  case RESIZE_BY_HEIGHT:  RESIZE_TYPE_NAME = "HEIGHT"; break;
-  case RESIZE_BY_FACTOR:  RESIZE_TYPE_NAME = "FACTOR"; break;
-  case RESIZE_BY_NONE:  RESIZE_TYPE_NAME   = "NONE"; break;
-  }
-  return(RESIZE_TYPE_NAME);
-}
-
-CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
-  assert(WINDOW_ID > 0);
-  CFDictionaryRef W = window_id_to_window(WINDOW_ID);
-  assert(W != NULL);
-  int             WID = (int)CFDictionaryGetInt(W, kCGWindowNumber);
-  assert(WID > 0);
-  assert(WID == WINDOW_ID);
-  CGSize W_SIZE = CGWindowGetSize(W);
-
-  CGRect frame       = {};
-  int    _connection = CGSMainConnectionID();
-  CGSGetWindowBounds(_connection, WID, &frame);
-  int    capture_rect_x      = frame.origin.x;
-  int    capture_rect_y      = frame.origin.y;
-  int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
-  int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
-  if (true == DEBUG_WINDOWS) {
-    log_debug(
-      "\n\t|window size          :   %dx%d"
-      "\n\t|frame  size          :   %dx%d"
-      "\n\t|frame  origin        :   %dx%d"
-      "\n\t|capture rect"
-      "\n\t               x      :    %d"
-      "\n\t               y      :    %d"
-      "\n\t               width  :    %d"
-      "\n\t               height :    %d"
-      "\n",
-      (int)W_SIZE.height, (int)W_SIZE.width,
-      (int)frame.size.width, (int)frame.size.height,
-      (int)frame.origin.x, (int)frame.origin.y,
-      capture_rect_x, capture_rect_y,
-      capture_rect_width, capture_rect_height
-      );
-  }
-
-  CGImageRef img = CGWindowListCreateImage(CGRectMake(capture_rect_x, capture_rect_y, capture_rect_width, capture_rect_height),
-                                           kCGWindowListOptionIncludingWindow,
-                                           WID,
-                                           kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution
-                                           );
-  assert(img != NULL);
-  CGContextRelease(W);
-  return(img);
-} /* capture_window_id_cgimageref */
 
 void debug_resize(int WINDOW_ID,
                   char *FILE_NAME,

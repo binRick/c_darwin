@@ -31,7 +31,7 @@ wrec_utils_deps = [
   dbg_dep,
   c_timer_dep,
   progress_dep,
- wrec_capture_dep,
+  # wrec_capture_dep,
   bench_dep,
   ms_dep,
   tempdir_dep,

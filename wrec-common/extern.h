@@ -1,6 +1,5 @@
 #pragma once
 #include <ApplicationServices/ApplicationServices.h>
-extern const char *EXCLUDED_WINDOW_APP_NAMES[];
 extern int CGSMainConnectionID(void);
 extern CGError CGSGetConnectionPSN(int cid, ProcessSerialNumber *psn);
 extern CGError CGSSetWindowAlpha(int cid, uint32_t wid, float alpha);

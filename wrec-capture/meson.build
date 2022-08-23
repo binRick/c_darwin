@@ -20,6 +20,7 @@ wrec_capture_deps = [
   assertf_dep,
   app_utils_dep,
   window_utils_dep,
+  wrec_utils_dep,
   djbhash_dep,
   c_stringfn_dep,
   c_vector_dep,

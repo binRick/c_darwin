@@ -6,6 +6,7 @@
 #include "tempdir.c/tempdir.h"
 #include "wrec-animation-test/wrec-animation-test.h"
 #include "wrec-common/wrec-common.h"
+#include "wrec-capture/wrec-capture.h"
 ////////////////////////////////////////////
 static const char *tempdir = NULL;
 

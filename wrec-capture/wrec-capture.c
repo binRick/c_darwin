@@ -1,4 +1,5 @@
 #pragma once
+static void wait_for_control_d();
 #include <termios.h>
 ///////////////////////////////////////////////////////
 #include "wrec-common/wrec-common.h"
@@ -15,55 +16,71 @@ static pthread_mutex_t *capture_config_mutex;
 static pthread_t       capture_thread, wait_ctrl_d_thread;
 static chan_t          *done_chan;
 ///////////////////////////////////////////////////////
+#include "wrec-common/extern.h"
+///////////////////////////////////////////////////////
 
-void wait_for_control_d(){
-  struct StringBuffer       *sb;
-  struct libterminput_state ctx = { 0 };
-  union libterminput_input  input;
-  int                       r;
-  struct termios            stty, saved_stty;
+CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
+  assert(WINDOW_ID > 0);
+  CFDictionaryRef W = window_id_to_window(WINDOW_ID);
+  assert(W != NULL);
+  int             WID = (int)CFDictionaryGetInt(W, kCGWindowNumber);
+  assert(WID > 0);
+  assert(WID == WINDOW_ID);
+  CGSize W_SIZE = CGWindowGetSize(W);
 
-  if (tcgetattr(STDERR_FILENO, &stty)) {
-    perror("tcgetattr STDERR_FILENO");
-    return(1);
-  }
-  saved_stty    = stty;
-  stty.c_lflag &= (tcflag_t) ~(ECHO | ICANON);
-  if (tcsetattr(STDERR_FILENO, TCSAFLUSH, &stty)) {
-    perror("tcsetattr STDERR_FILENO TCSAFLUSH");
-    return(1);
+  CGRect frame       = {};
+  int    _connection = CGSMainConnectionID();
+  CGSGetWindowBounds(_connection, WID, &frame);
+  int    capture_rect_x      = frame.origin.x;
+  int    capture_rect_y      = frame.origin.y;
+  int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
+  int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
+  if (true == DEBUG_WINDOWS) {
+    log_debug(
+      "\n\t|window size          :   %dx%d"
+      "\n\t|frame  size          :   %dx%d"
+      "\n\t|frame  origin        :   %dx%d"
+      "\n\t|capture rect"
+      "\n\t               x      :    %d"
+      "\n\t               y      :    %d"
+      "\n\t               width  :    %d"
+      "\n\t               height :    %d"
+      "\n",
+      (int)W_SIZE.height, (int)W_SIZE.width,
+      (int)frame.size.width, (int)frame.size.height,
+      (int)frame.origin.x, (int)frame.origin.y,
+      capture_rect_x, capture_rect_y,
+      capture_rect_width, capture_rect_height
+      );
   }
 
-  fprintf(stderr, AC_RESETALL AC_YELLOW "Control+d to stop capture" AC_RESETALL "\n");
-  while ((r = libterminput_read(STDIN_FILENO, &input, &ctx)) > 0) {
-    sb = stringbuffer_new_with_options(32, true);
-    if (input.type == LIBTERMINPUT_KEYPRESS) {
-      if (input.keypress.mods & LIBTERMINPUT_SHIFT) {
-        stringbuffer_append_string(sb, "shift+");
-      }
-      if (input.keypress.mods & LIBTERMINPUT_CTRL) {
-        stringbuffer_append_string(sb, "ctrl+");
-      }
-      stringbuffer_append_string(sb, input.keypress.symbol);
-      if (execution_args.verbose == true) {
-        printf("keypress:'%s'\n", stringbuffer_to_string(sb));
-      }
-      if (strcmp(stringbuffer_to_string(sb), "ctrl+D") == 0) {
-        if (execution_args.verbose == true) {
-          printf("stopping........\n");
-        }
-        break;
-      }
-    }
-    stringbuffer_release(sb);
-  }
-  if (r < 0) {
-    perror("libterminput_read STDIN_FILENO");
-  }
-  tcsetattr(STDERR_FILENO, TCSAFLUSH, &saved_stty);
+  CGImageRef img = CGWindowListCreateImage(CGRectMake(capture_rect_x, capture_rect_y, capture_rect_width, capture_rect_height),
+                                           kCGWindowListOptionIncludingWindow,
+                                           WID,
+                                           kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution
+                                           );
+  assert(img != NULL);
+  CGContextRelease(W);
+  return(img);
+} /* capture_window_id_cgimageref */
 
-  chan_send(done_chan, (void *)NULL);
-} /* wait_for_control_d */
+int read_captured_frames(struct capture_config_t *capture_config) {
+  struct Vector *images_v = vector_new();
+  for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
+    struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
+    f->file_size = fsio_file_size(f->file);
+    fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
+            i,
+            f->timestamp,
+            bytes_to_string(fsio_file_size(f->file)),
+            f->file,
+            f->record_dur
+            );
+    vector_push(images_v, (char *)f->file);
+  }
+  return(0);
+}
+
 static void CGImageDumpInfo(CGImageRef image) {
   size_t width               = CGImageGetWidth(image),
          height              = CGImageGetHeight(image),
@@ -443,3 +460,62 @@ int capture_window(void *ARGS) {
 
 
 
+static void wait_for_control_d(){
+  struct StringBuffer       *sb;
+  struct libterminput_state ctx = { 0 };
+  union libterminput_input  input;
+  int                       r;
+  struct termios            stty, saved_stty;
+
+  if (tcgetattr(STDERR_FILENO, &stty)) {
+    perror("tcgetattr STDERR_FILENO");
+    return(1);
+  }
+  saved_stty    = stty;
+  stty.c_lflag &= (tcflag_t) ~(ECHO | ICANON);
+  if (tcsetattr(STDERR_FILENO, TCSAFLUSH, &stty)) {
+    perror("tcsetattr STDERR_FILENO TCSAFLUSH");
+    return(1);
+  }
+
+  fprintf(stderr, AC_RESETALL AC_YELLOW "Control+d to stop capture" AC_RESETALL "\n");
+  while ((r = libterminput_read(STDIN_FILENO, &input, &ctx)) > 0) {
+    sb = stringbuffer_new_with_options(32, true);
+    if (input.type == LIBTERMINPUT_KEYPRESS) {
+      if (input.keypress.mods & LIBTERMINPUT_SHIFT) {
+        stringbuffer_append_string(sb, "shift+");
+      }
+      if (input.keypress.mods & LIBTERMINPUT_CTRL) {
+        stringbuffer_append_string(sb, "ctrl+");
+      }
+      stringbuffer_append_string(sb, input.keypress.symbol);
+      if (execution_args.verbose == true) {
+        printf("keypress:'%s'\n", stringbuffer_to_string(sb));
+      }
+      if (strcmp(stringbuffer_to_string(sb), "ctrl+D") == 0) {
+        if (execution_args.verbose == true) {
+          printf("stopping........\n");
+        }
+        break;
+      }
+    }
+    stringbuffer_release(sb);
+  }
+  if (r < 0) {
+    perror("libterminput_read STDIN_FILENO");
+  }
+  tcsetattr(STDERR_FILENO, TCSAFLUSH, &saved_stty);
+
+  chan_send(done_chan, (void *)NULL);
+} /* wait_for_control_d */
+char *resize_type_name(const int RESIZE_TYPE){
+  char *RESIZE_TYPE_NAME = "UNKNOWN";
+
+  switch (RESIZE_TYPE) {
+  case RESIZE_BY_WIDTH:  RESIZE_TYPE_NAME  = "WIDTH"; break;
+  case RESIZE_BY_HEIGHT:  RESIZE_TYPE_NAME = "HEIGHT"; break;
+  case RESIZE_BY_FACTOR:  RESIZE_TYPE_NAME = "FACTOR"; break;
+  case RESIZE_BY_NONE:  RESIZE_TYPE_NAME   = "NONE"; break;
+  }
+  return(RESIZE_TYPE_NAME);
+}

@@ -1,6 +1,8 @@
 #pragma once
 #ifndef WREC_COMMON_DEF
 #define WREC_COMMON_DEF
+///////////////////////////////////////////////////////////////////////////////
+#define DEBUG_WINDOWS (getenv("DEBUG") != NULL)
 #define STB_IMAGE_IMPLEMENTATION
 #define MINIMUM_PNG_FILE_SIZE    67
 #define MINIMUM_PNG_WIDTH        10
