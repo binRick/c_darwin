@@ -3,6 +3,7 @@
 #include "qoi/qoi.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-image/wrec-image.h"
+
 ////////////////////////////////////////////////////
 int qoi_decode_file(char *qoi_file){
   unsigned long started = timestamp();

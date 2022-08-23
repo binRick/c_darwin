@@ -14,5 +14,3 @@
 #include "wildcardcmp/wildcardcmp.h"
 #include "wrec-common/extern.h"
 ////////////////////////////////////////////////////
-
-

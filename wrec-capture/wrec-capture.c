@@ -5,6 +5,7 @@ static void wait_for_control_d();
 #include "c_string_buffer/include/stringbuffer.h"
 #include "chan/src/chan.h"
 #include "libterminput/libterminput.h"
+#include "log.h/log.h"
 #include "tempdir.c/tempdir.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-utils/wrec-utils.h"
@@ -70,13 +71,13 @@ int read_captured_frames(struct capture_config_t *capture_config) {
   for (size_t i = 0; i < vector_size(capture_config->recorded_frames_v); i++) {
     struct recorded_frame_t *f = vector_get(capture_config->recorded_frames_v, i);
     f->file_size = fsio_file_size(f->file);
-    fprintf(stdout, AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
-            i,
-            f->timestamp,
-            bytes_to_string(fsio_file_size(f->file)),
-            f->file,
-            f->record_dur
-            );
+    log_info(AC_RESETALL AC_BLUE " - #%.5lu @%" PRIu64 " [%s] <%s> dur:%lu\n",
+             i,
+             f->timestamp,
+             bytes_to_string(fsio_file_size(f->file)),
+             f->file,
+             f->record_dur
+             );
     vector_push(images_v, (char *)f->file);
   }
   return(0);
@@ -337,7 +338,7 @@ void do_capture(void *CAPTURE_CONFIG){
   bool active = capture_config->active;
 
   if (execution_args.verbose == true) {
-    printf("capturing max %d frames, %d seconds.......\n", capture_config->max_record_frames_qty, capture_config->max_record_duration_seconds);
+    log_info("capturing max %d frames, %d seconds.......", capture_config->max_record_frames_qty, capture_config->max_record_duration_seconds);
   }
   capture_config->started_timestamp = timestamp();
   pthread_mutex_unlock(capture_config_mutex);
@@ -350,7 +351,7 @@ void do_capture(void *CAPTURE_CONFIG){
     pthread_mutex_unlock(capture_config_mutex);
     if (!active) {
       if (execution_args.verbose == true) {
-        printf("active changed to false.....\n");
+        log_info("active changed to false.....");
       }
       break;
     }
@@ -361,13 +362,13 @@ void do_capture(void *CAPTURE_CONFIG){
     sleep_ms = (size_t)(((float)(sleep_ms * 1000) * (float)(.98)) / 1000);
 
     if (execution_args.verbose == true) {
-      fprintf(stderr, AC_RESETALL AC_YELLOW AC_BOLD "    [Frame Capture]     latest frame ts: %" PRIu64 " (running for %lu/%lums) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums" AC_RESETALL "\n",
-              get_latest_recorded_frame(capture_config)->timestamp,
-              get_recorded_duration_ms(capture_config), (size_t)capture_config->max_record_duration_seconds * 1000,
-              RECORDED_FRAMES_QTY, capture_config->max_record_frames_qty,
-              get_ms_since_last_recorded_frame(capture_config),
-              sleep_ms
-              );
+      log_info(AC_RESETALL AC_YELLOW AC_BOLD "    [Frame Capture]     latest frame ts: %" PRIu64 " (running for %lu/%lums) (%lu/%d frames recorded) (%lums since latest frame)- sleeping for %lums" AC_RESETALL "",
+               get_latest_recorded_frame(capture_config)->timestamp,
+               get_recorded_duration_ms(capture_config), (size_t)capture_config->max_record_duration_seconds * 1000,
+               RECORDED_FRAMES_QTY, capture_config->max_record_frames_qty,
+               get_ms_since_last_recorded_frame(capture_config),
+               sleep_ms
+               );
     }
 
     usleep(1000 * sleep_ms);
@@ -407,7 +408,7 @@ void do_capture(void *CAPTURE_CONFIG){
     pthread_mutex_unlock(capture_config_mutex);
   }
   if (execution_args.verbose == true) {
-    printf("do capture done\n");
+    log_info("Capture Completed");
   }
   chan_send(done_chan, (void *)NULL);
 } /* do_capture */
@@ -448,7 +449,7 @@ int capture_window(void *ARGS) {
   chan_dispose(done_chan);
 
   if (execution_args.verbose == true) {
-    fprintf(stderr, AC_RESETALL AC_GREEN "Capture Stopped\n");
+    log_info(AC_RESETALL AC_GREEN "Capture Stopped");
   }
   pthread_mutex_lock(capture_config_mutex);
 
@@ -456,7 +457,7 @@ int capture_window(void *ARGS) {
   pthread_mutex_unlock(capture_config_mutex);
   pthread_join(&capture_thread, NULL);
   if (execution_args.verbose == true) {
-    fprintf(stderr, AC_RESETALL AC_GREEN "Captured %lu frames\n", vector_size(capture_config->recorded_frames_v));
+    log_info(AC_RESETALL AC_GREEN "Captured %lu frames", vector_size(capture_config->recorded_frames_v));
   }
 
   return(read_captured_frames(capture_config));
@@ -480,7 +481,7 @@ static void wait_for_control_d(){
     return(1);
   }
 
-  fprintf(stderr, AC_RESETALL AC_YELLOW "Control+d to stop capture" AC_RESETALL "\n");
+  log_info(AC_RESETALL AC_YELLOW "Control+d to stop capture" AC_RESETALL "");
   while ((r = libterminput_read(STDIN_FILENO, &input, &ctx)) > 0) {
     sb = stringbuffer_new_with_options(32, true);
     if (input.type == LIBTERMINPUT_KEYPRESS) {
@@ -492,11 +493,11 @@ static void wait_for_control_d(){
       }
       stringbuffer_append_string(sb, input.keypress.symbol);
       if (execution_args.verbose == true) {
-        printf("keypress:'%s'\n", stringbuffer_to_string(sb));
+        log_info("keypress:'%s'", stringbuffer_to_string(sb));
       }
       if (strcmp(stringbuffer_to_string(sb), "ctrl+D") == 0) {
         if (execution_args.verbose == true) {
-          printf("stopping........\n");
+          log_info("stopping........");
         }
         break;
       }

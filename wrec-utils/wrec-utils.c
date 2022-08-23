@@ -7,11 +7,11 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
+#include "libfort/lib/fort.h"
 #include "libterminput/libterminput.h"
 #include "tempdir.c/tempdir.h"
-#include "wrec-common/extern.h"
-#include "libfort/lib/fort.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "wrec-common/extern.h"
 ////////////////////////////////////////////////////////////
 static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Control Center",
@@ -76,6 +76,7 @@ size_t get_recorded_duration_ms(struct capture_config_t *capture_config){
   }
   return(timestamp() - first_recorded_frame->timestamp);
 }
+
 int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
   int ret = (e1->file_creation_ts > e2->file_creation_ts)
               ? 1
@@ -85,6 +86,7 @@ int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
 
   return(ret);
 }
+
 int list_windows_table(void *ARGS) {
   struct args_t execution_args = *(struct args_t *)ARGS;
   ft_table_t    *table         = ft_create_table();
@@ -185,7 +187,7 @@ int list_windows_table(void *ARGS) {
   ft_destroy_table(table);
 
   return(0);
-}
+} /* list_windows_table */
 
 void debug_resize(int WINDOW_ID,
                   char *FILE_NAME,

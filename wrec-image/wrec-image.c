@@ -32,4 +32,3 @@ struct loaded_png_file_t *load_png_file_pixels(char *png_file){
            );
   return(res);
 }
-

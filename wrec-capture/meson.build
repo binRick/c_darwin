@@ -11,6 +11,7 @@ wrec_capture_deps = [
   interface99_dep,
   ansi_codes_dep,
   ms_dep,
+  logh_dep,
   app_utils_dep,
   window_utils_dep,
   wrec_utils_dep,

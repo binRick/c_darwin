@@ -20,10 +20,10 @@ static int select_window(void);
 static int parse_args(int argc, char *argv[]);
 static int debug_args();
 static struct modes_t    modes[] = {
-  { .name = "debug_args",    .description = "Debug Arguments", .handler = debug_args     },
-  { .name = "list",          .description = "List Windows",    .handler = list_windows_table   },
-  { .name = "record",        .description = "Capture Window",  .handler = capture_window },
-  { .name = "select_window", .description = "Select Window",   .handler = select_window  },
+  { .name = "debug_args",    .description = "Debug Arguments", .handler = debug_args         },
+  { .name = "list",          .description = "List Windows",    .handler = list_windows_table },
+  { .name = "record",        .description = "Capture Window",  .handler = capture_window     },
+  { .name = "select_window", .description = "Select Window",   .handler = select_window      },
   { 0 },
 };
 static struct cag_option options[] = {

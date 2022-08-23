@@ -3,11 +3,12 @@
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
 #include "log.h/log.h"
+#include "stb/stb_image.h"
 #include "tempdir.c/tempdir.h"
+#include "wrec-animation-test/wrec-animation-test.h"
+#include "wrec-animation/wrec-animation.h"
 #include "wrec-capture/wrec-capture.h"
 #include "wrec-common/wrec-common.h"
-#include "stb/stb_image.h"
-#include "wrec-animation-test/wrec-animation-test.h"
 ////////////////////////////////////////////
 static const char *tempdir = NULL;
 
