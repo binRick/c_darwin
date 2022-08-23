@@ -1,4 +1,5 @@
 #pragma once
+#include <termios.h>
 ///////////////////////////////////////////////////////
 #include "wrec-common/wrec-common.h"
 #include "chan/src/chan.h"
@@ -15,7 +16,6 @@ static pthread_mutex_t *capture_config_mutex;
 static pthread_t       capture_thread, wait_ctrl_d_thread;
 static chan_t          *done_chan;
 ///////////////////////////////////////////////////////
-#include <termios.h>
 
 static void CGImageDumpInfo(CGImageRef image) {
   size_t width               = CGImageGetWidth(image),

@@ -1,17 +1,4 @@
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <unistd.h>
-///////////////////////////////////////
-#include "c_fsio/include/fsio.h"
-#include "c_greatest/greatest/greatest.h"
-#include "c_stringfn/include/stringfn.h"
-#include "tempdir.c/tempdir.h"
-#include "timestamp/timestamp.h"
-#include "wrec-capture/wrec-capture.h"
-#include "wrec-cli/wrec-cli.h"
 #include "wrec-test/wrec-test.h"
-#include "wrec-utils/wrec-utils.h"
 
 TEST t_callback_pixels(void){
   PASS();
