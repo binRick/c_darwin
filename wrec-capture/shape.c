@@ -28,13 +28,11 @@ void Triangle_scale(VSelf, int factor) {
   self->c *= factor;
 }
 
-
 void test(Shape shape) {
-    printf("perim = %d\n", VCALL(shape, perim));
-    VCALL(shape, scale, 5);
-    printf("perim = %d\n", VCALL(shape, perim));
+  printf("perim = %d\n", VCALL(shape, perim));
+  VCALL(shape, scale, 5);
+  printf("perim = %d\n", VCALL(shape, perim));
 }
-
 
 implExtern(Shape, Rectangle);
 implExtern(Shape, Triangle);

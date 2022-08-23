@@ -1,0 +1,5 @@
+///////////////////////////////////////
+#define MINIMUM_PNG_FILE_SIZE    67
+#define MINIMUM_PNG_WIDTH        10
+#define MINIMUM_PNG_HEIGHT       10
+///////////////////////////////////////

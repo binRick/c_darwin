@@ -1,32 +1,27 @@
 #pragma once
 ///////////////////////////////////////////////////////
-#include <assert.h>
-#include <objc/message.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <ApplicationServices/ApplicationServices.h>
 ///////////////////////////////////////////////////////
-#include "bench/bench.h"
+#include <stdbool.h>
+#include <stdio.h>
+///////////////////////////////////////////////////////
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
+///////////////////////////////////////////////////////
 #include "wrec-capture/wrec-capture.h"
 ///////////////////////////////////////////////////////
 #include "core-utils/core-utils.h"
-#include "wrec-utils/wrec-utils.h"
+#include "wrec-common/wrec-common.h"
 ///////////////////////////////////////////////////////
 static bool DEBUG_IMAGE_RESIZE         = false;
 static bool VERBOSE_DEBUG_IMAGE_RESIZE = false;
 
 ///////////////////////////////////////////////////////
 static bool cgimage_save_png(const CGImageRef image, const char *filename) {
-  bool                  success = false;
-  CFStringRef           path;
-  CFURLRef              url;
-  CGImageDestinationRef destination;
+  bool success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
   {
     path        = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);
     url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
@@ -35,22 +30,19 @@ static bool cgimage_save_png(const CGImageRef image, const char *filename) {
     success = CGImageDestinationFinalize(destination);
   }
 
-  assert(success == true);
-  CFRelease(url);
-  CFRelease(path);
-  CFRelease(destination);
-  return(fsio_file_exists(filename));
+  CFRelease(url); CFRelease(path); CFRelease(destination);
+  return((success == true) && fsio_file_exists(filename));
 }
 
 static void CGImageDumpInfo(CGImageRef image) {
-  size_t          width              = CGImageGetWidth(image);
-  size_t          height             = CGImageGetHeight(image);
-  CGColorSpaceRef colorSpace         = CGImageGetColorSpace(image);
-  size_t          bytesPerRow        = CGImageGetBytesPerRow(image);
-  size_t          bitsPerPixel       = CGImageGetBitsPerPixel(image);
-  size_t          bitsPerComponent   = CGImageGetBitsPerComponent(image);
-  size_t          componentsPerPixel = bitsPerPixel / bitsPerComponent;
-  CGBitmapInfo    bitmapInfo         = CGImageGetBitmapInfo(image);
+  size_t width               = CGImageGetWidth(image),
+         height              = CGImageGetHeight(image),
+         bytesPerRow         = CGImageGetBytesPerRow(image),
+         bitsPerPixel        = CGImageGetBitsPerPixel(image),
+         bitsPerComponent    = CGImageGetBitsPerComponent(image),
+         componentsPerPixel  = bitsPerPixel / bitsPerComponent;
+  CGColorSpaceRef colorSpace = CGImageGetColorSpace(image);
+  CGBitmapInfo    bitmapInfo = CGImageGetBitmapInfo(image);
 
   printf("==================================================================================================\n");
   printf("CGImageGetWidth: %lu\n", width);

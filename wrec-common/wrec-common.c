@@ -1,10 +1,11 @@
 ////////////////////////////////////////////////////
 #include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 ////////////////////////////////////////////////////
-#define DEBUG_WINDOWS    false
+#define DEBUG_WINDOWS    (getenv("DEBUG") != NULL)
+////////////////////////////////////////////////////
+#include "wrec-capture/wrec-capture.h"
+#include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
@@ -13,7 +14,6 @@
 #include "c_stringfn/include/stringfn.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
-#include "libbeaufort/include/beaufort.h"
 #include "libfort/lib/fort.h"
 #include "libterminput/libterminput.h"
 #include "log.h/log.h"
@@ -23,8 +23,6 @@
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
-#include "wrec-capture/wrec-capture.h"
-#include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////
 const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Control Center",
@@ -33,7 +31,6 @@ const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Window Server",
   NULL,
 };
-
 int read_captured_frames(struct capture_config_t *capture_config) {
   struct Vector *images_v = vector_new();
 
