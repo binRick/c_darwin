@@ -392,8 +392,6 @@ void wait_for_control_d(){
 
   chan_send(done_chan, (void *)NULL);
 } /* wait_for_control_d */
-
-
 int capture_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   done_chan      = chan_init(0);
