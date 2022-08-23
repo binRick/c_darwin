@@ -1,6 +1,5 @@
 #include "wrec-image-test/wrec-image-test.h"
-static const char *tempdir = NULL;
-
+char *tempdir = NULL;
 ////////////////////////////////////////////
 TEST t_wrec_image_test(void){
   MEASURE(measurement_capture_and_process_screenshot_rgb_data)
@@ -13,7 +12,7 @@ TEST t_wrec_image_test(void){
   size_t                              windows_qty = vector_size(window_ids), captured_images_bytes = 0,
                                       captured_images = 0, captured_size, dur;
   unsigned long                       started_ms = timestamp();
-  char                                *qoi_file_path, *SCREENSHOT_FILE, *tempdir;
+  char                                *qoi_file_path, *SCREENSHOT_FILE;
   size_t                              capture_dur, capture_started;
   bool                                capture_ok = false;
   void                                *qoi_encoded_data;
@@ -27,7 +26,7 @@ TEST t_wrec_image_test(void){
   for (size_t i = 0; i < windows_qty; i++) {
     {
       window_id = (unsigned long)vector_get(window_ids, i);
-      asprintf(&qoi_file_path, "%swindow-%lu-%lu-wrec-image-test-qoi-encode.qoi",
+      asprintf(&qoi_file_path, "%s/window-%lu-%lu-wrec-image-test-qoi-encode.qoi",
                tempdir, window_id, (size_t)timestamp()
                );
       asprintf(&SCREENSHOT_FILE, "%swindow-%lu-%lu-wrec-image-test.png",
