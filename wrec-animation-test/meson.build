@@ -10,6 +10,9 @@ wrec_animation_test_deps = [
   c_greatest_dep,
   wrec_common_dep,
   stb_dep,
+  bench_dep,
+  c_stringfn_dep,
+  c_fsio_dep,
   wrec_animation_dep,
   tempdir_dep,
 ]

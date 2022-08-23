@@ -5,6 +5,7 @@
 #include "wrec-image/wrec-image.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "bench/bench.h"
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_stringfn/include/stringfn.h"
@@ -13,9 +14,12 @@
 #include "ms/ms.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+static const char *tempdir = NULL;
 
 ////////////////////////////////////////////
 TEST t_wrec_image_test(void){
+  MEASURE(measurement_capture_and_process_screenshot_rgb_data)
+
   struct Vector *window_ids = get_windows_ids();
   {
     ASSERT_GTEm("Failed to get window ids", vector_size(window_ids), 1);
@@ -33,10 +37,6 @@ TEST t_wrec_image_test(void){
   struct loaded_png_file_t            *loaded_png;
   struct qoi_encode_to_file_request_t *qoi_file_req;
   {
-    asprintf(&tempdir, "/tmp/wrec-image-test-%d/", getpid());
-    if (fsio_dir_exists(tempdir) == false) {
-      fsio_mkdirs(tempdir, 0700);
-    }
   }
 
   for (size_t i = 0; i < windows_qty; i++) {
@@ -104,6 +104,8 @@ TEST t_wrec_image_test(void){
            windows_qty,
            milliseconds_to_string(dur)
            );
+  END_MEASURE(measurement_capture_and_process_screenshot_rgb_data)
+  MEASURE_SUMMARY(measurement_capture_and_process_screenshot_rgb_data);
   PASS();
 } /* t_wrec_image_test */
 
@@ -114,6 +116,10 @@ SUITE(s_wrec_image_test) {
 GREATEST_MAIN_DEFS();
 
 int main(const int argc, const char **argv) {
+  asprintf(&tempdir, "/tmp/wrec-image-test/%d", getpid());
+  if (fsio_dir_exists(tempdir) == false) {
+    fsio_mkdirs(tempdir, 0700);
+  }
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_wrec_image_test);
   GREATEST_MAIN_END();
