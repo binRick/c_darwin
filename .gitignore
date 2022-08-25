@@ -38,3 +38,4 @@ MyGif.gif
 .utils
 .meson.build*.log
 .meson-build*.log
+.screenshots.db

@@ -1,6 +1,8 @@
 #define DEBUG_MODE    false
+#include "timestamp/timestamp.h"
 #include "wrec-capture-test.h"
 static const char *tempdir = NULL;
+static char *msg;
 
 TEST t_frog(void){
   Frog *paul  = Frog_new("Paul");
@@ -39,37 +41,52 @@ TEST t_droid(void){
   PASS();
 }
 
-TEST t_capture_images(void){
-  struct Vector *window_ids = get_windows_ids();
+char *generate_window_id_screenshot_file_path(unsigned long WINDOW_ID){
+  char *SCREENSHOT_FILE = NULL;
 
-  ASSERT_GTEm("Failed to get window ids", vector_size(window_ids), 1);
-  unsigned long window_id;
+  if (getenv("SCREENSHOT") != NULL) {
+    asprintf(&SCREENSHOT_FILE, "%s-%lu.png", getenv("SCREENSHOT"), WINDOW_ID);
+  }else{
+    asprintf(&SCREENSHOT_FILE, "%s/%lu/%ld.png", tempdir, WINDOW_ID, (size_t)timestamp());
+  }
+  if (fsio_dir_exists(dirname(SCREENSHOT_FILE)) == false) {
+    fsio_mkdirs(dirname(SCREENSHOT_FILE), 0700);
+  }
+  return(SCREENSHOT_FILE);
+}
 
-  MEASURE(measurement_capture_window_ids)
-  size_t qty = vector_size(window_ids);
-  size_t        captured_images_bytes = 0;
-  unsigned long started_ms            = timestamp();
+TEST t_capture_all_windows_to_png_files(void *WINDOW_IDS){
+  unsigned long started_ms = timestamp(), dur_ms, window_id;
+  size_t        qty, captured_images_bytes = 0;
+  char          *SCREENSHOT_FILE;
+  bool          ok = false;
 
+  struct Vector *window_ids = (struct Vector *)WINDOW_IDS;
+
+  ASSERT_GTEm("Failed to receive valid window ids vector", vector_size(window_ids), 1);
+  qty = vector_size(window_ids);
   for (size_t i = 0; i < qty; i++) {
-    window_id = (unsigned long)vector_get(window_ids, i);
-    char *SCREENSHOT_FILE;
-    asprintf(&SCREENSHOT_FILE, "%s/window-%lu.png", tempdir, window_id);
-    log_info("screenshot file: %s\n", SCREENSHOT_FILE);
-    bool ok = capture_to_file_image(window_id, SCREENSHOT_FILE);
-    captured_images_bytes += fsio_file_size(SCREENSHOT_FILE);
+    window_id       = (unsigned long)vector_get(window_ids, i);
+    SCREENSHOT_FILE = generate_window_id_screenshot_file_path(window_id);
+    ok              = capture_to_file_image(window_id, SCREENSHOT_FILE);
     ASSERT_EQm("Failed to take screenshot", ok, true);
+    ok = fsio_file_size(SCREENSHOT_FILE);
+    ASSERT_EQm("Failed to locate screenshot file", ok, true);
+    captured_images_bytes += fsio_file_size(SCREENSHOT_FILE);
+    ASSERT_GTEm("Failed to locate valid screenshot file", captured_images_bytes, 1);
+    printf("%s\n", SCREENSHOT_FILE);
+  }
+  if (SCREENSHOT_FILE) {
     free(SCREENSHOT_FILE);
   }
-  unsigned long dur_ms = timestamp() - started_ms;
+  dur_ms = timestamp() - started_ms;
 
-  log_info("Captured %lu Window ID Screenshots totaling %s in %s",
+  asprintf(&msg, "Captured %lu Window ID Screenshots totaling %s in %s",
            qty,
            bytes_to_string(captured_images_bytes),
            milliseconds_to_string(dur_ms)
            );
-  END_MEASURE(measurement_capture_window_ids)
-  MEASURE_SUMMARY(measurement_capture_window_ids);
-  PASS();
+  PASSm(msg);
 }
 
 SUITE(s_droid){
@@ -81,22 +98,32 @@ SUITE(s_shapes){
 SUITE(s_frog){
   RUN_TEST(t_frog);
 }
-SUITE(s_capture){
-  RUN_TEST(t_capture_images);
+SUITE(s_capture_all_windows_to_png_files){
+  struct Vector *window_ids = get_window_ids();
+
+  RUN_TESTp(t_capture_all_windows_to_png_files, (void *)window_ids);
 }
 
 GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
-  asprintf(&tempdir, "/tmp/wrec-image-test/%d", getpid());
+  tempdir = NULL;
+  if (getenv("STORAGE_DIR") != NULL && fsio_dir_exists(getenv("STORAGE_DIR"))) {
+    asprintf(&tempdir, "%s", getenv("STORAGE_DIR"));
+  }
+  if (tempdir == NULL) {
+    asprintf(&tempdir, "/tmp/wrec-image-test/%d", getpid());
+  }
   if (fsio_dir_exists(tempdir) == false) {
     fsio_mkdirs(tempdir, 0700);
   }
   GREATEST_MAIN_BEGIN();
-  RUN_SUITE(s_capture);
-  RUN_SUITE(s_frog);
-  RUN_SUITE(s_droid);
-  RUN_SUITE(s_shapes);
+  RUN_SUITE(s_capture_all_windows_to_png_files);
+  /*
+   * RUN_SUITE(s_frog);
+   * RUN_SUITE(s_droid);
+   * RUN_SUITE(s_shapes);
+   */
   GREATEST_MAIN_END();
   return(0);
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <ApplicationServices/ApplicationServices.h>
 #include <termios.h>
 /////////////////////////////////////
 #include "wrec-capture/wrec-capture.h"
@@ -105,6 +106,8 @@ int list_windows_table(void *ARGS) {
               "Application",
               "PID",
               "Window ID",
+              "Display ID",
+              "Space ID",
               "Size",
               "Position",
               "Layer",
@@ -137,10 +140,12 @@ int list_windows_table(void *ARGS) {
       continue;
     }
     ft_printf_ln(table,
-                 "%.20s|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
+                 "%.20s|%d|%d|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
                  strip_non_ascii(w->app_name),
                  w->pid,
                  w->window_id,
+                 w->display_id,
+                 w->space_id,
                  (int)w->size.height, (int)w->size.width,
                  (int)w->position.x, (int)w->position.y,
                  w->layer,

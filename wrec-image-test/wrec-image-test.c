@@ -4,7 +4,7 @@ char *tempdir = NULL;
 TEST t_wrec_image_test(void){
   MEASURE(measurement_capture_and_process_screenshot_rgb_data)
 
-  struct Vector *window_ids = get_windows_ids();
+  struct Vector *window_ids = get_window_ids();
   {
     ASSERT_GTEm("Failed to get window ids", vector_size(window_ids), 1);
   }

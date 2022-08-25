@@ -1,4 +1,5 @@
 #pragma once
+#include <unistd.h>
 ////////////////////////////////////////////////////
 #define MSF_GIF_IMPL
 #define STB_IMAGE_IMPLEMENTATION
@@ -8,7 +9,13 @@
 
 ////////////////////////////////////////////////////
 int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
-  char                *ANIMATED_GIF_FILE = "MyGif.gif";
+  char *ANIMATED_GIF_FILE;
+
+  if (getenv("GIF") != NULL) {
+    asprintf(&ANIMATED_GIF_FILE, "%s", getenv("GIF"));
+  }else{
+    asprintf(&ANIMATED_GIF_FILE, "MyGif-%d.gif", getpid());
+  }
   struct file_time_t  *f, *next_f;
   struct file_times_t *ft       = malloc(sizeof(struct file_times_t));
   MsfGifState         *gifState = calloc(1, sizeof(MsfGifState));

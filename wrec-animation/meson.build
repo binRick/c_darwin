@@ -5,6 +5,8 @@ wrec_animation_link_flags = []
 wrec_animation_c_args = []
 wrec_animation_deps = [
   ansi_codes_dep,
+  wrec_common_dep,
+  wrec_utils_dep,
   c_stringfn_dep,
   c_vector_dep,
   c_string_buffer_dep,

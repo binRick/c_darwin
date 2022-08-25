@@ -19,6 +19,14 @@ int main(const int argc, const char **argv) {
   if (fsio_dir_exists(tempdir) == false) {
     fsio_mkdirs(tempdir, 0700);
   }
+  if (argc > 1) {
+    asprintf(&tempdir, "%s", argv[1]);
+  }
+  printf("dir:%s\n", tempdir);
+  if (fsio_dir_exists(tempdir) == false) {
+    exit(1);
+  }
+
   int res = load_pngs_create_animated_gif(tempdir);
 
   END_MEASURE(measurement_create_animated_gif)

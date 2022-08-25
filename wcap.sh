@@ -2,15 +2,15 @@
 set -eou pipefail
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 START_DIR="$(pwd)"
+CAPTURE_INTERVAL=${INTERVAL:-1}
+ARCHIVE_INTERVAL=${ARCHIVE:-60}
 APP_NAME=wcap
 COMPRESSION=${COMPRESSION:-max}
-KFC_PROFILE=${PROFILE:-sexy_colorfulcolors}
+KFC_PROFILE=${PROFILE:-sexy-colorfulcolors}
 DEFAULT_ARCHIVE_DIR="$(eval echo -e "~/.wcap.db")"
 ARCHIVE_DIR="${ARCHIVE_DIR:-$DEFAULT_ARCHIVE_DIR}"
 STORAGE_DIR="${STORAGE_DIR:-/tmp/wrec-image-test}"
 ARCHIVE_PASSWORD="${PASSWORD:-28D0BDB0-9133-49EC-BCEF-6040F0DF2F3C}"
-CAPTURE_INTERVAL=${INTERVAL:-1}
-ARCHIVE_INTERVAL=${ARCHIVE:-5}
 DEBUG_MODE=${DEBUG:-0}
 PACK_SIZE_MB=${PACK_MB:-1}
 
@@ -19,7 +19,8 @@ init_env() {
 		RESTIC_REPOSITORY="$ARCHIVE_DIR" \
 		RESTIC_PASSWORD="$ARCHIVE_PASSWORD" \
 		RESTIC_PACK_SIZE="$PACK_SIZE_MB" \
-		RESTIC_COMPRESSION="$COMPRESSION"
+		RESTIC_COMPRESSION="$COMPRESSION" \
+    STORAGE_DIR="$STORAGE_DIR"
 }
 
 init_storage_dir() {
@@ -49,10 +50,12 @@ init_cmds() {
 	RMRF_CMD="$CMD_RM -rf"
 	MKDIRP_CMD="$CMD_MKDIR -p"
 	ARCHIVE_INIT_CMD="$CMD_RESTIC init -q"
-	ARCHIVE_BACKUP_CMD="$CMD_RESTIC backup $STORAGE_DIR -q"
+  ARCHIVE_BACKUP_CMD="(cd $STORAGE_DIR/. && $CMD_RESTIC backup . -q)"
+  CAPTURE_CMD="${CMD_CAPTURE} -v -a -s s_capture_all_windows_to_png_files"
 }
 
 init_vars() {
+  IFS=',' read -r ROWS COLS < <($CMD_ANSI --report-window-chars)
 	START_TS="${START_TS:-$($CMD_DATE +%s)}"
 	CAPTURED_QTY=${CAPTURED_QTY:-0}
 	CAPTURED_BYTES=${CAPTURED_BYTES:-0}
@@ -135,7 +138,7 @@ storage_dir_report() {
 
 archive_storage_dir() {
 	init_archive
-	$ARCHIVE_BACKUP_CMD
+	eval "$ARCHIVE_BACKUP_CMD"
 }
 
 capture_loop() {
@@ -147,27 +150,24 @@ capture_loop() {
 main_loop() {
   $CMD_STTY -echo
 	interval=0
+  $CMD_ANSI -n --save-cursor
 	while [[ "$interval" -lt $ARCHIVE_INTERVAL ]]; do capture_loop; sleep "$CAPTURE_INTERVAL"; done
 	$CMD_ANSI -n --up=$interval --delete-lines=$interval
+  $CMD_ANSI -n --restore-cursor
 	storage_dir_report
 	archive_storage_dir
 	purge_storage_dir
 	update_title
 }
 render_state_msg(){
-  $CMD_ANSI -n --save-cursor
   local rows=0 cols=0
-  IFS=',' read -r rows cols < <($CMD_ANSI --report-window-chars)
   local offset=
-#  $CMD_ANSI -n --position=0,$(($cols-50))
   local row=0 len=0 str= offset=30 col=0
   while read l; do
     len="${#l}"
     $CMD_ANSI "$l"
     row=$(($row+1))
   done <<< "$START_MSG"
-  $CMD_ANSI -n --restore-cursor
-  $CMD_ANSI -n --position=$(($row+1)),0
 }
 main() {
 	init_cmds

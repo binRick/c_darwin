@@ -27,13 +27,12 @@
 
 typedef struct window_t {
   pid_t             pid;
-  int               window_id, layer;
   CGPoint           position;
-  int               pos_x, pos_y, width, height;
+  int               pos_x, pos_y, width, height, space_id, connection_id, display_id, window_id, layer;
   CGSize            size;
   CFDictionaryRef   window;
   CGRect            rect;
-  char              *app_name, *window_name, *window_title, *owner_name;
+  char              *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
   bool              is_focused, is_visible, is_minimized;
   struct kinfo_proc pid_info;
   AXUIElementRef    *app;
@@ -56,9 +55,28 @@ typedef struct {
   int     movedWindow;
 } MoveWinCtx;
 ///////////////////////////////////////////////////
+int get_window_display_id(struct window_t *window);
+int get_window_space_id(struct window_t *window);
+char *get_window_display_uuid(struct window_t *window);
+CFStringRef display_manager_active_display_uuid(void);
+CGRect display_manager_dock_rect(void);
+uint64_t display_space_id(uint32_t did);
+bool display_manager_dock_hidden(void);
+int display_manager_dock_orientation(void);
+uint32_t display_manager_active_display_count(void);
+uint32_t display_manager_active_display_id(void);
+uint32_t display_manager_main_display_id(void);
+uint32_t display_manager_active_display_count(void);
+uint32_t *display_manager_active_display_list(uint32_t *count);
+uint64_t *get_display_id_space_ids(uint32_t did, int *count);
+bool display_manager_dock_hidden(void);
+int display_manager_dock_orientation(void);
+CGRect display_manager_dock_rect(void);
+char * get_focused_window_title();
 char *windowTitle(char *appName, char *windowName);
 void PrintWindow(CFDictionaryRef window, void *ctxPtr);
 int EnumerateWindows(char *pattern, void (*callback)(CFDictionaryRef window, void *callback_data), void *callback_data);
+int get_window_connection_id(struct window_t *window);
 CGPoint CGWindowGetPosition(CFDictionaryRef window);
 CGSize CGWindowGetSize(CFDictionaryRef window);
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
@@ -69,7 +87,7 @@ CGSize AXWindowGetSize(AXUIElementRef window);
 void AXWindowSetSize(AXUIElementRef window, CGSize size);
 void MoveWindow(CFDictionaryRef window, void *ctxPtr);
 int get_windows_qty(void);
-struct Vector *get_windows_ids(void);
+struct Vector *get_window_ids(void);
 struct Vector *get_windows();
 int get_front_window_pid(void);
 int get_pid_window_id(const int PID);
