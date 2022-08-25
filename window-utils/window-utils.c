@@ -166,17 +166,14 @@ char *get_focused_window_title(){
   ProcessSerialNumber psn = {};
 
   _SLPSGetFrontProcess(&psn);
-
   pid_t pid;
 
   GetProcessPID(&psn, &pid);
-
   AXUIElementRef application_ref = AXUIElementCreateApplication(pid);
 
   if (!application_ref) {
     return(NULL);
   }
-
   CFTypeRef window_ref = NULL;
 
   AXUIElementCopyAttributeValue(application_ref, kAXFocusedWindowAttribute, &window_ref);
@@ -214,16 +211,24 @@ CGPoint window_ax_origin(char *windowRef){
   return(origin);
 }
 
+window_t *get_focused_window(){
+  return(get_window_id(get_pid_window_id(get_front_window_pid())));
+}
+
 window_t *get_pid_window(const int PID){
-  struct Vector *windows = get_windows();
+  struct Vector   *windows = get_windows();
+  struct window_t *w = NULL, *_w = NULL;
 
   for (size_t i = 0; i < vector_size(windows); i++) {
     window_t *w = vector_get(windows, i);
+    _w = (struct window_t *)vector_get(windows, i);
     if (w->pid == PID) {
-      return(w);
+      w = _w;
+    }else{
+      free(w);
     }
   }
-  return(NULL);
+  return(w);
 }
 
 int get_display_width(){
@@ -348,7 +353,7 @@ struct Vector *get_connection_window_ids(int conn){
   CFArrayRef    spaces_ref = SLSCopyManagedDisplaySpaces(conn);
   int           spaces_qty = CFArrayGetCount(spaces_ref);
 
-  log_info("Conn #%d has %d spaces", conn, spaces_qty);
+  //log_info("Conn #%d has %d spaces", conn, spaces_qty);
 
   return(ids);
 }
@@ -358,14 +363,14 @@ int get_window_space_id(struct window_t *w){
   int           space_id           = 0;
   struct Vector *display_space_ids = get_display_id_space_ids_v(w->display_id);
 
-  log_info("Window #%d", w->window_id);
+  //log_info("Window #%d", w->window_id);
   for (size_t i = 0; i < vector_size(display_space_ids); i++) {
     uint64_t      space_id      = (uint64_t)vector_get(display_space_ids, i);
     struct Vector *window_ids_v = get_space_window_ids_v(space_id);
-    log_info("    - space #%lu %lu windows", (size_t)space_id, vector_size(window_ids_v));
+    //log_info("    - space #%lu %lu windows", (size_t)space_id, vector_size(window_ids_v));
     for (size_t ii = 0; ii < vector_size(window_ids_v); ii++) {
       uint64_t window_id = (uint64_t)vector_get(window_ids_v, ii);
-      log_info("    - window #%lu", (size_t)window_id);
+      //log_info("    - window #%lu", (size_t)window_id);
     }
     // get_connection_window_ids(w->connection_id);
 //    log_info("  - Display #%d | space #%lu | #%lu windows",w->display_id,(size_t)vector_get(display_space_ids,i),vector_size(window_ids_v));
