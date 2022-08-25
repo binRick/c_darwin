@@ -7,6 +7,7 @@ static void wait_for_control_d();
 #include "libterminput/libterminput.h"
 #include "log.h/log.h"
 #include "tempdir.c/tempdir.h"
+#include "window-utils/window-utils.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-utils/wrec-utils.h"
 ///////////////////////////////////////////////////////
@@ -23,19 +24,25 @@ static chan_t          *done_chan;
 CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
   assert(WINDOW_ID > 0);
   CFDictionaryRef W = window_id_to_window(WINDOW_ID);
-  assert(W != NULL);
-  int             WID = (int)CFDictionaryGetInt(W, kCGWindowNumber);
+  if (W == NULL) {
+    fprintf(stderr, "Window #%d seems to have disappeared\n", WINDOW_ID);
+    return(NULL);
+  }
+  int WID = (int)CFDictionaryGetInt(W, kCGWindowNumber);
   assert(WID > 0);
   assert(WID == WINDOW_ID);
-  CGSize W_SIZE = CGWindowGetSize(W);
+  CGSize          W_SIZE = CGWindowGetSize(W);
 
-  CGRect frame       = {};
-  int    _connection = CGSMainConnectionID();
-  CGSGetWindowBounds(_connection, WID, &frame);
-  int    capture_rect_x      = frame.origin.x;
-  int    capture_rect_y      = frame.origin.y;
-  int    capture_rect_width  = frame.size.width;  //(int)W_SIZE.width - frame.origin.x;
-  int    capture_rect_height = frame.size.height; // (int)W_SIZE.height - frame.origin.y;
+  CGRect          frame = {};
+  struct window_t *w    = get_window_id(WINDOW_ID);
+  log_info("Capturing window with pid %d", w->pid);
+
+  // int window_connection = get_window_id_connection
+  CGSGetWindowBounds(w->connection_id, WID, &frame);
+  int capture_rect_x      = frame.origin.x;
+  int capture_rect_y      = frame.origin.y;
+  int capture_rect_width  = frame.size.width;     //(int)W_SIZE.width - frame.origin.x;
+  int capture_rect_height = frame.size.height;    // (int)W_SIZE.height - frame.origin.y;
   if (true == DEBUG_WINDOWS) {
     log_debug(
       "\n\t|window size          :   %dx%d"
@@ -60,7 +67,9 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
                                            WID,
                                            kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution
                                            );
-  assert(img != NULL);
+  if (img == NULL) {
+    return(NULL);
+  }
   CGContextRelease(W);
   return(img);
 } /* capture_window_id_cgimageref */
@@ -161,6 +170,9 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   CGImageRef resized_img;                                                                 \
   capture_started = timestamp();                                                          \
   CGImageRef img = capture_window_id_cgimageref(WINDOW_ID);                               \
+  if (img == NULL) {                                                                      \
+    return(NULL);                                                                         \
+  };                                                                                      \
   capture_dur = timestamp() - capture_started;                                            \
   assert(img != NULL);                                                                    \
   width  = CGImageGetWidth(img);                                                          \

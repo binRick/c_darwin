@@ -55,22 +55,39 @@ char *generate_window_id_screenshot_file_path(unsigned long WINDOW_ID){
   return(SCREENSHOT_FILE);
 }
 
-TEST t_capture_all_windows_to_png_files(void *WINDOW_IDS){
-  unsigned long started_ms = timestamp(), dur_ms, window_id;
-  size_t        qty, captured_images_bytes = 0;
-  char          *SCREENSHOT_FILE;
-  bool          ok = false;
+TEST t_capture_all_windows_to_png_files(void *WINDOWS){
+  struct window_t *w;
+  unsigned long   started_ms = timestamp(), dur_ms;
+  size_t          qty, captured_images_bytes = 0;
+  char            *SCREENSHOT_FILE;
+  bool            ok = false;
 
-  struct Vector *window_ids = (struct Vector *)WINDOW_IDS;
+  struct Vector   *windows = (struct Vector *)WINDOWS;
 
-  ASSERT_GTEm("Failed to receive valid window ids vector", vector_size(window_ids), 1);
-  qty = vector_size(window_ids);
+  ASSERT_GTEm("Failed to receive valid window ids vector", vector_size(windows), 1);
+  qty = vector_size(windows);
   for (size_t i = 0; i < qty; i++) {
-    window_id       = (unsigned long)vector_get(window_ids, i);
-    SCREENSHOT_FILE = generate_window_id_screenshot_file_path(window_id);
-    ok              = capture_to_file_image(window_id, SCREENSHOT_FILE);
+    w = (struct window_t *)vector_get(windows, i);
+    if (!w || w->window_id < 1 || w->layer >= 24) {
+      continue;
+    }
+    SCREENSHOT_FILE = generate_window_id_screenshot_file_path(w->window_id);
+    ok              = capture_to_file_image(w->window_id, SCREENSHOT_FILE);
+    if (ok == false) {
+      struct Vector *tmp_window_ids = get_window_ids();
+      bool          tmp_found       = false;
+      for (size_t _i = 0; _i < vector_size(tmp_window_ids); _i++) {
+        if ((size_t)w->window_id == (size_t)vector_get(tmp_window_ids, _i)) {
+          tmp_found = true;
+        }
+      }
+      vector_release(tmp_window_ids);
+      if (tmp_found == false) {
+        continue;
+      }
+    }
     ASSERT_EQm("Failed to take screenshot", ok, true);
-    ok = fsio_file_size(SCREENSHOT_FILE);
+    ok = fsio_file_exists(SCREENSHOT_FILE);
     ASSERT_EQm("Failed to locate screenshot file", ok, true);
     captured_images_bytes += fsio_file_size(SCREENSHOT_FILE);
     ASSERT_GTEm("Failed to locate valid screenshot file", captured_images_bytes, 1);
@@ -87,7 +104,7 @@ TEST t_capture_all_windows_to_png_files(void *WINDOW_IDS){
            milliseconds_to_string(dur_ms)
            );
   PASSm(msg);
-}
+} /* t_capture_all_windows_to_png_files */
 
 SUITE(s_droid){
   RUN_TEST(t_droid);
@@ -99,16 +116,17 @@ SUITE(s_frog){
   RUN_TEST(t_frog);
 }
 SUITE(s_capture_all_windows_to_png_files){
-  struct Vector *window_ids = get_window_ids();
+  struct Vector *windows = get_windows();
 
-  RUN_TESTp(t_capture_all_windows_to_png_files, (void *)window_ids);
+  RUN_TESTp(t_capture_all_windows_to_png_files, (void *)windows);
+  vector_release(windows);
 }
 
 GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
   tempdir = NULL;
-  if (getenv("STORAGE_DIR") != NULL && fsio_dir_exists(getenv("STORAGE_DIR"))) {
+  if (getenv("STORAGE_DIR") != NULL) {
     asprintf(&tempdir, "%s", getenv("STORAGE_DIR"));
   }
   if (tempdir == NULL) {

@@ -9,7 +9,7 @@ COMPRESSION=${COMPRESSION:-max}
 KFC_PROFILE=${PROFILE:-sexy-colorfulcolors}
 DEFAULT_ARCHIVE_DIR="$(eval echo -e "~/.wcap.db")"
 ARCHIVE_DIR="${ARCHIVE_DIR:-$DEFAULT_ARCHIVE_DIR}"
-STORAGE_DIR="${STORAGE_DIR:-/tmp/wrec-image-test}"
+STORAGE_DIR="${STORAGE_DIR:-/tmp/wrec-image-test/$$}"
 ARCHIVE_PASSWORD="${PASSWORD:-28D0BDB0-9133-49EC-BCEF-6040F0DF2F3C}"
 DEBUG_MODE=${DEBUG:-0}
 PACK_SIZE_MB=${PACK_MB:-1}
@@ -50,7 +50,8 @@ init_cmds() {
 	RMRF_CMD="$CMD_RM -rf"
 	MKDIRP_CMD="$CMD_MKDIR -p"
 	ARCHIVE_INIT_CMD="$CMD_RESTIC init -q"
-  ARCHIVE_BACKUP_CMD="(cd $STORAGE_DIR/. && $CMD_RESTIC backup . -q)"
+  RESTIC_BACKUP_ARGS="-v"
+  ARCHIVE_BACKUP_CMD="(cd $STORAGE_DIR/. && $CMD_RESTIC backup . $RESTIC_BACKUP_ARGS)"
   CAPTURE_CMD="${CMD_CAPTURE} -v -a -s s_capture_all_windows_to_png_files"
 }
 
@@ -143,7 +144,9 @@ archive_storage_dir() {
 
 capture_loop() {
 	init_archive
-	eval "$CMD_CAPTURE" 2>&1 | grep '.png$' | eval "$PV_CMD" >/dev/null
+  set +e
+	eval "$CMD_CAPTURE" 2>&1 | tee -a .cmd_cap.log | grep '.png$' | eval "$PV_CMD" >/dev/null
+  set -e
 	interval="$(($interval + 1))"
 }
 

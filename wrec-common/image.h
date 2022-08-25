@@ -8,13 +8,36 @@
 #include <stdint.h>
 #include <stdlib.h>
 ////////////////////////////////////////////////////////////////////////////////
-struct loaded_png_file_t *load_png_file_pixels(char *png_file);
-struct image_dimensions_t *get_png_file_dimensions(char *path);
-struct qoi_encode_to_file_result_t *qoi_encode_to_file(struct qoi_encode_to_file_request_t *req);
-int qoi_decode_file(char *qoi_file);
-struct qoi_encode_result_t *qoi_encode_memory(const void *rgb_pixels, int width, int height);
-void *qoi_decode_memory(const void *qoi_data, int qoi_data_size);
-////////////////////////////////////////////////////////////////////////////////
+struct qoi_desc {
+  unsigned int  width;
+  unsigned int  height;
+  unsigned char channels;
+  unsigned char colorspace;
+};
+struct qoi_encode_to_file_result_t {
+  int           qoi_write_result;
+  unsigned long started, dur;
+  size_t        qoi_file_size;
+};
+struct qoi_encode_to_file_request_t {
+  char              *qoi_file_path;
+  unsigned long     started, dur;
+  size_t            encoded_qoi_file_size;
+  void              *rgb_pixels;
+  struct   qoi_desc *desc;
+};
+struct qoi_decode_result_t {
+  void            *rgb_pixels;
+  size_t          size;
+  unsigned long   dur, started;
+  struct qoi_desc *desc;
+};
+struct qoi_encode_result_t {
+  void            *data;
+  size_t          size;
+  unsigned long   dur, started;
+  struct qoi_desc *desc;
+};
 struct loaded_png_file_t {
   int                       width, height, stb_format, stb_req_format;
   unsigned char             *rgb_pixels;
@@ -47,3 +70,11 @@ struct file_times_t {
   bool               success, verbose_mode;
   int                msf_gif_alpha_threshold;
 };
+////////////////////////////////////////////////////////////////////////////////
+struct loaded_png_file_t *load_png_file_pixels(char *png_file);
+struct image_dimensions_t *get_png_file_dimensions(char *path);
+struct qoi_decode_result_t * qoi_decode_file(char *qoi_file);
+struct qoi_encode_to_file_result_t *qoi_encode_to_file(struct qoi_encode_to_file_request_t *req);
+struct qoi_encode_result_t *qoi_encode_memory(const void *rgb_pixels, int width, int height);
+struct qoi_decode_result_t *qoi_decode_memory(const void *pixels, int qty);
+////////////////////////////////////////////////////////////////////////////////

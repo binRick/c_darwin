@@ -3,6 +3,12 @@
 #define ASCII_ENCODING    kCFStringEncodingASCII
 #define UTF8_ENCODING     kCFStringEncodingUTF8
 
+CFStringRef cfstring_from_cstring(char *cstring){
+  CFStringRef cfstring = CFStringCreateWithCString(NULL, cstring, kCFStringEncodingUTF8);
+
+  return(cfstring);
+}
+
 char * CFStringCopyUTF8String(CFStringRef aString){
   if (aString == NULL) {
     return(NULL);

@@ -119,12 +119,13 @@ int list_windows_table(void *ARGS) {
   struct Vector *windows = get_windows();
 
   for (size_t i = 0; i < vector_size(windows); i++) {
-    window_t *w         = (window_t *)vector_get(windows, i);
+    window_t *w = (window_t *)vector_get(windows, i);
+    //fprintf(stderr,"#%d\n",w->window_id);
     int      NAME_MATCH = wildcardcmp(execution_args.application_name_glob, strip_non_ascii(w->app_name));
     if (NAME_MATCH == 0) {
       continue;
     }
-    if ((int)w->position.y < 25 && (int)w->size.height < 50 && w->layer > 0) {
+    if ((int)w->position.y < 25 && (int)w->size.height < 50 && w->layer > 24) {
       continue;
     }
     char **tmp           = EXCLUDED_WINDOW_APP_NAMES;

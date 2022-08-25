@@ -22,7 +22,6 @@ int main(const int argc, const char **argv) {
   if (argc > 1) {
     asprintf(&tempdir, "%s", argv[1]);
   }
-  printf("dir:%s\n", tempdir);
   if (fsio_dir_exists(tempdir) == false) {
     exit(1);
   }

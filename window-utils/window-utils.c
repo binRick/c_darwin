@@ -115,6 +115,37 @@ static inline void *ts_alloc_unaligned(uint64_t size);
 static inline void *ts_alloc_aligned(uint64_t elem_size, uint64_t elem_count);
 ///////////////////////////////////////////////////////////////////////////////
 
+bool get_window_is_visible(struct window_t *window){
+  bool result = true;
+
+  if (window->position.x == 0 && window->position.y == 25 && window->is_focused == false && window->layer == 0) {
+    result = true;
+  }
+
+  return(result);
+}
+
+bool get_window_is_minimized(struct window_t *window){
+  bool      result = false;
+  CFTypeRef value;
+
+  if (AXUIElementCopyAttributeValue(window->window, kAXMinimizedAttribute, &value) == kAXErrorSuccess) {
+    result = CFBooleanGetValue(value);
+    fprintf(stderr, "checking if window #%d is min- %d\n", window->window_id, result);
+    CFRelease(value);
+  }
+
+  return(result);
+}
+
+ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w){
+  ProcessSerialNumber psn = {};
+
+  _SLPSGetFrontProcess(&psn);
+  GetProcessPID(&psn, &w->pid);
+  return(psn);
+}
+
 char *window_title(char *windowRef){
   char      *title = NULL;
   CFTypeRef value  = NULL;
@@ -203,18 +234,11 @@ int get_display_width(){
   return(w);
 }
 
-int get_window_connection_id(struct window_t *window){
-  return(CGSMainConnectionID());
-}
+int get_window_connection_id(struct window_t *w){
+  int conn;
 
-int get_window_space_id(struct window_t *window){
-  CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window->window_id);
-
-  uint64_t    sid = SLSManagedDisplayGetCurrentSpace(g_connection, _uuid);
-
-  CFRelease(_uuid);
-
-  return((int)sid);
+  SLSGetConnectionIDForPSN(g_connection, &w->psn, &conn);
+  return(conn);
 }
 
 CFStringRef display_uuid(uint32_t did){
@@ -245,15 +269,27 @@ uint32_t display_id(CFStringRef uuid){
   return(did);
 }
 
-uint64_t *display_space_list(uint32_t did, int *count){
-  uint64_t    *space_list = NULL;
+struct Vector *get_space_window_ids_v(uint64_t space_id){
+  struct Vector *ids       = vector_new();
+  uint64_t      set_tags   = 0;
+  uint64_t      clear_tags = 0;
+  uint64_t      _space_id  = (uint64_t)space_id;
+  uint64_t      sid        = &_space_id;
 
-  CFStringRef uuid = display_uuid(did);
+//    CFArrayRef space_list_ref = cfarray_from_numbers(&sid, sizeof(uint64_t), 1, kCFNumberSInt32Type);
+//    CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, 0, space_list_ref, 0x2, &set_tags, &clear_tags);
+
+  //  CFRelease(space_list_ref);
+  return(ids);
+}
+
+struct Vector *get_display_id_space_ids_v(uint32_t did){
+  struct Vector *display_space_ids = vector_new();
+  CFStringRef   uuid               = display_uuid(did);
 
   if (!uuid) {
     goto out;
   }
-
   CFArrayRef display_spaces_ref = SLSCopyManagedDisplaySpaces(g_connection);
 
   if (!display_spaces_ref) {
@@ -269,16 +305,14 @@ uint64_t *display_space_list(uint32_t did, int *count){
       continue;
     }
 
-    CFArrayRef spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
-    int        spaces_count = CFArrayGetCount(spaces_ref);
-
-    space_list = ts_alloc_aligned(sizeof(uint64_t), spaces_count);
-    *count     = spaces_count;
-
-    for (int j = 0; j < spaces_count; ++j) {
+    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
+    int        qty        = CFArrayGetCount(spaces_ref);
+    for (int j = 0; j < qty; ++j) {
       CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
       CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
-      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &space_list[j]);
+      int             ij        = 0;
+      CFNumberGetValue(sid_ref, CFNumberGetType(CFDictionaryGetValue(space_ref, CFSTR("id64"))), &ij);
+      vector_push(display_space_ids, (void *)(uint64_t)ij);
     }
   }
 
@@ -286,7 +320,7 @@ uint64_t *display_space_list(uint32_t did, int *count){
 err:
   CFRelease(uuid);
 out:
-  return(space_list);
+  return(display_space_ids);
 } /* display_space_list */
 
 char *get_window_display_uuid(struct window_t *window){
@@ -299,11 +333,7 @@ char *get_window_display_uuid(struct window_t *window){
 
 int get_window_display_id(struct window_t *window){
   CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window->window_id);
-
-  if (!_uuid) {
-    return(0);
-  }
-  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, _uuid);
+  CFUUIDRef   uuid  = CFUUIDCreateFromString(NULL, _uuid);
 
   CFRelease(_uuid);
   int id = CGDisplayGetDisplayIDFromUUID(uuid);
@@ -313,24 +343,82 @@ int get_window_display_id(struct window_t *window){
   return(id);
 }
 
+struct Vector *get_connection_window_ids(int conn){
+  struct Vector *ids       = vector_new();
+  CFArrayRef    spaces_ref = SLSCopyManagedDisplaySpaces(conn);
+  int           spaces_qty = CFArrayGetCount(spaces_ref);
+
+  log_info("Conn #%d has %d spaces", conn, spaces_qty);
+
+  return(ids);
+}
+//CFStringRef string = CFStringCreateWithCString(NULL, cstring, kCFStringEncodingUTF8);
+
+int get_window_space_id(struct window_t *w){
+  int           space_id           = 0;
+  struct Vector *display_space_ids = get_display_id_space_ids_v(w->display_id);
+
+  log_info("Window #%d", w->window_id);
+  for (size_t i = 0; i < vector_size(display_space_ids); i++) {
+    uint64_t      space_id      = (uint64_t)vector_get(display_space_ids, i);
+    struct Vector *window_ids_v = get_space_window_ids_v(space_id);
+    log_info("    - space #%lu %lu windows", (size_t)space_id, vector_size(window_ids_v));
+    for (size_t ii = 0; ii < vector_size(window_ids_v); ii++) {
+      uint64_t window_id = (uint64_t)vector_get(window_ids_v, ii);
+      log_info("    - window #%lu", (size_t)window_id);
+    }
+    // get_connection_window_ids(w->connection_id);
+//    log_info("  - Display #%d | space #%lu | #%lu windows",w->display_id,(size_t)vector_get(display_space_ids,i),vector_size(window_ids_v));
+  }
+  return(space_id);
+}
+
+struct Vector *get_window_space_ids_v(struct window_t *w){
+  struct Vector *window_space_ids = vector_new();
+
+  return(window_space_ids);
+}
+/*
+ *  uint64_t *space_list = NULL;
+ *  CFArrayRef window_list_ref = cfarray_of_cfnumbers(&window->id, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+ *  CFArrayRef space_list_ref = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);
+ *  if (!space_list_ref) goto err;
+ *
+ * count = CFArrayGetCount(space_list_ref);
+ *  if (!*count) goto out;
+ *
+ *  space_list = ts_alloc_aligned(sizeof(uint64_t), *count);
+ *
+ *  for (int i = 0; i < *count; ++i) {
+ *      CFNumberRef id_ref = CFArrayGetValueAtIndex(space_list_ref, i);
+ *      CFNumberGetValue(id_ref, CFNumberGetType(id_ref), space_list + i);
+ *  }
+ *
+ * out:
+ *  CFRelease(space_list_ref);
+ * err:
+ *  CFRelease(window_list_ref);
+ *  return space_list;
+ * }
+ */
+
 struct Vector *get_windows(){
-  struct Vector *windows      = vector_new();
-  struct Vector *window_ids   = get_window_ids();
-  CGRect        displayBounds = CGDisplayBounds(CGMainDisplayID());
-  int           focused_pid   = get_frontmost_application();
+  struct Vector *windows    = vector_new();
+  struct Vector *window_ids = get_window_ids();
 
   for (size_t i = 0; i < vector_size(window_ids); i++) {
     size_t   window_id = (size_t)vector_get(window_ids, i);
     window_t *w        = get_window_id(window_id);
-    if (w->pid == focused_pid) {
-      w->is_focused = true;
+    if (w == NULL) {
+      continue;
     }
-
-    w->rect = CGRectMake(w->position.x, w->position.y, w->size.width, w->size.height);
-    if (CGRectContainsRect(displayBounds, w->rect)) {
-      w->is_visible = true;
-    }
-
+//  struct Vector *display_space_ids_v = get_display_id_space_ids_v(w->display_id);
+//  fprintf(stderr,"display #%d  has %lu spaces spaces:\n",w->display_id,vector_size(display_space_ids_v));
+/*
+ *  w->space_ids_v = get_window_space_ids_v(w);
+ *  for(size_t ii=0;ii<vector_size(w->space_ids_v);ii++){
+ *    fprintf(stderr,"      #%lu\n",(size_t)vector_get(w->space_ids_v,ii));
+ *  }*/
     vector_push(windows, (window_t *)w);
   }
 
@@ -450,20 +538,20 @@ CGRect display_manager_dock_rect(void){
   SLSGetDockRectWithReason(g_connection, &bounds, &reason);
   return(bounds);
 }
-
-uint64_t display_space_id(uint32_t did){
-  CFStringRef uuid = display_uuid(did);
-
-  if (!uuid) {
-    return(0);
-  }
-
-  uint64_t sid = SLSManagedDisplayGetCurrentSpace(g_connection, uuid);
-
-  CFRelease(uuid);
-
-  return(sid);
-}
+/*
+ * uint64_t display_space_id(uint32_t did){
+ * CFStringRef uuid = display_uuid(did);
+ *
+ * if (!uuid) {
+ *  return(0);
+ * }
+ *
+ * uint64_t sid = SLSManagedDisplayGetCurrentSpace(g_connection, uuid);
+ *
+ * CFRelease(uuid);
+ *
+ * return(sid);
+ * }*/
 
 uint32_t display_manager_active_display_count(void){
   uint32_t count;
@@ -480,57 +568,14 @@ uint32_t *display_manager_active_display_list(uint32_t *count){
   return(result);
 }
 
-uint64_t *get_display_id_space_ids(uint32_t did, int *count){
-  uint64_t    *space_list = NULL;
-
-  CFStringRef uuid = display_uuid(did);
-
-  if (!uuid) {
-    goto out;
-  }
-
-  CFArrayRef display_spaces_ref = SLSCopyManagedDisplaySpaces(g_connection);
-
-  if (!display_spaces_ref) {
-    goto err;
-  }
-
-  int display_spaces_count = CFArrayGetCount(display_spaces_ref);
-
-  for (int i = 0; i < display_spaces_count; ++i) {
-    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);
-    CFStringRef     identifier  = CFDictionaryGetValue(display_ref, CFSTR("Display Identifier"));
-    if (!CFEqual(uuid, identifier)) {
-      continue;
-    }
-
-    CFArrayRef spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
-    int        spaces_count = CFArrayGetCount(spaces_ref);
-
-    space_list = ts_alloc_aligned(sizeof(uint64_t), spaces_count);
-    *count     = spaces_count;
-
-    for (int j = 0; j < spaces_count; ++j) {
-      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
-      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
-      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &space_list[j]);
-    }
-  }
-
-  CFRelease(display_spaces_ref);
-err:
-  CFRelease(uuid);
-out:
-  return(space_list);
-} /* get_display_id_space_ids */
-
 window_t *get_window_id(const int WINDOW_ID){
-  window_t *w            = malloc(sizeof(window_t));
-  int      focused_pid   = get_frontmost_application();
-  CGRect   displayBounds = CGDisplayBounds(CGMainDisplayID());
+  window_t *w          = malloc(sizeof(window_t));
+  int      focused_pid = get_frontmost_application();
 
-  w->window_id    = WINDOW_ID;
-  w->window       = window_id_to_window(w->window_id);
+  SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
+  w->window_id = WINDOW_ID;
+  w->window    = window_id_to_window(w->window_id);
+  CFNumberGetValue(CFDictionaryGetValue(w->window, kCGWindowOwnerPID), kCFNumberIntType, &w->pid);
   w->app_name     = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowOwnerName));
   w->window_name  = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowName));
   w->display_id   = get_window_display_id(w);
@@ -540,13 +585,14 @@ window_t *get_window_id(const int WINDOW_ID){
   w->layer        = CFDictionaryGetInt(w->window, kCGWindowLayer);
   w->position     = CGWindowGetPosition(w->window);
   w->size         = CGWindowGetSize(w->window);
-  CFNumberGetValue(CFDictionaryGetValue(w->window, kCGWindowOwnerPID), kCFNumberIntType, &w->pid);
+  w->psn          = get_window_ProcessSerialNumber(w);
+  // w->connection_id = get_window_connection_id(w);
   w->rect         = CGRectMake(w->position.x, w->position.y, w->size.width, w->size.height);
   w->width        = (int)(w->size.width);
   w->height       = (int)(w->size.height);
-  w->is_minimized = false;
+  w->is_minimized = get_window_is_minimized(w);
   w->is_focused   = (focused_pid == w->pid) ? true : false;
-  w->is_visible   = (CGRectContainsRect(displayBounds, w->rect) == true) ? true : false;
+  w->is_visible   = get_window_is_visible(w);
   get_kinfo_proc(w->pid, &w->pid_info);
 
   return(w);
@@ -631,7 +677,10 @@ struct Vector *get_window_ids(void){
   CFDictionaryRef window;
 
   windowList = CGWindowListCopyWindowInfo(
-    (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements),
+    (
+      kCGWindowListExcludeDesktopElements
+      | kCGWindowListOptionOnScreenOnly
+    ),
     kCGNullWindowID
     );
 
@@ -639,6 +688,11 @@ struct Vector *get_window_ids(void){
     window = CFArrayGetValueAtIndex(windowList, i);
     int id = CFDictionaryGetInt(window, kCGWindowNumber);
     if (id > 0) {
+      int layer = CFDictionaryGetInt(window, kCGWindowLayer);
+      if (layer > 0) {
+        continue;
+      }
+
       vector_push(ids_v, (void *)(size_t)id);
     }
   }
@@ -986,6 +1040,15 @@ int get_front_window_pid(void){
   }
   CFRelease(windows);
   return(-1);
+}
+
+int get_window_id_pid(int window_id){
+  int pid = 0;
+
+//  AXUIElementRef window;
+//  error = _AXUIElementGetWindow(window, &windowID);
+// error = AXUIElementGetPid(window, &pid);
+  return(pid);
 }
 
 CGWindowID CGWindowWithInfo(AXUIElementRef window, CGPoint location) {

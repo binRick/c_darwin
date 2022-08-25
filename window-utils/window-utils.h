@@ -26,16 +26,18 @@
 ///////////////////////////////////////////////////
 
 typedef struct window_t {
-  pid_t             pid;
-  CGPoint           position;
-  int               pos_x, pos_y, width, height, space_id, connection_id, display_id, window_id, layer;
-  CGSize            size;
-  CFDictionaryRef   window;
-  CGRect            rect;
-  char              *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
-  bool              is_focused, is_visible, is_minimized;
-  struct kinfo_proc pid_info;
-  AXUIElementRef    *app;
+  pid_t               pid;
+  CGPoint             position;
+  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, window_id, layer;
+  CGSize              size;
+  CFDictionaryRef     window;
+  CGRect              rect;
+  char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
+  bool                is_focused, is_visible, is_minimized;
+  struct kinfo_proc   pid_info;
+  struct Vector       *space_ids_v;
+  AXUIElementRef      *app;
+  ProcessSerialNumber psn;
 } window_t;
 
 typedef struct {
@@ -58,6 +60,7 @@ typedef struct {
 int get_window_display_id(struct window_t *window);
 int get_window_space_id(struct window_t *window);
 char *get_window_display_uuid(struct window_t *window);
+bool get_window_is_minimized(struct window_t *window);
 CFStringRef display_manager_active_display_uuid(void);
 CGRect display_manager_dock_rect(void);
 uint64_t display_space_id(uint32_t did);
