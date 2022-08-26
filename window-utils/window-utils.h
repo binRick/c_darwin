@@ -2,7 +2,6 @@
 #ifndef DEFAULT_LOGLEVEL
 #define DEFAULT_LOGLEVEL    1
 #endif
-#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <fnmatch.h>
 #include <libproc.h>
@@ -102,4 +101,5 @@ window_t *get_pid_window(const int PID);
 int get_display_width();
 bool resize_window(const CFDictionaryRef WINDOW, const int WIDTH, const int HEIGHT);
 bool move_window(CFDictionaryRef w, const int X, const int Y);
+window_t *get_focused_window();
 ///////////////////////////////////////////////////

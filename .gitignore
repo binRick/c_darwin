@@ -39,3 +39,4 @@ MyGif.gif
 .meson.build*.log
 .meson-build*.log
 .screenshots.db
+*.png

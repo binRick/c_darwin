@@ -8,9 +8,5 @@
 #include "ms/ms.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
-#include "wrec-capture/croak.h"
-#include "wrec-capture/droid.h"
-#include "wrec-capture/frog.h"
-#include "wrec-capture/shape.h"
 #include "wrec-common/wrec-common.h"
 ////////////////////////////////////////////////////////

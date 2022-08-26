@@ -26,6 +26,5 @@ int compare_file_time_t(struct file_time_t *e1, struct file_time_t *e2);
 //////////////////////////////////////////////////////////////////////////////////////////
 void debug_resize(int WINDOW_ID, char *FILE_NAME, int RESIZE_TYPE, int RESIZE_VALUE, int ORIGINAL_WIDTH, int ORIGINAL_HEIGHT, long unsigned CAPTURE_DURATION_MS, long unsigned SAVE_DURATION_MS);
 //////////////////////////////////////////////////////////////////////////////////////////
-int load_pngs_create_animated_gif(const char *PATH);
 char *resize_type_name(const int RESIZE_TYPE);
 ////////////////////////////////////////////

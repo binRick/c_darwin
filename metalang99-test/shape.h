@@ -16,7 +16,6 @@ typedef struct {
   int a, b, c;
 } Triangle;
 
-void test(Shape shape);
 void Triangle_scale(VSelf, int factor);
 int Triangle_perim(const VSelf);
 void Rectangle_scale(VSelf, int factor);

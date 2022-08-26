@@ -145,7 +145,7 @@ archive_storage_dir() {
 capture_loop() {
 	init_archive
   set +e
-	eval "$CMD_CAPTURE" 2>&1 | tee -a .cmd_cap.log | grep '.png$' | eval "$PV_CMD" >/dev/null
+	eval "$CMD_CAPTURE" 2>&1 | grep '.png$' | eval "$PV_CMD" >/dev/null
   set -e
 	interval="$(($interval + 1))"
 }

@@ -14,6 +14,8 @@ static const char *tempdir = NULL;
 
 int main(const int argc, const char **argv) {
   MEASURE(measurement_create_animated_gif)
+  struct animated_png_render_request_t *req = calloc(1, sizeof(struct animated_png_render_request_t));
+
   asprintf(&tempdir, "/tmp/wrec-animation-test/%d", getpid());
   tempdir = "/tmp/wrec-image-test/1";
   if (fsio_dir_exists(tempdir) == false) {
@@ -26,7 +28,12 @@ int main(const int argc, const char **argv) {
     exit(1);
   }
 
-  int res = load_pngs_create_animated_gif(tempdir);
+  req->png_dir         = tempdir;
+  req->max_age_minutes = 10;
+  //req->start_ts = timestamp()/1000 - 60*20;
+  // req->end_ts = timestamp()/1000 - 60*5*0;
+  //req->max_age_hours = 1;
+  int res = load_pngs_create_animated_gif(req);
 
   END_MEASURE(measurement_create_animated_gif)
   MEASURE_SUMMARY(measurement_create_animated_gif);

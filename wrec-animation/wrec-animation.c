@@ -6,15 +6,26 @@
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
 #include "wrec-animation/wrec-animation.h"
+#include "wrec-common/capture.h"
 
 ////////////////////////////////////////////////////
-int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
-  char *ANIMATED_GIF_FILE;
 
-  if (getenv("GIF") != NULL) {
-    asprintf(&ANIMATED_GIF_FILE, "%s", getenv("GIF"));
+int load_pngs_create_animated_gif(struct animated_png_render_request_t *req){
+  char *ANIMATED_GIF_FILE, *ANIMATED_PNGS_DIR;
+
+  if (req != NULL && req->png_dir != NULL) {
+    ANIMATED_PNGS_DIR = strdup(req->png_dir);
   }else{
-    asprintf(&ANIMATED_GIF_FILE, "MyGif-%d.gif", getpid());
+    return(-1);
+  }
+  if (req != NULL && req->gif != NULL) {
+    ANIMATED_GIF_FILE = strdup(req->gif);
+  }else{
+    if (getenv("GIF") != NULL) {
+      asprintf(&ANIMATED_GIF_FILE, "%s", getenv("GIF"));
+    }else{
+      asprintf(&ANIMATED_GIF_FILE, "MyGif-%d.gif", getpid());
+    }
   }
   struct file_time_t  *f, *next_f;
   struct file_times_t *ft       = malloc(sizeof(struct file_times_t));
@@ -83,6 +94,7 @@ int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
       goto next_file;
     }
     f->file_creation_ts = (f->file_info->st_birthtimespec.tv_sec * 1000000000) + f->file_info->st_birthtimespec.tv_nsec;
+    //    log_info("creation ts....%lu",f->file_creation_ts/1000/1000);
     if (f->file_creation_ts < 1000) {
       free(f);
       goto next_file;
@@ -98,6 +110,23 @@ int load_pngs_create_animated_gif(const char *ANIMATED_PNGS_DIR){
     }
     ft->max_width  = (f->image_dimensions->width > ft->max_width) ? f->image_dimensions->width : ft->max_width;
     ft->max_height = (f->image_dimensions->height > ft->max_height) ? f->image_dimensions->height : ft->max_height;
+    size_t ts          = (f->file_creation_ts / 1000 / 1000) / 1000;
+    size_t age_sec     = (timestamp() - (f->file_creation_ts / 1000 / 1000)) / 1000;
+    size_t age_hours   = age_sec / 60 / 60;
+    size_t age_minutes = age_sec / 60;
+    //log_info("age secs: %lu | hours: %lu | mins : %lu : %s", age_sec, age_hours, age_minutes, f->file_path);
+
+    if (req != NULL && (
+          (req->max_age_minutes > 0 && age_minutes > req->max_age_minutes)
+          || (req->max_age_hours > 0 && age_hours > req->max_age_hours)
+          || (req->start_ts > 0 && ts < req->start_ts)
+          || (req->end_ts > 0 && ts > req->end_ts)
+          )
+        ) {
+      //log_info("skipping %s",f->file_path);
+      goto next_file;
+    }
+
     vector_push(ft->files_v, (void *)f);
 
 next_file:
@@ -139,10 +168,10 @@ end_tinydir:
     ft->total_ms += f->frame_ms;
   }
   if (ft->verbose_mode) {
-    printf(AC_YELLOW "Creating %dx%d Animated gif with %lu images of %s, %lu avg interval" AC_RESETALL "\n",
-           ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size),
-           ft->avg_ms
-           );
+    log_info(AC_YELLOW "Creating %dx%d Animated gif with %lu images of %s, %lu avg interval" AC_RESETALL "",
+             ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size),
+             ft->avg_ms
+             );
   }
   ft->avg_ms = ft->total_ms / ft->sorted_images_qty;
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {

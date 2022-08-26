@@ -1,14 +1,9 @@
 wrec_capture_srcs = [
   'wrec-capture.c',
-  'frog.c',
-  'droid.c',
-  'shape.c',
 ]
 wrec_capturelink_flags = []
 wrec_capturec_args = []
 wrec_capture_deps = [
-  metalang99_dep,
-  interface99_dep,
   ansi_codes_dep,
   ms_dep,
   logh_dep,

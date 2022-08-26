@@ -35,7 +35,7 @@ CGImageRef capture_window_id_cgimageref(const int WINDOW_ID){
 
   CGRect          frame = {};
   struct window_t *w    = get_window_id(WINDOW_ID);
-  log_info("Capturing window with pid %d", w->pid);
+  //log_info("Capturing window with pid %d", w->pid);
 
   // int window_connection = get_window_id_connection
   CGSGetWindowBounds(w->connection_id, WID, &frame);
