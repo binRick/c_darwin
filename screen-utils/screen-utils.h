@@ -25,8 +25,8 @@
 ///////////////////////////////////////////////////
 #define MAX_DISPLAYS            8
 #define BITS_PER_COMPONENT      8
-#define BITS_PER_PIXEL          32
 #define RGB_BYTES_PER_ROW       4
+#define BITS_PER_PIXEL          (RGB_BYTES_PER_ROW * BITS_PER_COMPONENT)
 #define SHOULD_INTERPOLATE      false
 #define DECODE_ARRAY            NULL
 #define SAVE_IMAGE_TYPE         kUTTypePNG
@@ -46,14 +46,7 @@ enum screen_capture_log_level_t {
   LOG_LEVELS_QTY,
 };
 
-struct display_t {
-  size_t                id;
-  unsigned long         capture_started_ms, capture_dur_ms;
-  size_t                buffer_size;
-  int8_t                *buffer;
-  size_t                bits_per_pixel;
-  const char            *capture_file_name;
-  bool                  captured_success;
+struct display_image_t {
   CGRect                rect;
   CGImageRef            image_ref;
   CGDataProviderRef     provider_ref;
@@ -61,6 +54,17 @@ struct display_t {
   CGColorSpaceRef       color_space_ref;
   CFURLRef              url_ref;
   CGImageDestinationRef destination_ref;
+  int8_t                *buffer;
+  size_t                buffer_size;
+  size_t                bits_per_pixel;
+  bool                  success;
+  unsigned long         started_ms, dur_ms;
+};
+
+struct display_t {
+  size_t                 id;
+  const char             *capture_file_name;
+  struct display_image_t *capture, *save, *resize;
 };
 
 struct screen_capture_t {

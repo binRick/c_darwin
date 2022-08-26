@@ -17,54 +17,89 @@
 struct display_t *init_display(size_t DISPLAY_ID){
   struct display_t *D = calloc(1, sizeof(struct display_t));
 
-  D->id   = DISPLAY_ID;
-  D->rect = CGDisplayBounds(D->id);
+  D->capture = calloc(1, sizeof(struct display_image_t));
+  D->save    = calloc(1, sizeof(struct display_image_t));
+  D->resize  = calloc(1, sizeof(struct display_image_t));
+
+  D->id            = DISPLAY_ID;
+  D->capture->rect = CGDisplayBounds(D->id);
+  D->save->rect    = CGDisplayBounds(D->id);
   asprintf(&D->capture_file_name, "display-%lu-%lld.%s", D->id, timestamp(), SAVE_IMAGE_EXTENSION);
+  asprintf(&D->capture_file_name, "display-%lu.%s", D->id, SAVE_IMAGE_EXTENSION);
 
   log_debug("   [Init Display #%lu]    %fx%f|%fx%f",
             D->id,
-            D->rect.size.width, D->rect.size.height,
-            D->rect.origin.x, D->rect.origin.y
+            D->capture->rect.size.width, D->capture->rect.size.height,
+            D->capture->rect.origin.x, D->capture->rect.origin.y
             );
   return(D);
 }
 
 bool save_captured_display(struct display_t *D){
-  D->provider_ref    = CGDataProviderCreateWithData(NULL, D->buffer, D->rect.size.width * D->rect.size.height * 4, NULL);
-  D->color_space_ref = CGColorSpaceCreateDeviceRGB();
-  D->image_ref       = CGImageCreate(
-    D->rect.size.width, D->rect.size.height, BITS_PER_COMPONENT, BITS_PER_PIXEL, D->rect.size.width * RGB_BYTES_PER_ROW,
-    D->color_space_ref, kCGBitmapByteOrderDefault, D->provider_ref, DECODE_ARRAY, SHOULD_INTERPOLATE, kCGRenderingIntentDefault
+  {
+    D->save->buffer_size = D->capture->buffer_size;
+    D->save->buffer      = calloc(1, D->save->buffer_size);
+    memcpy(D->save->buffer, D->capture->buffer, D->save->buffer_size);
+  }
+  D->save->provider_ref = CGDataProviderCreateWithData(
+    NULL,
+    D->save->buffer,
+    D->save->rect.size.width * D->save->rect.size.height * 4,
+    NULL
     );
-  D->url_ref         = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(D->capture_file_name), kCFURLPOSIXPathStyle, false);
-  D->destination_ref = CGImageDestinationCreateWithURL(D->url_ref, SAVE_IMAGE_TYPE, 1, NULL);
-  CGImageDestinationAddImage(D->destination_ref, D->image_ref, NULL);
-  D->captured_success = (CGImageDestinationFinalize(D->destination_ref));
-  CFRelease(D->destination_ref);
-  CFRelease(D->url_ref);
+  D->save->color_space_ref = CGColorSpaceCreateDeviceRGB();
+  D->save->image_ref       = CGImageCreate(
+    D->save->rect.size.width, D->save->rect.size.height,
+    BITS_PER_COMPONENT,
+    32,
+    D->save->rect.size.width * 4,
+    D->save->color_space_ref,
+    kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little,
+    D->save->provider_ref,
+    NULL,
+    false,
+    kCGRenderingIntentDefault
+    );
+  D->save->url_ref         = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(D->capture_file_name), kCFURLPOSIXPathStyle, false);
+  D->save->destination_ref = CGImageDestinationCreateWithURL(D->save->url_ref, SAVE_IMAGE_TYPE, 1, NULL);
+  CGImageDestinationAddImage(D->save->destination_ref, D->save->image_ref, NULL);
+  D->save->success = (CGImageDestinationFinalize(D->save->destination_ref));
+  {
+    CFRelease(D->save->destination_ref);
+    CFRelease(D->save->url_ref);
+    CGImageRelease(D->save->image_ref);
+    CGColorSpaceRelease(D->save->color_space_ref);
+    CGDataProviderRelease(D->save->provider_ref);
+  }
 }
 
 bool capture_display(struct display_t *D){
-  D->capture_started_ms = timestamp();
-  D->image_ref          = CGDisplayCreateImageForRect(D->id, D->rect);
-  D->provider_ref       = CGImageGetDataProvider(D->image_ref);
-  D->bits_per_pixel     = CGImageGetBitsPerPixel(D->image_ref) / 8;
-  D->data_ref           = CGDataProviderCopyData(D->provider_ref);
-  D->buffer_size        = D->bits_per_pixel * D->rect.size.width * D->rect.size.height;
-  D->buffer             = calloc(1, D->buffer_size);
-  memcpy(D->buffer, CFDataGetBytePtr(D->data_ref), D->buffer_size);
+  D->capture->started_ms = timestamp();
+  {
+    D->capture->image_ref      = CGDisplayCreateImageForRect(D->id, D->capture->rect);
+    D->capture->provider_ref   = CGImageGetDataProvider(D->capture->image_ref);
+    D->capture->data_ref       = CGDataProviderCopyData(D->capture->provider_ref);
+    D->capture->bits_per_pixel = CGImageGetBitsPerPixel(D->capture->image_ref) / 8;
+    D->capture->buffer_size    = D->capture->bits_per_pixel * D->capture->rect.size.width * D->capture->rect.size.height;
+    D->capture->buffer         = calloc(1, D->capture->buffer_size);
+    memcpy(D->capture->buffer, CFDataGetBytePtr(D->capture->data_ref), D->capture->buffer_size);
+  }
+  D->capture->success = (D->capture->buffer_size > 0) ? true : false;
 
-  CFRelease(D->data_ref);
-  CGImageRelease(D->image_ref);
-  D->capture_dur_ms = timestamp() - D->capture_started_ms;
+  {
+    CFRelease(D->capture->data_ref);
+    CGImageRelease(D->capture->image_ref);
+  }
+  D->capture->dur_ms = timestamp() - D->capture->started_ms;
 
-  log_debug("   [Capture Display #%lu]    %fx%f|%fx%f with %s buffer.",
+  log_debug("   [Capture Display #%lu]    %fx%f|%fx%f with %s buffer|success:%s|",
             D->id,
-            D->rect.size.width, D->rect.size.height,
-            D->rect.origin.x, D->rect.origin.y,
-            bytes_to_string(D->buffer_size)
+            D->capture->rect.size.width, D->capture->rect.size.height,
+            D->capture->rect.origin.x, D->capture->rect.origin.y,
+            bytes_to_string(D->capture->buffer_size),
+            D->capture->success == true ? "Yes" : "No"
             );
-  return(true);
+  return(D->capture->success);
 }
 
 struct screen_capture_t *init_screen_capture(){
@@ -101,7 +136,12 @@ struct screen_capture_t *screen_capture(){
   C->success    = false;
   C->started_ms = timestamp();
   for (size_t i = 0; i < C->displays_qty; i++) {
-    capture_display((struct display_t *)vector_get(C->displays_v, i));
+    bool success = capture_display((struct display_t *)vector_get(C->displays_v, i));
+    if (i == 0) {
+      C->success = success;
+    }else{
+      C->success = (success == true && C->success == true);
+    }
   }
   C->dur_ms = timestamp() - C->started_ms;
   log_debug("   [Screen Capture] captured %lu displays in %s",
@@ -110,57 +150,3 @@ struct screen_capture_t *screen_capture(){
             );
   return(C);
 }
-/*
- * struct screen_capture_t *save_screen_buffer(struct screen_t *S){
- *  struct screen_capture_t *C = calloc(1,sizeof(struct screen_capture_t));
- * //    C->screen = S;
- *  C->success = false;
- *  C->started_ms = timestamp();
- *
- *  CGDataProviderRef provider_ref = CGDataProviderCreateWithData(NULL, S->buffer, S->width * S->height * 4, NULL);
- *  if (provider_ref != NULL) {
- *      CGColorSpaceRef cs_ref = CGColorSpaceCreateDeviceRGB();
- *      if (cs_ref != NULL) {
- *          CGImageRef img_ref = CGImageCreate(
- *              S->width,
- *              S->height,
- *              8,          // bitsPerComponent
- *              32,         // bitsPerPixel
- *              S->width * 4,  // bytesPerRow
- *              cs_ref,
- *              kCGBitmapByteOrderDefault,
- *              provider_ref,
- *              NULL,       // decode array
- *              false,      // shouldInterpolate
- *              kCGRenderingIntentDefault
- *          );
- *
- *          if (img_ref != NULL) {
- *              CFURLRef url_ref = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, CFSTR("screenshot.png"), kCFURLPOSIXPathStyle, false);
- *              if (url_ref != NULL) {
- *                  CGImageDestinationRef destination_ref = CGImageDestinationCreateWithURL(url_ref, kUTTypePNG, 1, NULL);
- *                  if (destination_ref != NULL) {
- *                      CGImageDestinationAddImage(destination_ref, img_ref, NULL);
- *                      if (CGImageDestinationFinalize(destination_ref)) {
- *                          C->success = true;
- *                      }
- *
- *                      CFRelease(destination_ref);
- *                  }
- *
- *                  CFRelease(url_ref);
- *              }
- *
- *              CGImageRelease(img_ref);
- *          }
- *
- *          CGColorSpaceRelease(cs_ref);
- *      }
- *
- *      CGDataProviderRelease(provider_ref);
- *  }
- *
- *  C->dur_ms = timestamp() - C->started_ms;
- *  return C;
- * }
- */
