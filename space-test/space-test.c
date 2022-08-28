@@ -5,18 +5,18 @@
 ////////////////////////////////////////////
 #include "space-test/space-test.h"
 ////////////////////////////////////////////
+#include "active-app/active-app.h"
 #include "ansi-codes/ansi-codes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "core-utils/core-utils.h"
 #include "log.h/log.h"
 #include "space/space.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
-#include "active-app/active-app.h"
-#include "core-utils/core-utils.h"
 
 ////////////////////////////////////////////
 TEST t_space_set_test(){
@@ -26,6 +26,7 @@ TEST t_space_set_test(){
 
 TEST t_space_test(){
   int space_cnt = total_spaces() + 1, rows, cols, window_count, nonmin_window_count;
+
   CoreDockGetWorkspacesCount(&rows, &cols);
   log_debug("get_front_window_pid:%d", get_front_window_pid());
   log_debug("get_space_id:%d", get_space_id());
@@ -35,59 +36,60 @@ TEST t_space_test(){
   log_debug("get_space_via_keywin:%d", get_space_via_keywin());
   log_debug("CoreDockGetWorkspacesCount rows:%d|cols:%d", rows, cols);
   for (int i = 0; i < space_cnt; i++) {
-    int space_minimized_window_qty;
-    uint32_t *minimized_window_list = space_minimized_window_list(i,&space_minimized_window_qty);
-    uint32_t display_id = space_display_id(i);
-    uint32_t *window_list         = space_window_list(i+1, &window_count, true);
-    if(window_count == 0)
+    int      space_minimized_window_qty;
+    uint32_t *minimized_window_list = space_minimized_window_list(i, &space_minimized_window_qty);
+    uint32_t display_id             = space_display_id(i);
+    uint32_t *window_list           = space_window_list(i + 1, &window_count, true);
+    if (window_count == 0) {
       continue;
-    CGRect   db = display_bounds(display_id);
-    uint32_t *nonmin_window_list         = space_window_list(i+1, &nonmin_window_count, false);
-    int qty_min = window_count -  nonmin_window_count;
-    log_debug("    Space #%d/%d> %d minimized windows|display #%d|%s|%fx%f|", 
-        i+1,
-        space_cnt, 
-        space_minimized_window_qty,
-        display_id,cstring_from_CFString(display_uuid(display_id)), db.size.width,db.size.height);
-    log_debug("               |user:%d|fullscreen:%d|system:%d|visible:%d|", 
-        space_is_user(i), 
-        space_is_fullscreen(i),
-        space_is_system(i),
-        space_is_visible(i)
+    }
+    CGRect   db                  = display_bounds(display_id);
+    uint32_t *nonmin_window_list = space_window_list(i + 1, &nonmin_window_count, false);
+    int      qty_min             = window_count - nonmin_window_count;
+    log_debug("    Space #%d/%d> %d minimized windows|display #%d|%s|%fx%f|",
+              i + 1,
+              space_cnt,
+              space_minimized_window_qty,
+              display_id, cstring_from_CFString(display_uuid(display_id)), db.size.width, db.size.height);
+    log_debug("               |user:%d|fullscreen:%d|system:%d|visible:%d|",
+              space_is_user(i),
+              space_is_fullscreen(i),
+              space_is_system(i),
+              space_is_visible(i)
 
-        );
+              );
     log_debug("               windows:  %d (%d minimized)", window_count, qty_min);
-    for(int w = 0;w<window_count && w < 99;w++){
-      bool is_min = true;
-      struct window_t *W = get_window_id(window_list[w]);
-      for(int ww = 0;ww<nonmin_window_count && ww < 99;ww++){
-        if(window_list[w] == nonmin_window_list[ww])
+    for (int w = 0; w < window_count && w < 99; w++) {
+      bool            is_min = true;
+      struct window_t *W     = get_window_id(window_list[w]);
+      for (int ww = 0; ww < nonmin_window_count && ww < 99; ww++) {
+        if (window_list[w] == nonmin_window_list[ww]) {
           is_min = false;
+        }
       }
 
-      log_debug("                   Window #%d/%d>",w+1, window_count);
-      log_debug("                           [window id %"PRIu32"] Minimized? %s|",(window_list[w]), is_min == true ? "Yes" : "No");
+      log_debug("                   Window #%d/%d>", w + 1, window_count);
+      log_debug("                           [window id %" PRIu32 "] Minimized? %s|", (window_list[w]), is_min == true ? "Yes" : "No");
       log_debug("                                    |app:%s|pid:%d|ismin:%s|layer:%d|spaceid:%d|size:%dx%d|display:%d|                ",
-          W->app_name,
-          W->pid,
-          W->is_minimized?"Yes":"No",
-          W->layer,
-          W->space_id,
-          W->width,W->height,
-          W->display_id
-          );
+                W->app_name,
+                W->pid,
+                W->is_minimized?"Yes":"No",
+                W->layer,
+                W->space_id,
+                W->width, W->height,
+                W->display_id
+                );
       log_debug("                                    |psn:%d|ppid:%d|rtime:%d|login:%s|focused:%s|visible:%s|",
-          W->psn.highLongOfPSN + W->psn.lowLongOfPSN,
-          W->pid_info.kp_eproc.e_ppid, W->pid_info.kp_proc.p_rtime.tv_usec,
-          W->pid_info.kp_eproc.e_login,
-          W->is_focused?"Yes":"No",
-          W->is_visible?"Yes":"No"
-          );
-      
+                W->psn.highLongOfPSN + W->psn.lowLongOfPSN,
+                W->pid_info.kp_eproc.e_ppid, W->pid_info.kp_proc.p_rtime.tv_usec,
+                W->pid_info.kp_eproc.e_login,
+                W->is_focused?"Yes":"No",
+                W->is_visible?"Yes":"No"
+                );
     }
   }
   PASS();
-}
+} /* t_space_test */
 
 SUITE(s_space_test) {
   RUN_TEST(t_space_test);

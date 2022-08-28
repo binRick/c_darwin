@@ -78,7 +78,6 @@ char * get_focused_window_title();
 char *windowTitle(char *appName, char *windowName);
 void PrintWindow(CFDictionaryRef window, void *ctxPtr);
 int EnumerateWindows(char *pattern, void (*callback)(CFDictionaryRef window, void *callback_data), void *callback_data);
-int get_window_connection_id(struct window_t *window);
 CGPoint CGWindowGetPosition(CFDictionaryRef window);
 CGSize CGWindowGetSize(CFDictionaryRef window);
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);

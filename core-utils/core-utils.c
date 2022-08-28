@@ -1,86 +1,45 @@
-#include <CoreFoundation/CFBase.h>
-#include <Carbon/Carbon.h>
-#include <ApplicationServices/ApplicationServices.h>
-#include <CoreServices/CoreServices.h>
+#pragma once
 #include "core-utils/core-utils.h"
-#define ASCII_ENCODING    kCFStringEncodingASCII
-#define UTF8_ENCODING     kCFStringEncodingUTF8
-  int space_display_id(int sid){
-    CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
 
-    if (!uuid_string) {
-      return(0);
-    }
+int space_display_id(int sid){
+  CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
 
-    CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
-    uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
-
-    CFRelease(uuid);
-    CFRelease(uuid_string);
-
-    return((int)id);
+  if (!uuid_string) {
+    return(0);
   }
 
-  uint32_t *space_minimized_window_list(uint64_t sid, int *count){
-    int window_count, non_min_window_count;
-    uint32_t *windows_list = space_window_list_for_connection(&sid, 1, 0, &window_count, true);
-    uint32_t *non_min_windows_list = space_window_list_for_connection(&sid, 1, 0, &non_min_window_count, false);
-    *count = (window_count - non_min_window_count);
-    uint32_t *minimized_window_list = calloc((*count)+1, sizeof(uint32_t));
-    int on = 0;
-    for(int i=0;i<window_count;i++){
-      bool is_minimized = true;
-      for(int ii=0;ii<non_min_window_count && is_minimized == true;ii++){
-        if(non_min_windows_list[ii] == windows_list[i])
-          is_minimized = false;
+  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
+  uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
+
+  CFRelease(uuid);
+  CFRelease(uuid_string);
+
+  return((int)id);
+}
+
+uint32_t *space_minimized_window_list(uint64_t sid, int *count){
+  int      window_count, non_min_window_count;
+  uint32_t *windows_list         = space_window_list_for_connection(&sid, 1, 0, &window_count, true);
+  uint32_t *non_min_windows_list = space_window_list_for_connection(&sid, 1, 0, &non_min_window_count, false);
+
+  *count = (window_count - non_min_window_count);
+  uint32_t *minimized_window_list = calloc((*count) + 1, sizeof(uint32_t));
+  int      on                     = 0;
+
+  for (int i = 0; i < window_count; i++) {
+    bool is_minimized = true;
+    for (int ii = 0; ii < non_min_window_count && is_minimized == true; ii++) {
+      if (non_min_windows_list[ii] == windows_list[i]) {
+        is_minimized = false;
       }
-      if(is_minimized == true)
-        minimized_window_list[on++] = windows_list[i];
     }
-
-    return(minimized_window_list);
+    if (is_minimized == true) {
+      minimized_window_list[on++] = windows_list[i];
+    }
   }
 
-  uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized){
-      return space_window_list_for_connection(&sid, 1, 0, count, include_minimized);
-  }
-
-  uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized){
-    int       window_count = 0;
-    uint64_t   set_tags   = 1;
-    uint64_t   clear_tags = 0;
-    uint32_t   options    = include_minimized ? 0x7 : 0x2;
-    uint32_t  *window_list = calloc(1, sizeof(uint32_t));
-
-    CFArrayRef space_list_ref  = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), space_count, kCFNumberSInt64Type);
-    CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, cid, space_list_ref, options, &set_tags, &clear_tags);
-
-    if (!window_list_ref) {
-      goto err;
-    }
-
-    *count = CFArrayGetCount(window_list_ref);
-    if ((*count) < 1) {
-      goto out;
-    }
-
-    CFTypeRef query    = SLSWindowQueryWindows(g_connection, window_list_ref, *count);
-    CFTypeRef iterator = SLSWindowQueryResultCopyWindows(query);
-    if(window_list)
-      free(window_list);
-    window_list = calloc((*count)*2, sizeof(uint32_t));
-    while (SLSWindowIteratorAdvance(iterator)) {
-        window_list[window_count++] = SLSWindowIteratorGetWindowID(iterator);
-    }
-
-    CFRelease(query);
-    CFRelease(iterator);
-  out:
-    CFRelease(window_list_ref);
-  err:
-    CFRelease(space_list_ref);
-    return(window_list);
-  } /* space_window_list_for_connection */
+  return(minimized_window_list);
+}
 
 CFStringRef cfstring_from_cstring(char *cstring){
   CFStringRef cfstring = CFStringCreateWithCString(NULL, cstring, kCFStringEncodingUTF8);
@@ -340,23 +299,155 @@ void ts_reset(void){
   g_temp_storage.used = 0;
 }
 
+uint32_t ax_window_id(AXUIElementRef ref){
+  uint32_t wid = 0;
 
-uint32_t ax_window_id(AXUIElementRef ref)
-{
-    uint32_t wid = 0;
-    _AXUIElementGetWindow(ref, &wid);
-    return wid;
+  _AXUIElementGetWindow(ref, &wid);
+  return(wid);
 }
 
-pid_t ax_window_pid(AXUIElementRef ref)
-{
-    return *(pid_t *)((void *) ref + 0x10);
+pid_t ax_window_pid(AXUIElementRef ref){
+  return(*(pid_t *)((void *)ref + 0x10));
 }
 
-  int total_spaces(void){
-    int rows, cols;
-    CoreDockGetWorkspacesCount(&rows, &cols);
-    return(cols);
+int total_spaces(void){
+  int rows, cols;
+
+  CoreDockGetWorkspacesCount(&rows, &cols);
+  return(cols);
+}
+
+uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized){
+  return(space_window_list_for_connection(&sid, 1, 0, count, include_minimized));
+}
+
+uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized){
+  int        window_count = 0;
+  uint64_t   set_tags     = 1;
+  uint64_t   clear_tags   = 0;
+  uint32_t   options      = include_minimized ? 0x7 : 0x2;
+  uint32_t   *window_list = calloc(1, sizeof(uint32_t));
+
+  CFArrayRef space_list_ref  = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), space_count, kCFNumberSInt64Type);
+  CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, cid, space_list_ref, options, &set_tags, &clear_tags);
+
+  if (!window_list_ref) {
+    goto err;
   }
 
+  *count = CFArrayGetCount(window_list_ref);
+  if ((*count) < 1) {
+    goto out;
+  }
 
+  CFTypeRef query    = SLSWindowQueryWindows(g_connection, window_list_ref, *count);
+  CFTypeRef iterator = SLSWindowQueryResultCopyWindows(query);
+
+  if (window_list) {
+    free(window_list);
+  }
+  window_list = calloc((*count) * 2, sizeof(uint32_t));
+  while (SLSWindowIteratorAdvance(iterator)) {
+    window_list[window_count++] = SLSWindowIteratorGetWindowID(iterator);
+  }
+
+  CFRelease(query);
+  CFRelease(iterator);
+out:
+  CFRelease(window_list_ref);
+err:
+  CFRelease(space_list_ref);
+  return(window_list);
+}   /* space_window_list_for_connection */
+
+bool window_id_is_minimized(int window_id){
+  bool is_min = false;
+  int  space_minimized_window_qty;
+  int  spaces_qty = total_spaces();
+
+  for (int s = 1; s < spaces_qty && is_min == false; s++) {
+    uint32_t *minimized_window_list = space_minimized_window_list(s, &space_minimized_window_qty);
+    for (int i = 0; i < space_minimized_window_qty && is_min == false; i++) {
+      if (minimized_window_list[i] == (uint32_t)window_id) {
+        is_min = true;
+      }
+    }
+    if (minimized_window_list) {
+      free(minimized_window_list);
+    }
+  }
+  return(is_min);
+}
+
+bool space_is_user(uint64_t sid){
+  return(SLSSpaceGetType(g_connection, sid) == 0);
+}
+
+bool space_is_fullscreen(uint64_t sid){
+  return(SLSSpaceGetType(g_connection, sid) == 4);
+}
+
+bool space_is_system(uint64_t sid){
+  return(SLSSpaceGetType(g_connection, sid) == 2);
+}
+
+bool space_is_visible(uint64_t sid){
+  return(sid == display_space_id(space_display_id(sid)));
+}
+
+uint64_t display_space_id(uint32_t did){
+  CFStringRef uuid = display_uuid(did);
+
+  if (!uuid) {
+    return(0);
+  }
+
+  uint64_t sid = SLSManagedDisplayGetCurrentSpace(g_connection, uuid);
+
+  CFRelease(uuid);
+
+  return(sid);
+}
+
+int get_display_width(){
+  int    w             = -1;
+  CGRect displayBounds = CGDisplayBounds(CGMainDisplayID());
+
+  w = displayBounds.size.width;
+  return(w);
+}
+
+int get_window_connection_id(struct window_t *w){
+  int conn;
+
+  SLSGetConnectionIDForPSN(g_connection, &w->psn, &conn);
+  return(conn);
+}
+
+CFStringRef display_uuid(uint32_t did){
+  CFUUIDRef uuid_ref = CGDisplayCreateUUIDFromDisplayID(did);
+
+  if (!uuid_ref) {
+    return(NULL);
+  }
+
+  CFStringRef uuid_str = CFUUIDCreateString(NULL, uuid_ref);
+
+  CFRelease(uuid_ref);
+
+  return(uuid_str);
+}
+
+uint32_t display_id(CFStringRef uuid){
+  CFUUIDRef uuid_ref = CFUUIDCreateFromString(NULL, uuid);
+
+  if (!uuid_ref) {
+    return(0);
+  }
+
+  uint32_t did = CGDisplayGetDisplayIDFromUUID(uuid_ref);
+
+  CFRelease(uuid_ref);
+
+  return(did);
+}

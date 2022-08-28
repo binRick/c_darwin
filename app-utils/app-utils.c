@@ -13,13 +13,13 @@ authorized_tests_t authorized_tests = {
       .id            = AUTHORIZED_ACCESSIBILITY,
       .name          = "accessibility",
       .test_function = (*is_authorized_for_accessibility),
-      .authorized    = false, .ts            = 0, .dur_ms = 0,
+      .authorized    = false,                             .ts= 0, .dur_ms = 0,
     },
     [AUTHORIZED_SCREEN_RECORDING] =  {
       .id            = AUTHORIZED_SCREEN_RECORDING,
       .name          = "screen_recording",
       .test_function = (*is_authorized_for_screen_recording),
-      .authorized    = false, .ts            = 0, .dur_ms = 0,
+      .authorized    = false,                                .ts= 0, .dur_ms = 0,
     },
     [AUTHORIZED_TEST_TYPE_IDS_QTY] = { 0 },
   },
@@ -59,7 +59,7 @@ authorized_test_t *execute_authorization_tests(){
 
   for (int i = 0; i < AUTHORIZED_TEST_TYPE_IDS_QTY; i++) {
     unsigned long started = timestamp();
-    authorized_test_results[i] = (execute_authorization_test(i));
+    authorized_test_results[i]        = (execute_authorization_test(i));
     authorized_test_results[i].dur_ms = timestamp() - started;
   }
   return(authorized_test_results);
