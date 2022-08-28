@@ -1,11 +1,14 @@
 #pragma once
 #include "core-utils/core-utils.h"
+#include "hash/hash.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
 static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Control Center",
   "Rectangle",
@@ -23,52 +26,77 @@ static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   NULL,
 };
 
-#define WINDOW_APP_CACHE_QTY      5500
-#define WINDOW_APP_CACHE_MS       100
+#define WINDOW_APP_CACHE_QTY      500
+#define WINDOW_APP_CACHE_MS       10
 #define WINDOW_APP_CACHE_INDEX    (window)
 #define WINDOW_APP_CACHE_DEBUG    false
 pthread_mutex_t space_ids_cache_mutex;
+static hash_t   *window_app_cache_hash = NULL;
 struct window_app_cache_t {
-  CFArrayRef    app_window_list;
+  int           pid;
   unsigned long ts;
+  CFArrayRef    app_window_list;
 };
-struct window_app_cache_t window_app_cache[WINDOW_APP_CACHE_QTY + 1] = { 0 };
 
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
+  if (window_app_cache_hash == NULL) {
+    window_app_cache_hash = hash_new();
+  }else{
+    if (WINDOW_APP_CACHE_DEBUG == true) {
+      log_info("cache has %d items.", hash_size(window_app_cache_hash));
+    }
+  }
+  char           *pid_s;
   unsigned long  ts_start = timestamp();
-  bool           cached = false;
   CGWindowID     targetWindowId, actualWindowId;
   pid_t          pid;
   AXUIElementRef app, appWindow, foundAppWindow;
   int            i;
-  unsigned long  ts;
+  bool           _cached = false;
   CFArrayRef     appWindowList;
 
   targetWindowId = CFDictionaryGetInt(window, kCGWindowNumber);
   pid            = CFDictionaryGetInt(window, kCGWindowOwnerPID);
-  app            = AXUIElementCreateApplication(pid);
-  ts             = timestamp();
-  if (window_app_cache[pid].app_window_list != NULL && window_app_cache[pid].ts > 0 && (timestamp() - window_app_cache[pid].ts) < WINDOW_APP_CACHE_MS) {
-    if (WINDOW_APP_CACHE_DEBUG) {
-      log_debug("reading pid %d window %d app window list from %s old cache", pid, targetWindowId, milliseconds_to_string(timestamp() - window_app_cache[pid].ts));
+  asprintf(&pid_s, "%d", pid);
+  app = AXUIElementCreateApplication(pid);
+  if (hash_has(window_app_cache_hash, pid_s)) {
+    void                      *c      = hash_get(window_app_cache_hash, pid_s);
+    struct window_app_cache_t *cached = (struct window_app_cache_t *)c;
+    if (cached != NULL && cached->pid == pid && cached->ts > 0 && (timestamp() - cached->ts) < WINDOW_APP_CACHE_MS) {
+      _cached = true;
+      if (WINDOW_APP_CACHE_DEBUG == true) {
+        log_debug("reading %s old item from hash cache!|%d",
+                  milliseconds_to_string(timestamp() - cached->ts),
+                  pid
+                  );
+      }
+      appWindowList = cached->app_window_list;
+    }else{
+      if (WINDOW_APP_CACHE_DEBUG == true) {
+        log_debug("removing %s old expired item from cache %d| %d",
+                  milliseconds_to_string(timestamp() - cached->ts),
+                  cached->pid,
+                  pid
+                  );
+      }
+      hash_del(window_app_cache_hash, pid_s);
     }
-    cached        = true;
-    appWindowList = window_app_cache[pid].app_window_list;
-  }else{
+  }
+  if (_cached == false) {
     AXUIElementCopyAttributeValue(
       app, kAXWindowsAttribute, (CFTypeRef *)&appWindowList
       );
     if (WINDOW_APP_CACHE_DEBUG) {
-      log_debug("copied window %d | pid %d app attribute in %lums", targetWindowId, pid, (unsigned long)timestamp() - ts);
       log_debug("saving pid %d window %d app window list to cache", pid, targetWindowId);
     }
-    window_app_cache[pid] = (struct window_app_cache_t){
-      .app_window_list = appWindowList,
-      .ts              = timestamp(),
-    };
+    struct window_app_cache_t *cached = calloc(1, sizeof(struct window_app_cache_t));
+    cached->pid             = pid;
+    cached->ts              = timestamp();
+    cached->app_window_list = appWindowList;
+    hash_set(window_app_cache_hash, pid_s, (void *)cached);
   }
   if (WINDOW_APP_CACHE_DEBUG) {
-    log_debug("got app list for window %d pid %d in %lums", targetWindowId, pid, (unsigned long)timestamp() - ts);
+    log_debug("got app list for window %d pid %d in %lums|cached? %s|", targetWindowId, pid, (unsigned long)timestamp() - ts_start, _cached == true ? "Yes":"No");
   }
 
   foundAppWindow = NULL;
@@ -83,13 +111,14 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
     }
   }
   CFRelease(app);
+  free(pid_s);
 
   if (WINDOW_APP_CACHE_DEBUG) {
     log_debug("completed app window looking for window #%d|pid %d in %lums | cached? %s",
               targetWindowId,
               pid,
               (unsigned long)timestamp() - ts_start,
-              cached == true ? "Yes" :"No"
+              _cached == true ? "Yes" :"No"
               );
   }
   return(foundAppWindow);
