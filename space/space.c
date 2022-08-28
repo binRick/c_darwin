@@ -1,10 +1,9 @@
-#include "core-utils/core-utils.h"
-#include "space.h"
-#include "window-utils/window-utils.h"
-#include <ApplicationServices/ApplicationServices.h>
-#include <CoreServices/CoreServices.h>
-#include <unistd.h>
-#define g_connection    CGSMainConnectionID()
+#include "space/space.h"
+/*
+ * void set_space(long space) {
+ *      CGSConnection conn = _CGSDefaultConnection();
+ *      CGSSetWorkspace(conn, space);
+ * }*/
 
 int get_space_via_keywin(void) {
   CFArrayRef winList =

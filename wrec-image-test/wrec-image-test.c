@@ -125,7 +125,9 @@ TEST t_wrec_image_test(void){
 } /* t_wrec_image_test */
 
 SUITE(s_wrec_image_test) {
-  RUN_TEST(t_wrec_image_test);
+  if (isatty(STDOUT_FILENO)) {
+    RUN_TEST(t_wrec_image_test);
+  }
 }
 
 GREATEST_MAIN_DEFS();

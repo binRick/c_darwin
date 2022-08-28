@@ -1,5 +1,217 @@
 #pragma once
 #include "core-utils/core-utils.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
+
+void command_list_displays(){
+  CGDisplayCount display_count;
+
+  CGGetOnlineDisplayList(INT_MAX, NULL, &display_count);
+
+  CGDirectDisplayID display_list[display_count];
+
+  CGGetOnlineDisplayList(INT_MAX, display_list, &display_count);
+
+  for (unsigned int i = 0; i < display_count; i++) {
+    CGDirectDisplayID current_display = display_list[i];
+    CGRect            rect            = CGDisplayBounds(current_display);
+    bool              is_builtin      = CGDisplayIsBuiltin(current_display);
+    bool              is_main         = CGDisplayIsMain(current_display);
+
+    printf("Display #%d\n", i + 1);
+    printf("ID: %u\n", current_display);
+    printf("X: %d\n", (int)rect.origin.x);
+    printf("Y: %d\n", (int)rect.origin.y);
+    printf("Width: %d\n", (int)rect.size.width);
+    printf("Height: %d\n", (int)rect.size.height);
+    printf("Built-in: %s\n", is_builtin ? "true" : "false");
+    printf("Main: %s\n", is_main ? "true" : "false");
+    printf("\n");
+  }
+}
+
+uint64_t dsid_from_sid(uint32_t sid) {
+  uint64_t   result      = 0;
+  int        desktop_cnt = 1;
+
+  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);
+  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);
+
+  for (int i = 0; i < display_spaces_count; ++i) {
+    CFDictionaryRef display_ref  = CFArrayGetValueAtIndex(display_spaces_ref, i);
+    CFArrayRef      spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
+    int             spaces_count = CFArrayGetCount(spaces_ref);
+
+    for (int j = 0; j < spaces_count; ++j) {
+      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
+      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
+      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &result);
+      if (sid == (uint32_t)desktop_cnt) {
+        goto out;
+      }
+
+      ++desktop_cnt;
+    }
+  }
+
+  result = 0;
+out:
+  CFRelease(display_spaces_ref);
+  return(result);
+}
+
+uint32_t display_id_for_space(uint32_t sid) {
+  uint64_t dsid = dsid_from_sid(sid);
+
+  if (!dsid) {
+    return(0);
+  }
+  CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, dsid);
+
+  if (!uuid_string) {
+    return(0);
+  }
+
+  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
+  uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
+
+  CFRelease(uuid);
+  CFRelease(uuid_string);
+
+  return(id);
+}
+
+CGImageRef space_capture(uint32_t sid) {
+  uint64_t   dsid  = dsid_from_sid(sid);
+  CGImageRef image = NULL;
+
+  if (dsid) {
+    CFArrayRef result = SLSHWCaptureSpace(g_connection, dsid, 0);
+    uint32_t   count  = CFArrayGetCount(result);
+    if (count > 0) {
+      image = (CGImageRef)CFArrayGetValueAtIndex(result, 0);
+    }
+  }
+  return(image);
+}
+
+int mission_control_index(uint64_t sid) {
+  uint64_t   result      = 0;
+  int        desktop_cnt = 1;
+
+  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);
+  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);
+
+  for (int i = 0; i < display_spaces_count; ++i) {
+    CFDictionaryRef display_ref  = CFArrayGetValueAtIndex(display_spaces_ref, i);
+    CFArrayRef      spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
+    int             spaces_count = CFArrayGetCount(spaces_ref);
+
+    for (int j = 0; j < spaces_count; ++j) {
+      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
+      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
+      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &result);
+      if (sid == result) {
+        goto out;
+      }
+
+      ++desktop_cnt;
+    }
+  }
+
+  desktop_cnt = 0;
+out:
+  CFRelease(display_spaces_ref);
+  return(desktop_cnt);
+}
+
+void get_display_bounds(int *x, int *y, int *w, int *h){
+  // get the cursor position
+  CGEventRef event          = CGEventCreate(NULL);
+  CGPoint    cursorLocation = CGEventGetLocation(event);
+
+  CFRelease(event);
+
+  // get display which contains the cursor, that's the one we want to tile on
+  int numDisplays; CGDirectDisplayID displays[16];
+
+  CGGetDisplaysWithPoint(cursorLocation, 16, displays, &numDisplays);
+
+  HIRect bounds;
+
+  HIWindowGetAvailablePositioningBounds(displays[0], kHICoordSpace72DPIGlobal,
+                                        &bounds);
+
+  *x = bounds.origin.x;
+  *y = bounds.origin.y;
+  *w = bounds.size.width;
+  *h = bounds.size.height;
+}
+
+AXUIElementRef get_frontmost_app(){
+  pid_t pid; ProcessSerialNumber psn;
+
+  GetFrontProcess(&psn); GetProcessPID(&psn, &pid);
+  return(AXUIElementCreateApplication(pid));
+}
+
+char *cfstring_copy(CFStringRef string) {
+  CFIndex num_bytes = CFStringGetMaximumSizeForEncoding(CFStringGetLength(string), kCFStringEncodingUTF8);
+  char    *result   = malloc(num_bytes + 1);
+
+  if (!result) {
+    return(NULL);
+  }
+
+  if (!CFStringGetCString(string, result, num_bytes + 1, kCFStringEncodingUTF8)) {
+    free(result);
+    result = NULL;
+  }
+
+  return(result);
+}
+
+char *string_copy(char *s) {
+  int  length  = strlen(s);
+  char *result = malloc(length + 1);
+
+  if (!result) {
+    return(NULL);
+  }
+
+  memcpy(result, s, length);
+  result[length] = '\0';
+  return(result);
+}
+
+uint32_t *display_active_display_list(uint32_t *count) {
+  int      display_count = display_active_display_count();
+  uint32_t *result       = malloc(sizeof(uint32_t) * display_count);
+
+  CGGetActiveDisplayList(display_count, result, count);
+  return(result);
+}
+
+CGRect display_menu_bar_rect(uint32_t did) {
+  CGRect bounds = {};
+
+  SLSGetRevealedMenuBarBounds(&bounds, g_connection, display_space_id(did));
+  return(bounds);
+}
+
+uint32_t display_active_display_count(void) {
+  uint32_t count;
+
+  CGGetActiveDisplayList(0, NULL, &count);
+  return(count);
+}
+
+bool display_menu_bar_visible(void) {
+  int status = 0;
+
+  SLSGetMenuBarAutohideEnabled(g_connection, &status);
+  return(!status);
+}
 
 int get_focused_pid(){
   ProcessSerialNumber psn;

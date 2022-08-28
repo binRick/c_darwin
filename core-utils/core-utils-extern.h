@@ -25,6 +25,11 @@ typedef enum {
   kCoreDockEffectSuck  = 3
 } CoreDockEffect;
 
+extern CFArrayRef SLSCopyManagedDisplaySpaces(int cid);
+extern uint32_t SLSGetActiveSpace(int cid);
+extern CFStringRef SLSCopyManagedDisplayForSpace(int cid, uint64_t sid);
+extern CFArrayRef SLSHWCaptureSpace(int64_t cid, int64_t sid, int64_t flags);
+
 // Tile size ranges from 0.0 to 1.0.
 extern float CoreDockGetTileSize(void);
 extern void CoreDockSetTileSize(float tileSize);
@@ -304,7 +309,6 @@ extern CGError CGSReleaseTransition(const CGSConnection cid, int transitionHandl
 
 #pragma mark Workspaces
 
-extern CGError CGSGetWorkspace(const CGSConnection cid, CGSWorkspace *workspace);
 extern CGError CGSGetWindowWorkspace(const CGSConnection cid, const CGSWindow wid, CGSWorkspace *workspace);
 extern CGError CGSSetWorkspace(const CGSConnection cid, CGSWorkspace workspace);
 extern CGError CGSSetWorkspaceWithTransition(const CGSConnection cid, CGSWorkspace workspace, CGSTransitionType transition, CGSTransitionOption subtype, float time);
@@ -396,6 +400,53 @@ extern char * CGSCStringValue(CGSValue string);
 #define kCGSDebugOptionNormal            0          // Reset everything
 #define kCGSFlashScreenUpdates           4          // This is probably what the checkbox in Quartz Debug calls internally
 typedef unsigned long CGSDebugOptions;
+
+extern CGError SLSSetWindowResolution(int cid, uint32_t wid, double res);
+extern CGError SLSSetWindowOpacity(int cid, uint32_t wid, bool isOpaque);
+extern CGError SLSSetWindowAlpha(int cid, uint32_t wid, float alpha);
+extern CGError SLSSetWindowBackgroundBlurRadius(int cid, uint32_t wid, uint32_t radius);
+extern CGError SLSOrderWindow(int cid, uint32_t wid, int mode, uint32_t relativeToWID);
+extern CGError SLSSetWindowLevel(int cid, uint32_t wid, int level);
+extern CGContextRef SLWindowContextCreate(int cid, uint32_t wid, CFDictionaryRef options);
+extern CGError CGSNewRegionWithRect(CGRect *rect, CFTypeRef *outRegion);
+extern CGError SLSAddActivationRegion(uint32_t cid, uint32_t wid, CFTypeRef region);
+extern CGError SLSAddTrackingRect(uint32_t cid, uint32_t wid, CGRect rect);
+extern CGError SLSClearActivationRegion(uint32_t cid, uint32_t wid);
+extern CGError SLSRemoveAllTrackingAreas(uint32_t cid, uint32_t wid);
+extern CGError SLSMoveWindow(int cid, uint32_t wid, CGPoint *point);
+extern CGError SLSWindowSetShadowProperties(uint32_t wid, CFDictionaryRef properties);
+extern CGError SLSAddWindowToWindowOrderingGroup(int cid, uint32_t parent_wid, uint32_t child_wid, int order);
+extern CGError SLSRemoveFromOrderingGroup(int cid, uint32_t wid);
+extern CGError SLSReassociateWindowsSpacesByGeometry(int cid, CFArrayRef wids);
+extern void SLSMoveWindowsToManagedSpace(int cid, CFArrayRef window_list, uint64_t sid);
+
+extern void SLSCaptureWindowsContentsToRectWithOptions(uint32_t cid, uint64_t *wid, bool meh, CGRect bounds, uint32_t flags, CGImageRef *image);
+extern int SLSGetScreenRectForWindow(uint32_t cid, uint32_t wid, CGRect *out);
+
+extern int SLSSpaceGetType(int cid, uint64_t sid);
+
+extern CGError SLSAddSurface(int cid, uint32_t wid, uint32_t *outSID);
+extern CGError SLSRemoveSurface(int cid, uint32_t wid, uint32_t sid);
+extern CGError SLSBindSurface(int cid, uint32_t wid, uint32_t sid, int x, int y, CGContextRef ctx);
+extern CGError SLSSetSurfaceBounds(int cid, uint32_t wid, uint32_t sid, CGRect bounds);
+extern CGError SLSSetSurfaceOpacity(int cid, uint32_t wid, uint32_t sid, bool opaque);
+extern CGError SLSOrderSurface(int cid, uint32_t wid, uint32_t surface, uint32_t other_surface, int order);
+extern CGError SLSSetSurfaceResolution(int cid, uint32_t wid, uint32_t sid, CGFloat scale);
+extern CGError SLSFlushSurface(int cid, uint32_t wid, uint32_t surface, int param);
+
+extern OSStatus
+HIWindowGetAvailablePositioningBounds(CGDirectDisplayID inDisplay, HICoordinateSpace inSpace, HIRect *outAvailableRect);
+
+extern CGError SLSReassociateWindowsSpacesByGeometry(int cid, CFArrayRef wids);
+extern void SLSMoveWindowsToManagedSpace(int cid, CFArrayRef window_list, uint64_t sid);
+
+extern Boolean HIWindowIsOnActiveSpace(WindowRef inWindow);
+
+extern void
+SendBehind(WindowRef window, WindowRef behindWindow);
+
+extern void
+SelectWindow(WindowRef window);
 
 extern void CGSSetDebugOptions(CGSDebugOptions options);
 

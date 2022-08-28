@@ -1,4 +1,8 @@
+#include "core-utils/core-utils.h"
+#include "window-utils/window-utils.h"
+#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
+#include <CoreServices/CoreServices.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>

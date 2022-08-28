@@ -23,7 +23,6 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 ///////////////////////////////////////////////////
-
 typedef struct window_t {
   pid_t               pid;
   CGPoint             position;
@@ -97,7 +96,10 @@ window_t *get_window_id(const int WINDOW_ID);
 CFDictionaryRef window_id_to_window(const int WINDOW_ID);
 window_t *get_pid_window(const int PID);
 int get_display_width();
-bool resize_window(const CFDictionaryRef WINDOW, const int WIDTH, const int HEIGHT);
-bool move_window(CFDictionaryRef w, const int X, const int Y);
+bool resize_window(window_t *w, const int WIDTH, const int HEIGHT);
+bool move_window(window_t *w, const int X, const int Y);
 window_t *get_focused_window();
+uint32_t display_active_display_id(void);
+int window_level(struct window_t *window);
+int get_focused_window_id();
 ///////////////////////////////////////////////////

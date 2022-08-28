@@ -11,11 +11,182 @@
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG_MODE    false
+static CGPoint g_nirvana = { -9999, -9999 };
 ///////////////////////////////////////////////////////////////////////////////
 static bool window_is_focused(struct window_t *w);
 bool get_window_is_visible(struct window_t *window);
 ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);
 int get_window_id_pid(int window_id);
+
+int window_level(struct window_t *window){
+  int level = 0;
+
+  SLSGetWindowLevel(g_connection, window->window_id, &level);
+  return(level);
+}
+
+void move_current_window(int center, int x, int y, int w, int h){
+  AXValueRef     temp;
+  AXUIElementRef current_app = get_frontmost_app();
+  AXUIElementRef current_win;
+  AXValueRef     tempforsize;
+  CGSize         winsiz;
+  CGPoint        winpos;
+  int            _, dw, dh;
+
+  get_display_bounds(&_, &_, &dw, &dh);
+
+  AXUIElementCopyAttributeValue(current_app,
+                                kAXFocusedWindowAttribute,
+                                (CFTypeRef *)&current_win);
+
+  if (center) {
+    AXUIElementCopyAttributeValue(current_win,
+                                  kAXSizeAttribute,
+                                  (CFTypeRef *)&tempforsize);
+    AXValueGetValue(tempforsize, kAXValueCGSizeType, &winsiz);
+    winpos.x = (dw - winsiz.width) / 2;
+    winpos.y = (dh - winsiz.height) / 2;
+  } else {
+    winpos.x      = x;
+    winpos.y      = y;
+    winsiz.width  = w;
+    winsiz.height = h;
+  }
+
+  temp = AXValueCreate(kAXValueCGPointType, &winpos);
+  AXUIElementSetAttributeValue(current_win, kAXPositionAttribute, temp);
+  CFRelease(temp);
+
+  temp = AXValueCreate(kAXValueCGSizeType, &winsiz);
+  AXUIElementSetAttributeValue(current_win, kAXSizeAttribute, temp);
+  CFRelease(temp);
+}
+
+void print_all_menu_items(FILE *rsp) {
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
+  if (__builtin_available(macOS 11.0, *)) {
+    if (!CGRequestScreenCaptureAccess()) {
+      printf("[!] Query (default_menu_items): Screen Recording "
+             "Permissions not given\n");
+      return;
+    }
+  }
+#endif
+  CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll,
+                                                      kCGNullWindowID);
+  int        window_count = CFArrayGetCount(window_list);
+
+  fprintf(rsp, "[\n");
+  int counter = 0;
+  for (int i = 0; i < window_count; ++i) {
+    CFDictionaryRef dictionary = CFArrayGetValueAtIndex(window_list, i);
+    if (!dictionary) {
+      continue;
+    }
+
+    CFStringRef owner_ref = CFDictionaryGetValue(dictionary,
+                                                 kCGWindowOwnerName);
+
+    CFNumberRef owner_pid_ref = CFDictionaryGetValue(dictionary,
+                                                     kCGWindowOwnerPID);
+
+    CFStringRef name_ref  = CFDictionaryGetValue(dictionary, kCGWindowName);
+    CFNumberRef layer_ref = CFDictionaryGetValue(dictionary, kCGWindowLayer);
+    if (!name_ref || !owner_ref || !owner_pid_ref || !layer_ref) {
+      continue;
+    }
+
+    long long int layer = 0;
+    CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);
+    uint64_t      owner_pid = 0;
+    CFNumberGetValue(owner_pid_ref,
+                     CFNumberGetType(owner_pid_ref),
+                     &owner_pid);
+
+    char *owner = cfstring_copy(owner_ref);
+    char *name  = cfstring_copy(name_ref);
+
+    if (strcmp(name, "") != 0) {
+      if (counter++ > 0) {
+        fprintf(rsp, ", \n");
+      }
+      fprintf(rsp, "\t\"%s,%s\"", owner, name);
+    }
+
+    free(owner);
+    free(name);
+  }
+  fprintf(rsp, "\n]\n");
+  CFRelease(window_list);
+} /* print_all_menu_items */
+
+CGImageRef window_capture(struct window_t *window) {
+  CGImageRef image_ref = NULL;
+
+  uint64_t   wid = window->window_id;
+
+  SLSCaptureWindowsContentsToRectWithOptions(g_connection,
+                                             &wid,
+                                             true,
+                                             CGRectNull,
+                                             1 << 8,
+                                             &image_ref);
+
+  CGRect bounds;
+
+  SLSGetScreenRectForWindow(g_connection, wid, &bounds);
+  bounds.size.width = (uint32_t)(bounds.size.width + 0.5);
+  window->rect.size = bounds.size;
+
+  return(image_ref);
+}
+
+void window_move(struct window_t *window, CGPoint point) {
+  window->position = point;
+  SLSMoveWindow(g_connection, window->window_id, &point);
+
+  if (__builtin_available(macOS 12.0, *)) {
+  } else {
+    CFNumberRef number = CFNumberCreate(NULL,
+                                        kCFNumberSInt32Type,
+                                        &window->window_id);
+
+    const void *values[1] = { number };
+    CFArrayRef array      = CFArrayCreate(NULL, values, 1, &kCFTypeArrayCallBacks);
+    SLSReassociateWindowsSpacesByGeometry(g_connection, array);
+    CFRelease(array);
+    CFRelease(number);
+  }
+}
+
+void window_set_level(struct window_t *window, uint32_t level) {
+  SLSSetWindowLevel(g_connection, window->window_id, level);
+}
+
+void window_send_to_space(struct window_t *window, uint64_t dsid) {
+  CFArrayRef window_list = cfarray_of_cfnumbers(&window->window_id, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+
+  SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
+  if (CGPointEqualToPoint(window->position, g_nirvana)) {
+    SLSMoveWindow(g_connection, window->window_id, &g_nirvana);
+  }
+}
+
+CFStringRef display_active_display_uuid(void) {
+  return(SLSCopyActiveMenuBarDisplayIdentifier(g_connection));
+}
+
+uint32_t display_active_display_id(void) {
+  uint32_t    result   = 0;
+  CFStringRef uuid     = display_active_display_uuid();
+  CFUUIDRef   uuid_ref = CFUUIDCreateFromString(NULL, uuid);
+
+  result = CGDisplayGetDisplayIDFromUUID(uuid_ref);
+  CFRelease(uuid_ref);
+  CFRelease(uuid);
+  return(result);
+}
 
 int get_window_id_space_id(int window_id){
   int space_id  = -1;
@@ -41,7 +212,7 @@ window_t *get_window_id(const int WINDOW_ID){
   w->window       = window_id_to_window(w->window_id);
   w->pid          = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
   w->child_pids_v = get_child_pids(w->pid);
-  w->app          = AXUIElementCreateApplication(w->pid);
+  w->app          = AXWindowFromCGWindow(w->window);
   w->psn          = PID2PSN(w->pid);
   SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
   w->app_name     = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowOwnerName));
@@ -150,6 +321,10 @@ CGPoint window_ax_origin(char *windowRef){
   }
 
   return(origin);
+}
+
+int get_focused_window_id(){
+  return(get_focused_window()->window_id);
 }
 
 window_t *get_focused_window(){
@@ -274,7 +449,7 @@ uint32_t display_manager_active_display_id(void){
   return(result);
 }
 
-static bool window_is_focused(struct window_t *w){
+bool window_is_focused(struct window_t *w){
   return(true);
 }
 
@@ -327,24 +502,25 @@ uint32_t *display_manager_active_display_list(uint32_t *count){
   return(result);
 }
 
-bool move_window(CFDictionaryRef w, const int X, const int Y){
-  AXUIElementRef app = AXWindowFromCGWindow(w);
-  CGPoint        newPosition;
+bool move_window(window_t *w, const int X, const int Y){
+  CGPoint newPosition;
 
   newPosition.x = X;
   newPosition.y = Y;
+  AXUIElementRef app = AXWindowFromCGWindow(w->window);
+
   AXWindowSetPosition(app, newPosition);
   return(true);
 }
 
-bool resize_window(CFDictionaryRef w, const int WIDTH, const int HEIGHT){
-  AXUIElementRef app       = AXWindowFromCGWindow(w);
+bool resize_window(window_t *w, const int WIDTH, const int HEIGHT){
+  AXUIElementRef app       = AXWindowFromCGWindow(w->window);
   CGSize         size      = CGSizeMake(WIDTH, HEIGHT);
   AXValueRef     attrValue = AXValueCreate(kAXValueCGSizeType, &size);
 
   AXUIElementSetAttributeValue(app, kAXSizeAttribute, attrValue);
   return(true);
-} /* resize_window_id */
+}
 
 CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   CFArrayRef      windowList;
