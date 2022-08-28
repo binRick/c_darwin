@@ -1,14 +1,14 @@
 #pragma once
-#include "c_vector/vector/vector.h"
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
+#include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "parson/parson.h"
+#include "process/process.h"
 #include "process/process.h"
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "window-utils/window-utils.h"
-#include "process/process.h"
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG_MODE    false
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,12 +37,12 @@ window_t *get_window_id(const int WINDOW_ID){
   int      focused_pid = get_focused_pid();
   window_t *w          = malloc(sizeof(window_t));
 
-  w->window_id = WINDOW_ID;
-  w->window    = window_id_to_window(w->window_id);
-  w->pid       = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
+  w->window_id    = WINDOW_ID;
+  w->window       = window_id_to_window(w->window_id);
+  w->pid          = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
   w->child_pids_v = get_child_pids(w->pid);
-  w->app       = AXUIElementCreateApplication(w->pid);
-  w->psn       = PID2PSN(w->pid);
+  w->app          = AXUIElementCreateApplication(w->pid);
+  w->psn          = PID2PSN(w->pid);
   SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
   w->app_name     = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowOwnerName));
   w->window_name  = stringfn_trim(CFDictionaryCopyCString(w->window, kCGWindowName));
@@ -58,8 +58,8 @@ window_t *get_window_id(const int WINDOW_ID){
   w->width        = (int)(w->size.width);
   w->height       = (int)(w->size.height);
   w->is_minimized = window_id_is_minimized(w->window_id);
-  w->is_focused   = (focused_pid == w->pid) ? true : false;
   w->is_visible   = get_window_is_visible(w);
+  w->is_focused   = (w->is_minimized == false && w->is_visible == true && focused_pid == w->pid) ? true : false;
   get_kinfo_proc(w->pid, &w->pid_info);
 
   return(w);
@@ -71,9 +71,10 @@ bool get_window_is_visible(struct window_t *window){
   if (window->position.x == 0 && window->position.y == 25 && window->layer == 0) {
     result = true;
   }
-  if(result == true){
-    if(window_id_is_minimized(window->window_id) == true)
+  if (result == true) {
+    if (window_id_is_minimized(window->window_id) == true) {
       result = false;
+    }
   }
 
   return(result);
@@ -188,46 +189,6 @@ struct Vector *get_space_window_ids_v(uint64_t space_id){
   //  CFRelease(space_list_ref);
   return(ids);
 }
-
-struct Vector *get_display_id_space_ids_v(uint32_t did){
-  struct Vector *display_space_ids = vector_new();
-  CFStringRef   uuid               = display_uuid(did);
-
-  if (!uuid) {
-    goto out;
-  }
-  CFArrayRef display_spaces_ref = SLSCopyManagedDisplaySpaces(g_connection);
-
-  if (!display_spaces_ref) {
-    goto err;
-  }
-
-  int display_spaces_count = CFArrayGetCount(display_spaces_ref);
-
-  for (int i = 0; i < display_spaces_count; ++i) {
-    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);
-    CFStringRef     identifier  = CFDictionaryGetValue(display_ref, CFSTR("Display Identifier"));
-    if (!CFEqual(uuid, identifier)) {
-      continue;
-    }
-
-    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
-    int        qty        = CFArrayGetCount(spaces_ref);
-    for (int j = 0; j < qty; ++j) {
-      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
-      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
-      int             ij        = 0;
-      CFNumberGetValue(sid_ref, CFNumberGetType(CFDictionaryGetValue(space_ref, CFSTR("id64"))), &ij);
-      vector_push(display_space_ids, (void *)(uint64_t)ij);
-    }
-  }
-
-  CFRelease(display_spaces_ref);
-err:
-  CFRelease(uuid);
-out:
-  return(display_space_ids);
-} /* display_space_list */
 
 char *get_window_display_uuid(struct window_t *window){
   CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window->window_id);
@@ -786,29 +747,6 @@ void PrintWindow(CFDictionaryRef window, void *ctxPtr) {
   free(windowName);
   free(appName);
 } /* PrintWindow */
-
-int get_front_window_pid(void){
-  int        pid;
-  CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
-  CFIndex    i, n;
-
-  for (i = 0, n = CFArrayGetCount(windows); i < n; i++) {
-    CFDictionaryRef windict  = CFArrayGetValueAtIndex(windows, i);
-    CFNumberRef     layernum = CFDictionaryGetValue(windict, kCGWindowLayer);
-    CFNumberRef     pidnum   = CFDictionaryGetValue(windict, kCGWindowOwnerPID);
-    if (layernum && pidnum) {
-      int layer;
-      CFNumberGetValue(layernum, kCFNumberIntType, &layer);
-      if (layer == 0) {
-        CFNumberGetValue(pidnum, kCFNumberIntType, &pid);
-        CFRelease(windows);
-        return(pid);
-      }
-    }
-  }
-  CFRelease(windows);
-  return(-1);
-}
 
 int get_window_id_pid(int window_id){
   AXUIElementRef window;

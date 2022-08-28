@@ -6,7 +6,6 @@
 
 int get_space_id(void);
 void set_space_by_index(int space);
-int get_front_window_pid(void);
 int is_full_screen(void);
 int total_spaces(void);
 int get_space_via_keywin(void);

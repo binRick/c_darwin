@@ -4,8 +4,8 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "djbhash/src/djbhash.h"
 #include "core-utils/core-utils.h"
+#include "djbhash/src/djbhash.h"
 #include "kitty/kitty.h"
 #include "parson.h"
 #include "process/process.h"
@@ -530,7 +530,6 @@ static bool vector_contains_pid(struct Vector *pids_v, int pid){
   }
   return(false);
 }
-
 
 struct Vector *get_kitty_pids(){
   struct djbhash kitty_pids_h;

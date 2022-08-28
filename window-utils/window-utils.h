@@ -37,7 +37,6 @@ typedef struct window_t {
   struct Vector       *space_ids_v, *child_pids_v;
   AXUIElementRef      *app;
   ProcessSerialNumber psn;
-
 } window_t;
 
 typedef struct {
@@ -91,7 +90,6 @@ void MoveWindow(CFDictionaryRef window, void *ctxPtr);
 int get_windows_qty(void);
 struct Vector *get_window_ids(void);
 struct Vector *get_windows();
-int get_front_window_pid(void);
 int get_pid_window_id(const int PID);
 void move_window_id(const int WINDOW_ID, const int X, const int Y);
 char *get_window_id_title(const int WINDOW_ID);

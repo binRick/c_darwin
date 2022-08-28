@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 /**********************************/
+#include "core-utils/core-utils.h"
 #include "djbhash/src/djbhash.h"
 #include "hidapi/hidapi/hidapi.h"
 #include "hidapi/mac/hidapi_darwin.h"
@@ -450,7 +451,7 @@ CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef eve
     BOUND_KEYBINDING = get_bound_keybinding(event_flag);
   }
 
-  int focused_pid       = (int)get_front_window_pid(),
+  int focused_pid       = (int)get_focused_pid(),
       focused_window_id = (int)get_pid_window_id(focused_pid);
 
   int ok1 = keylogger_insert_db_row(&(logged_key_event_t){

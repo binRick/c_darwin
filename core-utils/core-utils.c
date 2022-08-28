@@ -3,10 +3,13 @@
 
 int get_focused_pid(){
   ProcessSerialNumber psn;
+
   GetFrontProcess(&psn);
   pid_t pid = PSN2PID(psn);
-  if(pid>1)
-      return (int)pid;
+
+  if (pid > 1) {
+    return((int)pid);
+  }
 
   CFArrayRef window_list = CGWindowListCopyWindowInfo(
     kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly,
@@ -48,10 +51,8 @@ pid_t PSN2PID(ProcessSerialNumber psn) {
   return(tempPID);
 }
 
-
 int get_focused_space_id(){
-    int focused_pid = get_focused_pid();
-
+  int focused_pid = get_focused_pid();
 }
 
 int space_display_id(int sid){
@@ -505,4 +506,59 @@ uint32_t display_id(CFStringRef uuid){
   return(did);
 }
 
+struct Vector *get_display_id_space_ids_v(uint32_t did){
+  struct Vector *display_space_ids = vector_new();
+  CFStringRef   uuid               = display_uuid(did);
 
+  if (!uuid) {
+    goto out;
+  }
+  CFArrayRef display_spaces_ref = SLSCopyManagedDisplaySpaces(g_connection);
+
+  if (!display_spaces_ref) {
+    goto err;
+  }
+
+  int display_spaces_count = CFArrayGetCount(display_spaces_ref);
+
+  for (int i = 0; i < display_spaces_count; ++i) {
+    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);
+    CFStringRef     identifier  = CFDictionaryGetValue(display_ref, CFSTR("Display Identifier"));
+    if (!CFEqual(uuid, identifier)) {
+      continue;
+    }
+
+    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
+    int        qty        = CFArrayGetCount(spaces_ref);
+    for (int j = 0; j < qty; ++j) {
+      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
+      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
+      int             ij        = 0;
+      CFNumberGetValue(sid_ref, CFNumberGetType(CFDictionaryGetValue(space_ref, CFSTR("id64"))), &ij);
+      vector_push(display_space_ids, (void *)(uint64_t)ij);
+    }
+  }
+
+  CFRelease(display_spaces_ref);
+err:
+  CFRelease(uuid);
+out:
+  return(display_space_ids);
+}
+
+struct Vector *get_display_ids_v(){
+  struct Vector     *ids                = vector_new();
+  size_t            displays_qty        = 0;
+  CGDirectDisplayID *display_ids        = calloc(MAX_DISPLAYS, sizeof(CGDirectDisplayID));
+  CGError           get_displays_result = CGGetActiveDisplayList(UCHAR_MAX, display_ids, &displays_qty);
+
+  if (get_displays_result == kCGErrorSuccess) {
+    for (size_t i = 0; i < displays_qty && i < MAX_DISPLAYS; i++) {
+      size_t display_id = (size_t)display_ids[i];
+      if (display_id > 0) {
+        vector_push(ids, (void *)display_id);
+      }
+    }
+  }
+  return(ids);
+}

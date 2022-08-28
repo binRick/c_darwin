@@ -18,6 +18,7 @@
 #define g_connection      CGSMainConnectionID()
 #define ASCII_ENCODING    kCFStringEncodingASCII
 #define UTF8_ENCODING     kCFStringEncodingUTF8
+#define MAX_DISPLAYS      8
 //////////////////////////////////////////////////////////////
 
 static struct {
@@ -64,3 +65,5 @@ int get_window_connection_id(struct window_t *w);
 int get_focused_pid();
 pid_t PSN2PID(ProcessSerialNumber psn);
 ProcessSerialNumber PID2PSN(pid_t pid);
+struct Vector *get_display_id_space_ids_v(uint32_t did);
+struct Vector *get_display_ids_v();

@@ -14,6 +14,7 @@ keylogger_deps = [
  pbpaste_dep,
  active_app_dep,
  system_utils_dep,
+ core_utils_dep,
  subprocess_dep,
  timestamp_dep,
  list_dep,

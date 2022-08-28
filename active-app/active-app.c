@@ -24,7 +24,6 @@ void resize_current_window(int p1, int p2, int p3, int p4){
   AXUIElementSetAttributeValue(win, kAXSizeAttribute, objc_size);
 }
 
-
 struct screen_size get_window_size(){
   int pid = get_focused_pid();
 
