@@ -1,5 +1,6 @@
 screen_utils_srcs = [
   'screen-utils.c',
+  'screen-utils-module.c',
 ]
 screen_utils_c_args = [
   '-Wno-address',
@@ -19,7 +20,13 @@ screen_utils_deps = [
   timestamp_dep,
   bytes_dep, ms_dep,
   system_utils_dep,
+  hash_dep,
+  module_dep,
   process_dep,
+  wrec_common_dep,
+  wrec_capture_dep,
+  timestamp_dep,
+  wrec_image_dep,
 ]
 screen_utils_link_flags = [
 '-Wl,-framework,CoreFoundation',

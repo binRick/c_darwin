@@ -4,3 +4,6 @@
 [submodule "submodules/rwimg"]
 	path = submodules/rwimg
 	url = https://github.com/schani/rwimg
+[submodule "submodules/optparse99"]
+	path = submodules/optparse99
+	url = https://github.com/hippie68/optparse99

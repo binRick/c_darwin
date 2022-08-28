@@ -48,7 +48,7 @@ int load_pngs_create_animated_gif(struct animated_png_render_request_t *req){
     ft->max_height              = 0;
     ft->sorted_images_qty       = 0;
     ft->sorted_images_size      = 0;
-    ft->verbose_mode            = true;
+    ft->verbose_mode            = (getenv("DEBUG") != NULL) ? true : false;
   }
 
   if (tinydir_open(ft->td_dir, ANIMATED_PNGS_DIR) == -1) {
@@ -167,44 +167,57 @@ end_tinydir:
     f->frame_ms   = (f->frame_ms > 0) ? f->frame_ms : (ft->avg_ms);
     ft->total_ms += f->frame_ms;
   }
-  if (ft->verbose_mode) {
+  if (ft->verbose_mode == true) {
     log_info(AC_YELLOW "Creating %dx%d Animated gif with %lu images of %s, %lu avg interval" AC_RESETALL "",
              ft->max_width, ft->max_height, ft->sorted_images_qty, bytes_to_string(ft->sorted_images_size),
              ft->avg_ms
              );
   }
   ft->avg_ms = ft->total_ms / ft->sorted_images_qty;
+  unsigned long stb_load_png_start, stb_load_png_dur;
+  unsigned long total_frame_processing_start, total_frame_processing_dur;
+
   for (size_t i = 0; i < ft->sorted_images_qty; i++) {
-    f             = &(ft->sorted_images[i]);
-    f->started_ms = timestamp();
-    ft->fp        = fopen(f->file_path, "r");
+    total_frame_processing_start = timestamp();
+    f                            = &(ft->sorted_images[i]);
+    ft->fp                       = fopen(f->file_path, "r");
     if (!ft->fp) {
       continue;
     }
-    f->stb_pixels = stbi_load_from_file(ft->fp, &(f->image_dimensions->width), &(f->image_dimensions->height), &f->stb_format, ft->stb_req_format);
-    fclose(ft->fp);
-    if (!f->stb_pixels) {
-      continue;
+    {
+      stb_load_png_start = timestamp();
+      f->stb_pixels      = stbi_load_from_file(ft->fp, &(f->image_dimensions->width), &(f->image_dimensions->height), &f->stb_format, ft->stb_req_format);
+      fclose(ft->fp);
+      if (!f->stb_pixels) {
+        continue;
+      }
+      stb_load_png_dur = timestamp() - stb_load_png_start;
     }
+
     f->stb_depth    = (f->stb_format == 4) ? 32 : 24;
     f->stb_pitch    = (f->stb_format == 4) ? (4 * f->image_dimensions->width) : (3 * f->image_dimensions->width);
     f->pixels_qty   = f->image_dimensions->width * f->image_dimensions->height;
     f->colors_qty   = f->stb_pitch * f->image_dimensions->height;
     ft->pixels_qty += f->pixels_qty;
     ft->colors_qty += f->colors_qty;
-    msf_gif_frame(gifState, f->stb_pixels,
-                  (int)(f->frame_ms / 10),
-                  f->stb_depth,
-                  f->stb_pitch
-                  );
-    free(f->stb_pixels);
-    f->stb_render_ms = timestamp() - f->started_ms;
-    if (ft->verbose_mode) {
-      printf(AC_YELLOW "Added %s (%dx%d) %s frame in %s" AC_RESETALL "\n",
-             bytes_to_string(f->file_size),
-             f->image_dimensions->width, f->image_dimensions->height,
-             milliseconds_to_string(f->frame_ms),
-             milliseconds_to_string(f->stb_render_ms)
+    {
+      f->started_ms = timestamp();
+      msf_gif_frame(gifState, f->stb_pixels,
+                    (int)(f->frame_ms / 10),
+                    f->stb_depth,
+                    f->stb_pitch
+                    );
+      free(f->stb_pixels);
+      f->stb_render_ms = timestamp() - f->started_ms;
+    }
+    total_frame_processing_dur = timestamp() - total_frame_processing_start;
+    if (ft->verbose_mode == true) {
+      printf(AC_YELLOW "Loaded Frame #%lu/%lu (%s/%s/%dx%d/%s) in %s and added frame to memory in %s | Total Frame Processing duraiton: %s." AC_RESETALL "\n",
+             i + 1, ft->sorted_images_qty,
+             bytes_to_string(f->file_size), milliseconds_to_string(f->frame_ms), f->image_dimensions->width, f->image_dimensions->height, f->file_path,
+             milliseconds_to_string(stb_load_png_dur),
+             milliseconds_to_string(f->stb_render_ms),
+             milliseconds_to_string(total_frame_processing_dur)
              );
     }
   }
@@ -224,7 +237,7 @@ end_tinydir:
   }
   ft->dur_ms = timestamp() - ft->started_ms;
   if (true == ft->success) {
-    if (ft->verbose_mode) {
+    if (ft->verbose_mode == true) {
       printf(AC_GREEN "Rendered %s Animated Gif %s (%s, %dx%d, %lu frames, avg %.1fFPS) from %lu images (%lu million pixels, %lu million colors, %s) in %s!" AC_RESETALL "\n",
              milliseconds_to_string(ft->total_ms),
              ft->animated_gif_file_name,

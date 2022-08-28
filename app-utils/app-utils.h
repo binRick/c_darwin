@@ -42,10 +42,10 @@ struct authorized_tests_t {
     int                        id;
     char                       *name;
     bool                       authorized;
-    unsigned long              ts;
+    unsigned long              ts, dur_ms;
     authorized_test_function_t test_function;
   }                 authorized_test_t;
-  authorized_test_t tests[AUTHORIZED_TEST_TYPE_IDS_QTY];
+  authorized_test_t tests[AUTHORIZED_TEST_TYPE_IDS_QTY + 1];
 };
 ///////////////////////////////////////////////////////////////////////
 authorized_test_t *execute_authorization_tests();

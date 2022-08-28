@@ -11,21 +11,71 @@
 #include "screen-utils/screen-utils.h"
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
+#include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+#include "wrec-capture/wrec-capture.h"
+#include "wrec-common/image.h"
 /////////////////////////////////////////////////////
+static bool save_captured_display(struct display_t *D);
+static bool capture_display(struct display_t *D);
+static bool save_to_file_qoi(struct display_t *D);
+bool save_captures(struct screen_capture_t *S);
+struct screen_capture_t *init_screen_capture();
+struct display_t *init_display(size_t DISPLAY_ID);
+
+///////////////////////////////////////////////////////////////////
+static bool save_to_file_qoi(struct display_t *D){
+  struct qoi_encode_to_file_request_t *qoi_file_req = calloc(1, sizeof(struct qoi_encode_to_file_request_t));
+
+  qoi_file_req->desc = calloc(1, sizeof(struct qoi_desc));
+  asprintf(&qoi_file_req->qoi_file_path, "display-%lu.qoi", D->id);
+  qoi_file_req->rgb_pixels       = D->capture->buffer;
+  qoi_file_req->desc->width      = D->capture->rect.size.width;
+  qoi_file_req->desc->height     = D->capture->rect.size.height;
+  qoi_file_req->desc->channels   = RGBA_CHANNELS;
+  qoi_file_req->desc->colorspace = QOI_SRGB;
+  struct qoi_encode_to_file_result_t *qoi_encode_to_file_result = qoi_encode_to_file(qoi_file_req);
+}
+
+static bool save_captured_display(struct display_t *D){
+  D->save->started_ms = timestamp();
+
+  D->save->url_ref         = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(D->save_file_name), kCFURLPOSIXPathStyle, false);
+  D->save->destination_ref = CGImageDestinationCreateWithURL(D->save->url_ref, SAVE_IMAGE_TYPE, 1, NULL);
+  CGImageDestinationAddImage(D->save->destination_ref, D->capture->image_ref, NULL);
+  D->save->success = (CGImageDestinationFinalize(D->save->destination_ref));
+  {
+    CGImageRelease(D->capture->image_ref);
+  }
+  D->save->dur_ms = timestamp() - D->save->started_ms;
+  log_debug("   [Save Display #%lu]  File %s |success:%s| in %s | %s | %fx%f | ",
+            D->id,
+            D->save_file_name,
+            D->save->success == true ? "Yes" : "No",
+            milliseconds_to_string(D->capture->dur_ms),
+            bytes_to_string(D->capture->buffer_size),
+            D->capture->rect.size.width, D->capture->rect.size.height
+            );
+} /* save_captured_display */
 
 struct display_t *init_display(size_t DISPLAY_ID){
   struct display_t *D = calloc(1, sizeof(struct display_t));
+  // D->debug_mode = true;
+  {
+    D->capture = calloc(1, sizeof(struct display_image_t));
+    D->save    = calloc(1, sizeof(struct display_image_t));
+  }
+  {
+    D->id            = DISPLAY_ID;
+    D->capture->rect = CGDisplayBounds(D->id);
+    D->save->rect    = CGDisplayBounds(D->id);
+  }
 
-  D->capture = calloc(1, sizeof(struct display_image_t));
-  D->save    = calloc(1, sizeof(struct display_image_t));
-  D->resize  = calloc(1, sizeof(struct display_image_t));
-
-  D->id            = DISPLAY_ID;
-  D->capture->rect = CGDisplayBounds(D->id);
-  D->save->rect    = CGDisplayBounds(D->id);
-  asprintf(&D->capture_file_name, "display-%lu-%lld.%s", D->id, timestamp(), SAVE_IMAGE_EXTENSION);
-  asprintf(&D->capture_file_name, "display-%lu.%s", D->id, SAVE_IMAGE_EXTENSION);
+  if (D->debug_mode == true) {
+    asprintf(&D->save_file_name, "display-%lu.%s", D->id, SAVE_IMAGE_EXTENSION);
+  }else{
+    asprintf(&D->save_file_name, "display-%lu-%lld.%s", D->id, timestamp(), SAVE_IMAGE_EXTENSION);
+  }
 
   log_debug("   [Init Display #%lu]    %fx%f|%fx%f",
             D->id,
@@ -35,71 +85,79 @@ struct display_t *init_display(size_t DISPLAY_ID){
   return(D);
 }
 
-bool save_captured_display(struct display_t *D){
-  {
-    D->save->buffer_size = D->capture->buffer_size;
-    D->save->buffer      = calloc(1, D->save->buffer_size);
-    memcpy(D->save->buffer, D->capture->buffer, D->save->buffer_size);
-  }
-  D->save->provider_ref = CGDataProviderCreateWithData(
-    NULL,
-    D->save->buffer,
-    D->save->rect.size.width * D->save->rect.size.height * 4,
-    NULL
-    );
-  D->save->color_space_ref = CGColorSpaceCreateDeviceRGB();
-  D->save->image_ref       = CGImageCreate(
-    D->save->rect.size.width, D->save->rect.size.height,
-    BITS_PER_COMPONENT,
-    32,
-    D->save->rect.size.width * 4,
-    D->save->color_space_ref,
-    kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little,
-    D->save->provider_ref,
-    NULL,
-    false,
-    kCGRenderingIntentDefault
-    );
-  D->save->url_ref         = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(D->capture_file_name), kCFURLPOSIXPathStyle, false);
-  D->save->destination_ref = CGImageDestinationCreateWithURL(D->save->url_ref, SAVE_IMAGE_TYPE, 1, NULL);
-  CGImageDestinationAddImage(D->save->destination_ref, D->save->image_ref, NULL);
-  D->save->success = (CGImageDestinationFinalize(D->save->destination_ref));
-  {
-    CFRelease(D->save->destination_ref);
-    CFRelease(D->save->url_ref);
-    CGImageRelease(D->save->image_ref);
-    CGColorSpaceRelease(D->save->color_space_ref);
-    CGDataProviderRelease(D->save->provider_ref);
-  }
-}
+static bool capture_display(struct display_t *D){
+  float resize_factor = 0.3;
 
-bool capture_display(struct display_t *D){
   D->capture->started_ms = timestamp();
+  CGImageRef image_ref;
   {
-    D->capture->image_ref      = CGDisplayCreateImageForRect(D->id, D->capture->rect);
-    D->capture->provider_ref   = CGImageGetDataProvider(D->capture->image_ref);
-    D->capture->data_ref       = CGDataProviderCopyData(D->capture->provider_ref);
-    D->capture->bits_per_pixel = CGImageGetBitsPerPixel(D->capture->image_ref) / 8;
-    D->capture->buffer_size    = D->capture->bits_per_pixel * D->capture->rect.size.width * D->capture->rect.size.height;
-    D->capture->buffer         = calloc(1, D->capture->buffer_size);
+    image_ref                    = CGDisplayCreateImageForRect(D->id, D->capture->rect);
+    D->capture->rect.size.width  = D->capture->rect.size.width * resize_factor;
+    D->capture->rect.size.height = D->capture->rect.size.height * resize_factor;
+    D->save->rect.size.width     = D->capture->rect.size.width;
+    D->save->rect.size.height    = D->capture->rect.size.height;
+    D->capture->image_ref        = resize_cgimage(image_ref, D->capture->rect.size.width, D->capture->rect.size.height);
+    D->capture->provider_ref     = CGImageGetDataProvider(D->capture->image_ref);
+    D->capture->data_ref         = CGDataProviderCopyData(D->capture->provider_ref);
+    D->capture->buffer_size      = ((int)(CGImageGetBitsPerPixel(D->capture->image_ref) / 8)) * D->capture->rect.size.width * D->capture->rect.size.height;
+    D->capture->buffer           = calloc(1, D->capture->buffer_size);
     memcpy(D->capture->buffer, CFDataGetBytePtr(D->capture->data_ref), D->capture->buffer_size);
   }
-  D->capture->success = (D->capture->buffer_size > 0) ? true : false;
-
+  {
+    D->capture->success = (D->capture->buffer_size > 0 && D->capture->buffer != NULL) ? true : false;
+  }
   {
     CFRelease(D->capture->data_ref);
-    CGImageRelease(D->capture->image_ref);
+    CGImageRelease(image_ref);
   }
+
   D->capture->dur_ms = timestamp() - D->capture->started_ms;
 
-  log_debug("   [Capture Display #%lu]    %fx%f|%fx%f with %s buffer|success:%s|",
+  log_debug("   [Capture Display #%lu] %fx%f | with %s buffer|success:%s|%s|%s|",
             D->id,
             D->capture->rect.size.width, D->capture->rect.size.height,
-            D->capture->rect.origin.x, D->capture->rect.origin.y,
             bytes_to_string(D->capture->buffer_size),
-            D->capture->success == true ? "Yes" : "No"
+            D->capture->success == true ? "Yes" : "No",
+            milliseconds_to_string(D->capture->dur_ms),
+            bytes_to_string(D->capture->buffer_size)
             );
   return(D->capture->success);
+}
+
+struct screen_capture_t *screen_capture(){
+  struct screen_capture_t *C = init_screen_capture();
+
+  C->success    = false;
+  C->started_ms = timestamp();
+  for (size_t i = 0; i < vector_size(C->displays_v); i++) {
+    bool success = capture_display((struct display_t *)vector_get(C->displays_v, i));
+    if (i == 0) {
+      C->success = success;
+    }else{
+      C->success = (success == true && C->success == true);
+    }
+  }
+  C->dur_ms = timestamp() - C->started_ms;
+  log_debug("   [Screen Capture] captured %lu displays in %s",
+            vector_size(C->displays_v),
+            milliseconds_to_string(C->dur_ms)
+            );
+  return(C);
+}
+
+bool save_captures(struct screen_capture_t *S){
+  for (size_t i = 0; i < vector_size(S->displays_v); i++) {
+    struct display_image_t *D = (struct display_t *)vector_get(S->displays_v, i);
+    D->resize_factor = S->resize_factor;
+    log_info("resize %f", D->resize_factor);
+    if (S->save_png_file == true) {
+      save_captured_display(D);
+    }
+    if (S->save_qoi_file == true) {
+      save_to_file_qoi(D);
+    }
+  }
+  return(true);
 }
 
 struct screen_capture_t *init_screen_capture(){
@@ -112,40 +170,13 @@ struct screen_capture_t *init_screen_capture(){
 
   if (get_displays_result == kCGErrorSuccess) {
     for (size_t i = 0; i < C->displays_qty && i < MAX_DISPLAYS; i++) {
-      vector_push(C->displays_v, init_display(i));
+      struct display_image_t *D = init_display(i);
+      vector_push(C->displays_v, (void *)D);
     }
   }
   C->dur_ms = timestamp() - C->started_ms;
   log_debug("   [Init Screen Capture] with %lu displays in %s",
-            C->displays_qty,
-            milliseconds_to_string(C->dur_ms)
-            );
-  return(C);
-}
-
-bool save_captures(struct screen_capture_t *S){
-  for (size_t i = 0; i < S->displays_qty; i++) {
-    save_captured_display((struct display_t *)vector_get(S->displays_v, i));
-  }
-  return(true);
-}
-
-struct screen_capture_t *screen_capture(){
-  struct screen_capture_t *C = init_screen_capture();
-
-  C->success    = false;
-  C->started_ms = timestamp();
-  for (size_t i = 0; i < C->displays_qty; i++) {
-    bool success = capture_display((struct display_t *)vector_get(C->displays_v, i));
-    if (i == 0) {
-      C->success = success;
-    }else{
-      C->success = (success == true && C->success == true);
-    }
-  }
-  C->dur_ms = timestamp() - C->started_ms;
-  log_debug("   [Screen Capture] captured %lu displays in %s",
-            C->displays_qty,
+            vector_size(C->displays_v),
             milliseconds_to_string(C->dur_ms)
             );
   return(C);

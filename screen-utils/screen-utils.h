@@ -39,10 +39,10 @@ enum screen_capture_file_type_t {
   SCREEN_CAPTURE_FILES_QTY,
 };
 enum screen_capture_log_level_t {
-  LOG_LEVEL_DEBUG = 1,
-  LOG_LEVEL_INFO,
+  LOG_LEVEL_ERROR = 0,
   LOG_LEVEL_WARN,
-  LOG_LEVEL_ERROR,
+  LOG_LEVEL_INFO,
+  LOG_LEVEL_DEBUG,
   LOG_LEVELS_QTY,
 };
 
@@ -55,20 +55,32 @@ struct display_image_t {
   CFURLRef              url_ref;
   CGImageDestinationRef destination_ref;
   int8_t                *buffer;
-  size_t                buffer_size;
-  size_t                bits_per_pixel;
+  size_t                buffer_size, bits_per_pixel;
   bool                  success;
   unsigned long         started_ms, dur_ms;
+  float                 resize_factor;
+  bool                  debug_mode;
+};
+
+struct resize_display_image_t {
+  size_t                 resize_width, resize_height, x, y;
+  struct display_image_t *image;
+  bool                   debug_mode;
+  CGContextRef           context;
+  float                  resize_factor;
 };
 
 struct display_t {
-  size_t                 id;
-  const char             *capture_file_name;
-  struct display_image_t *capture, *save, *resize;
+  size_t                        id;
+  const char                    *save_file_name;
+  struct display_image_t        *capture, *save;
+  struct resize_display_image_t *resize;
+  bool                          prepared, debug_mode;
+  float                         resize_factor;
 };
 
 struct screen_capture_t {
-  bool                            success;
+  bool                            success, debug_mode, save_qoi_file, save_png_file;
   unsigned long                   started_ms, dur_ms;
   const char                      *file;
   CGDirectDisplayID               *display_ids;
@@ -76,10 +88,11 @@ struct screen_capture_t {
   size_t                          displays_qty;
   enum screen_capture_log_level_t log_level;
   enum screen_capture_file_type_t file_type;
+  float                           resize_factor;
 };
 
+/////////////////////////////////////////////////////////
 struct display_t *init_display(size_t DISPLAY_ID);
 struct screen_capture_t *init_screen_capture();
-/////////////////////////////////////////////////////////
 struct screen_capture_t *screen_capture();
 bool save_captures(struct screen_capture_t *S);

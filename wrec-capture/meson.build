@@ -5,6 +5,7 @@ wrec_capturelink_flags = []
 wrec_capturec_args = []
 wrec_capture_deps = [
   ansi_codes_dep,
+  tempdir_dep,
   ms_dep,
   logh_dep,
   app_utils_dep,

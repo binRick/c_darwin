@@ -28,8 +28,8 @@ int main(const int argc, const char **argv) {
     exit(1);
   }
 
-  req->png_dir         = tempdir;
-  req->max_age_minutes = 10;
+  req->png_dir = tempdir;
+//  req->max_age_minutes = 10;
   //req->start_ts = timestamp()/1000 - 60*20;
   // req->end_ts = timestamp()/1000 - 60*5*0;
   //req->max_age_hours = 1;

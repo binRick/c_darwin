@@ -2,6 +2,7 @@
 
 ////////////////////////////////////////////
 #include "screen-utils-test/screen-utils-test.h"
+#include "screen-utils/screen-utils-module.h"
 #include "screen-utils/screen-utils.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
@@ -9,6 +10,7 @@
 #include "c_greatest/greatest/greatest.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "log.h/log.h"
 
 ////////////////////////////////////////////
 TEST t_screen_utils_test_init_display(){
@@ -27,7 +29,12 @@ TEST t_screen_utils_test_init_screen_capture(){
 
 TEST t_screen_utils_test_save_capture(){
   struct screen_capture_t *C = screen_capture();
-  bool                    ok = save_captures(C);
+
+  C->debug_mode    = true;
+  C->save_png_file = true;
+  C->save_qoi_file = false;
+  C->resize_factor = 0.5;
+  bool ok = save_captures(C);
 
   ASSERT_EQ(ok, true);
   free(C);
@@ -41,6 +48,18 @@ TEST t_screen_utils_test_capture(){
   PASS();
 }
 
+TEST t_screen_utils_test_module_init(){
+  ScreenUtils *S = require(screen_utils);
+
+  S->set_log_level(LOG_LEVEL_WARN);
+  S->set_log_level(LOG_LEVEL_DEBUG);
+  log_info("pid:%d", S->get_pid());
+
+  FreeScreenUtils(S);
+
+  PASS();
+}
+
 SUITE(s_screen_utils_test_capture) {
   RUN_TEST(t_screen_utils_test_capture);
   RUN_TEST(t_screen_utils_test_save_capture);
@@ -50,11 +69,15 @@ SUITE(s_screen_utils_test_init) {
   RUN_TEST(t_screen_utils_test_init_display);
   RUN_TEST(t_screen_utils_test_init_screen_capture);
 }
+SUITE(s_screen_utils_test_module) {
+  RUN_TEST(t_screen_utils_test_module_init);
+}
 GREATEST_MAIN_DEFS();
 
 int main(const int argc, const char **argv) {
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_screen_utils_test_init);
   RUN_SUITE(s_screen_utils_test_capture);
+  RUN_SUITE(s_screen_utils_test_module);
   GREATEST_MAIN_END();
 }

@@ -31,8 +31,8 @@ if get_option('enable-binaries')
      c_args: wrec_image_test_c_args,
      install: false,
   )
-  test('wrec-image-test', 
-    wrec_image_test_exec, args: ['-v','-a'],
-    workdir: wrec_image_test_test_dir,
-  )
+  #test('wrec-image-test', 
+  #  wrec_image_test_exec, args: ['-v','-a'],
+  #  workdir: wrec_image_test_test_dir,
+  #)
 endif

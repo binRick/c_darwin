@@ -17,6 +17,25 @@ core_utils_link_args = [
   '-Wl,-framework,AppKit'  
 ]
 
+core_utils_link_args +=  ['-Wl,-framework,Foundation']
+core_utils_link_args +=  ['-Wl,-framework,Security']
+core_utils_link_args +=  ['-Wl,-framework,SkyLight']
+core_utils_link_args +=  ['-Wl,-framework,ApplicationServices']
+core_utils_link_args +=  ['-Wl,-framework,ScriptingBridge']
+core_utils_link_args +=  ['-Wl,-framework,CoreFoundation']
+
+core_utils_link_args +=  ['-Wl,-framework,SystemExtensions']
+core_utils_link_args +=  ['-Wl,-framework,DeviceCheck']
+core_utils_link_args +=  ['-Wl,-framework,Carbon']
+core_utils_link_args +=  ['-Wl,-framework,Metal']
+core_utils_link_args +=  ['-Wl,-framework,MetalKit']
+core_utils_link_args +=  ['-Wl,-framework,QuartzCore']
+core_utils_link_args +=  ['-Wl,-framework,ICADevices']
+core_utils_link_args +=  ['-Wl,-framework,DeviceCheck']
+core_utils_link_args +=  ['-Wl,-framework,AppKit']
+core_utils_link_args +=  ['-Wl,-framework,IOKit']
+core_utils_link_args +=  ['-F/System/Library/PrivateFrameworks']
+
 core_utils_lib = static_library('core-utils',
   core_utils_srcs,
   install: false,

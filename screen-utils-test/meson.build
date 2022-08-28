@@ -13,6 +13,7 @@ screen_utils_test_deps = [
   c_stringfn_dep,
   ansi_codes_dep,
   screen_utils_dep,
+  logh_dep,
 ]
 screen_utils_test_c_args = [
 ]

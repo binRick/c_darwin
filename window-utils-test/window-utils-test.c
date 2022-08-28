@@ -14,8 +14,9 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_timer/include/c_timer.h"
+#include "log.h/log.h"
+#include "ms/ms.h"
 #include "string-utils/string-utils.h"
-#include "submodules/c_deps/submodules/c_dbg/dbg.h"
 #include "submodules/libfort/src/fort.h"
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"
@@ -25,7 +26,6 @@
 
 TEST t_windows_search(void *NAME){
   LsWinCtx ctx;
-  int      ch;
   char     *name = (char *)NAME;
 
   ctx.longDisplay = 0;
@@ -51,8 +51,9 @@ TEST t_windows_search(void *NAME){
 TEST t_authorized_tests(void){
   authorized_test_t *authorized_test_results = execute_authorization_tests();
 
-  for (size_t i = 0; i < (sizeof(*authorized_test_results) / sizeof((authorized_test_results)[0])); i++) {
-    ASSERT_EQm(authorized_test_results[i].name, authorized_test_results[i].authorized, true);
+  for (size_t i = 0; i < AUTHORIZED_TEST_TYPE_IDS_QTY; i++) {
+    log_info("Auth test #%lu> %s => %s :: %s", i, authorized_test_results[i].name, authorized_test_results[i].authorized == true ? "OK" : "Failed", milliseconds_to_string(authorized_test_results[i].dur_ms));
+    ASSERT_EQ(authorized_test_results[i].authorized, true);
   }
 }
 
@@ -161,7 +162,7 @@ TEST t_list_windows(){
   char *dur = ct_stop("");
 
   printf("\n%s\n", ft_to_string(table));
-  dbg(dur, %s);
+  log_info("dur:%s", dur);
   ft_destroy_table(table);
 
   PASS();
@@ -171,14 +172,22 @@ SUITE(s_list_windows){
   RUN_TEST(t_list_windows);
 }
 
+TEST t_info(){
+  log_info("focused_window_title:%s", get_focused_window_title());
+  PASS();
+}
+
 TEST t_move_window(void *ID){
   size_t id = (size_t)ID, x = 200, y = 300;
 
-  dbg(id, %u);
+  log_info("id:%lu", id);
   move_window_id(id, x, y);
   PASS();
 }
 
+SUITE(s_window_info){
+  RUN_TEST(t_info);
+}
 SUITE(s_move_window){
   RUN_TESTp(t_windows_search, (void *)"Alacritty");
   RUN_TESTp(t_move_window, (void *)69);
@@ -194,6 +203,7 @@ int main(int argc, char **argv) {
   RUN_SUITE(s_windows);
   RUN_SUITE(s_move_window);
   RUN_SUITE(s_list_windows);
+  RUN_SUITE(s_window_info);
 
   GREATEST_MAIN_END();
   return(0);

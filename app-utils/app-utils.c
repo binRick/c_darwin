@@ -1,5 +1,4 @@
 #pragma once
-#define DEBUG_MODE_ENABLED    false
 #include "app-utils/app-utils.h"
 #include "timestamp/timestamp.h"
 #include <ApplicationServices/ApplicationServices.h>
@@ -10,20 +9,19 @@
 ///////////////////////////////////////////////////////////////////////
 authorized_tests_t authorized_tests = {
   .tests             = {
-    [AUTHORIZED_ACCESSIBILITY] =    {
+    [AUTHORIZED_ACCESSIBILITY] =     {
       .id            = AUTHORIZED_ACCESSIBILITY,
       .name          = "accessibility",
-      .test_function = (is_authorized_for_accessibility),
-      .authorized    = false,
-      .ts            = 0,
+      .test_function = (*is_authorized_for_accessibility),
+      .authorized    = false, .ts            = 0, .dur_ms = 0,
     },
-    [AUTHORIZED_SCREEN_RECORDING] = {
+    [AUTHORIZED_SCREEN_RECORDING] =  {
       .id            = AUTHORIZED_SCREEN_RECORDING,
       .name          = "screen_recording",
-      .test_function = (is_authorized_for_screen_recording),
-      .authorized    = false,
-      .ts            = 0,
+      .test_function = (*is_authorized_for_screen_recording),
+      .authorized    = false, .ts            = 0, .dur_ms = 0,
     },
+    [AUTHORIZED_TEST_TYPE_IDS_QTY] = { 0 },
   },
 };
 ///////////////////////////////////////////////////////////////////////
@@ -60,18 +58,9 @@ authorized_test_t *execute_authorization_tests(){
   authorized_test_t *authorized_test_results = calloc(AUTHORIZED_TEST_TYPE_IDS_QTY, sizeof(authorized_test_t));
 
   for (int i = 0; i < AUTHORIZED_TEST_TYPE_IDS_QTY; i++) {
-    if (DEBUG_MODE_ENABLED) {
-    }
-    fprintf(stderr, "Running Test #%d\n", i);
+    unsigned long started = timestamp();
     authorized_test_results[i] = (execute_authorization_test(i));
-    if (DEBUG_MODE_ENABLED) {
-    }
-    fprintf(stderr, "Ran Test #%d (%s) with result '%d' @ %lu.\n",
-            i,
-            authorized_test_results[i].name,
-            authorized_test_results[i].authorized,
-            authorized_test_results[i].ts
-            );
+    authorized_test_results[i].dur_ms = timestamp() - started;
   }
   return(authorized_test_results);
 }
@@ -120,13 +109,7 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   int        maxSize, isSuccess;
   char       *value;
 
-  if (DEBUG_MODE_ENABLED) {
-    fprintf(stderr, "CFDictionaryCopyCString.......|key='%s'|\n", (char *)key);
-  }
   dictValue = CFDictionaryGetValue(dict, key);
-  if (DEBUG_MODE_ENABLED) {
-    fprintf(stderr, "CFDictionaryCopyCString.......|value null? '%s'|\n", value == NULL ? "yes" : "no");
-  }
   if (dictValue == NULL) {
     return(NULL);
   }
@@ -141,8 +124,5 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   value     = (char *)malloc(maxSize);
   isSuccess = CFStringGetCString(dictValue, value, maxSize, kCFStringEncodingUTF8);
 
-  if (DEBUG_MODE_ENABLED) {
-    fprintf(stderr, "CFDictionaryCopyCString.......|'%s'->'%s'|\n", (char *)key, (char *)value);
-  }
   return((isSuccess ? value : NULL));
 }
