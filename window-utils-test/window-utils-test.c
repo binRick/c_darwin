@@ -106,7 +106,7 @@ TEST t_list_windows(){
   struct Vector *windows = get_windows();
 
   for (size_t i = 0; i < vector_size(windows); i++) {
-    window_t *w = (window_t *)vector_get(windows, i);
+    struct window_t *w = (struct window_t *)vector_get(windows, i);
     ft_printf_ln(table,
                  "%.20s|%d|%d|%d|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s|%d",
                  strip_non_ascii(w->app_name),
@@ -177,20 +177,9 @@ TEST t_info(){
   PASS();
 }
 
-TEST t_move_window(void *ID){
-  size_t id = (size_t)ID, x = 200, y = 300;
-
-  log_info("id:%lu", id);
-  move_window_id(id, x, y);
-  PASS();
-}
-
 SUITE(s_window_info){
   RUN_TEST(t_info);
-}
-SUITE(s_move_window){
   RUN_TESTp(t_windows_search, (void *)"Alacritty");
-  RUN_TESTp(t_move_window, (void *)69);
 }
 
 GREATEST_MAIN_DEFS();
@@ -199,9 +188,7 @@ int main(int argc, char **argv) {
   (void)argc; (void)argv;
   GREATEST_MAIN_BEGIN();
   RUN_TEST(t_authorized_tests);
-  //RUN_SUITE(s_authorized);
   RUN_SUITE(s_windows);
-  RUN_SUITE(s_move_window);
   RUN_SUITE(s_list_windows);
   RUN_SUITE(s_window_info);
 

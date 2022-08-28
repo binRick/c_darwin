@@ -13,22 +13,87 @@
 #include <stdio.h>
 //////////////////////////////////////////////////////////////
 #include "core-utils/core-utils-extern.h"
-#include "window-utils/window-utils.h"
+#include "process/process.h"
+#include "system-utils/system-utils.h"
 //////////////////////////////////////////////////////////////
 #define g_connection      CGSMainConnectionID()
 #define ASCII_ENCODING    kCFStringEncodingASCII
 #define UTF8_ENCODING     kCFStringEncodingUTF8
 #define MAX_DISPLAYS      8
+#define DEBUG_MODE        false
+#define LAYER_BELOW       kCGBackstopMenuLevelKey
+#define LAYER_NORMAL      kCGNormalWindowLevelKey
+#define LAYER_ABOVE       kCGFloatingWindowLevelKey
 //////////////////////////////////////////////////////////////
-
+struct window_t {
+  pid_t               pid;
+  CGPoint             position;
+  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, window_id, layer;
+  CFNumberRef         layer_ref;
+  CGSize              size;
+  CFDictionaryRef     window;
+  CGRect              rect;
+  char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
+  bool                is_focused, is_visible, is_minimized;
+  struct kinfo_proc   pid_info;
+  struct Vector       *space_ids_v, *child_pids_v;
+  AXUIElementRef      *app;
+  ProcessSerialNumber psn;
+};
 static struct {
   void              *memory;
   uint64_t          size;
   volatile uint64_t used;
-} g_temp_storage;
+}                 g_temp_storage;
 
+static const char *bool_str[]  = { "off", "on" };
+static const char *layer_str[] =
+{
+  [0]            = "",
+  [LAYER_BELOW]  = "below",
+  [LAYER_NORMAL] = "normal",
+  [LAYER_ABOVE]  = "above"
+};
+
+void set_space_by_index(int space);
+int is_full_screen(void);
+int get_space_via_keywin(void);
+struct window_t *get_focused_window();
+void CoreDockGetWorkspacesCount(int *rows, int *cols);
+int get_pid_window_id(const int PID);
+struct window_t *get_window_id(const int WINDOW_ID);
+int space_display_id(int sid);
+uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized);
+uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
+bool space_is_user(uint64_t sid);
+bool space_is_fullscreen(uint64_t sid);
+bool space_is_system(uint64_t sid);
+bool space_is_visible(uint64_t sid);
+CGPoint display_center(uint32_t did);
+CGRect display_bounds(uint32_t did);
+CFStringRef display_uuid(uint32_t did);
+uint32_t display_id(CFStringRef uuid);
+void *ts_alloc_aligned(uint64_t elem_size, uint64_t elem_count);
+uint64_t *display_space_list(uint32_t did, int *count);
+uint32_t *space_minimized_window_list(uint64_t sid, int *count);
+int get_window_id_space_id(int window_id);
+int get_window_display_id(struct window_t *window);
+char *get_window_display_uuid(struct window_t *window);
+int get_window_space_id(struct window_t *window);
+int total_spaces(void);
+int space_type(uint64_t sid);
+int get_space_id(void);
+void set_space_by_index(int space);
+int get_space_via_keywin(void);
+CGPoint display_center(uint32_t did);
+char *get_space_uuid(uint64_t sid);
+bool window_is_excluded(struct window_t *w);
+CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height);
+int CFDictionaryGetInt(CFDictionaryRef dict, const void *key);
+char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key);
 char *get_chars_from_CFString(CFStringRef cf_string);
 int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key);
+struct Vector *get_windows();
 int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, size_t len);
 unsigned short get_vendor_id(IOHIDDeviceRef device);
 unsigned short get_product_id(IOHIDDeviceRef device);

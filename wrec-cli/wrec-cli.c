@@ -1,4 +1,5 @@
 ////////////////////////////////////////////////////
+#include "core-utils/core-utils.h"
 #include "wrec-cli/wrec-cli.h"
 #include "wrec-utils/wrec-utils.h"
 ////////////////////////////////////////////////////
@@ -84,7 +85,20 @@ static int iterate_modes(){
   return(1);
 }
 
+void authorized_test(){
+  authorized_test_t *authorized_test_results = execute_authorization_tests();
+
+  for (size_t i = 0; i < AUTHORIZED_TEST_TYPE_IDS_QTY; i++) {
+    if (i != AUTHORIZED_ACCESSIBILITY) {
+      continue;
+    }
+    //log_debug("Auth test #%lu> %s => %s :: %s", i, authorized_test_results[i].name, authorized_test_results[i].authorized == true ? "OK" : "Failed", milliseconds_to_string(authorized_test_results[i].dur_ms));
+    assert(authorized_test_results[i].authorized == true);
+  }
+}
+
 int main(int argc, char **argv) {
+  authorized_test();
   parse_args(argc, argv);
   if ((argc >= 2) && (strcmp(argv[1], "--test") == 0)) {
     printf("Test OK\n"); return(0);
@@ -173,7 +187,7 @@ static int select_window(void){
   struct Vector *windows = get_windows();
 
   for (size_t i = 0; i < vector_size(windows); i++) {
-    window_t *w = (window_t *)vector_get(windows, i);
+    struct window_t *w = (struct window_t *)vector_get(windows, i);
     vector_push(fe->input_options, w->app_name);
   }
 

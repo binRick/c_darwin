@@ -2,9 +2,9 @@ system_utils_srcs = [
   'system-utils.c',
 ]
 system_utils_deps = [
-  core_utils_dep,
   c_stringfn_dep,
   pasteboard_dep,
+  core_utils_dep,
 ]
 
 system_utils_link_args = [

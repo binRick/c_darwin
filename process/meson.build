@@ -16,7 +16,6 @@ process_deps = [
   occurrences_dep,
   parson_dep,
   c_fsio_dep,  
-  #debug_memory_dep,  
 ]
 process_dirs = [
   '.',

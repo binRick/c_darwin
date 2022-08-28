@@ -23,20 +23,6 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 ///////////////////////////////////////////////////
-typedef struct window_t {
-  pid_t               pid;
-  CGPoint             position;
-  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, window_id, layer;
-  CGSize              size;
-  CFDictionaryRef     window;
-  CGRect              rect;
-  char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
-  bool                is_focused, is_visible, is_minimized;
-  struct kinfo_proc   pid_info;
-  struct Vector       *space_ids_v, *child_pids_v;
-  AXUIElementRef      *app;
-  ProcessSerialNumber psn;
-} window_t;
 
 typedef struct {
   int longDisplay;
@@ -55,9 +41,6 @@ typedef struct {
   int     movedWindow;
 } MoveWinCtx;
 ///////////////////////////////////////////////////
-int get_window_display_id(struct window_t *window);
-int get_window_space_id(struct window_t *window);
-char *get_window_display_uuid(struct window_t *window);
 bool get_window_is_minimized(struct window_t *window);
 CFStringRef display_manager_active_display_uuid(void);
 CGRect display_manager_dock_rect(void);
@@ -68,7 +51,6 @@ uint32_t display_manager_active_display_count(void);
 uint32_t display_manager_active_display_id(void);
 uint32_t display_manager_main_display_id(void);
 uint32_t display_manager_active_display_count(void);
-uint32_t *display_manager_active_display_list(uint32_t *count);
 uint64_t *get_display_id_space_ids(uint32_t did, int *count);
 bool display_manager_dock_hidden(void);
 int display_manager_dock_orientation(void);
@@ -89,17 +71,19 @@ void MoveWindow(CFDictionaryRef window, void *ctxPtr);
 int get_windows_qty(void);
 struct Vector *get_window_ids(void);
 struct Vector *get_windows();
-int get_pid_window_id(const int PID);
 void move_window_id(const int WINDOW_ID, const int X, const int Y);
 char *get_window_id_title(const int WINDOW_ID);
-window_t *get_window_id(const int WINDOW_ID);
+struct window_t *get_window_id(const int WINDOW_ID);
 CFDictionaryRef window_id_to_window(const int WINDOW_ID);
-window_t *get_pid_window(const int PID);
+struct window_t *get_pid_window(const int PID);
 int get_display_width();
-bool resize_window(window_t *w, const int WIDTH, const int HEIGHT);
-bool move_window(window_t *w, const int X, const int Y);
-window_t *get_focused_window();
+bool resize_window(struct window_t *w, const int WIDTH, const int HEIGHT);
+bool move_window(struct window_t *w, const int X, const int Y);
+struct window_t *get_focused_window();
 uint32_t display_active_display_id(void);
 int window_level(struct window_t *window);
 int get_focused_window_id();
+bool get_window_is_visible(struct window_t *window);
+ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);
+int get_window_id_pid(int window_id);
 ///////////////////////////////////////////////////

@@ -21,10 +21,11 @@ screen_utils_deps = [
   bytes_dep, ms_dep,
   system_utils_dep,
   hash_dep,
-  module_dep,
-  process_dep,
+  core_utils_dep,
   wrec_common_dep,
   wrec_capture_dep,
+  module_dep,
+  process_dep,
   timestamp_dep,
   wrec_image_dep,
 ]

@@ -28,8 +28,6 @@ typedef struct authorized_tests_t   authorized_tests_t;
 bool is_authorized_for_screen_recording();
 bool is_authorized_for_accessibility();
 ///////////////////////////////////////////////////////////////////////
-int CFDictionaryGetInt(CFDictionaryRef dict, const void *key);
-char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key);
 
 ///////////////////////////////////////////////////////////////////////
 struct authorized_tests_t {

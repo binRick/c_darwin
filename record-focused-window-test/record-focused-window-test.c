@@ -17,7 +17,7 @@
 #include "window-utils/window-utils.h"
 #include "wrec-common/wrec-common.h"
 static char   *msg, *tempdir;
-static bool   DEBUG_MODE = false;
+static bool   _DEBUG_MODE = false;
 static size_t CAPTURE_QTY = 5, CAPTURE_INTERVAL_MS = 5000, CAPTURED_QTY = 0;
 
 char *generate_window_id_screenshot_file_path(unsigned long WINDOW_ID){
@@ -55,7 +55,7 @@ TEST t_record_focused_window(void){
              milliseconds_to_string(dur), tempdir
 
              );
-    if (DEBUG_MODE) {
+    if (_DEBUG_MODE) {
       log_info("%s", msg);
     }
 

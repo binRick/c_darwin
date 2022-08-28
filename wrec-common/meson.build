@@ -7,6 +7,7 @@ wrec_common_deps = [
   ansi_codes_dep,
   c_stringfn_dep,
   c_vector_dep,
+  window_utils_dep,
   c_string_buffer_dep,
   c_fsio_dep,  
   bytes_dep,

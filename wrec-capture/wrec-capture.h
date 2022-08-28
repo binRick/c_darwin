@@ -4,4 +4,3 @@
 #include "wrec-common/wrec-common.h"
 #include "wrec-utils/wrec-utils.h"
 //////////////////////////////////////////////////////
-CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height);

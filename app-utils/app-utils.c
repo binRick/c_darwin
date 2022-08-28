@@ -96,33 +96,3 @@ bool is_authorized_for_accessibility() {
   return(AXIsProcessTrusted());
 #endif
 }
-
-int CFDictionaryGetInt(CFDictionaryRef dict, const void *key) {
-  int value;
-
-  return(CFNumberGetValue(CFDictionaryGetValue(dict, key), kCFNumberIntType, &value) ? value : 0);
-}
-
-char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
-  const void *dictValue;
-  CFIndex    length;
-  int        maxSize, isSuccess;
-  char       *value;
-
-  dictValue = CFDictionaryGetValue(dict, key);
-  if (dictValue == NULL) {
-    return(NULL);
-  }
-  length  = CFStringGetLength(dictValue);
-  maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
-  if (length == 0 || maxSize == 0) {
-    value  = (char *)malloc(1);
-    *value = '\0';
-    return(value);
-  }
-
-  value     = (char *)malloc(maxSize);
-  isSuccess = CFStringGetCString(dictValue, value, maxSize, kCFStringEncodingUTF8);
-
-  return((isSuccess ? value : NULL));
-}

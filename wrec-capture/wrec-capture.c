@@ -127,21 +127,6 @@ static void CGImageDumpInfo(CGImageRef image) {
   printf("==================================================================================================\n");
 } /* CGImageDumpInfo */
 
-CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
-  CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
-  CGContextRef context = CGBitmapContextCreate(NULL, width, height,
-                                               CGImageGetBitsPerComponent(imageRef),
-                                               CGImageGetBytesPerRow(imageRef),
-                                               CGImageGetColorSpace(imageRef),
-                                               CGImageGetBitmapInfo(imageRef));
-
-  CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
-  CGContextDrawImage(context, newRect, imageRef);
-  CGImageRef newImageRef = CGBitmapContextCreateImage(context);
-
-  CGContextRelease(context);
-  return(newImageRef);
-}
 ///////////////////////////////////////////////////////
 #define COMMON_RESIZE_AND_SAVE(RESIZE_TYPE, RESIZE_VALUE, RESIZE_HEIGHT) \
   resized_img  = resize_cgimage(img, RESIZE_WIDTH, RESIZE_HEIGHT);       \

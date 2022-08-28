@@ -1,27 +1,40 @@
+#include "core-utils/core-utils.h"
 #include "system-utils.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Availability.h>
 #include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CoreFoundation.h>
-#include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <IOKit/graphics/IOFramebufferShared.h>
 #include <IOKit/graphics/IOGraphicsInterface.h>
 #include <IOKit/Graphics/IOGraphicsLib.h>
+#include <IOKit/hid/IOHIDKeys.h>
+#include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOReturn.h>
 #include <IOKit/serial/IOSerialKeys.h>
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/usb/USBSpec.h>
+#include <libgen.h>
 #include <libproc.h>
+#include <mach/host_info.h>
+#include <mach/host_priv.h>
+#include <mach/kern_return.h>
 #include <mach/mach.h>
+#include <mach/mach.h>
+#include <mach/mach_error.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string.h>
 #include <sys/queue.h>
 #include <sys/statvfs.h>
@@ -29,20 +42,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
-#include <errno.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <mach/host_info.h>
-#include <mach/host_priv.h>
-#include <mach/kern_return.h>
-#include <mach/mach.h>
-#include <mach/mach_error.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
 CGDirectDisplayID get_display_id(uint32_t id);
 CGDirectDisplayID get_current_display_id();
@@ -61,7 +61,6 @@ static const struct {
 
 size_t get_devices_count(){
   IOHIDManagerRef mgr;
-  int             i;
 
   mgr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
   IOHIDManagerSetDeviceMatching(mgr, NULL);

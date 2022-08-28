@@ -15,6 +15,7 @@ window_utils_deps = [
   active_app_dep,
   c_stringfn_dep,
   parson_dep,
+  space_utils_dep,
   logh_dep,
   ansi_codes_dep,
   system_utils_dep,

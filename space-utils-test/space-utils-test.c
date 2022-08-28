@@ -3,7 +3,7 @@
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 ////////////////////////////////////////////
-#include "space-test/space-test.h"
+#include "space-utils-test/space-utils-test.h"
 ////////////////////////////////////////////
 #include "active-app/active-app.h"
 #include "ansi-codes/ansi-codes.h"
@@ -15,7 +15,7 @@
 #include "core-utils/core-utils.h"
 #include "log.h/log.h"
 #include "process/process.h"
-#include "space/space.h"
+#include "space-utils/space-utils.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
 
@@ -25,7 +25,7 @@ TEST t_space_set_test(){
   PASS();
 }
 
-TEST t_space_test(){
+TEST t_space_utils_test(){
   int rows, cols;
 
   CoreDockGetWorkspacesCount(&rows, &cols);
@@ -87,10 +87,10 @@ TEST t_space_test(){
     }
   }
   PASS();
-} /* t_space_test */
+} /* t_space_utils_test */
 
-SUITE(s_space_test) {
-  RUN_TEST(t_space_test);
+SUITE(s_space_utils_test) {
+  RUN_TEST(t_space_utils_test);
   if (isatty(STDOUT_FILENO)) {
     RUN_TEST(t_space_set_test);
   }
@@ -100,6 +100,6 @@ GREATEST_MAIN_DEFS();
 
 int main(const int argc, const char **argv) {
   GREATEST_MAIN_BEGIN();
-  RUN_SUITE(s_space_test);
+  RUN_SUITE(s_space_utils_test);
   GREATEST_MAIN_END();
 }

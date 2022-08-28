@@ -7,6 +7,7 @@ wrec_cli_deps = [
   wrec_common_dep,
   wrec_utils_dep,
   ansi_codes_dep,
+  core_utils_dep,
   wrec_capture_dep,
   cargs_dep,
   wrec_utils_dep,
