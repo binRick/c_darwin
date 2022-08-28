@@ -30,7 +30,5 @@ if get_option('enable-binaries')
      include_directories: process_include_dirs,
      c_args: process_include_cargs,
   )
-  #if get_option('enable-binary-tests')
-    #test('process-test', passh_program, args: [process_test_exec])
-  #endif
+  test('process-test', passh_program, args: [process_test_exec])
 endif

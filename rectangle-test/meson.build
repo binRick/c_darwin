@@ -31,8 +31,8 @@ if get_option('enable-binaries')
      c_args: rectangle_test_c_args,
      install: false,
   )
-  #test('rectangle-test', 
-  #  rectangle_test_exec, args: ['-v','-a'],
-  #  workdir: rectangle_test_test_dir,
-  #)
+  test('rectangle-test', 
+    rectangle_test_exec, args: ['-v','-a'],
+    workdir: rectangle_test_test_dir,
+  )
 endif
