@@ -17,6 +17,7 @@
 #include "space/space.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
+#include "process/process.h"
 
 ////////////////////////////////////////////
 TEST t_space_set_test(){
@@ -37,14 +38,14 @@ TEST t_space_test(){
   log_debug("CoreDockGetWorkspacesCount rows:%d|cols:%d", rows, cols);
   for (int i = 0; i < space_cnt; i++) {
     int      space_minimized_window_qty;
-    uint32_t *minimized_window_list = space_minimized_window_list(i, &space_minimized_window_qty);
+    space_minimized_window_list(i, &space_minimized_window_qty);
     uint32_t display_id             = space_display_id(i);
     uint32_t *window_list           = space_window_list(i + 1, &window_count, true);
     if (window_count == 0) {
       continue;
     }
     CGRect   db                  = display_bounds(display_id);
-    uint32_t *nonmin_window_list = space_window_list(i + 1, &nonmin_window_count, false);
+    space_window_list(i + 1, &nonmin_window_count, false);
     int      qty_min             = window_count - nonmin_window_count;
     log_debug("    Space #%d/%d> %d minimized windows|display #%d|%s|%fx%f|",
               i + 1,
@@ -60,16 +61,10 @@ TEST t_space_test(){
               );
     log_debug("               windows:  %d (%d minimized)", window_count, qty_min);
     for (int w = 0; w < window_count && w < 99; w++) {
-      bool            is_min = true;
       struct window_t *W     = get_window_id(window_list[w]);
-      for (int ww = 0; ww < nonmin_window_count && ww < 99; ww++) {
-        if (window_list[w] == nonmin_window_list[ww]) {
-          is_min = false;
-        }
-      }
 
       log_debug("                   Window #%d/%d>", w + 1, window_count);
-      log_debug("                           [window id %" PRIu32 "] Minimized? %s|", (window_list[w]), is_min == true ? "Yes" : "No");
+      log_debug("                           [window id %" PRIu32 "] ", (window_list[w]));
       log_debug("                                    |app:%s|pid:%d|ismin:%s|layer:%d|spaceid:%d|size:%dx%d|display:%d|                ",
                 W->app_name,
                 W->pid,
@@ -79,12 +74,13 @@ TEST t_space_test(){
                 W->width, W->height,
                 W->display_id
                 );
-      log_debug("                                    |psn:%d|ppid:%d|rtime:%d|login:%s|focused:%s|visible:%s|",
+      log_debug("                                    |psn:%d|ppid:%d|rtime:%d|nice:%d|focused:%s|visible:%s|childpids:%lu|",
                 W->psn.highLongOfPSN + W->psn.lowLongOfPSN,
                 W->pid_info.kp_eproc.e_ppid, W->pid_info.kp_proc.p_rtime.tv_usec,
-                W->pid_info.kp_eproc.e_login,
+                W->pid_info.kp_proc.p_nice,
                 W->is_focused?"Yes":"No",
-                W->is_visible?"Yes":"No"
+                W->is_visible?"Yes":"No",
+                vector_size(W->child_pids_v)
                 );
     }
   }

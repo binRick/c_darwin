@@ -1,6 +1,59 @@
 #pragma once
 #include "core-utils/core-utils.h"
 
+int get_focused_pid(){
+  ProcessSerialNumber psn;
+  GetFrontProcess(&psn);
+  pid_t pid = PSN2PID(psn);
+  if(pid>1)
+      return (int)pid;
+
+  CFArrayRef window_list = CGWindowListCopyWindowInfo(
+    kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly,
+    kCGNullWindowID);
+
+  int num_windows = CFArrayGetCount(window_list);
+
+  for (int i = 0; i < num_windows; i++) {
+    CFDictionaryRef dict              = CFArrayGetValueAtIndex(window_list, i);
+    CFNumberRef     objc_window_layer = CFDictionaryGetValue(dict, kCGWindowLayer);
+
+    int             window_layer;
+    CFNumberGetValue(objc_window_layer, kCFNumberIntType, &window_layer);
+
+    if (window_layer == 0) {
+      CFNumberRef objc_window_pid = CFDictionaryGetValue(dict, kCGWindowOwnerPID);
+
+      int         window_pid = 0;
+      CFNumberGetValue(objc_window_pid, kCFNumberIntType, &window_pid);
+
+      return(window_pid);
+    }
+  }
+
+  return(-1);
+}
+
+ProcessSerialNumber PID2PSN(pid_t pid) {
+  ProcessSerialNumber tempPSN;
+
+  GetProcessForPID(pid, &tempPSN);
+  return(tempPSN);
+}
+
+pid_t PSN2PID(ProcessSerialNumber psn) {
+  pid_t tempPID;
+
+  GetProcessPID(&psn, &tempPID);
+  return(tempPID);
+}
+
+
+int get_focused_space_id(){
+    int focused_pid = get_focused_pid();
+
+}
+
 int space_display_id(int sid){
   CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
 
@@ -451,3 +504,5 @@ uint32_t display_id(CFStringRef uuid){
 
   return(did);
 }
+
+

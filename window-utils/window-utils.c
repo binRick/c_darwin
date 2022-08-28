@@ -1,4 +1,5 @@
 #pragma once
+#include "c_vector/vector/vector.h"
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "core-utils/core-utils.h"
@@ -7,6 +8,7 @@
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "window-utils/window-utils.h"
+#include "process/process.h"
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG_MODE    false
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,12 +34,13 @@ int get_window_id_space_id(int window_id){
 }
 
 window_t *get_window_id(const int WINDOW_ID){
-  int      focused_pid = get_frontmost_application();
+  int      focused_pid = get_focused_pid();
   window_t *w          = malloc(sizeof(window_t));
 
   w->window_id = WINDOW_ID;
   w->window    = window_id_to_window(w->window_id);
   w->pid       = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
+  w->child_pids_v = get_child_pids(w->pid);
   w->app       = AXUIElementCreateApplication(w->pid);
   w->psn       = PID2PSN(w->pid);
   SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
@@ -68,18 +71,9 @@ bool get_window_is_visible(struct window_t *window){
   if (window->position.x == 0 && window->position.y == 25 && window->layer == 0) {
     result = true;
   }
-
-  return(result);
-}
-
-bool get_window_is_minimized(struct window_t *window){
-  bool      result = false;
-  CFTypeRef value;
-
-  if (AXUIElementCopyAttributeValue(window->window, kAXMinimizedAttribute, &value) == kAXErrorSuccess) {
-    result = CFBooleanGetValue(value);
-    fprintf(stderr, "checking if window #%d is min- %d\n", window->window_id, result);
-    CFRelease(value);
+  if(result == true){
+    if(window_id_is_minimized(window->window_id) == true)
+      result = false;
   }
 
   return(result);

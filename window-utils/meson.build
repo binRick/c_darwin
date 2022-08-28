@@ -12,13 +12,13 @@ window_utils_dirs = [
   ]
 window_utils_deps = [
   core_utils_dep,
-  c_vector_dep,
   active_app_dep,
   c_stringfn_dep,
   parson_dep,
   logh_dep,
   ansi_codes_dep,
   system_utils_dep,
+  c_vector_dep,
   process_dep,
 ]
 window_utils_link_flags = [

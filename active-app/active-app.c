@@ -1,8 +1,9 @@
 #pragma once
 #include "active-app.h"
+#include "core-utils/core-utils.h"
 
 void resize_current_window(int p1, int p2, int p3, int p4){
-  int pid = get_frontmost_application();
+  int pid = get_focused_pid();
 
   if (pid == -1) {
     return;
@@ -23,35 +24,9 @@ void resize_current_window(int p1, int p2, int p3, int p4){
   AXUIElementSetAttributeValue(win, kAXSizeAttribute, objc_size);
 }
 
-int get_frontmost_application(){
-  CFArrayRef window_list = CGWindowListCopyWindowInfo(
-    kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly,
-    kCGNullWindowID);
-
-  int num_windows = CFArrayGetCount(window_list);
-
-  for (int i = 0; i < num_windows; i++) {
-    CFDictionaryRef dict              = CFArrayGetValueAtIndex(window_list, i);
-    CFNumberRef     objc_window_layer = CFDictionaryGetValue(dict, kCGWindowLayer);
-
-    int             window_layer;
-    CFNumberGetValue(objc_window_layer, kCFNumberIntType, &window_layer);
-
-    if (window_layer == 0) {
-      CFNumberRef objc_window_pid = CFDictionaryGetValue(dict, kCGWindowOwnerPID);
-
-      int         window_pid = 0;
-      CFNumberGetValue(objc_window_pid, kCFNumberIntType, &window_pid);
-
-      return(window_pid);
-    }
-  }
-
-  return(-1);
-}
 
 struct screen_size get_window_size(){
-  int pid = get_frontmost_application();
+  int pid = get_focused_pid();
 
   if (pid == -1) {
     return((struct screen_size){ 0, 0, 0, 0 });
@@ -79,24 +54,6 @@ struct screen_size get_window_size(){
   };
 
   return(ret);
-}
-
-ProcessSerialNumber PID2PSN(pid_t pid) {
-  ProcessSerialNumber tempPSN;
-
-  GetProcessForPID(pid, &tempPSN);
-  return(tempPSN);
-}
-
-pid_t PSN2PID(ProcessSerialNumber psn) {
-  pid_t tempPID;
-
-  GetProcessPID(&psn, &tempPID);
-  return(tempPID);
-}
-
-int get_focused_pid(){
-  return((int)(PSN2PID(get_focused_ProcessSerialNumber())));
 }
 
 bool set_focused_pid(int pid){

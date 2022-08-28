@@ -328,3 +328,24 @@ char *get_my_cwd(){
   }
   return(0);
 }
+
+struct Vector *get_child_pids(int PID){
+      struct Vector *v      = vector_new();
+    struct Vector *pids_v = get_all_processes();
+
+      for (size_t i = 0; i < vector_size(pids_v); i++) {
+        int pid = (int)(long long)vector_get(pids_v, i);
+        if (pid < 2) {
+          continue;
+        }
+
+      int ppid   = (int)(long)get_process_ppid(pid);
+        int pppid  = (int)(long)get_process_ppid(ppid);
+        int ppppid = (int)(long)get_process_ppid(pppid);
+
+        if (ppid == PID || pppid == PID || ppppid == PID) {
+          vector_push(v, (void *)(long)pid);
+        }
+      }
+      return(v);
+    }

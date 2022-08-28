@@ -34,9 +34,10 @@ typedef struct window_t {
   char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
   bool                is_focused, is_visible, is_minimized;
   struct kinfo_proc   pid_info;
-  struct Vector       *space_ids_v;
+  struct Vector       *space_ids_v, *child_pids_v;
   AXUIElementRef      *app;
   ProcessSerialNumber psn;
+
 } window_t;
 
 typedef struct {

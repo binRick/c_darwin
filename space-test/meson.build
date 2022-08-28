@@ -18,6 +18,7 @@ space_test_deps = [
   window_utils_dep,
   active_app_dep,
   core_utils_dep,
+  process_dep,
 ]
 space_test_c_args = [
 ]

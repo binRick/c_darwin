@@ -61,3 +61,6 @@ int get_display_width();
 CFStringRef display_uuid(uint32_t did);
 uint32_t display_id(CFStringRef uuid);
 int get_window_connection_id(struct window_t *w);
+int get_focused_pid();
+pid_t PSN2PID(ProcessSerialNumber psn);
+ProcessSerialNumber PID2PSN(pid_t pid);

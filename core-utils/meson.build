@@ -8,6 +8,7 @@ core_utils_dirs = [
 ]
 core_utils_deps = [
   c_stringfn_dep,
+  c_vector_dep,
 ]
 
 core_utils_link_args = [

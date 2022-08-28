@@ -5,6 +5,7 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "djbhash/src/djbhash.h"
+#include "core-utils/core-utils.h"
 #include "kitty/kitty.h"
 #include "parson.h"
 #include "process/process.h"
@@ -530,26 +531,6 @@ static bool vector_contains_pid(struct Vector *pids_v, int pid){
   return(false);
 }
 
-struct Vector *get_child_pids(int PID){
-  struct Vector *v      = vector_new();
-  struct Vector *pids_v = get_all_processes();
-
-  for (size_t i = 0; i < vector_size(pids_v); i++) {
-    int pid = (int)(long long)vector_get(pids_v, i);
-    if (pid < 2) {
-      continue;
-    }
-
-    int ppid   = (int)(long)get_process_ppid(pid);
-    int pppid  = (int)(long)get_process_ppid(ppid);
-    int ppppid = (int)(long)get_process_ppid(pppid);
-
-    if (ppid == PID || pppid == PID || ppppid == PID) {
-      vector_push(v, (void *)(long)pid);
-    }
-  }
-  return(v);
-}
 
 struct Vector *get_kitty_pids(){
   struct djbhash kitty_pids_h;

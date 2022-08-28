@@ -10,6 +10,7 @@ kitty_deps = [
   djbhash_dep,
   socket99_dep,
   c_stringfn_dep,
+  core_utils_dep,
   wildcardcmp_dep,
   c_fsio_dep,
   c_string_buffer_dep,
