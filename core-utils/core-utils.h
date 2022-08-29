@@ -16,41 +16,41 @@
 #include "process/process.h"
 #include "system-utils/system-utils.h"
 //////////////////////////////////////////////////////////////
-#define g_connection      CGSMainConnectionID()
-#define ASCII_ENCODING    kCFStringEncodingASCII
-#define UTF8_ENCODING     kCFStringEncodingUTF8
-#define MAX_DISPLAYS      8
-#define DEBUG_MODE        false
-#define LAYER_BELOW       kCGBackstopMenuLevelKey
-#define LAYER_NORMAL      kCGNormalWindowLevelKey
-#define LAYER_ABOVE       kCGFloatingWindowLevelKey
-#define kCGSFloatingWindowTagBit                (1 << 1)
-#define kCGSFollowsUserTagBit                (1 << 2)
-#define kCGSHiddenTagBit                (1 << 8)
-#define kCGSStickyTagBit                (1 << 13)
-#define kCGSWindowOwnerFollowsForegroundTagBit                (1 << 27)
-#define kCGSOnAllWorkspacesTagBit                (1 << 11)
+#define g_connection                              CGSMainConnectionID()
+#define ASCII_ENCODING                            kCFStringEncodingASCII
+#define UTF8_ENCODING                             kCFStringEncodingUTF8
+#define MAX_DISPLAYS                              8
+#define DEBUG_MODE                                false
+#define LAYER_BELOW                               kCGBackstopMenuLevelKey
+#define LAYER_NORMAL                              kCGNormalWindowLevelKey
+#define LAYER_ABOVE                               kCGFloatingWindowLevelKey
+#define kCGSFloatingWindowTagBit                  (1 << 1)
+#define kCGSFollowsUserTagBit                     (1 << 2)
+#define kCGSHiddenTagBit                          (1 << 8)
+#define kCGSStickyTagBit                          (1 << 13)
+#define kCGSWindowOwnerFollowsForegroundTagBit    (1 << 27)
+#define kCGSOnAllWorkspacesTagBit                 (1 << 11)
 //////////////////////////////////////////////////////////////
 struct window_t {
-  size_t window_id;
+  size_t              window_id;
   pid_t               pid;
   CGPoint             position;
-  CFTypeRef app_window_list;
-  size_t app_window_list_qty;
+  CFTypeRef           app_window_list;
+  size_t              app_window_list_qty;
   int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, layer, display_index;
   CFNumberRef         layer_ref;
   CGSize              size;
   CFDictionaryRef     window;
   CGRect              rect;
-  size_t memory_usage;
+  size_t              memory_usage;
   char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
-  char pid_path[PATH_MAX];
+  char                pid_path[PATH_MAX];
   bool                is_focused, is_visible, is_minimized, can_move, can_minimize, can_resize;
   struct kinfo_proc   pid_info;
   struct Vector       *space_ids_v, *child_pids_v;
   AXUIElementRef      *app;
   ProcessSerialNumber psn;
-  unsigned long dur, started;
+  unsigned long       dur, started;
 };
 static struct {
   void              *memory;

@@ -112,6 +112,7 @@ int list_windows_table(void *ARGS) {
               "Min"
               );
   struct Vector *windows = get_windows();
+
   //log_debug("loaded %lu windows",vector_size(windows));
 
   for (size_t i = 0; i < vector_size(windows); i++) {
@@ -123,8 +124,9 @@ int list_windows_table(void *ARGS) {
       //continue;
     }
 
-    if(strcmp(w->app_name,"xxxxxAlacritty") == 0)
+    if (strcmp(w->app_name, "xxxxxAlacritty") == 0) {
       window_send_to_space(w, 3);
+    }
     ft_printf_ln(table,
                  "%.100s|%d|%d|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
                  w->app_name,
@@ -135,7 +137,7 @@ int list_windows_table(void *ARGS) {
                  (int)w->size.height, (int)w->size.width,
                  (int)w->position.x, (int)w->position.y,
                  w->layer,
-                 int_to_string(w->is_focused),int_to_string(w->is_visible),int_to_string(w->is_minimized)
+                 int_to_string(w->is_focused), int_to_string(w->is_visible), int_to_string(w->is_minimized)
                  );
 
     ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
