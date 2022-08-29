@@ -81,7 +81,6 @@ bool resize_window(struct window_t *w, const int WIDTH, const int HEIGHT);
 bool move_window(struct window_t *w, const int X, const int Y);
 struct window_t *get_focused_window();
 uint32_t display_active_display_id(void);
-int window_level(struct window_t *window);
 int get_focused_window_id();
 bool get_window_is_visible(struct window_t *window);
 ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);

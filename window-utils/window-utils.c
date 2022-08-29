@@ -12,15 +12,7 @@
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG_MODE    false
-static CGPoint g_nirvana = { -9999, -9999 };
 ///////////////////////////////////////////////////////////////////////////////
-
-int window_level(struct window_t *window){
-  int level = 0;
-
-  SLSGetWindowLevel(g_connection, window->window_id, &level);
-  return(level);
-}
 
 void move_current_window(int center, int x, int y, int w, int h){
   AXValueRef     temp;
@@ -153,19 +145,6 @@ void window_move(struct window_t *window, CGPoint point) {
     SLSReassociateWindowsSpacesByGeometry(g_connection, array);
     CFRelease(array);
     CFRelease(number);
-  }
-}
-
-void window_set_level(struct window_t *window, uint32_t level) {
-  SLSSetWindowLevel(g_connection, window->window_id, level);
-}
-
-void window_send_to_space(struct window_t *window, uint64_t dsid) {
-  CFArrayRef window_list = cfarray_of_cfnumbers(&window->window_id, sizeof(uint32_t), 1, kCFNumberSInt32Type);
-
-  SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
-  if (CGPointEqualToPoint(window->position, g_nirvana)) {
-    SLSMoveWindow(g_connection, window->window_id, &g_nirvana);
   }
 }
 

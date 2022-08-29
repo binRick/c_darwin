@@ -383,10 +383,10 @@ int keylogger_close_db(void){
   return(0);
 }
 
-static void __init(void){
+static void __kl__init(void){
   fprintf(stdout, "=======================DB INIT=============================\n");
 }
 
-__attribute__((constructor))static void init(void){
-  __init();
+__attribute__((constructor))static void __constructor__kl__init(void){
+  __kl__init();
 }

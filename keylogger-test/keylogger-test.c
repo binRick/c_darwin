@@ -23,12 +23,12 @@ SUITE(s_keylogger){
   RUN_TEST(t_keylogger);
 }
 
-void __init(void){
+void __kl__init(void){
   fprintf(stdout, "=======================TEST INIT=============================\n");
 }
 
 __attribute__((constructor)) void init(void){
-  __init();
+  __kl__init();
 }
 
 int main(int argc, char **argv) {

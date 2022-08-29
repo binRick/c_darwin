@@ -24,21 +24,33 @@
 #define LAYER_BELOW       kCGBackstopMenuLevelKey
 #define LAYER_NORMAL      kCGNormalWindowLevelKey
 #define LAYER_ABOVE       kCGFloatingWindowLevelKey
+#define kCGSFloatingWindowTagBit                (1 << 1)
+#define kCGSFollowsUserTagBit                (1 << 2)
+#define kCGSHiddenTagBit                (1 << 8)
+#define kCGSStickyTagBit                (1 << 13)
+#define kCGSWindowOwnerFollowsForegroundTagBit                (1 << 27)
+#define kCGSOnAllWorkspacesTagBit                (1 << 11)
 //////////////////////////////////////////////////////////////
 struct window_t {
+  size_t window_id;
   pid_t               pid;
   CGPoint             position;
-  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, window_id, layer;
+  CFTypeRef app_window_list;
+  size_t app_window_list_qty;
+  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, layer, display_index;
   CFNumberRef         layer_ref;
   CGSize              size;
   CFDictionaryRef     window;
   CGRect              rect;
+  size_t memory_usage;
   char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
-  bool                is_focused, is_visible, is_minimized;
+  char pid_path[PATH_MAX];
+  bool                is_focused, is_visible, is_minimized, can_move, can_minimize, can_resize;
   struct kinfo_proc   pid_info;
   struct Vector       *space_ids_v, *child_pids_v;
   AXUIElementRef      *app;
   ProcessSerialNumber psn;
+  unsigned long dur, started;
 };
 static struct {
   void              *memory;
@@ -55,9 +67,20 @@ static const char *layer_str[] =
   [LAYER_ABOVE]  = "above"
 };
 
+int get_display_id_index(int display_id);
+int window_layer(struct window_t *window);
+void window_send_to_space(struct window_t *window, uint64_t dsid);
+void window_set_layer(struct window_t *window, uint32_t layer);
+CFDictionaryRef window_id_to_window(const int WINDOW_ID);
+AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
+bool get_window_is_visible(struct window_t *window);
+char *windowTitle(char *appName, char *windowName);
+CGPoint AXWindowGetPosition(AXUIElementRef window);
+int get_display_id_index(int display_id);
+CGSize CGWindowGetSize(CFDictionaryRef window);
 void set_space_by_index(int space);
 int is_full_screen(void);
-int get_space_via_keywin(void);
+CGPoint CGWindowGetPosition(CFDictionaryRef window);
 struct window_t *get_focused_window();
 void CoreDockGetWorkspacesCount(int *rows, int *cols);
 int get_pid_window_id(const int PID);
@@ -84,8 +107,11 @@ int total_spaces(void);
 int space_type(uint64_t sid);
 int get_space_id(void);
 void set_space_by_index(int space);
-int get_space_via_keywin(void);
 CGPoint display_center(uint32_t did);
+bool window_is_topmost(struct window_t *w);
+bool window_can_minimize(struct window_t *w);
+bool window_can_move(struct window_t *w);
+bool window_can_resize(struct window_t *w);
 char *get_space_uuid(uint64_t sid);
 bool window_is_excluded(struct window_t *w);
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height);
@@ -143,3 +169,4 @@ uint32_t display_active_display_count(void);
 int mission_control_index(uint64_t sid);
 uint32_t display_id_for_space(uint32_t sid);
 void command_list_displays();
+int window_layer(struct window_t *window);

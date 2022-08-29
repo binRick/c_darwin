@@ -11,7 +11,11 @@ core_utils_deps = [
   c_img_dep,
   hash_dep,
   process_dep,
+  iowow_dep,
+  bytes_dep,
   c_vector_dep,
+  parson_dep,
+  djbhash_dep,
   logh_dep, ms_dep, timestamp_dep, c_fsio_dep,
 ]
 
