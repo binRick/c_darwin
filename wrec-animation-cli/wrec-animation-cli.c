@@ -36,6 +36,9 @@ void _command_animate(){
 }
 
 int main(int argc, char *argv[]) {
+  if (!isatty(STDOUT_FILENO)) {
+    exit(0);
+  }
   struct optparse_cmd main_cmd = {
     .about       = "wrec-animation-cli v1.00 - Create animated gifs.",
     .description = "This program creates animated gifs.",

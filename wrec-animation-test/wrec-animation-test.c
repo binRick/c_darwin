@@ -13,6 +13,9 @@
 static const char *tempdir = NULL;
 
 int main(const int argc, const char **argv) {
+  if (!isatty(STDOUT_FILENO)) {
+    exit(0);
+  }
   MEASURE(measurement_create_animated_gif)
   struct animated_png_render_request_t *req = calloc(1, sizeof(struct animated_png_render_request_t));
 

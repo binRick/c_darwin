@@ -31,13 +31,17 @@
 #define kCGSWindowOwnerFollowsForegroundTagBit    (1 << 27)
 #define kCGSOnAllWorkspacesTagBit                 (1 << 11)
 //////////////////////////////////////////////////////////////
+struct list_window_table_t {
+  struct Vector *windows_v;
+  bool          current_space_only;
+};
 struct window_t {
   size_t              window_id;
   pid_t               pid;
   CGPoint             position;
   CFTypeRef           app_window_list;
   size_t              app_window_list_qty;
-  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, layer, display_index;
+  int                 pos_x, pos_y, width, height, space_id, connection_id, display_id, layer, display_index, level;
   CFNumberRef         layer_ref;
   CGSize              size;
   CFDictionaryRef     window;
@@ -45,9 +49,9 @@ struct window_t {
   size_t              memory_usage;
   char                *app_name, *window_name, *window_title, *owner_name, *uuid, *display_uuid;
   char                pid_path[PATH_MAX];
-  bool                is_focused, is_visible, is_minimized, can_move, can_minimize, can_resize;
+  bool                is_focused, is_visible, is_minimized, can_move, can_minimize, can_resize, is_popover, is_onscreen;
   struct kinfo_proc   pid_info;
-  struct Vector       *space_ids_v, *child_pids_v;
+  struct Vector       *space_ids_v, *child_pids_v, *window_ids_above, *window_ids_below;
   AXUIElementRef      *app;
   ProcessSerialNumber psn;
   unsigned long       dur, started;
@@ -67,8 +71,20 @@ static const char *layer_str[] =
   [LAYER_ABOVE]  = "above"
 };
 
+struct Vector *get_window_ids_above_window(struct window_t *w);
+struct Vector *get_window_ids_below_window(struct window_t *w);
+int list_windows_table(void *ARGS);
+struct Vector *get_windows();
 struct Vector *get_space_ids_v();
+struct Vector *get_display_ids_v();
 struct Vector *get_window_space_ids_v(struct Vector *windows_v);
+bool get_window_is_onscreen(struct window_t *w);
+bool get_window_is_popover(struct window_t *w);
+CFStringRef get_window_role_ref(struct window_t *w);
+bool get_window_is_focused(struct window_t *w);
+int get_window_layer(struct window_t *w);
+int get_window_level(struct window_t *w);
+char *get_window_title(struct window_t *w);
 int get_display_id_index(int display_id);
 int window_layer(struct window_t *window);
 void window_send_to_space(struct window_t *window, uint64_t dsid);
@@ -120,7 +136,6 @@ int CFDictionaryGetInt(CFDictionaryRef dict, const void *key);
 char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key);
 char *get_chars_from_CFString(CFStringRef cf_string);
 int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key);
-struct Vector *get_windows();
 int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, size_t len);
 unsigned short get_vendor_id(IOHIDDeviceRef device);
 unsigned short get_product_id(IOHIDDeviceRef device);
@@ -147,7 +162,7 @@ uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count
 uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
 uint32_t *space_minimized_window_list(uint64_t sid, int *count);
 int space_display_id(int sid);
-bool window_id_is_minimized(int window_id);
+bool get_window_is_minimized(struct window_t *w);
 uint64_t display_space_id(uint32_t did);
 int get_display_width();
 CFStringRef display_uuid(uint32_t did);
@@ -157,7 +172,6 @@ int get_focused_pid();
 pid_t PSN2PID(ProcessSerialNumber psn);
 ProcessSerialNumber PID2PSN(pid_t pid);
 struct Vector *get_display_id_space_ids_v(uint32_t did);
-struct Vector *get_display_ids_v();
 bool display_menu_bar_visible(void);
 char *string_copy(char *s);
 AXUIElementRef get_frontmost_app();

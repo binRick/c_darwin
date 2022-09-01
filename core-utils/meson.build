@@ -16,6 +16,8 @@ core_utils_deps = [
   c_vector_dep,
   parson_dep,
   djbhash_dep,
+  fort_dep,
+  string_utils_dep,
   logh_dep, ms_dep, timestamp_dep, c_fsio_dep,
 ]
 
