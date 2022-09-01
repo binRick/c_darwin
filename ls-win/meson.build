@@ -41,8 +41,7 @@ if get_option('enable-binaries')
      c_args: ls_win_c_args,
      install: false,
   )
-  #test('ls-win', 
-  #  ls_win_exec, args: ['-v','-a'],
-  #  workdir: ls_win_dir,
-  #)
+  test('ls-win help', ls_win_exec, args: ['--help'], workdir: ls_win_dir)
+  test('ls-win windows', ls_win_exec, args: ['windows'], workdir: ls_win_dir)
+  test('ls-win current space windows', ls_win_exec, args: ['windows','-c'], workdir: ls_win_dir)
 endif

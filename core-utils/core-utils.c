@@ -1152,13 +1152,14 @@ bool display_menu_bar_visible(void) {
 struct Vector *get_window_ids_below_window(struct window_t *w){
   struct Vector *ids        = vector_new();
   CFArrayRef    window_list = CGWindowListCopyWindowInfo(
-    kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly | kCGWindowListOptionOnScreenBelowWindow,
+    (kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly | kCGWindowListOptionOnScreenBelowWindow),
     w->window_id);
-  int num_windows = CFArrayGetCount(window_list);
+  int             num_windows = CFArrayGetCount(window_list);
+  CFDictionaryRef dict;
 
   for (int i = 0; i < num_windows; i++) {
-    CFDictionaryRef dict     = CFArrayGetValueAtIndex(window_list, i);
-    int             windowId = CFDictionaryGetInt(dict, kCGWindowNumber);
+    dict = CFArrayGetValueAtIndex(window_list, i);
+    int windowId = CFDictionaryGetInt(dict, kCGWindowNumber);
     vector_push(ids, (void *)(size_t)windowId);
   }
   return(ids);
@@ -1167,13 +1168,14 @@ struct Vector *get_window_ids_below_window(struct window_t *w){
 struct Vector *get_window_ids_above_window(struct window_t *w){
   struct Vector *ids        = vector_new();
   CFArrayRef    window_list = CGWindowListCopyWindowInfo(
-    kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly | kCGWindowListOptionOnScreenAboveWindow,
+    (kCGWindowListExcludeDesktopElements | kCGWindowListOptionOnScreenOnly | kCGWindowListOptionOnScreenAboveWindow),
     w->window_id);
-  int num_windows = CFArrayGetCount(window_list);
+  int             num_windows = CFArrayGetCount(window_list);
+  CFDictionaryRef dict;
 
   for (int i = 0; i < num_windows; i++) {
-    CFDictionaryRef dict     = CFArrayGetValueAtIndex(window_list, i);
-    int             windowId = CFDictionaryGetInt(dict, kCGWindowNumber);
+    dict = CFArrayGetValueAtIndex(window_list, i);
+    int windowId = CFDictionaryGetInt(dict, kCGWindowNumber);
     vector_push(ids, (void *)(size_t)windowId);
   }
   return(ids);
