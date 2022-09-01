@@ -58,7 +58,7 @@ enum cached_vector_type_t {
   CACHED_SPACE_ID_WINDOW_IDS_HASH,
   CACHED_VECTORS_QTY,
 };
-static struct Vector *get_space_ids_v();
+//static struct Vector *get_space_ids_v();
 static struct djbhash *get_space_id_window_ids_h();
 bool __get_space_ids_v(enum cached_vector_type_t i);
 bool __get_space_id_window_ids_h(enum cached_vector_type_t i);
@@ -75,23 +75,23 @@ struct cached_vector_t {
 };
 static volatile struct cached_vector_t *cached_vectors[CACHED_VECTORS_QTY + 1] = {
   [CACHED_SPACE_IDS_VECTOR] = &(struct cached_vector_t)        {
-    .vector           = 0, .ts = 0, .ttl = 500, .hash =        { 0  },
+    .vector           = 0, .ts = 0, .ttl = 500, .hash =        { 0 },
     .vector_loader    = (*__get_space_ids_v),
     .vector_interface = (*get_space_ids_v),
   },
   [CACHED_SPACE_ID_WINDOW_IDS_HASH] = &(struct cached_vector_t){
-    .vector           = 0, .ts = 0, .ttl = 500, .hash =        { 0  },
+    .vector           = 0, .ts = 0, .ttl = 500, .hash =        { 0 },
     .hash_loader      = (*__get_space_id_window_ids_h),
     .hash_intererface = (*get_space_id_window_ids_h),
   },
-  [CACHED_VECTORS_QTY] = &(struct cached_vector_t)             { 0  },
+  [CACHED_VECTORS_QTY] = &(struct cached_vector_t)             { 0 },
 };
 void __attribute__((destructor)) __destructor__core_utils(){
   if (cache_saved == false) {
     core_utils_save_cache();
   }
 }
-static struct Vector *get_space_ids_v(){
+static struct Vector *_get_space_ids_v(){
   return(cached_vectors[CACHED_SPACE_IDS_VECTOR]->vector);
 }
 static struct djbhash *get_space_id_window_ids_h(){
@@ -223,8 +223,8 @@ next_window:
   log_debug("loaded %lu space ids for %lu windows", vector_size(SPACE_IDS), vector_size(WINDOW_IDS));
   return(true);
 //      djbhash_set( &(cached_vectors[i]->hash), XXXXXXXXX, &XXXX, DJBHASH_OTHER );
-  //pthread_mutex_unlock(&cached_vectors[i]->mutex);
-  //return(&(cached_vectors[i]->hash));
+//pthread_mutex_unlock(&cached_vectors[i]->mutex);
+//return(&(cached_vectors[i]->hash));
 } /* __get_space_id_window_ids_h */
 
 bool __get_space_ids_v(enum cached_vector_type_t i){
@@ -394,6 +394,16 @@ struct window_app_cache_t {
 };
 
 struct window_t *get_window_id(const int WINDOW_ID){
+  struct Vector *windows = get_windows();
+
+  for (size_t i = 0; i < vector_size(windows); i++) {
+    struct window_t *w = (struct window_t *)vector_get(windows, i);
+    if ((size_t)WINDOW_ID == w->window_id) {
+      return(w);
+    }
+  }
+  return(NULL);
+
   int             focused_pid = get_focused_pid();
   struct window_t *w          = malloc(sizeof(struct window_t));
 
@@ -920,8 +930,26 @@ done:
   return(space_id);
 } /* get_window_space_id */
 
+struct Vector *get_window_space_ids_v(struct Vector *windows_v){
+  struct   vector *ids = vector_new();
+
+  for (size_t i = 0; i < vector_size(windows_v); i++) {
+    struct window_t *w  = (struct window_t *)vector_get(windows_v, i);
+    bool            has = false;
+    for (size_t j = 0; has == false && j < vector_size(ids); j++) {
+      if ((size_t)w->space_id == (size_t)vector_get(ids, j)) {
+        has = true;
+      }
+    }
+    if (has == false) {
+      vector_push(ids, (void *)(size_t)w->space_id);
+    }
+  }
+  return(ids);
+}
+
 struct Vector *get_windows(){
-  struct   vector *WINDOWS = vector_new(); struct Vector *WINDOW_IDS = vector_new(); struct Vector *SPACE_IDS = vector_new();
+  struct   Vector *WINDOWS = vector_new(); struct Vector *WINDOW_IDS = vector_new(); struct Vector *SPACE_IDS = vector_new();
   CFArrayRef      windowList = CGWindowListCopyWindowInfo((kCGWindowListExcludeDesktopElements), kCGNullWindowID);
   int             qty        = CFArrayGetCount(windowList);
 
@@ -930,16 +958,13 @@ struct Vector *get_windows(){
     w->started   = timestamp();
     w->window    = CFArrayGetValueAtIndex(windowList, i);
     w->window_id = (size_t)CFDictionaryGetInt(w->window, kCGWindowNumber);
-    //if(w->window_id<1)goto next_window;
-    w->layer = CFDictionaryGetInt(w->window, kCGWindowLayer);
-    w->pid   = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
-    //if(w->pid<1) goto next_window;
+    w->layer     = CFDictionaryGetInt(w->window, kCGWindowLayer);
+    w->pid       = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
     proc_pidpath(w->pid, w->pid_path, PATH_MAX);
     w->app_name = CFDictionaryCopyCString(w->window, kCGWindowOwnerName);
     if (window_is_excluded(w) == true) {
       continue;
     }
-    //if(w->window_id < 1)goto next_window;
     w->app             = AXUIElementCreateApplication(w->pid);
     w->app_window_list = calloc(1, sizeof(CFTypeRef));
     AXUIElementCopyAttributeValue(w->app, kAXWindowsAttribute, (CFTypeRef *)&(w->app_window_list));
@@ -952,7 +977,6 @@ struct Vector *get_windows(){
     w->psn                 = PID2PSN(w->pid);
     SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
     w->display_index = 100;
-
     CFArrayRef window_list_ref = cfarray_of_cfnumbers(&w->window_id, sizeof(int), 1, kCFNumberSInt32Type);
     CFArrayRef space_list_ref  = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);
     int        qty             = CFArrayGetCount(space_list_ref);
@@ -967,15 +991,10 @@ struct Vector *get_windows(){
     if (w->window_id < 0) {
       continue;
     }
-    //    w->child_pids_v = get_child_pids(w->pid);
-    //  log_info("space window list> %d||min?%d|cid:%d|space_count:%d|",space_count,include_minimized,cid,spa  ce_count);
-    //  space_list_ref = calloc(100,sizeof(uint64_t));
-
     w->is_focused   = get_window_is_visible(w);
     w->is_visible   = get_window_is_visible(w);
     w->is_minimized = window_id_is_minimized(w->window_id);
-
-    w->dur = timestamp() - w->started;
+    w->dur          = timestamp() - w->started;
     vector_push(WINDOWS, (void *)w);
     vector_push(WINDOW_IDS, (void *)(size_t)w->window_id);
     if (false == true) {
@@ -1030,6 +1049,21 @@ struct Vector *get_windows(){
   }
   return(WINDOWS);
 } /* get_windows */
+
+struct Vector *get_space_ids_v(){
+  struct Vector *ids  = vector_new();
+  struct Vector *dids = get_display_ids_v();
+
+  for (size_t i = 0; i < vector_size(dids); i++) {
+    struct Vector *dspace_ids_v = get_display_id_space_ids_v((uint32_t)(size_t)vector_get(dids, i));
+    for (size_t j = 0; j < vector_size(dspace_ids_v); j++) {
+      size_t dspace_id = (size_t)vector_get(dspace_ids_v, j);
+      vector_push(ids, (void *)dspace_id);
+    }
+  }
+
+  return(ids);
+}
 
 struct Vector *__get_windows(){
   struct Vector *windows     = vector_new();
@@ -1770,10 +1804,6 @@ bool window_id_is_minimized(int window_id){
     }
   }
   return(is_min);
-}
-
-bool space_is_user(uint64_t sid){
-  return(SLSSpaceGetType(g_connection, sid) == 0);
 }
 
 bool space_is_fullscreen(uint64_t sid){

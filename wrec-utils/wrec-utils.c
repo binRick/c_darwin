@@ -84,9 +84,8 @@ int compare_file_time_items(struct file_time_t *e1, struct file_time_t *e2){
 }
 
 int list_windows_table(void *ARGS) {
-  struct args_t execution_args = *(struct args_t *)ARGS;
-  int           cur_space_id   = get_space_id();
-  ft_table_t    *table         = ft_create_table();
+  int        cur_space_id = get_space_id();
+  ft_table_t *table       = ft_create_table();
 
   ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
   ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
@@ -111,9 +110,16 @@ int list_windows_table(void *ARGS) {
               "Vis",
               "Min"
               );
-  struct Vector *windows = get_windows();
+  struct Vector *windows       = get_windows();
+  struct Vector *display_ids_v = get_display_ids_v();
+  struct Vector *space_ids_v   = get_space_ids_v();
 
-  //log_debug("loaded %lu windows",vector_size(windows));
+  log_debug("loaded %lu windows|current space id:%d|%lu displays|%lu spaces",
+            vector_size(windows),
+            get_space_id(),
+            vector_size(display_ids_v),
+            vector_size(space_ids_v)
+            );
 
   for (size_t i = 0; i < vector_size(windows); i++) {
     struct window_t *w = (struct window_t *)vector_get(windows, i);
@@ -128,7 +134,7 @@ int list_windows_table(void *ARGS) {
       window_send_to_space(w, 3);
     }
     ft_printf_ln(table,
-                 "%.100s|%d|%d|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
+                 "%.100s|%d|%lu|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s",
                  w->app_name,
                  w->pid,
                  w->window_id,
@@ -147,7 +153,12 @@ int list_windows_table(void *ARGS) {
     ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_UNDERLINED);
     ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
 
-    ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+    if (w->space_id == cur_space_id) {
+      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    }else{
+      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GRAY);
+    }
+
     if (w->size.width == 0 && w->size.height == 0) {
       ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GRAY);
     }else{
@@ -158,16 +169,6 @@ int list_windows_table(void *ARGS) {
     }else{
       ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
     }
-    /*
-     * }else{
-     * ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-     * }
-     * if (w->layer != 0) {
-     * ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-     * }else{
-     * ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-     * }
-     */
     if (w->is_focused) {
       ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
     }else{
@@ -184,7 +185,6 @@ int list_windows_table(void *ARGS) {
       ft_set_cell_prop(table, i + 1, 10, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
     }
   }
-  //log_debug("get_space_id:%d", get_space_id());
   printf("\n%s\n", ft_to_string(table));
   ft_destroy_table(table);
 

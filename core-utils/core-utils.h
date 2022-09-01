@@ -67,6 +67,8 @@ static const char *layer_str[] =
   [LAYER_ABOVE]  = "above"
 };
 
+struct Vector *get_space_ids_v();
+struct Vector *get_window_space_ids_v(struct Vector *windows_v);
 int get_display_id_index(int display_id);
 int window_layer(struct window_t *window);
 void window_send_to_space(struct window_t *window, uint64_t dsid);
@@ -88,7 +90,6 @@ struct window_t *get_window_id(const int WINDOW_ID);
 int space_display_id(int sid);
 uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized);
 uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
-bool space_is_user(uint64_t sid);
 bool space_is_fullscreen(uint64_t sid);
 bool space_is_system(uint64_t sid);
 bool space_is_visible(uint64_t sid);
@@ -146,7 +147,6 @@ uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count
 uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
 uint32_t *space_minimized_window_list(uint64_t sid, int *count);
 int space_display_id(int sid);
-uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
 bool window_id_is_minimized(int window_id);
 uint64_t display_space_id(uint32_t did);
 int get_display_width();

@@ -18,13 +18,14 @@
 #define POLL_WINDOW_STATE_MS    5
 static char *msg;
 static struct cfg_t {
-  int           WINDOWID;
+  size_t        WINDOWID;
   int           X, Y;
   int           WIDTH, HEIGHT;
+  int           SPACEID;
   unsigned long max_wait_ms;
 } *cfg = &(struct cfg_t){
   .WINDOWID    = 0, .X = 0, .Y = 0, .WIDTH = 500, .HEIGHT = 600,
-  .max_wait_ms = 500,
+  .max_wait_ms = 500, .SPACEID = 0,
 };
 static void setup_cfg();
 
@@ -41,12 +42,39 @@ TEST t_authorized_tests(void){
 }
 
 ////////////////////////////////////////////
+TEST t_manage_window_move_space_id(){
+  struct window_t *w = get_window_id(cfg->WINDOWID);
+
+  if (w->window_id != cfg->WINDOWID) {
+    FAIL();
+  }
+
+  log_debug("Moving Window ID %lu from spaceid %d to %d",
+            w->window_id,
+            w->space_id,
+            cfg->SPACEID
+            );
+  window_send_to_space(w, cfg->SPACEID);
+  struct window_t *w2 = get_window_id(cfg->WINDOWID);
+
+  ASSERT_EQm("Failed to move window to new spaceid", w2->space_id, cfg->SPACEID);
+  asprintf(&msg, "Moved window #%lu from space id %d to space id %d",
+           w->window_id,
+           w->space_id,
+           w2->space_id
+           );
+
+  PASSm(msg);
+}
+
 TEST t_manage_window_move(){
   struct window_t *w = get_window_id(cfg->WINDOWID);
 
-  log_debug("Managing Window ID %d @%dx%d", w->window_id, (int)(w->position.x), (int)(w->position.y));
+  log_debug("Managing Window ID %lu @%dx%d", w->window_id, (int)(w->position.x), (int)(w->position.y));
   ASSERT_NEQm("Failed to get focused window", w, NULL);
   bool ok = move_window(w, cfg->X, cfg->Y);
+
+  log_debug("Managed Window ID %lu %d", w->window_id, ok);
 
   ASSERT_EQm("Failed to move window", ok, true);
 
@@ -74,12 +102,12 @@ TEST t_manage_window_move(){
   }
   unsigned long dur_ms = timestamp() - started_wait;
 
-  log_info(AC_GREEN "Window ID %d moved new position (%dx%d) in " AC_RESETALL AC_BLUE "%s" AC_RESETALL,
+  log_info(AC_GREEN "Window ID %lu moved new position (%dx%d) in " AC_RESETALL AC_BLUE "%s" AC_RESETALL,
            w1->window_id, (int)(w1->position.x), (int)(w1->position.y), milliseconds_to_string((unsigned long)(timestamp() - started_wait))
            );
   ASSERT_EQm("Failed to move window X properly", (int)w1->position.x, cfg->X);
   ASSERT_EQm("Failed to move window Y properly", (int)w1->position.y, cfg->Y);
-  asprintf(&msg, AC_GREEN "Moved Window ID %d from %dx%d to %dx%d in " AC_RESETALL AC_BLUE "%s" AC_RESETALL,
+  asprintf(&msg, AC_GREEN "Moved Window ID %lu from %dx%d to %dx%d in " AC_RESETALL AC_BLUE "%s" AC_RESETALL,
            w1->window_id, (int)w->position.x, (int)w->position.y, cfg->X, cfg->Y, milliseconds_to_string(dur_ms)
            );
   PASSm(msg);
@@ -88,7 +116,7 @@ TEST t_manage_window_move(){
 TEST t_manage_window_resize(){
   struct window_t *w = get_window_id(cfg->WINDOWID);
 
-  log_debug("window id %d size: %dx%d", w->window_id, (int)(w->size.width), (int)(w->size.height));
+  log_debug("window id %lu size: %dx%d", w->window_id, (int)(w->size.width), (int)(w->size.height));
   ASSERT_NEQm("Failed to get focused window", w, NULL);
 
   unsigned long started_wait = timestamp();
@@ -99,9 +127,9 @@ TEST t_manage_window_resize(){
   ASSERT_EQm("Failed to resize window", ok, true);
   struct window_t *w1 = get_window_id(w->window_id);
 
-  log_info("window id %d size: %dx%d", w1->window_id, (int)w1->size.width, (int)w1->size.height);
+  log_info("window id %lu size: %dx%d", w1->window_id, (int)w1->size.width, (int)w1->size.height);
 
-  asprintf(&msg, "Resized Window ID %d to %dx%d in %s", w->window_id, cfg->WIDTH, cfg->HEIGHT, milliseconds_to_string(dur_ms));
+  asprintf(&msg, "Resized Window ID %lu to %dx%d in %s", w->window_id, cfg->WIDTH, cfg->HEIGHT, milliseconds_to_string(dur_ms));
   PASSm(msg);
 }
 
@@ -110,6 +138,9 @@ SUITE(s_manage_window_resize) {
 }
 SUITE(s_manage_window_move) {
   RUN_TEST(t_manage_window_move);
+}
+SUITE(s_manage_window_move_space_id) {
+  RUN_TEST(t_manage_window_move_space_id);
 }
 
 GREATEST_MAIN_DEFS();
@@ -120,10 +151,16 @@ int main(const int argc, const char **argv) {
   RUN_TEST(t_authorized_tests);
   RUN_SUITE(s_manage_window_move);
   RUN_SUITE(s_manage_window_resize);
+  if (cfg->SPACEID > 0) {
+    RUN_SUITE(s_manage_window_move_space_id);
+  }
   GREATEST_MAIN_END();
 }
 
 static void setup_cfg(){
+  if (getenv("SPACEID") != NULL) {
+    cfg->SPACEID = atoi(getenv("SPACEID"));
+  }
   if (getenv("WINDOWID") != NULL) {
     cfg->WINDOWID = atoi(getenv("WINDOWID"));
   }
@@ -146,5 +183,8 @@ static void setup_cfg(){
     log_info(AC_YELLOW "Adjusting Y to minimum value " AC_MAGENTA "%d" AC_RESETALL, MIN_Y_VALUE);
     cfg->Y = MIN_Y_VALUE;
   }
-  log_info("Using Window ID %d | move %dx%d | resize %dx%d | ", cfg->WINDOWID, cfg->X, cfg->Y, cfg->WIDTH, cfg->HEIGHT);
+  log_info("Using Window ID %d | move %dx%d | resize %dx%d | Space ID %d",
+           cfg->WINDOWID, cfg->X, cfg->Y, cfg->WIDTH, cfg->HEIGHT,
+           cfg->SPACEID
+           );
 }
