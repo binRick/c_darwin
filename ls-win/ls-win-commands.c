@@ -1,4 +1,5 @@
 #include "ls-win/ls-win.h"
+#include <pthread.h>
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "app-utils/app-utils.h"
@@ -7,6 +8,7 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "focused/focused.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
@@ -23,6 +25,7 @@ static void _command_windows();
 static void _command_displays();
 static void _command_spaces();
 static void _command_debug_args();
+static void _command_focused_start();
 ////////////////////////////////////////////
 enum command_type_t {
   COMMAND_KB_EVENTS,
@@ -36,6 +39,7 @@ enum command_type_t {
   COMMAND_SPACES,
   COMMAND_DISPLAYS,
   COMMAND_DEBUG_ARGS,
+  COMMAND_FOCUSED_START,
   COMMAND_TYPES_QTY,
 };
 struct cmd_t {
@@ -54,13 +58,33 @@ struct cmd_t cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SPACES]                = { _command_spaces                },
   [COMMAND_DISPLAYS]              = { _command_displays              },
   [COMMAND_DEBUG_ARGS]            = { _command_debug_args            },
+  [COMMAND_FOCUSED_START]         = { _command_focused_start         },
   [COMMAND_TYPES_QTY]             = { 0                              },
 };
+
+static void _command_focused_start(){
+  struct focused_config_t *cfg = init_focused_config();
+  size_t                  wid  = 467;
+
+  add_focused_window_id(cfg, wid);
+
+  start_focused(cfg);
+  int i = 1000, on = 0;
+
+  while (on < i) {
+    sleep(1);
+    on++;
+  }
+  log_info("done");
+  stop_focused(cfg);
+  exit(0);
+}
 
 static void _command_kb_events(){
   bool res = init_kb_events();
 
   log_debug("waiting for events: %d", res);
+
   CFRunLoopRun();
   exit(0);
 }

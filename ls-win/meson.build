@@ -20,6 +20,7 @@ ls_win_deps = [
   window_utils_dep,
   app_utils_dep,
   wrec_utils_dep,
+  focused_dep,
   wrec_common_dep,
   wrec_capture_dep,
   process_dep,

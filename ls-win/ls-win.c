@@ -102,6 +102,15 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "start-focused",
+        .description = "Start Focused",
+        .function    = cmds[COMMAND_FOCUSED_START].fxn,
+        .about       = "Start Focused",
+        .options     = (struct optparse_opt[]){
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "focus-window",
         .description = "Focus Window",
         .function    = cmds[COMMAND_FOCUS_WINDOW].fxn,

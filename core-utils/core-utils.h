@@ -83,6 +83,7 @@ struct Vector *get_window_space_ids_v(struct Vector *windows_v);
 bool get_window_is_onscreen(struct window_t *w);
 bool get_window_is_popover(struct window_t *w);
 CFStringRef get_window_role_ref(struct window_t *w);
+void window_id_send_to_space(size_t window_id, uint64_t dsid);
 bool get_window_is_focused(struct window_t *w);
 void make_key_window(struct window_t *w);
 int get_space_display_id(int space_id);

@@ -1,6 +1,7 @@
 #pragma once
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
+#include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "core-utils/core-utils.h"
 #include "djbhash/src/djbhash.h"
@@ -20,7 +21,6 @@
 #include "timestamp/timestamp.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <bsm/libbsm.h>
-#include <Carbon/Carbon.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>
 #include <CoreFoundation/CFString.h>
@@ -285,10 +285,7 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   CFArrayRef      windowList;
   CFDictionaryRef window;
 
-  windowList = CGWindowListCopyWindowInfo(
-    (kCGWindowListExcludeDesktopElements),
-    kCGNullWindowID
-    );
+  windowList = CGWindowListCopyWindowInfo((kCGWindowListExcludeDesktopElements | kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow), WINDOW_ID);
 
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
@@ -327,18 +324,12 @@ char *get_window_title(struct window_t *w){
 void focus_window(struct window_t *w){
   if (w->space_id != get_space_id()) {
     log_info("changing space from %d to %d", get_space_id(), w->space_id);
-//    set_space_by_index(w->space_id);
-/*
- *  int did = display_id_for_space(w->space_id);
- *  CFStringRef d_uuid = display_uuid(did);
- *  CGSManagedDisplaySetCurrentSpace(g_connection, d_uuid, w->space_id);
- */
+    _SLPSSetFrontProcessWithOptions(&(w->psn), w->window_id, kCPSUserGenerated);
+    AXUIElementSetAttributeValue(w->app, kAXFrontmostAttribute, kCFBooleanTrue);
+    make_key_window(w);
+    AXUIElementPerformAction(w->window, kAXRaiseAction);
+    AXUIElementSetAttributeValue(w->window, kAXFrontmostAttribute, kCFBooleanTrue);
   }
-  _SLPSSetFrontProcessWithOptions(&(w->psn), w->window_id, kCPSUserGenerated);
-  AXUIElementSetAttributeValue(w->app, kAXFrontmostAttribute, kCFBooleanTrue);
-  make_key_window(w);
-  AXUIElementPerformAction(w->window, kAXRaiseAction);
-  AXUIElementSetAttributeValue(w->window, kAXFrontmostAttribute, kCFBooleanTrue);
 }
 
 void make_key_window(struct window_t *w){
@@ -1825,9 +1816,8 @@ struct Vector *get_display_ids_v(){
 }
 
 int process_event_handler(EventHandlerCallRef ref, EventRef event, void *context){
-  printf("event for psn\n");
-
   ProcessSerialNumber psn;
+
   if (GetEventParameter(event,
                         kEventParamProcessID,
                         typeProcessSerialNumber,
@@ -1846,18 +1836,21 @@ static volatile CGEventMask __mouse_and_kb_events = (
   );
 
 CGEventRef input_event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-  CGKeyCode     keyCode     = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-  char          *kc         = convertKeyboardCode(keyCode);
-  unsigned long event_flags = (int)CGEventGetFlags(event);
-  char          *pre_key    = "";
+  CGKeyCode           keyCode     = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+  char                *kc         = convertKeyboardCode(keyCode);
+  unsigned long       event_flags = (int)CGEventGetFlags(event);
+  struct StringBuffer *sb         = stringbuffer_new();
 
   if (event_flags & kCGEventFlagMaskCommand) {
-    pre_key = "command+";
+    stringbuffer_append_string(sb, "command+");
   }
   if (event_flags & kCGEventFlagMaskControl) {
-    pre_key = "control+";
+    stringbuffer_append_string(sb, "control+");
   }
-  log_info("key: %s%s", pre_key, kc);
+  stringbuffer_append_string(sb, kc);
+  char *keys = stringbuffer_to_string(sb);
+
+  log_info("key: %s|%d", keys, get_space_id());
   return(event);
 }
 
@@ -1874,14 +1867,6 @@ bool init_kb_events(){
   CGEventTapEnable(event_tap, true);
   // CFRunLoopRun();
   return(true);
-  /*
-   * EventTypeSpec applicationEvents[] =
-   *    {{kEventClassApplication, kEventAppFrontSwitched}};
-   * return InstallApplicationEventHandler(
-   *                           NewEventHandlerUPP(process_event_handler),
-   *                           4, applicationEvents,
-   *                           0, 0) == noErr;
-   */
 }
 
 void set_window_active_on_all_spaces(struct window_t *w){
@@ -1899,8 +1884,16 @@ void window_set_layer(struct window_t *window, uint32_t layer) {
   SLSSetWindowLevel(g_connection, window->window_id, layer);
 }
 
+void window_id_send_to_space(size_t window_id, uint64_t dsid) {
+  uint32_t   wid         = (uint32_t)window_id;
+  CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+
+  SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
+}
+
 void window_send_to_space(struct window_t *window, uint64_t dsid) {
-  CFArrayRef window_list = cfarray_of_cfnumbers(&window->window_id, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+  uint32_t   wid         = (uint32_t)window->window_id;
+  CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
 
   SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
   if (CGPointEqualToPoint(window->position, g_nirvana)) {
