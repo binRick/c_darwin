@@ -17,6 +17,13 @@ if fs.is_dir('.git')
 else
     git_sha = ''
 endif
+osx_link_args = [
+  '-Wl,-framework,CoreGraphics',
+  '-Wl,-framework,CoreFoundation',
+  '-Wl,-framework,Carbon',
+  '-Wl,-framework,Foundation',
+  '-Wl,-framework,AppKit'
+]
 version_info = configuration_data()
 version_info.set('version', git_sha)
 version_info.set('vcs_tag', git_sha)
@@ -75,6 +82,11 @@ subdir('osx-keys')
 subdir('process')
 subdir('pbpaste')
 subdir('pasteboard')
+subdir('display-utils')
+subdir('space-utils')
+subdir('dock-utils')
+subdir('iokit-utils')
+subdir('menu-bar-utils')
 subdir('core-utils')
 #############################################################################
 subdir('system-utils')
@@ -82,7 +94,6 @@ subdir('active-app')
 subdir('app-utils')
 subdir('active-app-module')
 subdir('kitty')
-subdir('space-utils')
 subdir('wrec-image')
 subdir('window-utils')
 subdir('wrec-common')

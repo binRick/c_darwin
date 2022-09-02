@@ -5,8 +5,12 @@
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "display-utils/display-utils.h"
+#include "dock-utils/dock-utils.h"
 #include "log.h/log.h"
+#include "menu-bar-utils/menu-bar-utils.h"
 #include "ms/ms.h"
+#include "space-utils/space-utils.h"
 #include "timestamp/timestamp.h"
 #include <pthread.h>
 ////////////////////////////////////////////

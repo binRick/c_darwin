@@ -9,21 +9,19 @@ space_utils_dirs = [
     inc,
   ]
 space_utils_deps = [
-  core_utils_dep,
   c_vector_dep,
-  active_app_dep,
   c_stringfn_dep,
   parson_dep,
+  display_utils_dep,
+  string_utils_dep,
   logh_dep,
   ansi_codes_dep,
   timestamp_dep,
   bytes_dep, ms_dep,
-  system_utils_dep,
   hash_dep,
   module_dep,
   process_dep,
   timestamp_dep,
-  core_utils_dep,
 ]
 space_utils_link_flags = [
 '-Wl,-framework,CoreFoundation',

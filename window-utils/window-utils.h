@@ -41,7 +41,20 @@ typedef struct {
   int     hasSize;
   int     movedWindow;
 } MoveWinCtx;
+
 ///////////////////////////////////////////////////
+void set_window_active_on_all_spaces(struct window_t *w);
+int window_layer(struct window_t *window);
+void window_set_layer(struct window_t *window, uint32_t layer);
+void window_id_send_to_space(size_t window_id, uint64_t dsid);
+void window_send_to_space(struct window_t *window, uint64_t dsid);
+void set_window_active_on_all_spaces(struct window_t *w);
+bool get_window_is_minimized(struct window_t *w);
+CFStringRef get_window_role_ref(struct window_t *w);
+bool get_window_is_popover(struct window_t *w);
+int get_window_connection_id(struct window_t *w);
+pid_t ax_window_pid(AXUIElementRef ref);
+uint32_t ax_window_id(AXUIElementRef ref);
 bool get_window_is_minimized(struct window_t *window);
 CFStringRef display_manager_active_display_uuid(void);
 uint64_t display_space_id(uint32_t did);

@@ -9,10 +9,14 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "core-utils/core-utils.h"
+#include "display-utils/display-utils.h"
+#include "dock-utils/dock-utils.h"
 #include "focused/focused.h"
 #include "log.h/log.h"
+#include "menu-bar-utils/menu-bar-utils.h"
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
+#include "space-utils/space-utils.h"
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
 static void _command_kb_events();
@@ -140,8 +144,8 @@ static void _command_dock(){
 }
 
 static void _command_menu_bar(){
-  bool   is_visible = display_menu_bar_visible();
-  CGRect rect       = display_menu_bar_rect(display_id_for_space(get_space_id()));
+  bool   is_visible = menu_bar_visible();
+  CGRect rect       = menu_bar_rect(display_id_for_space(get_space_id()));
 
   log_info(
     "\n\tMenu Bar info is visible?      %s" AC_RESETALL

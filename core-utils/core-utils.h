@@ -13,24 +13,10 @@
 #include <stdio.h>
 //////////////////////////////////////////////////////////////
 #include "core-utils/core-utils-extern.h"
+#include "display-utils/display-utils.h"
+#include "dock-utils/dock-utils.h"
 #include "process/process.h"
 #include "system-utils/system-utils.h"
-//////////////////////////////////////////////////////////////
-#define g_connection                              CGSMainConnectionID()
-#define ASCII_ENCODING                            kCFStringEncodingASCII
-#define UTF8_ENCODING                             kCFStringEncodingUTF8
-#define MAX_DISPLAYS                              8
-#define DEBUG_MODE                                false
-#define LAYER_BELOW                               kCGBackstopMenuLevelKey
-#define LAYER_NORMAL                              kCGNormalWindowLevelKey
-#define LAYER_ABOVE                               kCGFloatingWindowLevelKey
-#define kCGSFloatingWindowTagBit                  (1 << 1)
-#define kCGSFollowsUserTagBit                     (1 << 2)
-#define kCGSHiddenTagBit                          (1 << 8)
-#define kCGSStickyTagBit                          (1 << 13)
-#define kCGSWindowOwnerFollowsForegroundTagBit    (1 << 27)
-#define kCGSOnAllWorkspacesTagBit                 (1 << 11)
-#define kCGSSuperStickyTagBit                     (1 << 45)
 //////////////////////////////////////////////////////////////
 struct list_window_table_t {
   struct Vector *windows_v;
@@ -61,14 +47,7 @@ static struct {
   void              *memory;
   uint64_t          size;
   volatile uint64_t used;
-} g_temp_storage;
-enum dock_orientation_t {
-  DOCK_ORIENTATION_TOP = 1,
-  DOCK_ORIENTATION_BOTTOM,
-  DOCK_ORIENTATION_LEFT,
-  DOCK_ORIENTATION_RIGHT,
-  DOCK_ORIENTATIONS_QTY,
-};
+}                 g_temp_storage;
 static const char *bool_str[]  = { "off", "on" };
 static const char *layer_str[] =
 {
@@ -113,7 +92,6 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
 bool get_window_is_visible(struct window_t *window);
 char *windowTitle(char *appName, char *windowName);
 CGPoint AXWindowGetPosition(AXUIElementRef window);
-int get_display_id_index(int display_id);
 CGSize CGWindowGetSize(CFDictionaryRef window);
 void set_space_by_index(int space);
 int is_full_screen(void);
@@ -124,13 +102,6 @@ int get_pid_window_id(const int PID);
 int space_display_id(int sid);
 uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized);
 uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
-bool space_is_fullscreen(uint64_t sid);
-bool space_is_system(uint64_t sid);
-bool space_is_visible(uint64_t sid);
-CGPoint display_center(uint32_t did);
-CGRect display_bounds(uint32_t did);
-CFStringRef display_uuid(uint32_t did);
-uint32_t display_id(CFStringRef uuid);
 void *ts_alloc_aligned(uint64_t elem_size, uint64_t elem_count);
 uint64_t *display_space_list(uint32_t did, int *count);
 uint32_t *space_minimized_window_list(uint64_t sid, int *count);
@@ -140,9 +111,7 @@ char *get_window_display_uuid(struct window_t *window);
 int get_window_space_id(struct window_t *window);
 int total_spaces(void);
 int space_type(uint64_t sid);
-int get_space_id(void);
 void set_space_by_index(int space);
-CGPoint display_center(uint32_t did);
 bool window_is_topmost(struct window_t *w);
 bool window_can_minimize(struct window_t *w);
 bool window_can_move(struct window_t *w);
@@ -179,16 +148,7 @@ int total_spaces(void);
 uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized);
 uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);
 uint32_t *space_minimized_window_list(uint64_t sid, int *count);
-int space_display_id(int sid);
 bool get_window_is_minimized(struct window_t *w);
-uint64_t display_space_id(uint32_t did);
-int get_display_width();
-int get_display_height();
-CGSize dock_offset(void);
-bool dock_is_visible(void);
-int dock_orientation(void);
-char *dock_orientation_name(void);
-CGRect dock_rect(void);
 CFStringRef display_uuid(uint32_t did);
 uint32_t display_id(CFStringRef uuid);
 int get_window_connection_id(struct window_t *w);

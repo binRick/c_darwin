@@ -14,6 +14,97 @@
 #define DEBUG_MODE    false
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void set_window_active_on_all_spaces(struct window_t *w){
+  SLSProcessAssignToAllSpaces(g_connection, w->pid);
+}
+
+int window_layer(struct window_t *window){
+  int layer = 0;
+
+  SLSGetWindowLevel(g_connection, window->window_id, &layer);
+  return(layer);
+}
+
+void window_set_layer(struct window_t *window, uint32_t layer) {
+  SLSSetWindowLevel(g_connection, window->window_id, layer);
+}
+
+void window_id_send_to_space(size_t window_id, uint64_t dsid) {
+  uint32_t   wid         = (uint32_t)window_id;
+  CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+
+  SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
+}
+
+void window_send_to_space(struct window_t *window, uint64_t dsid) {
+  uint32_t   wid         = (uint32_t)window->window_id;
+  CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+
+  SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
+  if (CGPointEqualToPoint(window->position, g_nirvana)) {
+    SLSMoveWindow(g_connection, window->window_id, &g_nirvana);
+  }
+}
+
+bool get_window_is_minimized(struct window_t *w){
+  bool is_min = false;
+  int  space_minimized_window_qty;
+  int  spaces_qty = total_spaces();
+
+  for (int s = 1; s < spaces_qty && is_min == false; s++) {
+    uint32_t *minimized_window_list = space_minimized_window_list(s, &space_minimized_window_qty);
+    for (int i = 0; i < space_minimized_window_qty && is_min == false; i++) {
+      if (minimized_window_list[i] == (uint32_t)w->window_id) {
+        is_min = true;
+      }
+    }
+    if (minimized_window_list) {
+      free(minimized_window_list);
+    }
+  }
+  return(is_min);
+}
+
+CFStringRef get_window_role_ref(struct window_t *w){
+  const void *role = NULL;
+
+  AXUIElementCopyAttributeValue(w->window, kAXRoleAttribute, &role);
+  return(role);
+}
+
+int get_window_connection_id(struct window_t *w){
+  int conn;
+
+  SLSGetConnectionIDForPSN(g_connection, &w->psn, &conn);
+  return(conn);
+}
+
+bool get_window_is_popover(struct window_t *w){
+  CFStringRef role = get_window_role_ref(w->window);
+
+  if (!role) {
+    return(false);
+  }
+
+  bool result = CFEqual(role, kAXPopoverRole);
+
+  CFRelease(role);
+
+  return(result);
+}
+
+pid_t ax_window_pid(AXUIElementRef ref){
+  return(*(pid_t *)((void *)ref + 0x10));
+}
+
+uint32_t ax_window_id(AXUIElementRef ref){
+  uint32_t wid = 0;
+
+  _AXUIElementGetWindow(ref, &wid);
+  return(wid);
+}
+
 void move_current_window(int center, int x, int y, int w, int h){
   AXValueRef     temp;
   AXUIElementRef current_app = get_frontmost_app();
