@@ -3,6 +3,31 @@
 
 ////////////////////////////////////////////
 
+uint32_t *display_active_display_list(uint32_t *count) {
+  int      display_count = display_active_display_count();
+  uint32_t *result       = malloc(sizeof(uint32_t) * display_count);
+
+  CGGetActiveDisplayList(display_count, result, count);
+  return(result);
+}
+
+void get_display_bounds(int *x, int *y, int *w, int *h){
+  CGEventRef event          = CGEventCreate(NULL);
+  CGPoint    cursorLocation = CGEventGetLocation(event);
+
+  CFRelease(event);
+  int numDisplays; CGDirectDisplayID displays[16];
+
+  CGGetDisplaysWithPoint(cursorLocation, 16, displays, &numDisplays);
+  HIRect bounds;
+
+  HIWindowGetAvailablePositioningBounds(displays[0], kHICoordSpace72DPIGlobal, &bounds);
+  *x = bounds.origin.x;
+  *y = bounds.origin.y;
+  *w = bounds.size.width;
+  *h = bounds.size.height;
+}
+
 struct Vector *get_display_ids_v(){
   struct Vector     *ids                = vector_new();
   size_t            displays_qty        = 0;

@@ -20,6 +20,8 @@
 #include "libusb/libusb/libusb.h"
 #include "libusb/libusb/os/darwin_usb.h"
 #include "pbpaste.h"
+#include "process-utils/process-utils.h"
+#include "string-utils/string-utils.h"
 /**********************************/
 typedef struct ctx_t              ctx_t;
 typedef struct mouse_location_t   mouse_location_t;

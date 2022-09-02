@@ -26,6 +26,13 @@
 #define CGSWindowID                               CGSWindow
 #define CGSDefaultConnection                      _CGSDefaultConnection()
 static CGPoint g_nirvana = { -9999, -9999 };
+static const char *bool_str[]  = { "off", "on" };
+static const char *layer_str[] = {
+  [0]            = "",
+  [LAYER_BELOW]  = "below",
+  [LAYER_NORMAL] = "normal",
+  [LAYER_ABOVE]  = "above"
+};
 typedef void            *CGSWindowFilterRef;
 typedef int             CGSConnection;
 typedef int             CGSWindow;

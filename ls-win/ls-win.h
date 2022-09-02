@@ -1,5 +1,6 @@
 #pragma once
 //////////////////////////////////////
+#include "string-utils/string-utils.h"
 #include <assert.h>
 #include <ctype.h>
 #include <err.h>

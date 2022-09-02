@@ -17,9 +17,10 @@
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
 #include "space-utils/space-utils.h"
+#include "table-utils/table-utils.h"
 #include "timestamp/timestamp.h"
+#include "window-utils/window-utils.h"
 ////////////////////////////////////////////
-static void _command_kb_events();
 static void _command_move_window();
 static void _command_resize_window();
 static void _command_focus_window();
@@ -36,7 +37,6 @@ static void _command_menu_bar();
 static void _command_dock();
 ////////////////////////////////////////////
 enum command_type_t {
-  COMMAND_KB_EVENTS,
   COMMAND_MOVE_WINDOW,
   COMMAND_RESIZE_WINDOW,
   COMMAND_FOCUS_WINDOW,
@@ -58,7 +58,6 @@ struct cmd_t {
 };
 
 struct cmd_t cmds[COMMAND_TYPES_QTY + 1] = {
-  [COMMAND_KB_EVENTS]             = { _command_kb_events             },
   [COMMAND_MOVE_WINDOW]           = { _command_move_window           },
   [COMMAND_RESIZE_WINDOW]         = { _command_resize_window         },
   [COMMAND_FOCUS_WINDOW]          = { _command_focus_window          },
@@ -91,15 +90,6 @@ static void _command_focused_start(){
   }
   log_info("done");
   stop_focused(cfg);
-  exit(0);
-}
-
-static void _command_kb_events(){
-  bool res = init_kb_events();
-
-  log_debug("waiting for events: %d", res);
-
-  CFRunLoopRun();
   exit(0);
 }
 

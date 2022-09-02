@@ -171,15 +171,6 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "kb-events",
-        .description = "Keyboard Events",
-        .function    = cmds[COMMAND_KB_EVENTS].fxn,
-        .about       = "Keyboard Events",
-        .options     = (struct optparse_opt[]){
-          { END_OF_OPTIONS },
-        },
-      },
-      {
         .name        = "set-window-all-spaces",
         .description = "Set Window All Spaces",
         .function    = cmds[COMMAND_SET_WINDOW_ALL_SPACES].fxn,

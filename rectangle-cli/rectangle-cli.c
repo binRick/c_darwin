@@ -2,6 +2,7 @@
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "generic-print/print.h"
+#include "process-utils/process-utils.h"
 #include "rectangle-cli/rectangle-cli.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"

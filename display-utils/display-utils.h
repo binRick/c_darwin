@@ -29,4 +29,8 @@ CGPoint display_center(uint32_t did);
 CGRect display_bounds(uint32_t did);
 uint32_t display_active_display_count(void);
 struct Vector *get_display_ids_v();
+void get_display_bounds(int *x, int *y, int *w, int *h);
+uint32_t *display_active_display_list(uint32_t *count);
+uint32_t *display_active_display_list(uint32_t *count);
+
 #endif

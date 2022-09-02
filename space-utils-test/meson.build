@@ -15,7 +15,7 @@ space_utils_test_deps = [
   ansi_codes_dep,
   logh_dep,
   timestamp_dep,
-  window_utils_dep,
+  window_utils_dep,process_utils_dep,app_utils_dep,
   active_app_dep,
   core_utils_dep,
   process_dep,

@@ -1,6 +1,8 @@
 #pragma once
 #include "active-app.h"
+#include "app-utils/app-utils.h"
 #include "core-utils/core-utils.h"
+#include "process-utils/process-utils.h"
 
 void resize_current_window(int p1, int p2, int p3, int p4){
   int pid = get_focused_pid();

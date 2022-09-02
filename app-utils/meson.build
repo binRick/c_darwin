@@ -5,8 +5,8 @@ app_utils_c_args = [
   '-Wno-address',
 ]
 app_utils_deps = [
-  active_app_dep,
   timestamp_dep,
+  bytes_dep,ms_dep,
   c_stringfn_dep,
   logh_dep,
 ]

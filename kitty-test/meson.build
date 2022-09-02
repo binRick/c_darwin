@@ -17,6 +17,7 @@ system_utils_test_deps = [
   system_utils_dep,
   dbg_dep,
   c_vector_dep,
+  app_utils_dep,
 ]
 
 if get_option('enable-binaries')

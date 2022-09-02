@@ -44,6 +44,12 @@ bool request_accessibility_permissions() {
 }
 
 ///////////////////////////////////////////////////////////////////////
+AXUIElementRef get_frontmost_app(){
+  pid_t pid; ProcessSerialNumber psn;
+
+  GetFrontProcess(&psn); GetProcessPID(&psn, &pid);
+  return(AXUIElementCreateApplication(pid));
+}
 
 authorized_test_t execute_authorization_test(int authorized_test_type_id){
   authorized_test_t authorized_test = authorized_tests.tests[authorized_test_type_id];

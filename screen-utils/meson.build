@@ -14,7 +14,7 @@ screen_utils_deps = [
   c_vector_dep,
   active_app_dep,
   c_stringfn_dep,
-  parson_dep,
+  parson_dep,image_utils_dep,
   logh_dep,
   ansi_codes_dep,
   timestamp_dep,

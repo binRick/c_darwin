@@ -1,6 +1,8 @@
 #include "active-app-module.h"
 #include "active-app-test.h"
 #include "app-utils.h"
+#include "app-utils/app-utils.h"
+#include "process-utils/process-utils.h"
 #include "submodules/c_greatest/greatest/greatest.h"
 #include "submodules/log.h/log.h"
 #include "window-utils.h"

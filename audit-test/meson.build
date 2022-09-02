@@ -16,6 +16,7 @@ audit_test_deps = [
   kitty_dep,
   c_timer_dep,
   ansi_codes_dep,
+  app_utils_dep,
   tiny_regex_c_dep,
   socket99_dep,
   c_string_buffer_dep,

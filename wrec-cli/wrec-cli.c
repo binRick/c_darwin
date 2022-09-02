@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////
 #include "core-utils/core-utils.h"
+#include "table-utils/table-utils.h"
 #include "wrec-cli/wrec-cli.h"
 #include "wrec-utils/wrec-utils.h"
 ////////////////////////////////////////////////////

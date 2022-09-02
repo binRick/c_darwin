@@ -4,6 +4,8 @@ static void wait_for_control_d();
 ///////////////////////////////////////////////////////
 #include "c_string_buffer/include/stringbuffer.h"
 #include "chan/src/chan.h"
+#include "chan/src/chan.h"
+#include "image-utils/image-utils.h"
 #include "libterminput/libterminput.h"
 #include "log.h/log.h"
 #include "tempdir.c/tempdir.h"

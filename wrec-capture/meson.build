@@ -9,6 +9,7 @@ wrec_capture_deps = [
   ms_dep,
   logh_dep,
   app_utils_dep,
+  chan_dep,image_utils_dep,
   window_utils_dep,
   c_stringfn_dep,
   wrec_utils_dep,

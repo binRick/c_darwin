@@ -4,6 +4,7 @@
 #include "bytes/bytes.h"
 #include "core-utils/core-utils.h"
 #include "core-utils/core-utils.h"
+#include "image-utils/image-utils.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "parson/parson.h"

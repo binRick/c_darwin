@@ -27,6 +27,7 @@ typedef struct authorized_test_t    authorized_test_t;
 typedef struct authorized_tests_t   authorized_tests_t;
 bool is_authorized_for_screen_recording();
 bool is_authorized_for_accessibility();
+AXUIElementRef get_frontmost_app();
 ///////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////

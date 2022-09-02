@@ -19,7 +19,7 @@ core_utils_deps = [
   djbhash_dep,
   display_utils_dep,
   dock_utils_dep,
-  menu_bar_utils_dep, iokit_utils_dep,
+  menu_bar_utils_dep, iokit_utils_dep, window_utils_dep, process_utils_dep,
   space_utils_dep,
   fort_dep,
   string_utils_dep,
