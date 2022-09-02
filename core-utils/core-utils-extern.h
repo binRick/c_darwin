@@ -3,7 +3,7 @@
 #include <CoreServices/CoreServices.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
-
+#define kCPSUserGenerated    0x200
 typedef enum {
   kCoreDockOrientationIgnore = 0,
   kCoreDockOrientationTop    = 1,

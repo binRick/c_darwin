@@ -73,7 +73,6 @@ struct Vector *get_window_ids(void);
 struct Vector *get_windows();
 void move_window_id(const int WINDOW_ID, const int X, const int Y);
 char *get_window_id_title(const int WINDOW_ID);
-struct window_t *get_window_id(const int WINDOW_ID);
 CFDictionaryRef window_id_to_window(const int WINDOW_ID);
 struct window_t *get_pid_window(const int PID);
 int get_display_width();

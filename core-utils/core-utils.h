@@ -30,6 +30,7 @@
 #define kCGSStickyTagBit                          (1 << 13)
 #define kCGSWindowOwnerFollowsForegroundTagBit    (1 << 27)
 #define kCGSOnAllWorkspacesTagBit                 (1 << 11)
+#define kCGSSuperStickyTagBit                     (1 << 45)
 //////////////////////////////////////////////////////////////
 struct list_window_table_t {
   struct Vector *windows_v;
@@ -76,12 +77,19 @@ struct Vector *get_window_ids_below_window(struct window_t *w);
 int list_windows_table(void *ARGS);
 struct Vector *get_windows();
 struct Vector *get_space_ids_v();
+struct Vector *get_space_window_ids_v(size_t space_id);
 struct Vector *get_display_ids_v();
 struct Vector *get_window_space_ids_v(struct Vector *windows_v);
 bool get_window_is_onscreen(struct window_t *w);
 bool get_window_is_popover(struct window_t *w);
 CFStringRef get_window_role_ref(struct window_t *w);
 bool get_window_is_focused(struct window_t *w);
+void make_key_window(struct window_t *w);
+int get_space_display_id(int space_id);
+void set_window_active_on_all_spaces(struct window_t *w);
+bool init_kb_events();
+struct window_t *get_window_id(size_t WINDOW_ID);
+void focus_window(struct window_t *w);
 int get_window_layer(struct window_t *w);
 int get_window_level(struct window_t *w);
 char *get_window_title(struct window_t *w);
@@ -102,7 +110,6 @@ CGPoint CGWindowGetPosition(CFDictionaryRef window);
 struct window_t *get_focused_window();
 void CoreDockGetWorkspacesCount(int *rows, int *cols);
 int get_pid_window_id(const int PID);
-struct window_t *get_window_id(const int WINDOW_ID);
 int space_display_id(int sid);
 uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized);
 uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized);

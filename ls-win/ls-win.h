@@ -12,6 +12,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,3 +22,14 @@
 #include <termios.h>
 #include <unistd.h>
 //////////////////////////////////////
+struct args_t {
+  bool verbose, current_space_only;
+  int  space_id, window_id;
+  int  x, y;
+  int  width, height;
+};
+static const struct args_t *args = &(struct args_t){
+  .verbose            = false,
+  .current_space_only = false,
+  .space_id           = 0, .window_id = 0,
+};

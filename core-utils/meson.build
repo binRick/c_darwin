@@ -18,6 +18,7 @@ core_utils_deps = [
   djbhash_dep,
   fort_dep,
   string_utils_dep,
+  osx_keys_dep,
   logh_dep, ms_dep, timestamp_dep, c_fsio_dep,
 ]
 

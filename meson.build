@@ -71,6 +71,7 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
+subdir('osx-keys')
 subdir('process')
 subdir('pbpaste')
 subdir('pasteboard')
@@ -96,7 +97,6 @@ subdir('wrec-animation')
 subdir('keylogger-db')
 subdir('keylogger')
 subdir('keylogger-config')
-subdir('osx-keys')
 #//////////////////////////////////////////////////////////////////////
 subdir('kitty-ls')
 subdir('ls-proc')

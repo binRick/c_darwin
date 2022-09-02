@@ -1,60 +1,15 @@
+#include "optparse99/optparse99.h"
+////////////////////////////////////////////
 #include "ls-win/ls-win.h"
 ////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "app-utils/app-utils.h"
-#include "bytes/bytes.h"
-#include "c_fsio/include/fsio.h"
-#include "c_stringfn/include/stringfn.h"
-#include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
-#include "log.h/log.h"
-#include "ms/ms.h"
-#include "optparse99/optparse99.h"
-#include "timestamp/timestamp.h"
-
+#include "ls-win/ls-win-commands.c"
 ////////////////////////////////////////////
-struct args_t {
-  bool verbose;
-  bool current_space_only;
-};
-static const struct args_t *args = &(struct args_t){
-  .verbose            = false,
-  .current_space_only = false,
-};
-
-void _command_windows(){
-  struct Vector *windows_v = get_windows();
-
-  log_debug("listing %lu windows", vector_size(windows_v));
-  struct list_window_table_t *list_options = &(struct list_window_table_t){
-    .current_space_only = args->current_space_only,
-  };
-
-  list_windows_table((void *)list_options);
-}
-
-void _command_displays(){
-  struct Vector *display_ids_v = get_display_ids_v();
-
-  log_debug("listing %lu displays", vector_size(display_ids_v));
-}
-
-void _command_spaces(){
-  struct Vector *space_ids_v = get_space_ids_v();
-
-  log_debug("listing %lu spaces", vector_size(space_ids_v));
-}
-
-void debug_args(){
-  log_info("Verbose:                 %s", args->verbose == true ? "Yes" : "No");
-  log_info("Current Space Only:      %s", args->current_space_only == true ? "Yes" : "No");
-}
 
 int main(int argc, char **argv) {
-  is_authorized_for_accessibility();
+  assert(is_authorized_for_accessibility() == true);
   struct optparse_cmd main_cmd = {
-    .about       = "ls-win v1.00 - List Darwin Windows.",
-    .description = "This program lists Darwin Windows.",
+    .about       = "ls-win v1.00 - List Darwin Items.",
+    .description = "This program lists Darwin Items.",
     .name        = "ls-win",
     .operands    = "[COMMAND...]",
     .options     = (struct optparse_opt[]) {
@@ -73,7 +28,7 @@ int main(int argc, char **argv) {
       },
       { END_OF_OPTIONS },
     },
-    .subcommands         = (struct optparse_cmd[]) {
+    .subcommands           = (struct optparse_cmd[]) {
       {
         .description = "Print a subcommand's help information and quit.",
         .name        = "help",
@@ -81,23 +36,168 @@ int main(int argc, char **argv) {
         .function    = optparse_print_help_subcmd,
       },
       {
-        .name    = "displays",                                       .description  = "List Displays", .function = _command_displays,
-        .about   = "List Darwin Displays",
-        .options = (struct optparse_opt[]){
+        .name        = "move-window",
+        .description = "Move Window",
+        .function    = cmds[COMMAND_MOVE_WINDOW].fxn,
+        .about       = "Move Window",
+        .options     = (struct optparse_opt[]){
           {
-            .short_name  = 'x',
-            .long_name   = "xxx",
-            .description = "xxx desc",
-            .flag_type   = FLAG_TYPE_SET_TRUE,
-            .flag        = &(args->current_space_only),
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "Window ID",
+            .arg_name      = "WINDOW-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->window_id),
+          },
+          {
+            .short_name    = 'x',
+            .long_name     = "window-x",
+            .description   = "Window X",
+            .arg_name      = "WINDOW-X",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->x),
+          },
+          {
+            .short_name    = 'y',
+            .long_name     = "window-y",
+            .description   = "Window y",
+            .arg_name      = "WINDOW-Y",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->y),
           },
           { END_OF_OPTIONS },
         },
       },
       {
-        .name    = "windows",                                        .description  = "List Windows",  .function = _command_windows,
-        .about   = "List Darwin Windows",
-        .options = (struct optparse_opt[]){
+        .name        = "resize-window",
+        .description = "Resize Window",
+        .function    = cmds[COMMAND_RESIZE_WINDOW].fxn,
+        .about       = "Resize Window",
+        .options     = (struct optparse_opt[]){
+          {
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "Window ID",
+            .arg_name      = "WINDOW-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->window_id),
+          },
+          {
+            .short_name    = 'W',
+            .long_name     = "window-width",
+            .description   = "Window Width",
+            .arg_name      = "WINDOW-WIDTH",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->width),
+          },
+          {
+            .short_name    = 'H',
+            .long_name     = "window-height",
+            .description   = "Window Height",
+            .arg_name      = "WINDOW-HEIGHT",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->height),
+          },
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "focus-window",
+        .description = "Focus Window",
+        .function    = cmds[COMMAND_FOCUS_WINDOW].fxn,
+        .about       = "Focus Window",
+        .options     = (struct optparse_opt[]){
+          {
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "window id",
+            .arg_name      = "WINDOW-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->window_id),
+          },
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "kb-events",
+        .description = "Keyboard Events",
+        .function    = cmds[COMMAND_KB_EVENTS].fxn,
+        .about       = "Keyboard Events",
+        .options     = (struct optparse_opt[]){
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "set-window-all-spaces",
+        .description = "Set Window All Spaces",
+        .function    = cmds[COMMAND_SET_WINDOW_ALL_SPACES].fxn,
+        .about       = "Set Window To All Spaces",
+        .options     = (struct optparse_opt[]){
+          {
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "window id",
+            .arg_name      = "WINDOW-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->window_id),
+          },
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "set-window-space",
+        .description = "Set Window Space",
+        .function    = cmds[COMMAND_SET_WINDOW_SPACE].fxn,
+        .about       = "Set Window Space",
+        .options     = (struct optparse_opt[]){
+          {
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "window id",
+            .arg_name      = "WINDOW-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->window_id),
+          },
+          {
+            .short_name    = 's',
+            .long_name     = "space-id",
+            .description   = "space id",
+            .arg_name      = "SPACE-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->space_id),
+          },
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name     = "set-space",                                      .description  = "Set Space",
+        .function = cmds[COMMAND_SET_SPACE].fxn,
+        .about    = "List Displays",
+        .options  = (struct optparse_opt[]){
+          {
+            .short_name    = 's',
+            .long_name     = "space-id",
+            .description   = "space id",
+            .arg_name      = "SPACE-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->space_id),
+          },
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name     = "displays",                                       .description  = "List Displays",
+        .function = cmds[COMMAND_DISPLAYS].fxn,
+        .about    = "List Displays",
+        .options  = (struct optparse_opt[]){
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name     = "windows",                                        .description  = "List Windows",
+        .function = cmds[COMMAND_WINDOWS].fxn,
+        .about    = "List Windows",
+        .options  = (struct optparse_opt[]){
           {
             .short_name  = 'c',
             .long_name   = "current-space",
@@ -105,20 +205,22 @@ int main(int argc, char **argv) {
             .flag_type   = FLAG_TYPE_SET_TRUE,
             .flag        = &(args->current_space_only),
           },
+          {
+            .short_name    = 's',
+            .long_name     = "space-id",
+            .description   = "space id",
+            .arg_name      = "SPACE-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->space_id),
+          },
           { END_OF_OPTIONS },
         },
       },
       {
-        .name    = "spaces",                                         .description  = "List Spaces",   .function = _command_spaces,
-        .about   = "List Darwin Spaces",
-        .options = (struct optparse_opt[]){
-          {
-            .short_name  = 'x',
-            .long_name   = "xxx",
-            .description = "xxx desc",
-            .flag_type   = FLAG_TYPE_SET_TRUE,
-            .flag        = &(args->current_space_only),
-          },
+        .name     = "spaces",                                         .description  = "List Spaces",
+        .function = cmds[COMMAND_SPACES].fxn,
+        .about    = "List Spaces",
+        .options  = (struct optparse_opt[]){
           { END_OF_OPTIONS },
         },
       },
@@ -126,6 +228,6 @@ int main(int argc, char **argv) {
     },
   };
   optparse_parse(&main_cmd, &argc, &argv);
-  debug_args();
+  optparse_print_help();
   return(0);
 } /* main */
