@@ -22,7 +22,10 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 ///////////////////////////////////////////////////
-
+struct list_window_table_t {
+  struct Vector *windows_v;
+  bool          current_space_only;
+};
 int list_windows_table(void *ARGS);
 
 #endif
