@@ -1,8 +1,8 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
-#include "ls-win/ls-win.h"
 #include "ls-win/ls-win-commands.h"
+#include "ls-win/ls-win.h"
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_resize_window();
@@ -19,19 +19,20 @@ static void _command_sticky_window();
 static void _command_menu_bar();
 static void _command_focused_window();
 static void _command_focused_pid();
+static void _command_focused_space();
 static void _command_dock();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width(uint16_t window_id);
 static void _check_height(uint16_t window_id);
 ////////////////////////////////////////////
-struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY+1] = {
+struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   [CHECK_COMMAND_WINDOW_ID] = { .fxn = (void (*)(void))(*_check_window_id), .arg_data_type = DATA_TYPE_INT, },
-  [CHECK_COMMAND_WIDTH] = { .fxn = (void (*)(void))(*_check_width),         .arg_data_type = DATA_TYPE_INT, },
-  [CHECK_COMMAND_HEIGHT] = { .fxn = (void (*)(void))(*_check_height),       .arg_data_type = DATA_TYPE_INT, },
+  [CHECK_COMMAND_WIDTH]     = { .fxn = (void (*)(void))(*_check_width),     .arg_data_type = DATA_TYPE_INT, },
+  [CHECK_COMMAND_HEIGHT]    = { .fxn = (void (*)(void))(*_check_height),    .arg_data_type = DATA_TYPE_INT, },
   [CHECK_COMMAND_TYPES_QTY] = { 0 },
 };
-struct cmd_t cmds[COMMAND_TYPES_QTY+1] = {
+struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)           },
   [COMMAND_RESIZE_WINDOW]         = { .fxn = (*_command_resize_window)         },
   [COMMAND_FOCUS_WINDOW]          = { .fxn = (*_command_focus_window)          },
@@ -46,22 +47,27 @@ struct cmd_t cmds[COMMAND_TYPES_QTY+1] = {
   [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)         },
   [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)              },
   [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
-  [COMMAND_FOCUSED_WINDOW]                  = { .fxn = (*_command_focused_window)                  },
-  [COMMAND_FOCUSED_PID]                  = { .fxn = (*_command_focused_pid)                  },
-  [COMMAND_TYPES_QTY]             = { 0                              },
+  [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
+  [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
+  [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
+  [COMMAND_TYPES_QTY]             = { 0 },
 };
+
 ////////////////////////////////////////////
 static void _check_height(uint16_t width){
-  log_info("validing width %d",width);
+  log_info("validing width %d", width);
 }
-static void _check_width(uint16_t width){
-  log_info("validing width %d",width);
-}
-static void _check_window_id(uint16_t window_id){
-  log_info("validing window id %d",window_id);
 
-  if(window_id<1)
+static void _check_width(uint16_t width){
+  log_info("validing width %d", width);
+}
+
+static void _check_window_id(uint16_t window_id){
+  log_info("validing window id %d", window_id);
+
+  if (window_id < 1) {
     goto do_error;
+  }
   struct window_t *w = get_window_id((size_t)window_id);
 
   if (w == NULL || w->window_id != (size_t)window_id) {
@@ -69,25 +75,132 @@ static void _check_window_id(uint16_t window_id){
   }
   free(w);
 do_error:
-    log_error("Invalid Window ID %lu", (size_t)window_id);
-    exit(EXIT_FAILURE);
+  log_error("Invalid Window ID %lu", (size_t)window_id);
+  exit(EXIT_FAILURE);
 }
+
 ////////////////////////////////////////////
 static void _command_focused_pid(){
   int pid = get_focused_pid();
-  log_info("     PID:              %d",pid);
+
+  log_info("     PID:              %d", pid);
 
   exit(EXIT_SUCCESS);
 }
+
+static void _command_focused_space(){
+  unsigned long       started                            = timestamp();
+  int                 _space_id                          = get_space_id();
+  int                 _space_display_id                  = display_id_for_space(_space_id);
+  int                 _space_type                        = space_type(_space_id);
+  char                *_space_uuid                       = get_space_uuid(_space_id);
+  bool                _space_management_mode             = get_space_management_mode(_space_id);
+  bool                _space_is_fullscreen               = space_is_fullscreen(_space_id);
+  bool                _space_is_visible                  = space_is_visible(_space_id);
+  bool                _space_is_user                     = space_is_user(_space_id);
+  bool                _space_is_system                   = space_is_system(_space_id);
+  bool                _space_is_active                   = get_space_is_active(_space_id);
+  bool                _space_can_create_tile             = get_space_can_create_tile(_space_id);
+  CGRect              _space_rect                        = get_space_rect(_space_id);
+  struct Vector       *_space_window_ids_v               = get_space_window_ids_v(_space_id);
+  struct Vector       *_space_minimized_window_ids_v     = get_space_minimized_window_ids_v(_space_id);
+  struct Vector       *_space_non_minimized_window_ids_v = get_space_non_minimized_window_ids_v(_space_id);
+  struct Vector       *_space_owners                     = get_space_owners(_space_id);
+  struct StringBuffer *sb;
+  char                *_space_window_ids_csv, *_space_owners_csv;
+  {
+    sb = stringbuffer_new();
+    for (size_t i = 0; i < vector_size(_space_window_ids_v); i++) {
+      if (i == 0 || ((i % 6) == 0)) {
+        stringbuffer_append_string(sb, "\n                                             ");
+      }else{
+        stringbuffer_append_string(sb, ", ");
+      }
+      stringbuffer_append_unsigned_long_long(sb, (unsigned long long)vector_get(_space_window_ids_v, i));
+    }
+    _space_window_ids_csv = stringbuffer_to_string(sb);
+    stringbuffer_release(sb);
+  }
+  {
+    sb = stringbuffer_new();
+    for (size_t i = 0; i < vector_size(_space_owners); i++) {
+      if (i > 0 && i < vector_size(_space_owners) - 1) {
+        stringbuffer_append_string(sb, ", ");
+      }
+      stringbuffer_append_unsigned_long_long(sb, (unsigned long long)vector_get(_space_owners, i));
+    }
+    _space_owners_csv = stringbuffer_to_string(sb);
+    stringbuffer_release(sb);
+  }
+
+  unsigned long dur = timestamp() - started;
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Focused Space" AC_RESETALL
+    "\n\tSpace ID                    :       %d"
+    "\n\tType                        :       %d"
+    "\n\tUUID                        :       %s"
+    "\n\t# Window IDs                :       %lu" AC_RESETALL AC_BLUE "%s" AC_RESETALL "\n"
+    "\n\t# Minimized Window IDs      :       %lu"
+    "\n\t# Non Minimized Window IDs  :       %lu"
+    "\n\t# Owners                    :       %lu" AC_RESETALL "\t" AC_CYAN "%s" AC_RESETALL
+    "\n\tDisplay ID                  :       %d"
+    "\n\tIs Fullscreen               :       %s" AC_RESETALL
+    "\n\tIs Visible                  :       %s" AC_RESETALL
+    "\n\tIs User                     :       %s" AC_RESETALL
+    "\n\tIs System                   :       %s" AC_RESETALL
+    "\n\tIs Active                   :       %s" AC_RESETALL
+    "\n\tCan Create Tile             :       %s" AC_RESETALL
+    "\n\tManagement Mode             :       %d"
+    "\n\tSize                        :       %dx%d" AC_RESETALL
+    "\n\tPosition                    :       %dx%d" AC_RESETALL
+    "\n\tDuration                    :       %s" AC_RESETALL
+    "\n%s",
+    _space_id,
+    _space_type,
+    _space_uuid,
+    vector_size(_space_window_ids_v), _space_window_ids_csv,
+    vector_size(_space_minimized_window_ids_v),
+    vector_size(_space_non_minimized_window_ids_v),
+    vector_size(_space_owners), _space_owners_csv,
+    _space_display_id,
+    (_space_is_fullscreen == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (_space_is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (_space_is_user == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (_space_is_system == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (_space_is_active == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (_space_can_create_tile == true) ? AC_GREEN "Yes" : AC_RED "No",
+    _space_management_mode,
+    (int)_space_rect.size.width, (int)_space_rect.size.height,
+    (int)_space_rect.origin.x, (int)_space_rect.origin.y,
+    milliseconds_to_string(dur),
+    ""
+    );
+
+  exit(EXIT_SUCCESS);
+} /* _command_focused_space */
+
 static void _command_focused_window(){
-  log_info("focused window......");
   struct window_t *w = get_focused_window();
-  log_info("    window id     %lu",w->window_id);
-  log_info("    pid           %d",w->pid);
-  log_info("    app           %s",w->app_name);
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Focused Window" AC_RESETALL
+    "\n\tWindow ID    :       %lu"
+    "\n\tPID          :       %d"
+    "\n\tApplication  :       %s"
+    "\n\tSpace ID     :       %d"
+    "\n\tDisplay ID   :       %d"
+    "\n",
+    w->window_id,
+    w->pid,
+    w->app_name,
+    w->space_id,
+    w->display_id
+    );
 
   exit(EXIT_SUCCESS);
 }
+
 static void _command_focused_start(){
   struct focused_config_t *cfg = init_focused_config();
   size_t                  wid  = 129;
@@ -285,15 +398,5 @@ static void _command_debug_args(){
   log_info("Window ID:               %d", args->window_id);
   exit(0);
 }
-
-
-
-
-
-
-
-
-
-
 
 #endif

@@ -19,6 +19,30 @@ struct Vector *get_space_ids_v(){
   return(ids);
 }
 
+struct Vector *get_space_non_minimized_window_ids_v(size_t space_id){
+  struct Vector *ids = vector_new();
+
+  int           window_qty    = 0;
+  uint64_t      sid           = (uint64_t)space_id;
+  uint32_t      *windows_list = space_window_list_for_connection(&sid, 1, 0, &window_qty, false);
+
+  for (int i = 0; i < window_qty; i++) {
+    vector_push(ids, (void *)(size_t)windows_list[i]);
+  }
+  return(ids);
+}
+struct Vector *get_space_minimized_window_ids_v(size_t space_id){
+  struct Vector *ids = vector_new();
+
+  int           window_qty    = 0;
+  uint64_t      sid           = (uint64_t)space_id;
+  uint32_t      *windows_list = space_minimized_window_list(sid, &window_qty);
+
+  for (int i = 0; i < window_qty; i++) {
+    vector_push(ids, (void *)(size_t)windows_list[i]);
+  }
+  return(ids);
+}
 struct Vector *get_space_window_ids_v(size_t space_id){
   struct Vector *ids          = vector_new();
   int           window_qty    = 0;
@@ -69,6 +93,40 @@ err:
   CFRelease(uuid);
 out:
   return(display_space_ids);
+}
+
+struct Vector *get_space_owners(int space_id){
+  struct Vector *v           = vector_new();
+  CFArrayRef    space_owners = CGSSpaceCopyOwners(g_connection, (CGSSpaceID)space_id);
+  uint32_t      count        = CFArrayGetCount(space_owners);
+
+  for (uint32_t i = 0; i < count; i++) {
+    CFNumberRef nref = CFArrayGetValueAtIndex(space_owners, i);
+    int         p    = 0;
+    CFNumberGetValue(nref, CFNumberGetType(nref), &p);
+    vector_push(v, (void *)(size_t)p);
+  }
+  return(v);
+}
+
+CGRect get_space_rect(int space_id){
+  CGRect       rect    = { 0 };
+  CGSRegionRef reg_ref = CGSSpaceCopyManagedShape(g_connection, (CGSSpaceID)space_id);
+
+  CGSGetRegionBounds(reg_ref, &rect);
+  return(rect);
+}
+
+bool get_space_can_create_tile(int space_id){
+  return(CGSSpaceCanCreateTile(g_connection, (CGSSpaceID)space_id));
+}
+
+bool get_space_is_active(int space_id){
+  return((CGSGetActiveSpace(g_connection) == (CGSSpaceID)space_id) ? true : false);
+}
+
+int get_space_management_mode(int space_id){
+  return(SLSGetSpaceManagementMode(space_id));
 }
 
 uint32_t *space_minimized_window_list(uint64_t sid, int *count){

@@ -19,6 +19,7 @@ enum command_type_t {
   COMMAND_SET_SPACE,
   COMMAND_FOCUSED_WINDOW,
   COMMAND_FOCUSED_PID,
+  COMMAND_FOCUSED_SPACE,
   COMMAND_WINDOWS,
   COMMAND_SPACES,
   COMMAND_DISPLAYS,
@@ -34,10 +35,10 @@ struct cmd_t {
 };
 struct check_cmd_t {
   void (*fxn)(void);
-  int arg_data_type;
+  int  arg_data_type;
 };
 
-struct cmd_t cmds[COMMAND_TYPES_QTY+1];
-struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY+1];
+struct cmd_t       cmds[COMMAND_TYPES_QTY + 1];
+struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
 
 #endif

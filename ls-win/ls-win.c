@@ -3,9 +3,10 @@
 struct args_t *args = &(struct args_t){
   .verbose            = false,
   .current_space_only = false,
-  .space_id           = 0, 
-  .window_id = 0,
+  .space_id           = 0,
+  .window_id          = 0,
 };
+
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
   assert(is_authorized_for_accessibility() == true);
@@ -124,6 +125,12 @@ int main(int argc, char **argv) {
           },
           { END_OF_OPTIONS },
         },
+      },
+      {
+        .name        = "focused-space",
+        .description = "Show Focused Space",
+        .function    = cmds[COMMAND_FOCUSED_SPACE].fxn,
+        .about       = "Show Focused Space",
       },
       {
         .name        = "focused-pid",

@@ -16,7 +16,7 @@
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
-#define DEBUG_MODE    false
+static bool       WINDOW_UTILS_DEBUG_MODE = false;
 
 static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Control Center",
@@ -105,7 +105,9 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   int        qty         = CFArrayGetCount(window_list);
 
   if (qty != 1) {
-    log_error("window #%lu has %d windows",WINDOW_ID,qty);
+    if (WINDOW_UTILS_DEBUG_MODE == true) {
+      log_error("window #%lu has %d windows", WINDOW_ID, qty);
+    }
     return(NULL);
   }
   struct window_t *w = calloc(1, sizeof(struct window_t));
@@ -211,14 +213,17 @@ int get_focused_window_id(){
 }
 
 struct window_t *get_focused_window(){
-  int             pid       = get_focused_pid();
-  log_info("pid %d",pid);
-  size_t             window_id = get_pid_window_id(pid);
-  log_info("window id %lu",window_id);
-  struct window_t *w        = get_window_id(window_id);
-  log_info("window #%lu",w->window_id);
+  int pid = get_focused_pid();
 
-  return(w);
+  if (pid < 1) {
+    return(NULL);
+  }
+  size_t window_id = get_pid_window_id(pid);
+
+  if (window_id < 1) {
+    return(NULL);
+  }
+  return(get_window_id(window_id));
 }
 
 struct Vector *get_window_ids(void){
@@ -253,7 +258,7 @@ char *get_window_display_uuid(struct window_t *window){
 }
 
 size_t get_pid_window_id(int PID){
-  size_t             WINDOW_ID = 0, tmp_WINDOW_ID = 0;
+  size_t          WINDOW_ID = 0, tmp_WINDOW_ID = 0;
   CFArrayRef      windowList;
   CFDictionaryRef window;
   struct window_t *w = NULL;
@@ -266,11 +271,13 @@ size_t get_pid_window_id(int PID){
     window = CFArrayGetValueAtIndex(windowList, i);
     if (CFDictionaryGetInt(window, kCGWindowOwnerPID) == PID) {
       tmp_WINDOW_ID = (size_t)CFDictionaryGetInt(window, kCGWindowNumber);
-      w = get_window_id(tmp_WINDOW_ID);
-      if(w != NULL && w->pid == PID)
+      w             = get_window_id(tmp_WINDOW_ID);
+      if (w != NULL && w->pid == PID && w->window != NULL) {
         WINDOW_ID = tmp_WINDOW_ID;
-      if(w)
+      }
+      if (w) {
         free(w);
+      }
     }
   }
   CFRelease(windowList);
@@ -534,7 +541,7 @@ char *windowTitle(char *appName, char *windowName) {
     windowTitle = (char *)malloc(titleSize);
     snprintf(windowTitle, titleSize, "%s - %s", appName, windowName);
   }
-  if (DEBUG_MODE == true) {
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
     log_info("     |appName:%s|windowName:%s|windowTitle:%s|", appName, windowName, windowTitle);
   }
 
