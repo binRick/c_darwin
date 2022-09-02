@@ -67,7 +67,7 @@ struct Vector *get_window_ids_above_window(struct window_t *w);
 struct Vector *get_window_ids_below_window(struct window_t *w);
 struct Vector *get_window_space_ids_v(struct Vector *windows_v);
 int get_window_space_id(struct window_t *w);
-int get_pid_window_id(const int PID);
+size_t get_pid_window_id(int PID);
 struct Vector *get_window_ids(void);
 char *get_window_display_uuid(struct window_t *window);
 struct window_t *get_focused_window();

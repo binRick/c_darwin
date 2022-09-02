@@ -1,5 +1,6 @@
 ls_win_srcs = [
   'ls-win.c',
+  'ls-win-commands.c',
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 ls_win_include_dirs = [

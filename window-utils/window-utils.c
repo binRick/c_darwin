@@ -105,7 +105,7 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   int        qty         = CFArrayGetCount(window_list);
 
   if (qty != 1) {
-//    log_error("window #%lu has %d windows",WINDOW_ID,qty);
+    log_error("window #%lu has %d windows",WINDOW_ID,qty);
     return(NULL);
   }
   struct window_t *w = calloc(1, sizeof(struct window_t));
@@ -212,8 +212,11 @@ int get_focused_window_id(){
 
 struct window_t *get_focused_window(){
   int             pid       = get_focused_pid();
-  int             window_id = get_pid_window_id(pid);
+  log_info("pid %d",pid);
+  size_t             window_id = get_pid_window_id(pid);
+  log_info("window id %lu",window_id);
   struct window_t *w        = get_window_id(window_id);
+  log_info("window #%lu",w->window_id);
 
   return(w);
 }
@@ -249,20 +252,25 @@ char *get_window_display_uuid(struct window_t *window){
   return(uuid);
 }
 
-int get_pid_window_id(const int PID){
-  int             WINDOW_ID = -1;
+size_t get_pid_window_id(int PID){
+  size_t             WINDOW_ID = 0, tmp_WINDOW_ID = 0;
   CFArrayRef      windowList;
   CFDictionaryRef window;
+  struct window_t *w = NULL;
 
   windowList = CGWindowListCopyWindowInfo(
     (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
-  for (int i = 0; i < CFArrayGetCount(windowList) && (WINDOW_ID == -1); i++) {
+  for (int i = 0; i < CFArrayGetCount(windowList) && (WINDOW_ID <= 0); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     if (CFDictionaryGetInt(window, kCGWindowOwnerPID) == PID) {
-      WINDOW_ID = CFDictionaryGetInt(window, kCGWindowNumber);
-      break;
+      tmp_WINDOW_ID = (size_t)CFDictionaryGetInt(window, kCGWindowNumber);
+      w = get_window_id(tmp_WINDOW_ID);
+      if(w != NULL && w->pid == PID)
+        WINDOW_ID = tmp_WINDOW_ID;
+      if(w)
+        free(w);
     }
   }
   CFRelease(windowList);

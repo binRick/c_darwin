@@ -1,22 +1,15 @@
-#include "optparse99/optparse99.h"
-////////////////////////////////////////////
 #include "ls-win/ls-win.h"
 ////////////////////////////////////////////
-#include "ls-win/ls-win-commands.c"
-
+struct args_t *args = &(struct args_t){
+  .verbose            = false,
+  .current_space_only = false,
+  .space_id           = 0, 
+  .window_id = 0,
+};
 ////////////////////////////////////////////
-void _check_window_id(uint16_t window_id){
-  struct window_t *w = get_window_id((size_t)window_id);
-
-  if (w == NULL || w->window_id != (size_t)window_id) {
-    log_error("Invalid Window ID %lu", (size_t)window_id);
-    exit(EXIT_FAILURE);
-  }
-  free(w);
-}
-
 int main(int argc, char **argv) {
   assert(is_authorized_for_accessibility() == true);
+  args->window_id = 123;//get_focused_window_id();
   struct optparse_cmd main_cmd = {
     .about       = "ls-win v1.00 - List Darwin Items.",
     .description = "This program lists Darwin Items.",
@@ -56,9 +49,9 @@ int main(int argc, char **argv) {
             .long_name     = "window-id",
             .description   = "Window ID",
             .arg_name      = "WINDOW-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
-            .function      = (void (*)(void)) _check_window_id,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
           },
           {
             .short_name    = 'x',
@@ -90,16 +83,17 @@ int main(int argc, char **argv) {
             .long_name     = "window-id",
             .description   = "Window ID",
             .arg_name      = "WINDOW-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
             .arg_dest      = &(args->window_id),
-            .function      = (void (*)(void)) _check_window_id,
           },
           {
             .short_name    = 'W',
             .long_name     = "window-width",
             .description   = "Window Width",
             .arg_name      = "WINDOW-WIDTH",
-            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WIDTH].fxn,
             .arg_dest      = &(args->width),
           },
           {
@@ -114,13 +108,40 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "start-focused",
-        .description = "Start Focused",
-        .function    = cmds[COMMAND_FOCUSED_START].fxn,
-        .about       = "Start Focused",
+        .name        = "args",
+        .description = "Debug Args",
+        .function    = cmds[COMMAND_DEBUG_ARGS].fxn,
+        .about       = "Debug Args",
         .options     = (struct optparse_opt[]){
+          {
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "Window ID",
+            .arg_name      = "WINDOW-ID",
+            .arg_dest      = &(args->window_id),
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
+          },
           { END_OF_OPTIONS },
         },
+      },
+      {
+        .name        = "focused-pid",
+        .description = "Show Focused PID",
+        .function    = cmds[COMMAND_FOCUSED_PID].fxn,
+        .about       = "Show Focused PID",
+      },
+      {
+        .name        = "focused-window",
+        .description = "Show Focused Window",
+        .function    = cmds[COMMAND_FOCUSED_WINDOW].fxn,
+        .about       = "Show Focused Window",
+      },
+      {
+        .name        = "focused",
+        .description = "Start Focused App",
+        .function    = cmds[COMMAND_FOCUSED_START].fxn,
+        .about       = "Start Focused App",
       },
       {
         .name        = "dock",
@@ -145,9 +166,9 @@ int main(int argc, char **argv) {
             .long_name     = "window-id",
             .description   = "window id",
             .arg_name      = "WINDOW-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
-            .function      = (void (*)(void)) _check_window_id,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
           },
           { END_OF_OPTIONS },
         },
@@ -163,9 +184,9 @@ int main(int argc, char **argv) {
             .long_name     = "window-id",
             .description   = "window id",
             .arg_name      = "WINDOW-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
-            .function      = (void (*)(void)) _check_window_id,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
           },
           { END_OF_OPTIONS },
         },
@@ -181,9 +202,9 @@ int main(int argc, char **argv) {
             .long_name     = "window-id",
             .description   = "window id",
             .arg_name      = "WINDOW-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
-            .function      = (void (*)(void)) _check_window_id,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
           },
           { END_OF_OPTIONS },
         },
@@ -199,9 +220,9 @@ int main(int argc, char **argv) {
             .long_name     = "window-id",
             .description   = "window id",
             .arg_name      = "WINDOW-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
-            .function      = (void (*)(void)) _check_window_id,
+            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
           },
           {
             .short_name    = 's',
@@ -265,9 +286,6 @@ int main(int argc, char **argv) {
         .name     = "spaces",                                         .description  = "List Spaces",
         .function = cmds[COMMAND_SPACES].fxn,
         .about    = "List Spaces",
-        .options  = (struct optparse_opt[]){
-          { END_OF_OPTIONS },
-        },
       },
       { END_OF_SUBCOMMANDS },
     },

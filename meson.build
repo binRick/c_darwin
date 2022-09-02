@@ -17,13 +17,6 @@ if fs.is_dir('.git')
 else
     git_sha = ''
 endif
-osx_link_args = [
-  '-Wl,-framework,CoreGraphics',
-  '-Wl,-framework,CoreFoundation',
-  '-Wl,-framework,Carbon',
-  '-Wl,-framework,Foundation',
-  '-Wl,-framework,AppKit'
-]
 version_info = configuration_data()
 version_info.set('version', git_sha)
 version_info.set('vcs_tag', git_sha)

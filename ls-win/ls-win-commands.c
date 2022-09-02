@@ -1,25 +1,8 @@
+#pragma once
+#ifndef LS_WIN_COMMANDS_C
+#define LS_WIN_COMMANDS_C
 #include "ls-win/ls-win.h"
-#include <pthread.h>
-////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "app-utils/app-utils.h"
-#include "bytes/bytes.h"
-#include "c_fsio/include/fsio.h"
-#include "c_stringfn/include/stringfn.h"
-#include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
-#include "core-utils/core-utils.h"
-#include "display-utils/display-utils.h"
-#include "dock-utils/dock-utils.h"
-#include "focused/focused.h"
-#include "log.h/log.h"
-#include "menu-bar-utils/menu-bar-utils.h"
-#include "ms/ms.h"
-#include "optparse99/optparse99.h"
-#include "space-utils/space-utils.h"
-#include "table-utils/table-utils.h"
-#include "timestamp/timestamp.h"
-#include "window-utils/window-utils.h"
+#include "ls-win/ls-win-commands.h"
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_resize_window();
@@ -34,47 +17,77 @@ static void _command_debug_args();
 static void _command_focused_start();
 static void _command_sticky_window();
 static void _command_menu_bar();
+static void _command_focused_window();
+static void _command_focused_pid();
 static void _command_dock();
 ////////////////////////////////////////////
-enum command_type_t {
-  COMMAND_MOVE_WINDOW,
-  COMMAND_RESIZE_WINDOW,
-  COMMAND_FOCUS_WINDOW,
-  COMMAND_SET_WINDOW_SPACE,
-  COMMAND_SET_WINDOW_ALL_SPACES,
-  COMMAND_SET_SPACE,
-  COMMAND_WINDOWS,
-  COMMAND_SPACES,
-  COMMAND_DISPLAYS,
-  COMMAND_DEBUG_ARGS,
-  COMMAND_FOCUSED_START,
-  COMMAND_STICKY_WINDOW,
-  COMMAND_MENU_BAR,
-  COMMAND_DOCK,
-  COMMAND_TYPES_QTY,
+static void _check_window_id(uint16_t window_id);
+static void _check_width(uint16_t window_id);
+static void _check_height(uint16_t window_id);
+////////////////////////////////////////////
+struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY+1] = {
+  [CHECK_COMMAND_WINDOW_ID] = { .fxn = (void (*)(void))(*_check_window_id), .arg_data_type = DATA_TYPE_INT, },
+  [CHECK_COMMAND_WIDTH] = { .fxn = (void (*)(void))(*_check_width),         .arg_data_type = DATA_TYPE_INT, },
+  [CHECK_COMMAND_HEIGHT] = { .fxn = (void (*)(void))(*_check_height),       .arg_data_type = DATA_TYPE_INT, },
+  [CHECK_COMMAND_TYPES_QTY] = { 0 },
 };
-struct cmd_t {
-  void (*fxn)(void);
-};
-
-struct cmd_t cmds[COMMAND_TYPES_QTY + 1] = {
-  [COMMAND_MOVE_WINDOW]           = { _command_move_window           },
-  [COMMAND_RESIZE_WINDOW]         = { _command_resize_window         },
-  [COMMAND_FOCUS_WINDOW]          = { _command_focus_window          },
-  [COMMAND_SET_WINDOW_SPACE]      = { _command_set_window_space      },
-  [COMMAND_SET_WINDOW_ALL_SPACES] = { _command_set_window_all_spaces },
-  [COMMAND_SET_SPACE]             = { _command_set_space             },
-  [COMMAND_WINDOWS]               = { _command_windows               },
-  [COMMAND_SPACES]                = { _command_spaces                },
-  [COMMAND_DISPLAYS]              = { _command_displays              },
-  [COMMAND_DEBUG_ARGS]            = { _command_debug_args            },
-  [COMMAND_FOCUSED_START]         = { _command_focused_start         },
-  [COMMAND_STICKY_WINDOW]         = { _command_sticky_window         },
-  [COMMAND_MENU_BAR]              = { _command_menu_bar              },
-  [COMMAND_DOCK]                  = { _command_dock                  },
+struct cmd_t cmds[COMMAND_TYPES_QTY+1] = {
+  [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)           },
+  [COMMAND_RESIZE_WINDOW]         = { .fxn = (*_command_resize_window)         },
+  [COMMAND_FOCUS_WINDOW]          = { .fxn = (*_command_focus_window)          },
+  [COMMAND_SET_WINDOW_SPACE]      = { .fxn = (*_command_set_window_space)      },
+  [COMMAND_SET_WINDOW_ALL_SPACES] = { .fxn = (*_command_set_window_all_spaces) },
+  [COMMAND_SET_SPACE]             = { .fxn = (*_command_set_space)             },
+  [COMMAND_WINDOWS]               = { .fxn = (*_command_windows)               },
+  [COMMAND_SPACES]                = { .fxn = (*_command_spaces)                },
+  [COMMAND_DISPLAYS]              = { .fxn = (*_command_displays)              },
+  [COMMAND_DEBUG_ARGS]            = { .fxn = (*_command_debug_args)            },
+  [COMMAND_FOCUSED_START]         = { .fxn = (*_command_focused_start)         },
+  [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)         },
+  [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)              },
+  [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
+  [COMMAND_FOCUSED_WINDOW]                  = { .fxn = (*_command_focused_window)                  },
+  [COMMAND_FOCUSED_PID]                  = { .fxn = (*_command_focused_pid)                  },
   [COMMAND_TYPES_QTY]             = { 0                              },
 };
+////////////////////////////////////////////
+static void _check_height(uint16_t width){
+  log_info("validing width %d",width);
+}
+static void _check_width(uint16_t width){
+  log_info("validing width %d",width);
+}
+static void _check_window_id(uint16_t window_id){
+  log_info("validing window id %d",window_id);
 
+  if(window_id<1)
+    goto do_error;
+  struct window_t *w = get_window_id((size_t)window_id);
+
+  if (w == NULL || w->window_id != (size_t)window_id) {
+    goto do_error;
+  }
+  free(w);
+do_error:
+    log_error("Invalid Window ID %lu", (size_t)window_id);
+    exit(EXIT_FAILURE);
+}
+////////////////////////////////////////////
+static void _command_focused_pid(){
+  int pid = get_focused_pid();
+  log_info("     PID:              %d",pid);
+
+  exit(EXIT_SUCCESS);
+}
+static void _command_focused_window(){
+  log_info("focused window......");
+  struct window_t *w = get_focused_window();
+  log_info("    window id     %lu",w->window_id);
+  log_info("    pid           %d",w->pid);
+  log_info("    app           %s",w->app_name);
+
+  exit(EXIT_SUCCESS);
+}
 static void _command_focused_start(){
   struct focused_config_t *cfg = init_focused_config();
   size_t                  wid  = 129;
@@ -265,9 +278,22 @@ static void _command_spaces(){
 }
 
 static void _command_debug_args(){
+  log_info("Debugging args");
   log_info("Verbose:                 %s", args->verbose == true ? "Yes" : "No");
   log_info("Current Space Only:      %s", args->current_space_only == true ? "Yes" : "No");
   log_info("Space ID:                %d", args->space_id);
   log_info("Window ID:               %d", args->window_id);
   exit(0);
 }
+
+
+
+
+
+
+
+
+
+
+
+#endif

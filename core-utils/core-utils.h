@@ -25,3 +25,6 @@
 #include "table-utils/table-utils.h"
 #include "window-utils/window-utils.h"
 //////////////////////////////////////////////////////////////
+struct offset_t {
+  int left_offset, right_offset, top_offset, bottom_offset;
+};
