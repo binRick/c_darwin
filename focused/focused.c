@@ -32,8 +32,10 @@ static void on_space_id_changed(void *event_data, void *VOID){
 
 static volatile CGEventMask focused_events = (
   CGEventMaskBit(kCGEventKeyUp)
-  | CGEventMaskBit(kCGEventKeyDown)
-  | CGEventMaskBit(kCGEventFlagsChanged)
+  |
+  CGEventMaskBit(kCGEventKeyDown)
+  |
+  CGEventMaskBit(kCGEventFlagsChanged)
   );
 
 static CGEventRef focused_event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *VOID) {
@@ -58,13 +60,15 @@ static CGEventRef focused_event_handler(CGEventTapProxy proxy, CGEventType type,
   log_info("key: %s|%ld|%lu:%lu", keys, c->started, space_id, c->cur_space_id);
   unsigned long started = timestamp();
 
-  if (c->cur_space_id != space_id) {
-    eventemitter_emit(c->ee, EVENT_SPACE_ID_CHANGED, (void *)space_id);
-    c->cur_space_id = (size_t)space_id;
-  }
-  unsigned long dur = timestamp() - started;
+  if (false) {
+    if (c->cur_space_id != space_id) {
+      eventemitter_emit(c->ee, EVENT_SPACE_ID_CHANGED, (void *)space_id);
+      c->cur_space_id = (size_t)space_id;
+    }
+    unsigned long dur = timestamp() - started;
 
-  log_info("emitted in %s", milliseconds_to_string(dur));
+    log_info("emitted in %s", milliseconds_to_string(dur));
+  }
   return(event);
 }
 
@@ -111,12 +115,12 @@ static int run_loop(void *VOID){
 bool start_focused(struct focused_config_t *cfg){
   cfg->started = timestamp();
   cfg->enabled = true;
-  pthread_create(&(cfg->loop_thread), NULL, run_loop, (void *)cfg);
+//  pthread_create(&(cfg->loop_thread), NULL, run_loop, (void *)cfg);
 }
 
 bool stop_focused(struct focused_config_t *cfg){
   cfg->enabled = false;
   CGEventTapEnable(cfg->event_tap, false);
-  pthread_join(&(cfg->loop_thread), NULL);
+  //pthread_join(&(cfg->loop_thread), NULL);
   eventemitter_release(cfg->ee);
 }

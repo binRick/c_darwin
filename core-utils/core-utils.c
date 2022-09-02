@@ -44,6 +44,12 @@
 #include <sys/syslimits.h>
 #include <time.h>
 #include <unistd.h>
+const char                *dock_orientation_names[DOCK_ORIENTATIONS_QTY] = {
+  [DOCK_ORIENTATION_TOP]    = "top",
+  [DOCK_ORIENTATION_BOTTOM] = "bottom",
+  [DOCK_ORIENTATION_LEFT]   = "left",
+  [DOCK_ORIENTATION_RIGHT]  = "right",
+};
 #define CACHE_PATH    ".core-utils-cache.db"
 static volatile IWKV_OPTS cache_opts = {
   .path   = CACHE_PATH,
@@ -319,6 +325,54 @@ char *get_window_title(struct window_t *w){
   }
 
   return(title);
+}
+
+void set_window_tags(struct window_t *w){
+  CGSConnection cid;
+
+  cid = _CGSDefaultConnection();
+  CGSWindowTag tags[2];
+
+  tags[0] = CGSTagSticky;
+  tags[0] = tags[1] = 0;
+
+  int tags1[2] = { 0 };
+
+  tags1[0] |= (1 << 11);
+
+  tags[0] = CGSTagSticky;
+  CGSSetWindowTags(cid, w->window_id, tags1, 32);
+  log_info("set window %lu tags: %d/%d", w->window_id, tags1[0], tags1[1]);
+}
+
+void fade_window(struct window_t *w){
+  float         alpha = 0;
+  CGSConnection cid;
+
+  cid = _CGSDefaultConnection();
+
+  for (alpha = 1.0; alpha >= 0.0; alpha -= 0.05) {
+    CGSSetWindowAlpha(cid, w->window_id, alpha);
+    usleep(10000);
+  }
+
+  CGSSetWindowAlpha(cid, w->window_id, 0.0);
+}
+
+void get_window_tags(struct window_t *w){
+  CGSConnection cid;
+
+  cid = _CGSDefaultConnection();
+  CGSWindowTag tags[2];
+
+  tags[0] = tags[1] = 0;
+  CGSGetWindowTags(cid, w->window_id, tags, 32);
+  log_info("window %lu tags: %d/%d", w->window_id, tags[0], tags[1]);
+
+  uint32_t mask = 0;
+
+  CGSGetWindowEventMask(cid, w->window_id, &mask);
+  log_info("window %lu event mask: %lu", w->window_id, (size_t)mask);
 }
 
 void focus_window(struct window_t *w){
@@ -1167,6 +1221,14 @@ uint32_t *display_active_display_list(uint32_t *count) {
   return(result);
 }
 
+int get_menu_bar_height(){
+  if (display_menu_bar_visible() == false) {
+    return(0);
+  }
+  CGRect rect = display_menu_bar_rect(display_id_for_space(get_space_id()));
+  return((int)rect.size.height);
+}
+
 CGRect display_menu_bar_rect(uint32_t did) {
   CGRect bounds = {};
 
@@ -1268,6 +1330,42 @@ pid_t PSN2PID(ProcessSerialNumber psn) {
 
   GetProcessPID(&psn, &tempPID);
   return(tempPID);
+}
+
+bool dock_is_visible(void){
+  return(!CoreDockGetAutoHideEnabled());
+}
+
+char *dock_orientation_name(void){
+  return(dock_orientation_names[dock_orientation()]);
+}
+
+int dock_orientation(void){
+  int pinning     = 0;
+  int orientation = 0;
+
+  CoreDockGetOrientationAndPinning(&orientation, &pinning);
+  return(orientation);
+}
+
+CGRect dock_rect(void){
+  int    reason = 0;
+  CGRect bounds = {};
+
+  SLSGetDockRectWithReason(g_connection, &bounds, &reason);
+  return(bounds);
+}
+
+CGSize dock_offset(void){
+  if (dock_is_visible() == false) {
+    return(CGSizeMake(0, 0));
+  }
+  CGRect rect = dock_rect();
+  CGSize size = CGSizeMake(
+    rect.size.width,
+    rect.size.height - get_display_height()
+    );
+  return(size);
 }
 
 int get_display_id_index(int display_id){
@@ -1713,6 +1811,14 @@ bool get_window_is_popover(struct window_t *w){
   CFRelease(role);
 
   return(result);
+}
+
+int get_display_height(){
+  int    h             = -1;
+  CGRect displayBounds = CGDisplayBounds(CGMainDisplayID());
+
+  h = displayBounds.size.height;
+  return(h);
 }
 
 int get_display_width(){

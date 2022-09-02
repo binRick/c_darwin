@@ -3,7 +3,17 @@
 #include "ls-win/ls-win.h"
 ////////////////////////////////////////////
 #include "ls-win/ls-win-commands.c"
+
 ////////////////////////////////////////////
+void _check_window_id(uint16_t window_id){
+  struct window_t *w = get_window_id((size_t)window_id);
+
+  if (w == NULL || w->window_id != (size_t)window_id) {
+    log_error("Invalid Window ID %lu", (size_t)window_id);
+    exit(EXIT_FAILURE);
+  }
+  free(w);
+}
 
 int main(int argc, char **argv) {
   assert(is_authorized_for_accessibility() == true);
@@ -48,6 +58,7 @@ int main(int argc, char **argv) {
             .arg_name      = "WINDOW-ID",
             .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
+            .function      = (void (*)(void)) _check_window_id,
           },
           {
             .short_name    = 'x',
@@ -81,6 +92,7 @@ int main(int argc, char **argv) {
             .arg_name      = "WINDOW-ID",
             .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
+            .function      = (void (*)(void)) _check_window_id,
           },
           {
             .short_name    = 'W',
@@ -111,6 +123,36 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "dock",
+        .description = "Dock Info",
+        .function    = cmds[COMMAND_DOCK].fxn,
+        .about       = "Dock Info",
+      },
+      {
+        .name        = "menu-bar",
+        .description = "Menu Bar Info",
+        .function    = cmds[COMMAND_MENU_BAR].fxn,
+        .about       = "Menu Bar Info",
+      },
+      {
+        .name        = "sticky-window",
+        .description = "Sticky Window",
+        .function    = cmds[COMMAND_STICKY_WINDOW].fxn,
+        .about       = "Sticky Window",
+        .options     = (struct optparse_opt[]){
+          {
+            .short_name    = 'w',
+            .long_name     = "window-id",
+            .description   = "window id",
+            .arg_name      = "WINDOW-ID",
+            .arg_data_type = DATA_TYPE_UINT16,
+            .arg_dest      = &(args->window_id),
+            .function      = (void (*)(void)) _check_window_id,
+          },
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "focus-window",
         .description = "Focus Window",
         .function    = cmds[COMMAND_FOCUS_WINDOW].fxn,
@@ -123,6 +165,7 @@ int main(int argc, char **argv) {
             .arg_name      = "WINDOW-ID",
             .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
+            .function      = (void (*)(void)) _check_window_id,
           },
           { END_OF_OPTIONS },
         },
@@ -149,6 +192,7 @@ int main(int argc, char **argv) {
             .arg_name      = "WINDOW-ID",
             .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
+            .function      = (void (*)(void)) _check_window_id,
           },
           { END_OF_OPTIONS },
         },
@@ -166,6 +210,7 @@ int main(int argc, char **argv) {
             .arg_name      = "WINDOW-ID",
             .arg_data_type = DATA_TYPE_UINT16,
             .arg_dest      = &(args->window_id),
+            .function      = (void (*)(void)) _check_window_id,
           },
           {
             .short_name    = 's',

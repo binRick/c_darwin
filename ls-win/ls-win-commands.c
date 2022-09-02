@@ -8,6 +8,7 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "core-utils/core-utils.h"
 #include "focused/focused.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
@@ -26,6 +27,9 @@ static void _command_displays();
 static void _command_spaces();
 static void _command_debug_args();
 static void _command_focused_start();
+static void _command_sticky_window();
+static void _command_menu_bar();
+static void _command_dock();
 ////////////////////////////////////////////
 enum command_type_t {
   COMMAND_KB_EVENTS,
@@ -40,6 +44,9 @@ enum command_type_t {
   COMMAND_DISPLAYS,
   COMMAND_DEBUG_ARGS,
   COMMAND_FOCUSED_START,
+  COMMAND_STICKY_WINDOW,
+  COMMAND_MENU_BAR,
+  COMMAND_DOCK,
   COMMAND_TYPES_QTY,
 };
 struct cmd_t {
@@ -59,12 +66,15 @@ struct cmd_t cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_DISPLAYS]              = { _command_displays              },
   [COMMAND_DEBUG_ARGS]            = { _command_debug_args            },
   [COMMAND_FOCUSED_START]         = { _command_focused_start         },
+  [COMMAND_STICKY_WINDOW]         = { _command_sticky_window         },
+  [COMMAND_MENU_BAR]              = { _command_menu_bar              },
+  [COMMAND_DOCK]                  = { _command_dock                  },
   [COMMAND_TYPES_QTY]             = { 0                              },
 };
 
 static void _command_focused_start(){
   struct focused_config_t *cfg = init_focused_config();
-  size_t                  wid  = 467;
+  size_t                  wid  = 129;
 
   add_focused_window_id(cfg, wid);
 
@@ -102,6 +112,60 @@ static void _command_resize_window(){
 
   log_debug("resizing window %lu to %dx%d", w->window_id, args->width, args->height);
   resize_window(w, args->width, args->height);
+  exit(0);
+}
+
+static void _command_dock(){
+  bool   is_visible        = dock_is_visible();
+  CGSize offset            = dock_offset();
+  CGRect rect              = dock_rect();
+  int    orientation       = dock_orientation();
+  char   *orientation_name = dock_orientation_name();
+
+  log_info(
+    "\n\t    Dock Visible?                   %s" AC_RESETALL
+    "\n\t           Size:                   %dx%d"
+    "\n\t       Position:                   %dx%d"
+    "\n\t         Offset:                   %dx%d"
+    "\n\t    Orientation:                   %s (%d)"
+    "\n",
+    (is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (int)rect.size.width, (int)rect.size.height,
+    (int)rect.origin.x, (int)rect.origin.y,
+    (int)offset.width, (int)offset.height,
+    orientation_name, orientation
+    );
+
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_menu_bar(){
+  bool   is_visible = display_menu_bar_visible();
+  CGRect rect       = display_menu_bar_rect(display_id_for_space(get_space_id()));
+
+  log_info(
+    "\n\tMenu Bar info is visible?      %s" AC_RESETALL
+    "\n\tMenu Bar Size:                 %dx%d"
+    "\n\tMenu Bar Position:             %dx%d"
+    "\n\tMenu Bar Height:               %dpixels"
+    "\n",
+    (is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (int)rect.size.width, (int)rect.size.height,
+    (int)rect.origin.x, (int)rect.origin.y,
+    get_menu_bar_height()
+    );
+
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_sticky_window(){
+  struct window_t *w = get_window_id(args->window_id);
+
+  log_debug("setting sticky on window %lu on space %d", w->window_id, w->space_id);
+  get_window_tags(w);
+  set_window_tags(w);
+  get_window_tags(w);
+  fade_window(w);
   exit(0);
 }
 

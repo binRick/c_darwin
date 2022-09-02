@@ -61,8 +61,14 @@ static struct {
   void              *memory;
   uint64_t          size;
   volatile uint64_t used;
-}                 g_temp_storage;
-
+} g_temp_storage;
+enum dock_orientation_t {
+  DOCK_ORIENTATION_TOP = 1,
+  DOCK_ORIENTATION_BOTTOM,
+  DOCK_ORIENTATION_LEFT,
+  DOCK_ORIENTATION_RIGHT,
+  DOCK_ORIENTATIONS_QTY,
+};
 static const char *bool_str[]  = { "off", "on" };
 static const char *layer_str[] =
 {
@@ -83,12 +89,16 @@ struct Vector *get_window_space_ids_v(struct Vector *windows_v);
 bool get_window_is_onscreen(struct window_t *w);
 bool get_window_is_popover(struct window_t *w);
 CFStringRef get_window_role_ref(struct window_t *w);
+void get_window_tags(struct window_t *w);
+void set_window_tags(struct window_t *w);
 void window_id_send_to_space(size_t window_id, uint64_t dsid);
 bool get_window_is_focused(struct window_t *w);
 void make_key_window(struct window_t *w);
 int get_space_display_id(int space_id);
 void set_window_active_on_all_spaces(struct window_t *w);
 bool init_kb_events();
+void fade_window(struct window_t *w);
+int get_menu_bar_height();
 struct window_t *get_window_id(size_t WINDOW_ID);
 void focus_window(struct window_t *w);
 int get_window_layer(struct window_t *w);
@@ -173,6 +183,12 @@ int space_display_id(int sid);
 bool get_window_is_minimized(struct window_t *w);
 uint64_t display_space_id(uint32_t did);
 int get_display_width();
+int get_display_height();
+CGSize dock_offset(void);
+bool dock_is_visible(void);
+int dock_orientation(void);
+char *dock_orientation_name(void);
+CGRect dock_rect(void);
 CFStringRef display_uuid(uint32_t did);
 uint32_t display_id(CFStringRef uuid);
 int get_window_connection_id(struct window_t *w);

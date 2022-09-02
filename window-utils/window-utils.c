@@ -12,8 +12,8 @@
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG_MODE    false
-///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
 void move_current_window(int center, int x, int y, int w, int h){
   AXValueRef     temp;
   AXUIElementRef current_app = get_frontmost_app();
@@ -235,25 +235,6 @@ CGPoint window_ax_origin(char *windowRef){
   return(origin);
 }
 
-bool display_manager_dock_hidden(void){
-  return(CoreDockGetAutoHideEnabled());
-}
-
-int display_manager_dock_orientation(void){
-  int pinning     = 0;
-  int orientation = 0;
-
-  CoreDockGetOrientationAndPinning(&orientation, &pinning);
-  return(orientation);
-}
-
-CGRect display_manager_dock_rect(void){
-  int    reason = 0;
-  CGRect bounds = {};
-
-  SLSGetDockRectWithReason(g_connection, &bounds, &reason);
-  return(bounds);
-}
 /*
  * uint64_t display_space_id(uint32_t did){
  * CFStringRef uuid = display_uuid(did);
