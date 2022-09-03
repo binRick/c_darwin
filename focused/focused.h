@@ -53,17 +53,16 @@ struct focused_server_t {
   char                        *uri;
   size_t                      svr_recv_msgs, cl_recv_msgs, svr_events_qty, cl_events_qty, svr_recv_bytes, cl_recv_bytes, svr_sent_bytes, cl_sent_bytes, cl_sent_msgs, svr_sent_msgs;
   bool                        enabled, svr_debug_mode, cl_debug_mode;
-  size_t cl_send_msgs_qty, cl_send_msg_interval_ns;
-  
+  size_t                      cl_send_msgs_qty, cl_send_msg_interval_ns;
 };
 static const struct focused_server_t *DEFAULT_SERVER_CONFIG = &(struct focused_server_t){
-  .port          = 44112,
-  .host          = "127.0.0.1",
-  .proto         = FOCUSED_SERVER_PROTO_TCP,
-  .uri           = NULL,
-  .enabled       = true,
-  .svr_recv_msgs = 0, .svr_events_qty = 0, .svr_debug_mode = false,
-  .cl_recv_msgs  = 0, .cl_events_qty = 0, .cl_debug_mode = false,
+  .port             = 44112,
+  .host             = "127.0.0.1",
+  .proto            = FOCUSED_SERVER_PROTO_TCP,
+  .uri              = NULL,
+  .enabled          = true,
+  .svr_recv_msgs    = 0, .svr_events_qty = 0, .svr_debug_mode = false,
+  .cl_recv_msgs     = 0, .cl_events_qty = 0, .cl_debug_mode = false,
   .cl_send_msgs_qty = 5, .cl_send_msg_interval_ns = 50 * 1,
 };
 struct focused_config_t {
