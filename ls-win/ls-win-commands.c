@@ -63,17 +63,27 @@ static void _check_width(uint16_t width){
 }
 
 static void _check_window_id(uint16_t window_id){
-  log_info("validing window id %d", window_id);
+  log_info("validing window id %lu", (size_t)window_id);
 
   if (window_id < 1) {
+    log_error("Window ID too small");
     goto do_error;
   }
   struct window_t *w = get_window_id((size_t)window_id);
 
-  if (w == NULL || w->window_id != (size_t)window_id) {
+  if (!w) {
+    log_error("Window is Null");
     goto do_error;
   }
-  free(w);
+  if ((size_t)w->window_id != (size_t)window_id) {
+    log_error("Window id mismatch: %lu|%lu", (size_t)window_id, w->window_id);
+    goto do_error;
+  }
+  if (w) {
+    free(w);
+  }
+  return(EXIT_SUCCESS);
+
 do_error:
   log_error("Invalid Window ID %lu", (size_t)window_id);
   exit(EXIT_FAILURE);
@@ -83,7 +93,13 @@ do_error:
 static void _command_focused_pid(){
   int pid = get_focused_pid();
 
-  log_info("     PID:              %d", pid);
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Dock" AC_RESETALL
+    "     PID:              %d"
+    "\n%s",
+    pid,
+    ""
+    );
 
   exit(EXIT_SUCCESS);
 }
@@ -91,14 +107,14 @@ static void _command_focused_pid(){
 static void _command_focused_space(){
   unsigned long       started                            = timestamp();
   int                 _space_id                          = get_space_id();
-  int                 _space_display_id                  = display_id_for_space(_space_id);
-  int                 _space_type                        = space_type(_space_id);
+  int                 _space_display_id                  = get_display_id_for_space(_space_id);
+  int                 _space_type                        = get_space_type(_space_id);
   char                *_space_uuid                       = get_space_uuid(_space_id);
   bool                _space_management_mode             = get_space_management_mode(_space_id);
-  bool                _space_is_fullscreen               = space_is_fullscreen(_space_id);
-  bool                _space_is_visible                  = space_is_visible(_space_id);
-  bool                _space_is_user                     = space_is_user(_space_id);
-  bool                _space_is_system                   = space_is_system(_space_id);
+  bool                _space_is_fullscreen               = get_space_is_fullscreen(_space_id);
+  bool                _space_is_visible                  = get_space_is_visible(_space_id);
+  bool                _space_is_user                     = get_space_is_user(_space_id);
+  bool                _space_is_system                   = get_space_is_system(_space_id);
   bool                _space_is_active                   = get_space_is_active(_space_id);
   bool                _space_can_create_tile             = get_space_can_create_tile(_space_id);
   CGRect              _space_rect                        = get_space_rect(_space_id);
@@ -243,6 +259,7 @@ static void _command_dock(){
   char   *orientation_name = dock_orientation_name();
 
   log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Dock" AC_RESETALL
     "\n\t    Dock Visible?                   %s" AC_RESETALL
     "\n\t           Size:                   %dx%d"
     "\n\t       Position:                   %dx%d"
@@ -260,19 +277,24 @@ static void _command_dock(){
 }
 
 static void _command_menu_bar(){
-  bool   is_visible = menu_bar_visible();
-  CGRect rect       = menu_bar_rect(display_id_for_space(get_space_id()));
+  bool   _is_visible = get_menu_bar_visible();
+  int    _space_id   = get_space_id();
+  int    _display_id = get_display_id_for_space(_space_id);
+  CGRect _rect       = get_menu_bar_rect(_display_id);
+  int    _height     = get_menu_bar_height();
 
   log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Menu Bar" AC_RESETALL
     "\n\tMenu Bar info is visible?      %s" AC_RESETALL
     "\n\tMenu Bar Size:                 %dx%d"
     "\n\tMenu Bar Position:             %dx%d"
     "\n\tMenu Bar Height:               %dpixels"
-    "\n",
-    (is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
-    (int)rect.size.width, (int)rect.size.height,
-    (int)rect.origin.x, (int)rect.origin.y,
-    get_menu_bar_height()
+    "\n%s",
+    (_is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
+    (int)_rect.size.width, (int)_rect.size.height,
+    (int)_rect.origin.x, (int)_rect.origin.y,
+    _height,
+    ""
     );
 
   exit(EXIT_SUCCESS);
@@ -337,8 +359,8 @@ static void _command_set_space(){
   int        display_spaces_count = CFArrayGetCount(display_spaces_ref);
   log_info("spaces qty:%d", display_spaces_count);
 
-  int         display_id       = space_display_id(args->space_id);
-  CFStringRef display_uuid_ref = display_uuid(display_id);
+  int         display_id       = get_space_display_id(args->space_id);
+  CFStringRef display_uuid_ref = get_display_uuid_ref(display_id);
 
   log_info("space display id: %d | %s", display_id, cfstring_copy(display_uuid_ref));
 
@@ -350,34 +372,87 @@ static void _command_set_space(){
   uint64_t sid = args->space_id;
   CGSManagedDisplaySetCurrentSpace(g_connection, display_uuid_ref, sid);
 
-  //set_space_by_index(args->space_id);
-  //CGSSetWorkspace(_CGSDefaultConnection(),3);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 void _command_windows(){
+  unsigned long started    = timestamp();
   struct Vector *windows_v = get_windows();
 
-  log_debug("listing %lu windows", vector_size(windows_v));
+  log_debug(
+    "\t" AC_YELLOW AC_UNDERLINE "Windows" AC_RESETALL
+    "\n\t# Windows       :          %lu"
+    "\n%s",
+    vector_size(windows_v),
+    ""
+    );
   struct list_window_table_t *list_options = &(struct list_window_table_t){
     .current_space_only = args->current_space_only,
+    .space_id           = args->space_id,
   };
 
   list_windows_table((void *)list_options);
-  exit(0);
+  unsigned long dur = timestamp() - started;
+
+  log_info(
+    "\n\tDuration                    :       %s" AC_RESETALL
+    "%s",
+    milliseconds_to_string(dur),
+    ""
+    );
+
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_displays(){
-  struct Vector *display_ids_v = get_display_ids_v();
+  unsigned long started         = timestamp();
+  struct Vector *_display_ids_v = get_display_ids_v();
+  int           _id             = get_main_display_id();
+  char          *_uuid          = get_display_uuid(_id);
+  CGPoint       _center         = get_display_center(_id);
+  CGRect        _rect           = get_display_rect(_id);
+  int           _width          = get_display_width();
+  struct Vector *_space_ids     = get_display_id_space_ids_v(_id);
+  int           _height         = get_display_height();
 
-  log_debug("listing %lu displays", vector_size(display_ids_v));
-  exit(0);
+  unsigned long dur = timestamp() - started;
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Displays" AC_RESETALL
+    "\n\t# Displays                  :       %lu" AC_RESETALL
+    "\n\tMain ID                     :       %d" AC_RESETALL
+    "\n\tUUID                        :       %s" AC_RESETALL
+    "\n\tCenter                      :       %dx%d"
+    "\n\tSize                        :       %dx%d"
+    "\n\tPosition                    :       %dx%d"
+    "\n\tHeight                      :       %dpixels"
+    "\n\tWidth                       :       %dpixels"
+    "\n\tSpace IDs                   :       %lu"
+    "\n\tDuration                    :       %s" AC_RESETALL
+    "%s",
+    vector_size(_display_ids_v),
+    _id, _uuid,
+    (int)_center.x, (int)_center.y,
+    (int)_rect.size.width, (int)_rect.size.height,
+    (int)_rect.origin.x, (int)_rect.origin.y,
+    _height, _width,
+    vector_size(_space_ids),
+    milliseconds_to_string(dur),
+    ""
+    );
+
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_spaces(){
   struct Vector *space_ids_v = get_space_ids_v();
 
-  log_debug("%lu spaces. current space: %d", vector_size(space_ids_v), get_space_id());
+  log_debug(
+    "\t" AC_YELLOW AC_UNDERLINE "Spaces" AC_RESETALL
+    "\n\t# Spaces           :     %lu"
+    "\n\tCurrent            :     %d",
+    vector_size(space_ids_v), get_space_id()
+    );
   for (size_t i = 0; i < vector_size(space_ids_v); i++) {
     size_t        space_id            = (size_t)vector_get(space_ids_v, i);
     struct Vector *space_window_ids_v = get_space_window_ids_v(space_id);
@@ -391,7 +466,9 @@ static void _command_spaces(){
 }
 
 static void _command_debug_args(){
-  log_info("Debugging args");
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Debug args" AC_RESETALL
+    );
   log_info("Verbose:                 %s", args->verbose == true ? "Yes" : "No");
   log_info("Current Space Only:      %s", args->current_space_only == true ? "Yes" : "No");
   log_info("Space ID:                %d", args->space_id);

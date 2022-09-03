@@ -50,10 +50,7 @@ void get_gpu(void);
 double get_cpu();
 double get_cpu_time(void);
 void get_os(void);
-size_t get_devices_count();
 
-uint32_t get_display_count();
-CGDirectDisplayID get_display_id(uint32_t id);
 struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID display_id);
 
 #define C0     "\x1B[0m"    /* Reset  */
@@ -76,3 +73,4 @@ typedef struct mem {
 
 void get_mem(void);
 void get_model(void);
+size_t get_devices_count();

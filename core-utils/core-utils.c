@@ -40,3 +40,10 @@
 #include <sys/syslimits.h>
 #include <time.h>
 #include <unistd.h>
+static bool CORE_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__core_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_CORE_UTILS") != NULL) {
+    log_debug("Enabling Core Utils Debug Mode");
+    CORE_UTILS_DEBUG_MODE = true;
+  }
+}

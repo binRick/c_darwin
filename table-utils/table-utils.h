@@ -25,6 +25,7 @@
 struct list_window_table_t {
   struct Vector *windows_v;
   bool          current_space_only;
+  int           space_id;
 };
 int list_windows_table(void *ARGS);
 

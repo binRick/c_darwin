@@ -1,9 +1,17 @@
 #pragma once
 #include "app-utils/app-utils.h"
+#include "log.h/log.h"
 #include "timestamp/timestamp.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <CoreVideo/CVPixelBuffer.h>
 #include <stdbool.h>
+static bool APP_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__app_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_APP_UTILS") != NULL) {
+    log_debug("Enabling App Utils Debug Mode");
+    APP_UTILS_DEBUG_MODE = true;
+  }
+}
 ///////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////

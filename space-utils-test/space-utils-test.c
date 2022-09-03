@@ -47,12 +47,12 @@ TEST t_space_utils_test(){
     for (size_t i = 0; i <= vector_size(space_ids_v) + 1; i++) {
       int      space_id = (int)(size_t)vector_get(space_ids_v, i);
       int      minimized_window_count, window_count;
-      uint32_t *window_list = space_window_list(i, &window_count, true);
+      uint32_t *window_list = get_space_window_list(i, &window_count, true);
       if (window_count == 0) {
         continue;
       }
       on_space_index++;
-      space_minimized_window_list(i, &minimized_window_count);
+      get_space_minimized_window_list(i, &minimized_window_count);
       log_debug("    Space " AC_GREEN "#%lu/%lu " AC_RESETALL " :: |"
                 AC_RESETALL AC_YELLOW "%d" AC_RESETALL
                 " windows (" AC_BLUE "%d" AC_RESETALL " minimized)     ",

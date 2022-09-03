@@ -1,5 +1,13 @@
 #pragma once
 #include "iokit-utils/iokit-utils.h"
+#include "log.h/log.h"
+static bool IOKIT_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__iokit_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_IOKIT_UTILS") != NULL) {
+    log_debug("Enabling IOKit Utils Debug Mode");
+    IOKIT_UTILS_DEBUG_MODE = true;
+  }
+}
 
 int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key){
   CFTypeRef ref;

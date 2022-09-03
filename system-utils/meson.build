@@ -4,7 +4,7 @@ system_utils_srcs = [
 system_utils_deps = [
   c_stringfn_dep,
   pasteboard_dep,
-  core_utils_dep,string_utils_dep,
+  core_utils_dep,string_utils_dep,display_utils_dep,logh_dep,
 ]
 
 system_utils_link_args = [

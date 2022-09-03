@@ -22,7 +22,7 @@
 //////////////////////////////////////
 
 int get_menu_bar_height();
-bool menu_bar_visible(void);
-CGRect menu_bar_rect(uint32_t did);
+bool get_menu_bar_visible(void);
+CGRect get_menu_bar_rect(int display_id);
 
 #endif

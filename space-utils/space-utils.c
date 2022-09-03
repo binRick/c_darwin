@@ -3,6 +3,13 @@
 #include "log.h/log.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
+static bool SPACE_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__space_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_SPACE_UTILS") != NULL) {
+    log_debug("Enabling Space Utils Debug Mode");
+    SPACE_UTILS_DEBUG_MODE = true;
+  }
+}
 
 struct Vector *get_space_ids_v(){
   struct Vector *ids  = vector_new();
@@ -24,7 +31,7 @@ struct Vector *get_space_non_minimized_window_ids_v(size_t space_id){
 
   int           window_qty    = 0;
   uint64_t      sid           = (uint64_t)space_id;
-  uint32_t      *windows_list = space_window_list_for_connection(&sid, 1, 0, &window_qty, false);
+  uint32_t      *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, false);
 
   for (int i = 0; i < window_qty; i++) {
     vector_push(ids, (void *)(size_t)windows_list[i]);
@@ -36,7 +43,7 @@ struct Vector *get_space_minimized_window_ids_v(size_t space_id){
 
   int           window_qty    = 0;
   uint64_t      sid           = (uint64_t)space_id;
-  uint32_t      *windows_list = space_minimized_window_list(sid, &window_qty);
+  uint32_t      *windows_list = get_space_minimized_window_list(sid, &window_qty);
 
   for (int i = 0; i < window_qty; i++) {
     vector_push(ids, (void *)(size_t)windows_list[i]);
@@ -47,7 +54,7 @@ struct Vector *get_space_window_ids_v(size_t space_id){
   struct Vector *ids          = vector_new();
   int           window_qty    = 0;
   uint64_t      sid           = (uint64_t)space_id;
-  uint32_t      *windows_list = space_window_list_for_connection(&sid, 1, 0, &window_qty, true);
+  uint32_t      *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, true);
 
   for (int i = 0; i < window_qty; i++) {
     vector_push(ids, (void *)(size_t)windows_list[i]);
@@ -57,7 +64,7 @@ struct Vector *get_space_window_ids_v(size_t space_id){
 
 struct Vector *get_display_id_space_ids_v(uint32_t did){
   struct Vector *display_space_ids = vector_new();
-  CFStringRef   uuid               = display_uuid(did);
+  CFStringRef   uuid               = get_display_uuid_ref(did);
 
   if (!uuid) {
     goto out;
@@ -129,10 +136,10 @@ int get_space_management_mode(int space_id){
   return(SLSGetSpaceManagementMode(space_id));
 }
 
-uint32_t *space_minimized_window_list(uint64_t sid, int *count){
+uint32_t *get_space_minimized_window_list(uint64_t sid, int *count){
   int      window_count, non_min_window_count;
-  uint32_t *windows_list         = space_window_list_for_connection(&sid, 1, 0, &window_count, true);
-  uint32_t *non_min_windows_list = space_window_list_for_connection(&sid, 1, 0, &non_min_window_count, false);
+  uint32_t *windows_list         = get_space_window_list_for_connection(&sid, 1, 0, &window_count, true);
+  uint32_t *non_min_windows_list = get_space_window_list_for_connection(&sid, 1, 0, &non_min_window_count, false);
 
   *count = (window_count - non_min_window_count);
   uint32_t *minimized_window_list = calloc((*count) + 1, sizeof(uint32_t));
@@ -154,7 +161,7 @@ uint32_t *space_minimized_window_list(uint64_t sid, int *count){
 }
 
 CGImageRef space_capture(uint32_t sid) {
-  uint64_t   dsid  = dsid_from_sid(sid);
+  uint64_t   dsid  = get_dsid_from_sid(sid);
   CGImageRef image = NULL;
 
   if (dsid) {
@@ -167,12 +174,12 @@ CGImageRef space_capture(uint32_t sid) {
   return(image);
 }
 
-int space_type(uint64_t sid){
+int get_space_type(uint64_t sid){
   return(SLSSpaceGetType(g_connection, sid));
 }
 
 char *get_space_uuid(uint64_t sid){
-  int type = space_type(sid);
+  int type = get_space_type(sid);
 
   if (type != 0 && type != 4) {
     log_error("space not user or fullscreen");
@@ -195,7 +202,7 @@ void set_space_by_index(int space){
   CFNotificationCenterPostNotification(nc, CFSTR("com.apple.switchSpaces"), numstr, NULL, TRUE);
 }
 
-uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized){
+uint32_t *get_space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized){
   int        window_count = 0;
   uint64_t   set_tags     = 1;
   uint64_t   clear_tags   = 0;
@@ -203,18 +210,25 @@ uint32_t *space_window_list_for_connection(uint64_t *space_list, int space_count
   uint32_t   *window_list = calloc(1, sizeof(uint32_t));
 
   CFArrayRef space_list_ref = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), 1, kCFNumberSInt64Type);
-  //log_info("space window list> %d||min?%d|cid:%d|space_count:%d|",space_count,include_minimized,cid,space_count);
+
+  if (SPACE_UTILS_DEBUG_MODE == true) {
+    log_info("space window list> %d||min?%d|cid:%d|space_count:%d|", space_count, include_minimized, cid, space_count);
+  }
   //  space_list_ref = calloc(100,sizeof(uint64_t));
   CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, cid, space_list_ref, options, &set_tags, &clear_tags);
 
   if (!window_list_ref) {
-    // log_error("window list not found");
+    if (SPACE_UTILS_DEBUG_MODE == true) {
+      log_warn("connection %d window list not found", cid);
+    }
     goto err;
   }
 
   *count = CFArrayGetCount(window_list_ref);
   if ((*count) < 1) {
-    //   log_error("window count less then one:%d",*count);
+    if (SPACE_UTILS_DEBUG_MODE == true) {
+      log_error("window count less then one:%d", *count);
+    }
     goto out;
   }
 
@@ -238,18 +252,18 @@ err:
   return(window_list);
 } /* space_window_list_for_connection */
 
-uint32_t *space_window_list(uint64_t sid, int *count, bool include_minimized){
-  return(space_window_list_for_connection(&sid, 1, 0, count, include_minimized));
+uint32_t *get_space_window_list(uint64_t sid, int *count, bool include_minimized){
+  return(get_space_window_list_for_connection(&sid, 1, 0, count, include_minimized));
 }
 
-int total_spaces(void){
+int get_total_spaces(void){
   int rows, cols;
 
   CoreDockGetWorkspacesCount(&rows, &cols);
   return(cols);
 }
 
-int space_display_id(int sid){
+int get_space_display_id(int sid){
   CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
 
   if (!uuid_string) {
@@ -265,25 +279,24 @@ int space_display_id(int sid){
   return((int)id);
 }
 
-bool space_is_fullscreen(uint64_t sid){
+bool get_space_is_fullscreen(uint64_t sid){
   return(SLSSpaceGetType(g_connection, sid) == 4);
 }
 
-bool space_is_system(uint64_t sid){
+bool get_space_is_system(uint64_t sid){
   return(SLSSpaceGetType(g_connection, sid) == 2);
 }
 
-bool space_is_visible(uint64_t sid){
-  return(sid == display_space_id(space_display_id(sid)));
+bool get_space_is_visible(uint64_t sid){
+  return(sid == get_display_space_id(get_space_display_id(sid)));
 }
 
-uint64_t display_space_id(uint32_t did){
-  CFStringRef uuid = display_uuid(did);
+uint64_t get_display_space_id(uint32_t did){
+  CFStringRef uuid = get_display_uuid_ref(did);
 
   if (!uuid) {
     return(0);
   }
-
   uint64_t sid = SLSManagedDisplayGetCurrentSpace(g_connection, uuid);
 
   CFRelease(uuid);
@@ -291,7 +304,7 @@ uint64_t display_space_id(uint32_t did){
   return(sid);
 }
 
-uint64_t dsid_from_sid(uint32_t sid) {
+uint64_t get_dsid_from_sid(uint32_t sid) {
   uint64_t   result      = 0;
   int        desktop_cnt = 1;
 
@@ -321,8 +334,8 @@ out:
   return(result);
 }
 
-uint32_t display_id_for_space(uint32_t sid) {
-  uint64_t dsid = dsid_from_sid(sid);
+uint32_t get_display_id_for_space(uint32_t sid) {
+  uint64_t dsid = get_dsid_from_sid(sid);
 
   if (!dsid) {
     return(0);
@@ -346,6 +359,6 @@ int get_space_id(void){
   return(SLSGetActiveSpace(g_connection));
 }
 
-bool space_is_user(uint64_t sid){
+bool get_space_is_user(uint64_t sid){
   return(SLSSpaceGetType(g_connection, sid) == 0);
 }

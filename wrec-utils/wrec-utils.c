@@ -15,6 +15,13 @@
 #include "tempdir.c/tempdir.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "wrec-common/extern.h"
+static bool WREC_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__wrec_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_WREC_UTILS") != NULL) {
+    log_debug("Enabling Wrec Utils Debug Mode");
+    WREC_UTILS_DEBUG_MODE = true;
+  }
+}
 ////////////////////////////////////////////////////////////
 struct recorded_frame_t *get_first_recorded_frame(struct capture_config_t *capture_config){
   if (vector_size(capture_config->recorded_frames_v) == 0) {

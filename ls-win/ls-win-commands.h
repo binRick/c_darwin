@@ -30,6 +30,13 @@ enum command_type_t {
   COMMAND_DOCK,
   COMMAND_TYPES_QTY,
 };
+enum color_types_t {
+  COLOR_FOCUS,
+  COLOR_TYPES_QTY,
+};
+struct item_color_t {
+  const char *color;
+};
 struct cmd_t {
   void (*fxn)(void);
 };
@@ -38,7 +45,8 @@ struct check_cmd_t {
   int  arg_data_type;
 };
 
-struct cmd_t       cmds[COMMAND_TYPES_QTY + 1];
-struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
+struct cmd_t        cmds[COMMAND_TYPES_QTY + 1];
+struct check_cmd_t  check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
+struct item_color_t item_colors[COLOR_TYPES_QTY + 1];
 
 #endif

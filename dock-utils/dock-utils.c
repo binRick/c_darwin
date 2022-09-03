@@ -1,7 +1,14 @@
 #include "core-utils/core-utils-extern.h"
 #include "display-utils/display-utils.h"
 #include "dock-utils/dock-utils.h"
-
+#include "log.h/log.h"
+static bool DOCK_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__dock_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DOCK_UTILS") != NULL) {
+    log_debug("Enabling Dock Utils Debug Mode");
+    DOCK_UTILS_DEBUG_MODE = true;
+  }
+}
 ////////////////////////////////////////////
 const char *dock_orientation_names[DOCK_ORIENTATIONS_QTY] = {
   [DOCK_ORIENTATION_TOP]    = "top",

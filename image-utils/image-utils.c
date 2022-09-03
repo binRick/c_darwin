@@ -16,6 +16,13 @@
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
+static bool IMAGE_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__image_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_IMAGE_UTILS") != NULL) {
+    log_debug("Enabling Image Utils Debug Mode");
+    IMAGE_UTILS_DEBUG_MODE = true;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {

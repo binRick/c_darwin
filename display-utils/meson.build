@@ -8,7 +8,7 @@ display_utils_dirs = [
 ]
 display_utils_deps = [
   c_fsio_dep,c_vector_dep,
-  c_stringfn_dep,
+  c_stringfn_dep,string_utils_dep,
   ansi_codes_dep,
   logh_dep,
   timestamp_dep,

@@ -1,10 +1,40 @@
 #include "core-utils/core-utils-extern.h"
 #include "display-utils/display-utils.h"
+#include "log.h/log.h"
+#include "string-utils/string-utils.h"
+static bool DISPLAY_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__display_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DISPLAY_UTILS") != NULL) {
+    log_debug("Enabling Table Utils Debug Mode");
+    DISPLAY_UTILS_DEBUG_MODE = true;
+  }
+}
 
 ////////////////////////////////////////////
+uint32_t get_main_display_id(void){
+  return(CGMainDisplayID());
+}
 
-uint32_t *display_active_display_list(uint32_t *count) {
-  int      display_count = display_active_display_count();
+char *get_active_display_uuid(void){
+  return(cfstring_copy(get_active_display_uuid_ref()));
+}
+
+CFStringRef get_active_display_uuid_ref(void){
+  return(SLSCopyActiveMenuBarDisplayIdentifier(g_connection));
+}
+
+uint32_t get_active_display_id(void){
+  CFStringRef uuid = get_active_display_uuid();
+
+  assert(uuid);
+  uint32_t result = get_display_id(uuid);
+
+  CFRelease(uuid);
+  return(result);
+}
+
+uint32_t *get_display_list(uint32_t *count) {
+  int      display_count = get_active_display_count();
   uint32_t *result       = malloc(sizeof(uint32_t) * display_count);
 
   CGGetActiveDisplayList(display_count, result, count);
@@ -45,24 +75,28 @@ struct Vector *get_display_ids_v(){
   return(ids);
 }
 
-uint32_t display_active_display_count(void) {
+int get_active_display_count(void) {
   uint32_t count;
 
   CGGetActiveDisplayList(0, NULL, &count);
-  return(count);
+  return((int)count);
 }
 
-CGPoint display_center(uint32_t did){
-  CGRect bounds = display_bounds(did);
+CGPoint get_display_center(uint32_t did){
+  CGRect bounds = get_display_rect(did);
 
   return((CGPoint){ bounds.origin.x + bounds.size.width / 2, bounds.origin.y + bounds.size.height / 2 });
 }
 
-CGRect display_bounds(uint32_t did){
+CGRect get_display_rect(uint32_t did){
   return(CGDisplayBounds(did));
 }
 
-CFStringRef display_uuid(uint32_t did){
+char *get_display_uuid(uint32_t did){
+  return(cfstring_copy(get_display_uuid_ref(did)));
+}
+
+CFStringRef get_display_uuid_ref(uint32_t did){
   CFUUIDRef uuid_ref = CGDisplayCreateUUIDFromDisplayID(did);
 
   if (!uuid_ref) {
@@ -76,7 +110,7 @@ CFStringRef display_uuid(uint32_t did){
   return(uuid_str);
 }
 
-uint32_t display_id(CFStringRef uuid){
+int get_display_id(CFStringRef uuid){
   CFUUIDRef uuid_ref = CFUUIDCreateFromString(NULL, uuid);
 
   if (!uuid_ref) {

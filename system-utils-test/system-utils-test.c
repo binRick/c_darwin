@@ -2,6 +2,7 @@
 #define DEBUG_PID_ENV    false
 //////////////////////////////////////////
 #include "c_greatest/greatest/greatest.h"
+#include "display-utils/display-utils.h"
 #include "system-utils-test.h"
 #include "system-utils/system-utils.h"
 
@@ -29,7 +30,7 @@ TEST t_display_id(void){
 }
 
 TEST t_display_count(void){
-  int display_count = get_display_count();
+  int display_count = get_active_display_count();
 
   fprintf(stdout,
           "display count:%d\n",

@@ -15,6 +15,13 @@
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
+static bool PROCESS_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__process_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_PROCESS_UTILS") != NULL) {
+    log_debug("Enabling Process Utils Debug Mode");
+    PROCESS_UTILS_DEBUG_MODE = true;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ProcessSerialNumber PID2PSN(pid_t pid) {

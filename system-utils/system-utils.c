@@ -1,4 +1,6 @@
 #include "core-utils/core-utils.h"
+#include "display-utils/display-utils.h"
+#include "log.h/log.h"
 #include "string-utils/string-utils.h"
 #include "system-utils/system-utils.h"
 #include <ApplicationServices/ApplicationServices.h>
@@ -45,9 +47,13 @@
 #include <unistd.h>
 #include <unistd.h>
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
-CGDirectDisplayID get_display_id(uint32_t id);
-CGDirectDisplayID get_current_display_id();
-
+static bool SYSTEM_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__system_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_SYSTEM_UTILS") != NULL) {
+    log_debug("Enabling System Utils Debug Mode");
+    SYSTEM_UTILS_DEBUG_MODE = true;
+  }
+}
 static const struct {
   const char *ctls;
   const char *names;
@@ -75,79 +81,10 @@ size_t get_devices_count(){
 }
 
 CGImageRef display_screen_snapshot(void) {
-  CGDirectDisplayID current_display = get_current_display_id();
+  CGDirectDisplayID current_display = get_active_display_id();
 
   return(CGDisplayCreateImage(current_display));
 }
-
-/*
- * pid_stats_t * get_pid_stats(const int pid){
- * pid_stats_t *ps = malloc(sizeof(pid_stats_t));
- *
- * ps->connections_qty     = 0;
- * ps->open_files_qty      = 0;
- * ps->fds_qty             = 0;
- * ps->sockets_qty         = 0;
- * ps->listening_ports_qty = 0;
- *
- * if (pid == 0) {
- *  printf(INVALID_PID, pid);
- *  return(ps);
- * }
- *
- * int bufferSize = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, 0, 0);
- *
- * if (bufferSize == -1) {
- *  printf(UNABLE_TO_GET_PROC_FDS, pid);
- *  return(ps);
- * }
- *
- * // Get the list of open FDs
- * struct proc_fdinfo *procFDInfo = (struct proc_fdinfo *)malloc(bufferSize);
- *
- * if (!procFDInfo) {
- *  printf(OUT_OF_MEMORY, bufferSize);
- *  return(ps);
- * }
- * proc_pidinfo(pid, PROC_PIDLISTFDS, 0, procFDInfo, bufferSize);
- * ps->fds_qty = bufferSize / PROC_PIDLISTFD_SIZE;
- * for (int i = 0; i < ps->fds_qty; i++) {
- *  if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_VNODE) {
- *    struct vnode_fdinfowithpath vnodeInfo;
- *    int                         bytesUsed = proc_pidfdinfo(pid, procFDInfo[i].proc_fd, PROC_PIDFDVNODEPATHINFO, &vnodeInfo, PROC_PIDFDVNODEPATHINFO_SIZE);
- *    if (bytesUsed == PROC_PIDFDVNODEPATHINFO_SIZE) {
- *      ps->open_files_qty++;
- *      if (DEBUG_PID_STATS) {
- *        printf(OPEN_FILE, vnodeInfo.pvip.vip_path);
- *      }
- *    }
- *  } else if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_SOCKET) { // A socket is open
- *    ps->sockets_qty++;
- *    struct socket_fdinfo socketInfo;
- *    int                  bytesUsed = proc_pidfdinfo(pid, procFDInfo[i].proc_fd, PROC_PIDFDSOCKETINFO, &socketInfo, PROC_PIDFDSOCKETINFO_SIZE);
- *    if (bytesUsed == PROC_PIDFDSOCKETINFO_SIZE) {
- *      if (socketInfo.psi.soi_family == AF_INET && socketInfo.psi.soi_kind == SOCKINFO_TCP) {
- *        int localPort  = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_lport);
- *        int remotePort = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_fport);
- *        if (remotePort == 0) { // Remote port will be 0 when the FD represents a listening socket
- *          ps->listening_ports_qty++;
- *          if (DEBUG_PID_STATS) {
- *            printf(LISTENING_ON_PORT, localPort);
- *          }
- *        } else { // Remote port will be non-0 when the FD represents communication with a remote socket
- *          ps->connections_qty++;
- *          if (DEBUG_PID_STATS) {
- *            printf(OPEN_SOCKET, localPort, remotePort);
- *          }
- *        }
- *      }
- *    }
- *  }
- * }
- *
- * return(ps);
- * }
- */
 
 double get_cpu_time( ){
 #if defined (_POSIX_TIMERS) && (_POSIX_TIMERS > 0)
@@ -272,16 +209,13 @@ DarwinMouseLocation_t * get_darwin_mouse_location(){
 }
 
 static const char *display_name_from_displayID(CGDirectDisplayID displayID, CFStringRef countryCode) {
-  char *displayProductName = 0;
+  char            *displayProductName = 0;
 
-  // get a CFDictionary with a key for the preferred name of the display
-  CFDictionaryRef displayInfo = IODisplayCreateInfoDictionary(CGDisplayIOServicePort(displayID), kIODisplayOnlyPreferredName);
-  // retrieve the display product name
+  CFDictionaryRef displayInfo           = IODisplayCreateInfoDictionary(CGDisplayIOServicePort(displayID), kIODisplayOnlyPreferredName);
   CFStringRef     displayProductNameKey = CFStringCreateWithCString(kCFAllocatorDefault, kDisplayProductName, kCFStringEncodingUTF8);
   CFDictionaryRef localizedNames        = CFDictionaryGetValue(displayInfo, displayProductNameKey);
 
   CFRelease(displayProductNameKey);
-  // use the first name
   if (CFDictionaryGetCount(localizedNames) > 0) {
     if (!countryCode) {
       countryCode = CFSTR("en_US");
@@ -347,30 +281,6 @@ struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID displa
   CFRelease(mode_list);
 
   return(res);
-}
-
-uint32_t get_display_count(){
-  uint32_t          displays_count;
-
-  CGDirectDisplayID displays[8];
-
-  CGGetActiveDisplayList(8, displays, &displays_count);
-
-  return(displays_count);
-}
-
-CGDirectDisplayID get_display_id(uint32_t id){
-  uint32_t          displays_count;
-
-  CGDirectDisplayID display_id;
-  CGDisplayModeRef  display_mode = NULL;
-  CGDirectDisplayID displays[8];
-
-  CGGetActiveDisplayList(8, displays, &displays_count);
-  display_id = displays[id];
-  CGDisplayModeRelease(display_mode);
-
-  return(display_id);
 }
 
 void get_disk(void) {

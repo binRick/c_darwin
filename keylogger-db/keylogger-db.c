@@ -9,6 +9,7 @@
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "c_greatest/greatest/greatest.h"
+#include "display-utils/display-utils.h"
 #include "generic-print/print.h"
 #include "keylogger-db/keylogger-db.h"
 #include "log.h/log.h"
@@ -277,7 +278,7 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     table_size_bytes  = keylogger_get_db_size();
     windows_qty       = get_windows_qty();
     ss                = get_window_size();
-    display_qty       = get_display_count();
+    display_qty       = get_active_display_count();
     pids_v            = get_all_processes();
     last_qty_check_ts = timestamp();
   }

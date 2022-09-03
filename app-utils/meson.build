@@ -6,7 +6,7 @@ app_utils_c_args = [
 ]
 app_utils_deps = [
   timestamp_dep,
-  bytes_dep,ms_dep,
+  bytes_dep,ms_dep,string_utils_dep,
   c_stringfn_dep,
   logh_dep,
 ]
