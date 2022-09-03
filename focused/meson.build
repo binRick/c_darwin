@@ -14,7 +14,7 @@ focused_deps = [
   osx_keys_dep,
   core_utils_dep,
   app_utils_dep,
-  dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,
+  dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,msgbox_dep,
   ansi_codes_dep,
   logh_dep,
   timestamp_dep,

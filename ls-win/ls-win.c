@@ -286,10 +286,16 @@ int main(int argc, char **argv) {
         .about       = "☘" "\t" COLOR_INFO "Menu Bar Info" AC_RESETALL,
       },
       {
-        .name        = "focused",
-        .description = "Start Focused App",
-        .function    = cmds[COMMAND_FOCUSED_START].fxn,
-        .about       = "⭐" "\t" COLOR_START "Start Focused App" AC_RESETALL,
+        .name        = "focused-server",
+        .description = "Focused Server",
+        .function    = cmds[COMMAND_FOCUSED_SERVER].fxn,
+        .about       = "⭐" "\t" COLOR_START "Focused Server" AC_RESETALL,
+      },
+      {
+        .name        = "focused-client",
+        .description = "Focused Client",
+        .function    = cmds[COMMAND_FOCUSED_CLIENT].fxn,
+        .about       = "⭐" "\t" COLOR_START "Focused Client" AC_RESETALL,
       },
       {
         .name        = "args",

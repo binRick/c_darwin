@@ -7,7 +7,13 @@
 #include "stb/stb_image.h"
 #include "wrec-animation/wrec-animation.h"
 #include "wrec-common/capture.h"
-
+static bool WREC_ANIMATION_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__wrec_animation(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_WREC_ANIMATION") != NULL) {
+    log_debug("Enabling Wrec Animation Debug Mode");
+    WREC_ANIMATION_DEBUG_MODE = true;
+  }
+}
 ////////////////////////////////////////////////////
 
 int load_pngs_create_animated_gif(struct animated_png_render_request_t *req){

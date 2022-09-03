@@ -1,12 +1,21 @@
 #pragma once
+#include "log.h/log.h"
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+static bool OSX_KEYS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__osx_keys(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_OSX_KEYS") != NULL) {
+    log_debug("Enabling OSX Keys Debug Mode");
+    OSX_KEYS_DEBUG_MODE = true;
+  }
+}
 
 const char *convertKeyboardCode(const int keyCode) {
   switch ((int)keyCode) {

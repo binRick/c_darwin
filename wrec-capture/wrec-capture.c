@@ -12,6 +12,13 @@ static void wait_for_control_d();
 #include "window-utils/window-utils.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-utils/wrec-utils.h"
+static bool WREC_CAPTURE_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__wrec_capture(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_WREC_CAPTURE") != NULL) {
+    log_debug("Enabling Wrec Capture Debug Mode");
+    WREC_CAPTURE_DEBUG_MODE = true;
+  }
+}
 ///////////////////////////////////////////////////////
 static bool            DEBUG_IMAGE_RESIZE         = false;
 static bool            VERBOSE_DEBUG_IMAGE_RESIZE = false;

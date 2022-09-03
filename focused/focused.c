@@ -10,11 +10,87 @@
 #include "log.h/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "ms/ms.h"
+#include "msgbox/msgbox/msgbox.h"
 #include "space-utils/space-utils.h"
 #include "timestamp/timestamp.h"
 #include <pthread.h>
+#include <stdbool.h>
 ////////////////////////////////////////////
 #include "focused/focused.h"
+
+static bool FOCUSED_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__focused(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_FOCUSED") != NULL) {
+    log_debug("Enabling Focused Debug Mode");
+    FOCUSED_DEBUG_MODE = true;
+  }
+}
+
+static void msg_update_server(msg_Conn *conn, msg_Event event, msg_Data data) {
+  struct focused_config_t *c = (struct focused_config_t *)conn->conn_context;
+
+  log_debug("<%d> Focused Server Update :: ", getpid());
+  if (event == msg_connection_lost) {
+    log_debug("<%d> Focused Server Connection Lost ", getpid());
+  }
+  if (event == msg_connection_closed) {
+    log_debug("<%d> Focused Server Connection Closed ", getpid());
+  }
+  if (event == msg_message) {
+    log_debug("<%d> Focused Server Message ", getpid());
+  }
+  if (event == msg_error) {
+    log_error("Server: Error: %s", msg_as_str(data));
+  }
+  if (event == msg_request) {
+    log_debug("<%d> Focused Server Message Request received", getpid());
+    msg_send(conn, data);
+    c->server->svr_recv_msgs++;
+    log_debug("<%d> Focused Server Message Sent", getpid());
+  }
+}
+
+static void msg_update_client(msg_Conn *conn, msg_Event event, msg_Data data) {
+  struct focused_config_t *c = (struct focused_config_t *)conn->conn_context;
+
+  log_info("<%d> Focused Client Update :: %s", getpid(), c->server->uri);
+  if (event == msg_connection_ready) {
+    msg_Data data = msg_new_data("hello!");
+    log_info("<%d> Focused Client connection ready", getpid());
+    msg_get(conn, data, msg_no_context);
+    log_info("<%d> Focused Client got data", getpid());
+    msg_delete_data(data);
+    log_info("<%d> Focused Client deleted data", getpid());
+  }
+  if (event == msg_reply) {
+    c->server->cl_recv_msgs++;
+    log_info("<%d> Focused Client Got Reply '%s'", getpid(), msg_as_str(data));
+  }
+}
+
+static int focus_client(void *VOID){
+  struct focused_config_t *c = (struct focused_config_t *)VOID;
+
+  log_info("<%d> Focused Client Connecting to %s", getpid(), c->server->uri);
+  msg_connect(c->server->uri, msg_update_client, (void *)c);
+  log_info("<%d> Focused Client Connected to %s", getpid(), c->server->uri);
+  while (c->server->cl_recv_msgs < 1) {
+    msg_runloop(10);
+  }
+  return(EXIT_SUCCESS);
+}
+
+static int focus_server(void *VOID){
+  struct focused_config_t *c = (struct focused_config_t *)VOID;
+
+  log_debug("<%d> Focused Server Binding %s", getpid(), c->server->uri);
+  msg_listen(c->server->uri, msg_update_server);
+  log_debug("<%d> Focused Server Listening on %s", getpid(), c->server->uri);
+  while (c->server->svr_recv_msgs < 100) {
+    msg_runloop(10);
+  }
+  return(EXIT_SUCCESS);
+}
 
 static void on_space_id_changed(void *event_data, void *VOID){
   struct focused_config_t *c       = (struct focused_config_t *)VOID;
@@ -84,6 +160,12 @@ bool add_focused_window_id(struct focused_config_t *cfg, size_t WINDOW_ID){
 struct focused_config_t *init_focused_config(void){
   assert(is_authorized_for_accessibility() == true);
   struct focused_config_t *c = calloc(1, sizeof(struct focused_config_t));
+  c->server          = calloc(1, sizeof(struct focused_server_t));
+  c->server->port    = DEFAULT_SERVER_CONFIG->port;
+  c->server->host    = DEFAULT_SERVER_CONFIG->host;
+  c->server->proto   = DEFAULT_SERVER_CONFIG->proto;
+  c->server->enabled = DEFAULT_SERVER_CONFIG->enabled;
+  asprintf(&c->server->uri, "%s://%s:%d", focused_server_proto_names[c->server->proto], c->server->host, c->server->port);
 
   c->enabled            = false;
   c->focused_space_ids  = vector_new();
@@ -116,15 +198,22 @@ static int run_loop(void *VOID){
   CFRunLoopRun();
 }
 
-bool start_focused(struct focused_config_t *cfg){
+bool run_client(struct focused_config_t *cfg){
+  //pthread_create(&(cfg->server->client_thread), NULL, focus_client, (void *)cfg);
+  focus_client((void *)cfg);
+}
+
+bool start_server(struct focused_config_t *cfg){
   cfg->started = timestamp();
   cfg->enabled = true;
 //  pthread_create(&(cfg->loop_thread), NULL, run_loop, (void *)cfg);
+  pthread_create(&(cfg->server->server_thread), NULL, focus_server, (void *)cfg);
 }
 
-bool stop_focused(struct focused_config_t *cfg){
+bool stop_server(struct focused_config_t *cfg){
   cfg->enabled = false;
   CGEventTapEnable(cfg->event_tap, false);
   //pthread_join(&(cfg->loop_thread), NULL);
+  pthread_join(&(cfg->server->server_thread), NULL);
   eventemitter_release(cfg->ee);
 }

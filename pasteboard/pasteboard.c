@@ -1,4 +1,12 @@
+#include "log.h/log.h"
 #include "pasteboard/pasteboard.h"
+static bool PASTEBOARD_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__pasteboard(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_PASTEBOARD") != NULL) {
+    log_debug("Enabling Pasteboard Debug Mode");
+    PASTEBOARD_DEBUG_MODE = true;
+  }
+}
 #define CLIPBOARD_DEBUG_MODE      false
 #define CLIPBOARD_MAX_SIZE_KB     32
 #define CLIPBOARD_CONTENT_TYPE    "public.utf8-plain-text"

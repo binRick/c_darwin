@@ -3,6 +3,13 @@
 #include "stb/stb_image.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-image/wrec-image.h"
+static bool WREC_IMAGE_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__wrec_image(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_WREC_IMAGE") != NULL) {
+    log_debug("Enabling Wrec Image Utils Debug Mode");
+    WREC_IMAGE_DEBUG_MODE = true;
+  }
+}
 ////////////////////////////////////////////////////
 struct image_dimensions_t *get_png_file_dimensions(char *path){
   return(get_png_dimensions(path));

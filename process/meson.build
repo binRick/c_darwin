@@ -11,6 +11,7 @@ process_deps = [
   tiny_regex_c_dep,
   socket99_dep,
   c_string_buffer_dep,
+  logh_dep,
   c_stringfn_dep,
   str_replace_dep,
   occurrences_dep,

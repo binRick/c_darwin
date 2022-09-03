@@ -1,4 +1,5 @@
 #pragma once
+#include "log.h/log.h"
 #include "process.h"
 
 ////////////////////////
@@ -25,8 +26,14 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
-////////////////////////
-
+/////////////////////////
+static bool PROCESS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__process(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_PROCESS") != NULL) {
+    log_debug("Enabling Process Debug Mode");
+    PROCESS_DEBUG_MODE = true;
+  }
+}
 #define GET_PID(proc)       (proc)->kp_proc.p_pid
 #define IS_RUNNING(proc)    (((proc)->kp_proc.p_stat & SRUN) != 0)
 #define ERROR_CHECK(fun) \

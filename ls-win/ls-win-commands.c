@@ -14,7 +14,8 @@ static void _command_windows();
 static void _command_displays();
 static void _command_spaces();
 static void _command_debug_args();
-static void _command_focused_start();
+static void _command_focused_server();
+static void _command_focused_client();
 static void _command_sticky_window();
 static void _command_menu_bar();
 static void _command_focused_window();
@@ -43,7 +44,8 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SPACES]                = { .fxn = (*_command_spaces)                },
   [COMMAND_DISPLAYS]              = { .fxn = (*_command_displays)              },
   [COMMAND_DEBUG_ARGS]            = { .fxn = (*_command_debug_args)            },
-  [COMMAND_FOCUSED_START]         = { .fxn = (*_command_focused_start)         },
+  [COMMAND_FOCUSED_SERVER]        = { .fxn = (*_command_focused_server)        },
+  [COMMAND_FOCUSED_CLIENT]        = { .fxn = (*_command_focused_client)        },
   [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)         },
   [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)              },
   [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
@@ -94,7 +96,7 @@ static void _command_focused_pid(){
   int pid = get_focused_pid();
 
   log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Dock" AC_RESETALL
+    "\t" AC_YELLOW AC_UNDERLINE "Focused PID" AC_RESETALL
     "     PID:              %d"
     "\n%s",
     pid,
@@ -217,13 +219,20 @@ static void _command_focused_window(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_focused_start(){
+static void _command_focused_client(){
+  struct focused_config_t *cfg = init_focused_config();
+
+  run_client(cfg);
+  exit(0);
+}
+
+static void _command_focused_server(){
   struct focused_config_t *cfg = init_focused_config();
   size_t                  wid  = 129;
 
   add_focused_window_id(cfg, wid);
 
-  start_focused(cfg);
+  start_server(cfg);
   int i = 1000, on = 0;
 
   while (on < i) {
@@ -231,7 +240,7 @@ static void _command_focused_start(){
     on++;
   }
   log_info("done");
-  stop_focused(cfg);
+  stop_server(cfg);
   exit(0);
 }
 
