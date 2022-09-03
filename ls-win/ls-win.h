@@ -1,8 +1,8 @@
 #pragma once
 #ifndef LS_WIN_H
 #define LS_WIN_H
-//////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+//////////////////////////////////////
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -38,7 +38,7 @@ struct args_t {
   int  space_id, window_id;
   int  x, y;
   int  width, height;
+  int  output_mode; char *output_mode_s;
 };
 extern struct args_t *args;
-
 #endif

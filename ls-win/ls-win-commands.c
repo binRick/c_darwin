@@ -9,6 +9,7 @@ static void _command_resize_window();
 static void _command_focus_window();
 static void _command_set_window_space();
 static void _command_set_space();
+static void _command_set_space_index();
 static void _command_set_window_all_spaces();
 static void _command_windows();
 static void _command_displays();
@@ -26,12 +27,97 @@ static void _command_dock();
 static void _check_window_id(uint16_t window_id);
 static void _check_width(uint16_t window_id);
 static void _check_height(uint16_t window_id);
+static void _check_output_mode(char *output_mode);
+////////////////////////////////////////////
+common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
+  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)    {
+    return((struct optparse_opt)                                             {
+      .short_name = 'w',
+      .long_name = "window-id",
+      .description = "window id",
+      .arg_name = "WINDOW-ID",
+      .arg_dest = &(args->window_id),
+      .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
+    });
+  },
+  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)     {
+    return((struct optparse_opt)                                             {
+      .short_name = 'x',
+      .long_name = "window-x",
+      .description = "Window X",
+      .arg_name = "WINDOW-X",
+      .arg_data_type = DATA_TYPE_UINT16,
+      .arg_dest = &(args->x),
+    });
+  },
+  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)     {
+    return((struct optparse_opt)                                             {
+      .short_name = 'y',
+      .long_name = "window-y",
+      .description = "Window y",
+      .arg_name = "WINDOW-Y",
+      .arg_data_type = DATA_TYPE_UINT16,
+      .arg_dest = &(args->y),
+    });
+  },
+  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                             {
+      .short_name = 'W',
+      .long_name = "window-width",
+      .description = "Window Width",
+      .arg_name = "WINDOW-WIDTH",
+      .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_WIDTH].fxn,
+      .arg_dest = &(args->width),
+    });
+  },
+  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args){
+    return((struct optparse_opt)                                             {
+      .short_name = 'H',
+      .long_name = "window-height",
+      .description = "Window Height",
+      .arg_name = "WINDOW-HEIGHT",
+      .arg_data_type = DATA_TYPE_UINT16,
+      .arg_dest = &(args->height),
+    });
+  },
+  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)     {
+    return((struct optparse_opt)                                             {
+      .short_name = 's',
+      .long_name = "space-id",
+      .description = "space id",
+      .arg_name = "SPACE-ID",
+      .arg_data_type = DATA_TYPE_UINT16,
+      .arg_dest = &(args->space_id),
+    });
+  },
+};
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
-  [CHECK_COMMAND_WINDOW_ID] = { .fxn = (void (*)(void))(*_check_window_id), .arg_data_type = DATA_TYPE_INT, },
-  [CHECK_COMMAND_WIDTH]     = { .fxn = (void (*)(void))(*_check_width),     .arg_data_type = DATA_TYPE_INT, },
-  [CHECK_COMMAND_HEIGHT]    = { .fxn = (void (*)(void))(*_check_height),    .arg_data_type = DATA_TYPE_INT, },
-  [CHECK_COMMAND_TYPES_QTY] = { 0 },
+  [CHECK_COMMAND_WINDOW_ID] =   {
+    .fxn           = (void (*)(void))(*_check_window_id),
+    .arg_data_type = DATA_TYPE_INT,
+  },
+  [CHECK_COMMAND_WIDTH] =       {
+    .fxn           = (void (*)(void))(*_check_width),
+    .arg_data_type = DATA_TYPE_INT,
+  },
+  [CHECK_COMMAND_HEIGHT] =      {
+    .fxn           = (void (*)(void))(*_check_height),
+    .arg_data_type = DATA_TYPE_INT,
+  },
+  [CHECK_COMMAND_OUTPUT_MODE] = {
+    .fxn           = (void (*)(void))(*_check_output_mode),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_TYPES_QTY] =   { 0},
+};
+const char         *output_modes[OUTPUT_MODES_QTY + 1] = {
+  [OUTPUT_MODE_TEXT]  = "text",
+  [OUTPUT_MODE_JSON]  = "json",
+  [OUTPUT_MODE_TABLE] = "table",
+  [OUTPUT_MODES_QTY]  = NULL,
 };
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)           },
@@ -40,6 +126,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SET_WINDOW_SPACE]      = { .fxn = (*_command_set_window_space)      },
   [COMMAND_SET_WINDOW_ALL_SPACES] = { .fxn = (*_command_set_window_all_spaces) },
   [COMMAND_SET_SPACE]             = { .fxn = (*_command_set_space)             },
+  [COMMAND_SET_SPACE_INDEX]       = { .fxn = (*_command_set_space_index)       },
   [COMMAND_WINDOWS]               = { .fxn = (*_command_windows)               },
   [COMMAND_SPACES]                = { .fxn = (*_command_spaces)                },
   [COMMAND_DISPLAYS]              = { .fxn = (*_command_displays)              },
@@ -56,6 +143,22 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
 };
 
 ////////////////////////////////////////////
+static void _command_set_space_index(){
+  log_debug("setting space id from %d to %d", get_space_id(), args->space_id);
+}
+
+static void _check_output_mode(char *output_mode){
+  log_info("validing output mode %s", output_mode);
+  for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++) {
+    if (strcmp(output_mode, output_modes[i]) == 0) {
+      args->output_mode = i;
+      return(EXIT_SUCCESS);
+    }
+  }
+  log_error("Invalid Output Mode '%s'", output_mode);
+  exit(EXIT_FAILURE);
+}
+
 static void _check_height(uint16_t width){
   log_info("validing width %d", width);
 }
@@ -92,6 +195,19 @@ do_error:
 }
 
 ////////////////////////////////////////////
+
+static void _command_debug_args(){
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Debug args" AC_RESETALL
+    );
+  log_info("Verbose:                 %s", args->verbose == true ? "Yes" : "No");
+  log_info("Current Space Only:      %s", args->current_space_only == true ? "Yes" : "No");
+  log_info("Space ID:                %d", args->space_id);
+  log_info("Window ID:               %d", args->window_id);
+  log_info("Output Mode:             %s (%d)", args->output_mode_s, args->output_mode);
+  exit(0);
+}
+
 static void _command_focused_pid(){
   int pid = get_focused_pid();
 
@@ -471,17 +587,6 @@ static void _command_spaces(){
       printf("\t%lu\n", window_id);
     }
   }
-  exit(0);
-}
-
-static void _command_debug_args(){
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Debug args" AC_RESETALL
-    );
-  log_info("Verbose:                 %s", args->verbose == true ? "Yes" : "No");
-  log_info("Current Space Only:      %s", args->current_space_only == true ? "Yes" : "No");
-  log_info("Space ID:                %d", args->space_id);
-  log_info("Window ID:               %d", args->window_id);
   exit(0);
 }
 

@@ -1,20 +1,13 @@
+#include "ls-win/ls-win-commands.h"
 #include "ls-win/ls-win.h"
-#define COLOR_FOCUS     "\x1b[38;2;151;252;50m" AC_UNDERLINE
-#define COLOR_SHOW      "\x1b[38;2;50;252;142m" AC_UNDERLINE
-#define COLOR_LIST      "\x1b[38;2;50;175;252m" AC_UNDERLINE
-#define COLOR_SPACE     "\x1b[38;2;97;252;50m" AC_UNDERLINE
-#define COLOR_INFO      "\x1b[38;2;189;50;252m" AC_UNDERLINE
-#define COLOR_DEBUG     "\x1b[38;2;252;50;127m" AC_UNDERLINE
-#define COLOR_WINDOW    "\x1b[38;2;252;163;50m" AC_UNDERLINE
-#define COLOR_MOVE      "\x1b[38;2;252;83;50m" AC_UNDERLINE
-#define COLOR_START     "\x1b[38;2;62;252;50m" AC_UNDERLINE
-#define COLOR_HELP      "\x1b[38;2;50;186;252m" AC_UNDERLINE
 ////////////////////////////////////////////
-struct args_t *args = &(struct args_t){
+const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
+struct args_t                 *args               = &(struct args_t){
   .verbose            = false,
   .current_space_only = false,
   .space_id           = 0,
   .window_id          = 0,
+  .output_mode        = DEFAULT_OUTPUT_MODE,
 };
 
 ////////////////////////////////////////////
@@ -34,6 +27,15 @@ int main(int argc, char **argv) {
         .function    = optparse_print_help,
       },
       {
+        .short_name    = 'm',
+        .long_name     = "mode",
+        .description   = "Output Mode.",
+        .arg_name      = "OUTPUT-MODE",
+        .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
+        .function      = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
+        .arg_dest      = &(args->output_mode_s),
+      },
+      {
         .short_name  = 'v',
         .long_name   = "verbose",
         .description = "Increase verbosity.",
@@ -42,7 +44,7 @@ int main(int argc, char **argv) {
       },
       { END_OF_OPTIONS },
     },
-    .subcommands           = (struct optparse_cmd[]) {
+    .subcommands         = (struct optparse_cmd[]) {
       {
         .description = "Print a subcommand's help information and quit.",
         .name        = "help",
@@ -56,31 +58,9 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_MOVE_WINDOW].fxn,
         .about       = "🍏" "\t" COLOR_MOVE "Move Window" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "Window ID",
-            .arg_name      = "WINDOW-ID",
-            .arg_dest      = &(args->window_id),
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-          },
-          {
-            .short_name    = 'x',
-            .long_name     = "window-x",
-            .description   = "Window X",
-            .arg_name      = "WINDOW-X",
-            .arg_data_type = DATA_TYPE_UINT16,
-            .arg_dest      = &(args->x),
-          },
-          {
-            .short_name    = 'y',
-            .long_name     = "window-y",
-            .description   = "Window y",
-            .arg_name      = "WINDOW-Y",
-            .arg_data_type = DATA_TYPE_UINT16,
-            .arg_dest      = &(args->y),
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_WINDOW_X](args),
+          common_options_b[COMMON_OPTION_WINDOW_Y](args),
           { END_OF_OPTIONS },
         },
       },
@@ -90,32 +70,9 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_RESIZE_WINDOW].fxn,
         .about       = "💡" "\t" COLOR_WINDOW "Resize Window" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "Window ID",
-            .arg_name      = "WINDOW-ID",
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-            .arg_dest      = &(args->window_id),
-          },
-          {
-            .short_name    = 'W',
-            .long_name     = "window-width",
-            .description   = "Window Width",
-            .arg_name      = "WINDOW-WIDTH",
-            .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WIDTH].fxn,
-            .arg_dest      = &(args->width),
-          },
-          {
-            .short_name    = 'H',
-            .long_name     = "window-height",
-            .description   = "Window Height",
-            .arg_name      = "WINDOW-HEIGHT",
-            .arg_data_type = DATA_TYPE_UINT16,
-            .arg_dest      = &(args->height),
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_WINDOW_WIDTH](args),
+          common_options_b[COMMON_OPTION_WINDOW_HEIGHT](args),
           { END_OF_OPTIONS },
         },
       },
@@ -125,15 +82,7 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_FOCUS_WINDOW].fxn,
         .about       = "🔅" "\t" COLOR_WINDOW "Focus Window" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "window id",
-            .arg_name      = "WINDOW-ID",
-            .arg_dest      = &(args->window_id),
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -143,15 +92,7 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_STICKY_WINDOW].fxn,
         .about       = "🕰" "\t" COLOR_WINDOW "Set Window Sticky" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "window id",
-            .arg_name      = "WINDOW-ID",
-            .arg_dest      = &(args->window_id),
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -161,15 +102,7 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_SET_WINDOW_ALL_SPACES].fxn,
         .about       = "🦠" "\t" COLOR_WINDOW "Set Window To All Spaces" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "window id",
-            .arg_name      = "WINDOW-ID",
-            .arg_dest      = &(args->window_id),
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -179,23 +112,18 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_SET_WINDOW_SPACE].fxn,
         .about       = "⛰" "\t" COLOR_WINDOW "Set Window Space" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "window id",
-            .arg_name      = "WINDOW-ID",
-            .arg_dest      = &(args->window_id),
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-          },
-          {
-            .short_name    = 's',
-            .long_name     = "space-id",
-            .description   = "space id",
-            .arg_name      = "SPACE-ID",
-            .arg_data_type = DATA_TYPE_INT,
-            .arg_dest      = &(args->space_id),
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_SPACE_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "set-space-index",
+        .description = "Set Space Index",
+        .function    = cmds[COMMAND_SET_SPACE].fxn,
+        .about       = "🦜" "\t" COLOR_SPACE "Set Active Space Index" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -205,14 +133,7 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_SET_SPACE].fxn,
         .about       = "🦜" "\t" COLOR_SPACE "Set Active Space" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 's',
-            .long_name     = "space-id",
-            .description   = "space id",
-            .arg_name      = "SPACE-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
-            .arg_dest      = &(args->space_id),
-          },
+          common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -238,14 +159,7 @@ int main(int argc, char **argv) {
             .flag_type   = FLAG_TYPE_SET_TRUE,
             .flag        = &(args->current_space_only),
           },
-          {
-            .short_name    = 's',
-            .long_name     = "space-id",
-            .description   = "space id",
-            .arg_name      = "SPACE-ID",
-            .arg_data_type = DATA_TYPE_UINT16,
-            .arg_dest      = &(args->space_id),
-          },
+          common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -303,15 +217,7 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_DEBUG_ARGS].fxn,
         .about       = "🐛" "\t" COLOR_DEBUG "Debug Args" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name    = 'w',
-            .long_name     = "window-id",
-            .description   = "Window ID",
-            .arg_name      = "WINDOW-ID",
-            .arg_dest      = &(args->window_id),
-            .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-            .function      = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-          },
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
       },

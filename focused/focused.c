@@ -8,6 +8,7 @@
 #include "c_vector/vector/vector.h"
 #include "display-utils/display-utils.h"
 #include "dock-utils/dock-utils.h"
+#include "focused/focused.h"
 #include "log.h/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "ms/ms.h"
@@ -18,9 +19,19 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdbool.h>
-////////////////////////////////////////////
-#include "focused/focused.h"
 #define UNPACKED_BUFFER_SIZE    2048
+#define REQ_ARR_QTY             5
+struct focused_msg_t {
+  size_t number;
+  size_t ts;
+  bool   debug, verbose;
+};
+static msg_Conn *server_listening_conn = NULL;
+////////////////////////////////////////////
+pthread_mutex_t *unpack_mutex, *pack_mutex;
+static size_t   pack_retries           = 30;
+static size_t   pack_retry_interval_ns = 1000 * 500;
+static void init_mutexes();
 
 static bool FOCUSED_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__focused(void){
@@ -28,133 +39,231 @@ static void __attribute__((constructor)) __constructor__focused(void){
     log_debug("Enabling Focused Debug Mode");
     FOCUSED_DEBUG_MODE = true;
   }
+  init_mutexes();
 }
 
-struct focused_msg_t {
-  size_t number;
-  size_t ts;
-  bool   debug, verbose;
-  char   *string;
-};
+static char *event_name(int event){
+  switch (event) {
+  case msg_listening_ended: return("LISTENING_ENDED"); break;
+  case msg_connection_lost: return("CONNECTION-LOST"); break;
+  case msg_connection_closed: return("CONNECTION-CLOSED"); break;
+  case msg_connection_ready: return("CONNECTION-READY"); break;
+  case msg_error: return("ERROR"); break;
+  case msg_request: return("REQUEST"); break;
+  case msg_listening: return("LISTENING"); break;
+  case msg_message: return("MESSAGE"); break;
+  case msg_reply: return("REPLY"); break;
+  default: return("UNKNOWN"); break;
+  }
+}
+
+msg_Data *focused_msg_pack(struct focused_msg_t *msg, char *sender);
+struct focused_msg_t *focused_msg_init();
+struct focused_msg_t *focused_msg_unpack(msg_Data *data);
+
+struct focused_msg_t *focused_msg_init(){
+  struct focused_msg_t *msg = calloc(1, (sizeof(struct focused_msg_t)));
+
+  return(msg);
+}
+
+static void init_mutexes(){
+  pack_mutex   = calloc(1, sizeof(pthread_mutex_t));
+  unpack_mutex = calloc(1, sizeof(pthread_mutex_t));
+  assert(pthread_mutex_init(unpack_mutex, NULL) == 0);
+  assert(pthread_mutex_init(pack_mutex, NULL) == 0);
+}
+
+struct focused_msg_t *focused_msg_unpack(msg_Data *tmp_data){
+  /*
+   * size_t retried = 0; bool have_lock = false;
+   * while(retried<pack_retries && have_lock == false){
+   * if(pthread_mutex_lock(unpack_mutex) != EXIT_SUCCESS){
+   *  log_error("%lu/%lu> Failed to lock unpack mutex",retried,pack_retries);
+   *  retried++;
+   *  usleep(pack_retry_interval_ns);
+   * }else{
+   *  have_lock = true;
+   *  log_debug("locked unpack mutex");
+   * }
+   * }
+   */
+  msg_Data data = (msg_Data){
+    .num_bytes = tmp_data->num_bytes,
+    .bytes     = strdup(tmp_data->bytes),
+  };
+  struct focused_msg_t *msg = calloc(1, sizeof(struct focused_msg_t));
+  char                 *decoded_msg;
+  size_t               rsize = 0;
+
+  decoded_msg = base64simple_decode(msg_as_str(data), strlen(msg_as_str(data)), &rsize);
+  log_info("decoded msg size: %lu", rsize);
+
+  msgpack_unpacked      result;
+  size_t                off = 0;
+  msgpack_unpack_return ret;
+  char                  unpacked_buffer[UNPACKED_BUFFER_SIZE];
+
+  msgpack_unpacked_init(&result);
+  ret = msgpack_unpack_next(&result, decoded_msg, rsize, &off);
+  for (size_t i = 0; ret == MSGPACK_UNPACK_SUCCESS; i++) {
+    msgpack_object obj = result.data;
+    msgpack_object_print_buffer(unpacked_buffer, UNPACKED_BUFFER_SIZE, obj);
+    log_debug("Object #%lu>  %s (type %d)", i, unpacked_buffer, obj.type);
+
+    switch (i) {
+    case 0: msg->number  = obj.via.i64; break;
+    case 1: msg->ts      = obj.via.i64; break;
+    case 2: msg->debug   = obj.via.boolean; break;
+    case 3: msg->verbose = obj.via.boolean; break;
+      /*
+       * case 4: msg->arr_qty = obj.via.i64; break;
+       * case 5:
+       * msg->arr = calloc(obj.via.array.size+1,sizeof(int));
+       * for(size_t idx=0;idx < obj.via.array.size; idx++){
+       * msg->arr[idx] = obj.via.array.ptr[idx].via.i64;
+       * }
+       * msg->arr[obj.via.array.size] = '\0';
+       * break;
+       * case 6:  msg->string = stringfn_substring(obj.via.str.ptr,0,obj.via.str.size); break;
+       * case 7:  msg->string2 = stringfn_substring(obj.via.str.ptr,0,obj.via.str.size); break;
+       * case 8:  msg->sender = stringfn_substring(obj.via.str.ptr,0,obj.via.str.size); break;
+       */
+    }
+    ret = msgpack_unpack_next(&result, decoded_msg, rsize, &off);
+  }
+  // msgpack_unpacked_destroy(&result);
+  if (ret == MSGPACK_UNPACK_CONTINUE) {
+    log_debug(
+      AC_GREEN AC_INVERSE "Unpacked Message" AC_RESETALL
+      "\n\tnumber        :          %lu"
+      "\n\tts            :          %lu"
+      "\n\tdebug         :          %s"
+      "\n\tverbose       :          %s"
+      "\n%s",
+      msg->number,
+      msg->ts,
+      (msg->debug == true) ? "Yes" : "No",
+      (msg->verbose == true) ? "Yes" : "No",
+      ""
+      );
+  }else if (ret == MSGPACK_UNPACK_PARSE_ERROR) {
+    log_error("The data in the buf is invalid format.");
+  }
+
+//    if(decoded_msg)
+//    free(decoded_msg);
+
+  // pthread_mutex_unlock(unpack_mutex);
+  log_debug("unlocked unpack mutex");
+  return(msg);
+} /* focused_msg_unpack */
+
+msg_Data *focused_msg_pack(struct focused_msg_t *msg, char *sender){
+//  pthread_mutex_lock(pack_mutex);
+  char            *encoded_msg;
+  msg_Data        _data, *data = &(msg_Data){ .num_bytes = 0, .bytes = NULL };
+  msgpack_sbuffer sbuf;
+  msgpack_packer  pk;
+
+  msgpack_sbuffer_init(&sbuf);
+  msgpack_packer_init(&pk, &sbuf, msgpack_sbuffer_write);
+  msgpack_pack_int64(&pk, msg->number);
+  msgpack_pack_int64(&pk, msg->ts);
+  msgpack_pack_int(&pk, msg->debug);
+  msgpack_pack_int(&pk, msg->verbose);
+  encoded_msg     = base64simple_encode(sbuf.data, sbuf.size);
+  _data           = msg_new_data(encoded_msg);
+  data->num_bytes = _data.num_bytes;
+  data->bytes     = strdup(_data.bytes);
+  msgpack_sbuffer_destroy(&sbuf);
+  log_info("<%d> " AC_BLUE AC_UNDERLINE AC_INVERSE "%s" AC_RESETALL " Message Packed :: " AC_GREEN AC_INVERSE "%s" AC_RESETALL "%s",
+           getpid(),
+           sender,
+           bytes_to_string(data->num_bytes),
+           ""
+           );
+  // msg_delete_data(_data);
+//        if(encoded_msg)
+//        free(encoded_msg);
+//  pthread_mutex_unlock(pack_mutex);
+  return(data);
+}
 
 static void msg_update_server(msg_Conn *conn, msg_Event event, msg_Data data) {
-  log_debug("<%d> [%lld] Focused Server Update :: event %d :: ", getpid(), timestamp(), event);
+  log_debug("<%d> [%lld] Focused Server Update :: event %s (%d) :: ", getpid(), timestamp(), event_name(event), event);
   struct focused_config_t *c = NULL;
-  char                    *s, **ep;
   if (event == msg_connection_ready) {
-    conn->conn_context = NULL;
   }else if (event == msg_message || event == msg_request || event == msg_connection_closed) {
-  }
-  if (conn->conn_context) {
-    c = (struct focused_config_t *)conn->conn_context;
-    log_debug("got context %ld", c->started);
+//    c = (struct focused_config_t *)conn->conn_context;
+    //  log_debug("got context %ld", c->started);
   }
 
-  if (event == msg_connection_lost) {
+  switch (event) {
+  case msg_connection_ready:
+    conn->conn_context = NULL;
+    log_debug("<%d> Focused Server Connection Ready ", getpid());
+    break;
+  case msg_listening_ended:
+    log_debug("<%d> Focused Server Connection Ended ", getpid());
+    break;
+  case msg_connection_lost:
     log_debug("<%d> Focused Server Connection Lost ", getpid());
-  }else if (event == msg_connection_closed) {
+    break;
+  case msg_connection_closed:
     log_debug("<%d> Focused Server Connection Closed ", getpid());
-    //free(conn->conn_context);
-  }else if (event == msg_message) {
+    // if(conn && conn->conn_context)
+    free(conn->conn_context);
+    break;
+  case msg_reply:
+    log_debug("<%d> Focused Server Message Reply ", getpid());
+  case msg_message:
     log_debug("<%d> Focused Server Message ", getpid());
-  }else if (event == msg_error) {
-    log_error("Server: Error: %s", msg_as_str(data));
-  }else if (event == msg_request) {
-    // if(c->server->svr_debug_mode == true)
+  case msg_request:
     log_debug(
       "<%d> [%lld] Focused Server ::"
-      " %s Request Message from %s:%d ::"
-      "'" AC_YELLOW AC_INVERSE "%s" AC_RESETALL "'"
+      " %s Request Message from %s:%d :: Event Type: %s"
       "%s",
       getpid(),
       timestamp(),
       bytes_to_string(data.num_bytes),
       msg_ip_str(conn),
       conn->remote_port,
-      msg_as_str(data),
+      event_name(event),
       ""
       );
-    struct focused_msg_t *reply = calloc(1, sizeof(struct focused_msg_t));
-    struct focused_msg_t *req   = calloc(1, sizeof(struct focused_msg_t));
-    char                 *decoded_req;
-    size_t               rsize = 0;
-    {
-      decoded_req = base64simple_decode(msg_as_str(data), strlen(msg_as_str(data)), &rsize);
-      log_info("decoded req size: %lu", rsize);
+    if (focused_msg_unpack(&data) == NULL) {
+      log_error("Failed to unpack msg");
+      //exit(EXIT_FAILURE);
     }
-
-    msgpack_unpacked      result;
-    size_t                off = 0;
-    msgpack_unpack_return ret;
-    char                  unpacked_buffer[UNPACKED_BUFFER_SIZE];
-    msgpack_unpacked_init(&result);
-    ret = msgpack_unpack_next(&result, decoded_req, rsize, &off);
-    for (size_t i = 0; ret == MSGPACK_UNPACK_SUCCESS; i++) {
-      msgpack_object obj = result.data;
-      msgpack_object_print_buffer(unpacked_buffer, UNPACKED_BUFFER_SIZE, obj);
-      switch (i) {
-      case 0: req->number  = (size_t)unpacked_buffer; break;
-      case 1: req->ts      = (size_t)unpacked_buffer; break;
-      case 2: req->debug   = (bool)unpacked_buffer; break;
-      case 3: req->verbose = (bool)unpacked_buffer; break;
-      case 4:
-        req->string = (char *)unpacked_buffer;
-        if (req->string[0] == '"' && req->string[strlen(req->string) - 1] == '"') {
-          req->string = stringfn_mut_substring(req->string, 1, strlen(req->string) - 2);
-        }
-        break;
-      }
-      ret = msgpack_unpack_next(&result, decoded_req, rsize, &off);
-    }
-    msgpack_unpacked_destroy(&result);
-    free(decoded_req);
-
-    if (ret == MSGPACK_UNPACK_CONTINUE) {
-      log_debug(
-        AC_GREEN AC_INVERSE "Unpacked Message" AC_RESETALL
-        "\n\tnumber        :          %lu"
-        "\n\tts            :          %lu"
-        "\n\tdebug         :          %s"
-        "\n\tverbose       :          %s"
-        "\n\tstring        :          %s"
-        "\n%s",
-        req->number,
-        req->ts,
-        (req->debug == true) ? "Yes" : "No",
-        (req->verbose == true) ? "Yes" : "No",
-        req->string,
-        ""
-        );
-    }else if (ret == MSGPACK_UNPACK_PARSE_ERROR) {
-      printf("The data in the buf is invalid format.\n");
-    }
-
-    asprintf(&(reply->string), "%ld", (size_t)strtoimax(((struct focused_msg_t *)&data)->string, &ep, 10) * 4096);
-    reply->number = (size_t)((struct focused_msg_t *)&data)->number * 4096;
-    reply->ts     = (size_t)timestamp();
-    reply->debug  = true;
-    //msg_Data reply_data = msg_new_data_space(sizeof(struct focused_msg_t));a
-//      reply_data.bytes = (void*)
-//  populate_buffer(data.bytes /* type "char *" */, data.num_bytes /* type size_t */);
-    data = msg_new_data(reply->string);
-    log_debug("reply s:%s", reply->string);
-    msg_send(conn, data);
-    //  c->server->svr_recv_msgs++;
-    log_debug("<%d> Focused Server Message Sent", getpid());
-  }
-} /* msg_update_server */
+    log_debug("unpacked OK");
+    struct focused_msg_t *res = focused_msg_init();
+    res->number  = timestamp();
+    res->ts      = (size_t)timestamp();
+    res->debug   = true;
+    res->verbose = false;
+    msg_Data *res_data = focused_msg_pack(res, "server");
+    msg_send(conn, *res_data);
+    //free(res);
+    log_debug("<%d> Focused Server Response Message Sent", getpid());
+    break;
+  case msg_listening:
+    log_debug("<%d> Focused Server Listening ", getpid());
+    server_listening_conn = conn;
+    break;
+  case msg_error: log_error("<%d> Server Server Error: %s ", getpid(), msg_as_str(data)); break;
+  default:
+    log_error("Unknown event");
+    break;
+  } /* switch */
+}   /* msg_update_server */
 
 static void msg_update_client(msg_Conn *conn, msg_Event event, msg_Data data) {
+  log_info("<%d> Focused Client Update :: %s", getpid(), event_name(event));
   unsigned long           started = timestamp();
-
-  struct focused_config_t *c;
-
-  c = (struct focused_config_t *)conn->conn_context;
-  char *s;
-
-  c->server->cl_events_qty++;
-  if (c->server->cl_debug_mode == true) {
-    log_info("<%d> Focused Client Update #%lu :: %d", getpid(), c->server->cl_events_qty, event);
+  struct focused_config_t *c      = NULL;
+  if (event == msg_connection_ready) {
+    c = (struct focused_config_t *)conn->conn_context;
   }
   switch (event) {
   case msg_listening_ended:
@@ -166,81 +275,70 @@ static void msg_update_client(msg_Conn *conn, msg_Event event, msg_Data data) {
   case msg_connection_closed:
     log_info("<%d> Focused Client Connection Closed after %s", getpid(), milliseconds_to_string(timestamp() - started));
     break;
+  case msg_message:
+    log_info("<%d> Focused Client Received Message",
+             getpid()
+             );
+    if (focused_msg_unpack(&data) == NULL) {
+      log_error("Failed to unpack msg");
+//      exit(EXIT_FAILURE);
+    }
+    // msg_delete_data(data);
+    break;
   case msg_reply:
-    c->server->cl_recv_msgs++;
-    c->server->cl_recv_bytes += data.num_bytes;
-    if (c->server->cl_debug_mode == true) {
-      log_info("<%d> Focused Client Got Reply #%lu> '" AC_YELLOW AC_INVERSE "%s" AC_RESETALL "' in %s", getpid(), c->server->cl_recv_msgs, msg_as_str(data), milliseconds_to_string(timestamp() - started));
+    log_info("<%d> Focused Client Received Reply",
+             getpid()
+             );
+    log_info("Got server response #%lu/%lu", c->server->cl_recv_msgs, c->server->cl_send_msgs_qty);
+    //     c->server->cl_recv_msgs++;
+//    c->server->cl_recv_bytes += data.num_bytes;
+    if (focused_msg_unpack(&data) == NULL) {
+      log_error("Failed to unpack msg");
+      //    exit(EXIT_FAILURE);
     }
-    if (c->server->cl_recv_msgs == c->server->cl_send_msgs_qty) {
-      msg_disconnect(conn);
+    msg_delete_data(data);
+    break;
+  case msg_request:
+    log_info("<%d> Focused Client Received Request",
+             getpid()
+             );
+    if (focused_msg_unpack(&data) == NULL) {
+      log_error("Failed to unpack msg");
+      //  exit(EXIT_FAILURE);
     }
+    //  if (c->server->cl_recv_msgs == c->server->cl_send_msgs_qty) {
+    //log_info("Sent all messages. disconnecting");
+//      msg_disconnect(conn);
+    //}
+    break;
+  case msg_listening:
+    log_info("<%d> Focused Client Listening",
+             getpid()
+             );
     break;
   case msg_connection_ready:
     for (size_t i = 0; i < c->server->cl_send_msgs_qty; i++) {
-      {
-        //      init message
-        struct focused_msg_t *req = calloc(1, (sizeof(struct focused_msg_t)));
-        char                 *encoded_req;
-        //      prepare message
-        {
-          req->number  = timestamp();
-          req->ts      = (size_t)timestamp();
-          req->debug   = true;
-          req->verbose = false;
-          asprintf(&(req->string), "%lu", (size_t)timestamp());
-        }
-        //      pack message
-        {
-          msgpack_sbuffer sbuf;
-          msgpack_packer  pk;
-          {
-            msgpack_sbuffer_init(&sbuf);
-            msgpack_packer_init(&pk, &sbuf, msgpack_sbuffer_write);
-            msgpack_pack_int64(&pk, req->number);
-            msgpack_pack_int64(&pk, req->ts);
-            msgpack_pack_int(&pk, req->debug);
-            msgpack_pack_int(&pk, req->verbose);
-            msgpack_pack_str_with_body(&pk, (void *)req->string, strlen(req->string));
-          }
-          { //      encode message
-            encoded_req = base64simple_encode(sbuf.data, sbuf.size);
-            //      create data
-            data = msg_new_data(encoded_req);
-          }
-          {
-            log_info("<%d> Focused Client Sending " AC_GREEN AC_INVERSE "%s" AC_RESETALL " Encoded Message",
-                     getpid(),
-                     bytes_to_string(data.num_bytes)
-                     );
-          }
-          {
-            msgpack_sbuffer_destroy(&sbuf);
-            free(encoded_req);
-            free(req);
-          }
-        }
-      }
-      {
-        //    send message
-        msg_get(conn, data, (void *)c);
-        c->server->cl_sent_msgs++;
-        c->server->cl_sent_bytes += data.num_bytes;
-      }
-      {
-        //    delete message
-        msg_delete_data(data);
-      }
-      {
-        if (c->server->cl_debug_mode == true) {
-          log_info("<%d> Focused Client deleted data", getpid());
-        }
-      }
+      struct focused_msg_t *req = focused_msg_init();
+      req->number  = timestamp();
+      req->ts      = (size_t)timestamp();
+      req->debug   = true;
+      req->verbose = false;
+      msg_Data *req_data = focused_msg_pack(req, "client");
+      size_t   num_bytes = req_data->num_bytes;
+      msg_send(conn, *req_data);
+      //, (void*)c);
+      //c->server->cl_sent_bytes += num_bytes;
+      //c->server->cl_sent_msgs++;
+      //msg_delete_data(*req_data);
       usleep(c->server->cl_send_msg_interval_ns);
     }
     break;
+  case msg_error: log_error("<%d> Client Server Error: %s ", getpid(), msg_as_str(data)); break;
+  default:
+    log_error("Unknown event");
+    break;
   } /* switch */
-} /* msg_update_client */
+}   /* msg_update_client */
 
 static int focus_client(void *VOID){
   unsigned long           started = timestamp();
@@ -253,7 +351,7 @@ static int focus_client(void *VOID){
   if (c->server->cl_debug_mode == true) {
     log_info("<%d> Focused Client Connected to %s in %s", getpid(), c->server->uri, milliseconds_to_string(timestamp() - started));
   }
-  while (c->server->cl_recv_msgs < c->server->cl_send_msgs_qty) {
+  while (c->server->cl_recv_msgs < c->server->cl_send_msgs_qty || 1 == 1) {
     msg_runloop(10);
   }
   log_info("<%d> Focused Client Success :: Received %lu messages of %s, Sent %lu messages of %s in %s ",
@@ -274,6 +372,9 @@ static int focus_server(void *VOID){
   while (c->server->svr_recv_msgs < 100) {
     msg_runloop(10);
   }
+  msg_unlisten(server_listening_conn);
+  msg_runloop(10);
+  log_debug("Server Ended");
   return(EXIT_SUCCESS);
 }
 

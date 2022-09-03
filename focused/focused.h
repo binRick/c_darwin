@@ -63,7 +63,7 @@ static const struct focused_server_t *DEFAULT_SERVER_CONFIG = &(struct focused_s
   .enabled          = true,
   .svr_recv_msgs    = 0, .svr_events_qty = 0, .svr_debug_mode = false,
   .cl_recv_msgs     = 0, .cl_events_qty = 0, .cl_debug_mode = false,
-  .cl_send_msgs_qty = 5, .cl_send_msg_interval_ns = 50 * 1,
+  .cl_send_msgs_qty = 5, .cl_send_msg_interval_ns = 1000 * 10,
 };
 struct focused_config_t {
   unsigned long           started;

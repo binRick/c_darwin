@@ -15,7 +15,7 @@ focused_deps = [
   core_utils_dep,
   app_utils_dep,
   dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,msgbox_dep,
-  ansi_codes_dep,msgpack_c_dep,base64_simple_dep,
+  ansi_codes_dep,msgpack_c_dep,base64_simple_dep,hexify_c_dep,
   logh_dep,
   timestamp_dep,
   ms_dep,
