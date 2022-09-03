@@ -20,31 +20,12 @@ int main(int argc, char **argv) {
     .name        = "ls-win",
     .operands    = "[COMMAND...]",
     .options     = (struct optparse_opt[]) {
-      {
-        .short_name  = 'h',
-        .long_name   = "help",
-        .description = "Print help information and quit.",
-        .function    = optparse_print_help,
-      },
-      {
-        .short_name    = 'm',
-        .long_name     = "mode",
-        .description   = "Output Mode.",
-        .arg_name      = "OUTPUT-MODE",
-        .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
-        .function      = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
-        .arg_dest      = &(args->output_mode_s),
-      },
-      {
-        .short_name  = 'v',
-        .long_name   = "verbose",
-        .description = "Increase verbosity.",
-        .flag_type   = FLAG_TYPE_SET_TRUE,
-        .flag        = &(args->verbose),
-      },
+      common_options_b[COMMON_OPTION_HELP](args),
+      common_options_b[COMMON_OPTION_VERBOSE](args),
+      common_options_b[COMMON_OPTION_OUTPUT_MODE](args),
       { END_OF_OPTIONS },
     },
-    .subcommands         = (struct optparse_cmd[]) {
+    .subcommands     = (struct optparse_cmd[]) {
       {
         .description = "Print a subcommand's help information and quit.",
         .name        = "help",
@@ -152,16 +133,16 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_WINDOWS].fxn,
         .about       = "⚙" "\t" COLOR_LIST "List Windows" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          {
-            .short_name  = 'c',
-            .long_name   = "current-space",
-            .description = "Windows in current space only",
-            .flag_type   = FLAG_TYPE_SET_TRUE,
-            .flag        = &(args->current_space_only),
-          },
+          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
+      },
+      {
+        .name        = "apps",
+        .description = "List Applications",
+        .function    = cmds[COMMAND_APPS].fxn,
+        .about       = "☎️" "\t" COLOR_LIST "List Applications" AC_RESETALL,
       },
       {
         .name        = "spaces",

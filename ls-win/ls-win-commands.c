@@ -23,6 +23,7 @@ static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
 static void _command_dock();
+static void _command_apps();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width(uint16_t window_id);
@@ -30,8 +31,45 @@ static void _check_height(uint16_t window_id);
 static void _check_output_mode(char *output_mode);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
-  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)    {
-    return((struct optparse_opt)                                             {
+  [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                              {
+      .short_name = 'c',
+      .long_name = "current-space",
+      .description = "Windows in current space only",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->current_space_only),
+    });
+  },
+  [COMMON_OPTION_HELP] = ^ struct optparse_opt (struct args_t *args)          {
+    return((struct optparse_opt)                                              {
+      .short_name = 'h',
+      .long_name = "help",
+      .description = "Print help information and quit.",
+      .function = optparse_print_help,
+    });
+  },
+  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)   {
+    return((struct optparse_opt)                                              {
+      .short_name = 'm',
+      .long_name = "mode",
+      .description = "Output Mode.",
+      .arg_name = "OUTPUT-MODE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
+      .arg_dest = &(args->output_mode_s),
+    });
+  },
+  [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)       {
+    return((struct optparse_opt)                                              {
+      .short_name = 'v',
+      .long_name = "verbose",
+      .description = "Increase verbosity.",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->verbose),
+    });
+  },
+  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)     {
+    return((struct optparse_opt)                                              {
       .short_name = 'w',
       .long_name = "window-id",
       .description = "window id",
@@ -41,8 +79,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
     });
   },
-  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)     {
-    return((struct optparse_opt)                                             {
+  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)      {
+    return((struct optparse_opt)                                              {
       .short_name = 'x',
       .long_name = "window-x",
       .description = "Window X",
@@ -51,8 +89,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->x),
     });
   },
-  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)     {
-    return((struct optparse_opt)                                             {
+  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)      {
+    return((struct optparse_opt)                                              {
       .short_name = 'y',
       .long_name = "window-y",
       .description = "Window y",
@@ -61,8 +99,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->y),
     });
   },
-  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args) {
-    return((struct optparse_opt)                                             {
+  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args)  {
+    return((struct optparse_opt)                                              {
       .short_name = 'W',
       .long_name = "window-width",
       .description = "Window Width",
@@ -72,8 +110,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width),
     });
   },
-  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args){
-    return((struct optparse_opt)                                             {
+  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                              {
       .short_name = 'H',
       .long_name = "window-height",
       .description = "Window Height",
@@ -82,8 +120,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height),
     });
   },
-  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)     {
-    return((struct optparse_opt)                                             {
+  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)      {
+    return((struct optparse_opt)                                              {
       .short_name = 's',
       .long_name = "space-id",
       .description = "space id",
@@ -136,6 +174,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)         },
   [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)              },
   [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
+  [COMMAND_APPS]                  = { .fxn = (*_command_apps)                  },
   [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
   [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
   [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
@@ -195,7 +234,6 @@ do_error:
 }
 
 ////////////////////////////////////////////
-
 static void _command_debug_args(){
   log_info(
     "\t" AC_YELLOW AC_UNDERLINE "Debug args" AC_RESETALL
@@ -206,6 +244,23 @@ static void _command_debug_args(){
   log_info("Window ID:               %d", args->window_id);
   log_info("Output Mode:             %s (%d)", args->output_mode_s, args->output_mode);
   exit(0);
+}
+
+static void _command_apps(){
+  struct Vector *_running_apps_v   = get_running_apps_v();
+  struct Vector *_installed_apps_v = get_installed_apps_v();
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Applications" AC_RESETALL
+    "\n\t# Running Applications        :       %lu"
+    "\n\t# Installed Applications      :       %lu"
+    "\n%s",
+    vector_size(_running_apps_v),
+    vector_size(_installed_apps_v),
+    ""
+    );
+
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_focused_pid(){

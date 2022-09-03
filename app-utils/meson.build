@@ -6,9 +6,9 @@ app_utils_c_args = [
 ]
 app_utils_deps = [
   timestamp_dep,
-  bytes_dep,ms_dep,string_utils_dep,
-  c_stringfn_dep,
-  logh_dep,
+  bytes_dep,ms_dep,string_utils_dep,subprocess_dep,bytes_dep,ms_dep,string_utils_dep,
+  c_stringfn_dep,c_fsio_dep,c_vector_dep,c_string_buffer_dep,iowow_dep,which_dep,
+  logh_dep,parson_dep,tempdir_dep,
 ]
 app_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 app_utils_lib = static_library('app-utils',
@@ -18,7 +18,7 @@ app_utils_lib = static_library('app-utils',
   c_args: app_utils_c_args,
   include_directories: [
     inc,
-    '../window-utils',
+    '../app-utils',
   ],
 )
 
@@ -26,7 +26,7 @@ app_utils_lib = static_library('app-utils',
 app_utils_dep = declare_dependency(
   include_directories: [
     inc,  
-    '../window-utils',
+    '../app-utils',
   ],
   link_with: app_utils_lib,
   link_args: app_utils_link_flags,
