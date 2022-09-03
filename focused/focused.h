@@ -51,7 +51,7 @@ struct focused_server_t {
   char                        *host;
   pthread_t                   server_thread, client_thread;
   char                        *uri;
-  size_t                      svr_recv_msgs, cl_recv_msgs;
+  size_t                      svr_recv_msgs, cl_recv_msgs, svr_events_qty,cl_events_qty;
   bool                        enabled;
 };
 static const struct focused_server_t *DEFAULT_SERVER_CONFIG = &(struct focused_server_t){
@@ -60,6 +60,8 @@ static const struct focused_server_t *DEFAULT_SERVER_CONFIG = &(struct focused_s
   .proto   = FOCUSED_SERVER_PROTO_TCP,
   .uri     = NULL,
   .enabled = true,
+  .svr_recv_msgs = 0, .svr_events_qty = 0,
+  .cl_recv_msgs = 0, .cl_events_qty = 0,
 };
 struct focused_config_t {
   unsigned long           started;
