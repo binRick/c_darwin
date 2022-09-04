@@ -1,4 +1,4 @@
-#include "core-utils/core-utils-extern.h"
+#include "frameworks/frameworks.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>

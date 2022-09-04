@@ -27,7 +27,7 @@ void __kl__init(void){
   fprintf(stdout, "=======================TEST INIT=============================\n");
 }
 
-__attribute__((constructor)) void init(void){
+__attribute__((constructor)) void __kl__c_init(void){
   __kl__init();
 }
 

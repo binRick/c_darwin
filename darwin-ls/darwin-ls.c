@@ -1,5 +1,5 @@
-#include "ls-win/ls-win-commands.h"
-#include "ls-win/ls-win.h"
+#include "darwin-ls/darwin-ls-commands.h"
+#include "darwin-ls/darwin-ls.h"
 ////////////////////////////////////////////
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
 struct args_t                 *args               = &(struct args_t){
@@ -15,9 +15,9 @@ int main(int argc, char **argv) {
   assert(is_authorized_for_accessibility() == true);
   args->window_id = 123;//get_focused_window_id();
   struct optparse_cmd main_cmd = {
-    .about       = "ls-win v1.00 - List Darwin Items.",
-    .description = "This program lists Darwin Items.",
-    .name        = "ls-win",
+    .about       = "darwin-ls v1.00 - List Darwin Objects",
+    .description = "This program lists Darwin Objects",
+    .name        = "darwin-ls",
     .operands    = "[COMMAND...]",
     .options     = (struct optparse_opt[]) {
       common_options_b[COMMON_OPTION_HELP](args),
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
         .description = "Print a subcommand's help information and quit.",
         .name        = "help",
         .operands    = "COMMAND",
-        .about       = "❔" "\t" COLOR_HELP "Command Help" AC_RESETALL,
+        .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
         .function    = optparse_print_help_subcmd,
       },
       {
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
         .name        = "set-window-all-spaces",
         .description = "Set Window All Spaces",
         .function    = cmds[COMMAND_SET_WINDOW_ALL_SPACES].fxn,
-        .about       = "🦠" "\t" COLOR_WINDOW "Set Window To All Spaces" AC_RESETALL,
+        .about       = "👽" "\t" COLOR_WINDOW "Set Window To All Spaces" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
         .name        = "set-window-space",
         .description = "Set Window Space",
         .function    = cmds[COMMAND_SET_WINDOW_SPACE].fxn,
-        .about       = "⛰" "\t" COLOR_WINDOW "Set Window Space" AC_RESETALL,
+        .about       = "💫" "\t" COLOR_WINDOW "Set Window Space" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
         .name        = "set-space-index",
         .description = "Set Space Index",
         .function    = cmds[COMMAND_SET_SPACE].fxn,
-        .about       = "🦜" "\t" COLOR_SPACE "Set Active Space Index" AC_RESETALL,
+        .about       = "🍌" "\t" COLOR_SPACE "Set Active Space Index" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
         .name        = "set-space",
         .description = "Set Space",
         .function    = cmds[COMMAND_SET_SPACE].fxn,
-        .about       = "🦜" "\t" COLOR_SPACE "Set Active Space" AC_RESETALL,
+        .about       = "💣" "\t" COLOR_SPACE "Set Active Space" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
         .name        = "windows",
         .description = "List Windows",
         .function    = cmds[COMMAND_WINDOWS].fxn,
-        .about       = "⚙" "\t" COLOR_LIST "List Windows" AC_RESETALL,
+        .about       = "🥑" "\t" COLOR_LIST "List Windows" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
         .name        = "apps",
         .description = "List Applications",
         .function    = cmds[COMMAND_APPS].fxn,
-        .about       = "☎️" "\t" COLOR_LIST "List Applications" AC_RESETALL,
+        .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
       },
       {
         .name        = "spaces",
@@ -154,49 +154,49 @@ int main(int argc, char **argv) {
         .name        = "focused-space",
         .description = "Show Focused Space",
         .function    = cmds[COMMAND_FOCUSED_SPACE].fxn,
-        .about       = "🍕" "\t" COLOR_SHOW "Focused Space" AC_RESETALL,
+        .about       = "🍕" "\t" COLOR_SHOW "Show Focused Space" AC_RESETALL,
       },
       {
         .name        = "focused-pid",
         .description = "Show Focused PID",
         .function    = cmds[COMMAND_FOCUSED_PID].fxn,
-        .about       = "🌈" "\t" COLOR_SHOW "Focused PID" AC_RESETALL,
+        .about       = "🌈" "\t" COLOR_SHOW "Show Focused PID" AC_RESETALL,
       },
       {
         .name        = "focused-window",
         .description = "Show Focused Window",
         .function    = cmds[COMMAND_FOCUSED_WINDOW].fxn,
-        .about       = "🗯" "\t" COLOR_SHOW "Focused Window" AC_RESETALL,
+        .about       = "🗯" "\t" COLOR_SHOW "Show Focused Window" AC_RESETALL,
       },
       {
         .name        = "dock",
         .description = "Dock Info",
         .function    = cmds[COMMAND_DOCK].fxn,
-        .about       = "📡" "\t" COLOR_INFO "Dock Info" AC_RESETALL,
+        .about       = "📡" "\t" COLOR_SHOW "Show Dock Info" AC_RESETALL,
       },
       {
         .name        = "menu-bar",
         .description = "Menu Bar Info",
         .function    = cmds[COMMAND_MENU_BAR].fxn,
-        .about       = "☘" "\t" COLOR_INFO "Menu Bar Info" AC_RESETALL,
+        .about       = "📀" "\t" COLOR_SHOW "Show Menu Bar Info" AC_RESETALL,
       },
       {
         .name        = "focused-server",
-        .description = "Focused Server",
+        .description = "Start Focused Server",
         .function    = cmds[COMMAND_FOCUSED_SERVER].fxn,
-        .about       = "⭐" "\t" COLOR_START "Focused Server" AC_RESETALL,
+        .about       = "💾" "\t" COLOR_START "Start Focused Server" AC_RESETALL,
       },
       {
         .name        = "focused-client",
-        .description = "Focused Client",
+        .description = "Start Focused Client",
         .function    = cmds[COMMAND_FOCUSED_CLIENT].fxn,
-        .about       = "⭐" "\t" COLOR_START "Focused Client" AC_RESETALL,
+        .about       = "🍏" "\t" COLOR_START "Start Focused Client" AC_RESETALL,
       },
       {
         .name        = "args",
-        .description = "Debug Args",
+        .description = "Debug Arguments",
         .function    = cmds[COMMAND_DEBUG_ARGS].fxn,
-        .about       = "🐛" "\t" COLOR_DEBUG "Debug Args" AC_RESETALL,
+        .about       = "🐛" "\t" COLOR_DEBUG "Debug Arguments" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },

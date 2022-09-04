@@ -71,6 +71,8 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
+subdir('frameworks')
+subdir('app')
 subdir('osx-keys')
 subdir('process')
 subdir('process-utils')
@@ -112,7 +114,7 @@ subdir('ls-proc')
 subdir('rectangle')
 subdir('rectangle-cli')
 subdir('wrec-animation-cli')
-subdir('ls-win')
+subdir('darwin-ls')
 #//////////////////////////////////////////////////////////////////////
 subdir('app-utils-test')
 subdir('system-utils-test')

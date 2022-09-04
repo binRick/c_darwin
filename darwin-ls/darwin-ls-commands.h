@@ -1,7 +1,7 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_H
 #define LS_WIN_COMMANDS_H
-#include "ls-win/ls-win.h"
+#include "darwin-ls/darwin-ls.h"
 ////////////////////////////////////////////
 typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 #include "ansi-codes/ansi-codes.h"

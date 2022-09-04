@@ -5,6 +5,7 @@
 #include "c_stringfn/include/stringfn.h"
 #include "core-utils/core-utils.h"
 #include "djbhash/src/djbhash.h"
+#include "frameworks/frameworks.h"
 #include "hash/hash.h"
 #include "iokit-utils/iokit-utils.h"
 #include "log.h/log.h"

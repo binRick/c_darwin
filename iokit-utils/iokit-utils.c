@@ -1,4 +1,5 @@
 #pragma once
+#include "frameworks/frameworks.h"
 #include "iokit-utils/iokit-utils.h"
 #include "log.h/log.h"
 static bool IOKIT_UTILS_DEBUG_MODE = false;

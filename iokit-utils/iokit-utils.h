@@ -1,7 +1,6 @@
 #pragma once
 #ifndef IOKIT_UTILS_H
 #define IOKIT_UTILS_H
-#include "core-utils/core-utils-extern.h"
 #include "string-utils/string-utils.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>

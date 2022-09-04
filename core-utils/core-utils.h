@@ -13,7 +13,6 @@
 #include <stdio.h>
 //////////////////////////////////////////////////////////////
 #include "app-utils/app-utils.h"
-#include "core-utils/core-utils-extern.h"
 #include "display-utils/display-utils.h"
 #include "dock-utils/dock-utils.h"
 #include "image-utils/image-utils.h"

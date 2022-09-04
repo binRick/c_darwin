@@ -3,7 +3,6 @@
 #define APP_UTILS_H
 #include <assert.h>
 #include <stdbool.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,20 +33,24 @@
 #include "timestamp/timestamp.h"
 #include "which/src/which.h"
 ///////////////////////////////////////////////////////////////////////
+#include "app/app.h"
 #include "iowow/src/fs/iwfile.h"
 #include "iowow/src/iowow.h"
 #include "iowow/src/kv/iwkv.h"
 #include "iowow/src/log/iwlog.h"
 #include "iowow/src/platform/iwp.h"
 ///////////////////////////////////////////////////////////////////////
-#define APP_UTILS_STDOUT_READ_BUFFER_SIZE                   1024 * 16
-#define APP_UTILS_CACHE_FILE                                ".app-utils-cache.db"
-#define APP_UTILS_SYSTEM_PROFILER_JSON_CACHE_KEY            "system_profiler_json"
-#define APP_UTILS_SYSTEM_PROFILER_TIMEOUT                   30
-#define APP_UTILS_SYSTEM_PROFILER_DB_LOCK_MODE              IWP_RLOCK
-#define APP_UTILS_SYSTEM_PROFILER_DATABASE_ID               1
-#define APP_UTILS_SYSTEM_PROFILER_DETAIL_LEVEL              "mini"
-#define APP_UTILS_SYSTEM_PROFILER_APPLICATIONS_DATA_TYPE    "SPApplicationsDataType"
+#define APP_UTILS_STDOUT_READ_BUFFER_SIZE                          (1024 * 32)
+#define APP_UTILS_CACHE_FILE                                       ".app-utils-cache.db"
+#define APP_UTILS_SYSTEM_PROFILER_JSON_CACHE_KEY                   "spj"
+#define APP_UTILS_SYSTEM_PROFILER_JSON_TS_CACHE_KEY                "spjts"
+#define APP_UTILS_SYSTEM_PROFILER_TIMEOUT                          60
+#define APP_UTILS_SYSTEM_PROFILER_JSON_CACHE_MINIMUM_SIZE_BYTES    (1024 * 64)
+#define APP_UTILS_SYSTEM_PROFILER_DB_LOCK_MODE                     IWFSM_NOLOCKS
+#define APP_UTILS_SYSTEM_PROFILER_DATABASE_ID                      1
+#define APP_UTILS_SYSTEM_PROFILER_TTL_SECONDS                      60 * 60
+#define APP_UTILS_SYSTEM_PROFILER_DETAIL_LEVEL                     "mini"
+#define APP_UTILS_SYSTEM_PROFILER_APPLICATIONS_DATA_TYPE           "SPApplicationsDataType"
 ///////////////////////////////////////////////////////////////////////
 typedef bool (*authorized_test_function_t)(void);
 typedef struct authorized_test_t    authorized_test_t;
@@ -61,11 +64,27 @@ struct Vector *get_installed_apps_v();
 ///////////////////////////////////////////////////////////////////////
 char *run_system_profiler_subprocess();
 ///////////////////////////////////////////////////////////////////////
+typedef void (^app_parser_b)(struct app_t *app, JSON_Object *app_object);
+enum app_parser_type_t {
+  APP_PARSER_TYPE_NAME = 1,
+  APP_PARSER_TYPE_VERSION,
+  APP_PARSER_TYPE_LAST_MODIFIED,
+  APP_PARSER_TYPE_LAST_MODIFIED_TIME,
+  APP_PARSER_TYPE_LAST_MODIFIED_TIMESTAMP,
+  APP_PARSER_TYPE_PATH,
+  APP_PARSER_TYPE_OBTAINED_FROM,
+  APP_PARSER_TYPE_INFO,
+  APP_PARSER_TYPE_ARCH,
+  APP_PARSER_TYPES_QTY,
+};
+struct app_parser_t {
+  bool enabled;
+  void (^parser)(struct app_t *app, JSON_Object *app_object);
+};
 struct db_cache_t {
   IWDB      iwdb;
   IWKV      iwkv;
   IWKV_OPTS opts;
-  iwrc      rc;
 };
 struct authorized_tests_t {
   enum {

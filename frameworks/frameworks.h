@@ -1,11 +1,22 @@
 #pragma once
-#ifndef CORE_UTILS_EXTERN_H
-#define CORE_UTILS_EXTERN_H
+#ifndef FRAMEWORKS_H
+#define FRAMEWORKS_H
+//////////////////////////////////////
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+//////////////////////////////////////
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
+//////////////////////////////////////
 #define g_connection                              CGSMainConnectionID()
 #define ASCII_ENCODING                            kCFStringEncodingASCII
 #define UTF8_ENCODING                             kCFStringEncodingUTF8

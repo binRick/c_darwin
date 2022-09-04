@@ -1,8 +1,8 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
-#include "ls-win/ls-win-commands.h"
-#include "ls-win/ls-win.h"
+#include "darwin-ls/darwin-ls-commands.h"
+#include "darwin-ls/darwin-ls.h"
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_resize_window();
