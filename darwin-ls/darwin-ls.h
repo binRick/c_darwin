@@ -23,6 +23,7 @@
 #include "string-utils/string-utils.h"
 #include "table-utils/table-utils.h"
 #include "timestamp/timestamp.h"
+#include "usbdevs-utils/usbdevs-utils.h"
 #include "window-utils/window-utils.h"
 #include <ctype.h>
 #include <errno.h>

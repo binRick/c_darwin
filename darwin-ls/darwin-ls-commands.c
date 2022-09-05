@@ -23,6 +23,7 @@ static void _command_menu_bar();
 static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
+static void _command_usb_devices();
 static void _command_httpserver();
 static void _command_dock();
 static void _command_apps();
@@ -182,11 +183,24 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_FONTS]                 = { .fxn = (*_command_fonts)                 },
   [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
   [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
+  [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)           },
   [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
 
 ////////////////////////////////////////////
+static void _command_usb_devices(){
+  struct Vector *_usb_devices_v = get_usb_devices_v();
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "USB Devices" AC_RESETALL
+    "\n\t# USB Devices      :       %lu"
+    "\n%s",
+    vector_size(_usb_devices_v),
+    ""
+    );
+}
+
 static void _command_httpserver(){
   log_debug("Starting HTTP Server");
   return(httpserver_main());

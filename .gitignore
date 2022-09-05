@@ -47,3 +47,4 @@ dt
 o.*
 .o.*
 .*.db
+.fonts.json

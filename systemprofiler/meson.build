@@ -13,7 +13,7 @@ systemprofiler_deps = [
   ansi_codes_dep,
   c_vector_dep,reproc_dep,which_dep,
   c_fsio_dep,
-  spin_dep,
+  libspinner_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
@@ -29,7 +29,7 @@ systemprofiler_c_args = [
 systemprofiler_link_args = [
 ]
 
-systemprofiler_lib = static_library('systemprofiler',
+systemprofiler_lib = library('systemprofiler',
   systemprofiler_srcs,
   install: false,
   dependencies: systemprofiler_deps,
