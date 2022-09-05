@@ -20,6 +20,7 @@ systemprofiler_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
+  tempdir_dep,
 ]
 
 systemprofiler_c_args = [

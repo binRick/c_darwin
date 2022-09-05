@@ -4,6 +4,8 @@
 #include "date.c/date.h"
 #include "systemprofiler/systemprofiler.h"
 #include "timelib/timelib.h"
+#define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
+#define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60)
 static struct app_parser_t app_parsers[APP_PARSER_TYPES_QTY] = {
   [APP_PARSER_TYPE_NAME] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
                                                                                    app->name                                                  = (json_object_has_value_of_type(app_object, "_name", JSONString))
@@ -141,16 +143,14 @@ static void parse_app(struct app_t *app, JSON_Object *app_object){
   }
 }
 struct Vector *get_installed_apps_v(){
-  struct Vector *a   = vector_new();
-  char          *out = run_system_profiler_item_subprocess("SPApplicationsDataType", 60 * 60);
-
-  log_debug("%s", bytes_to_string(strlen(out)));
-  JSON_Value *root_value = json_parse_string(out);
+  struct Vector *a          = vector_new();
+  char          *out        = run_system_profiler_item_subprocess(APP_UTILS_SYSTEM_PROFILER_MODE, APP_UTILS_SYSTEM_PROFILER_TTL);
+  JSON_Value    *root_value = json_parse_string(out);
 
   if (json_value_get_type(root_value) == JSONObject) {
     JSON_Object *root_object = json_value_get_object(root_value);
-    if (json_object_has_value_of_type(root_object, "SPApplicationsDataType", JSONArray)) {
-      JSON_Array *apps_array = json_object_dotget_array(root_object, "SPApplicationsDataType");
+    if (json_object_has_value_of_type(root_object, APP_UTILS_SYSTEM_PROFILER_MODE, JSONArray)) {
+      JSON_Array *apps_array = json_object_dotget_array(root_object, APP_UTILS_SYSTEM_PROFILER_MODE);
       size_t     apps_qty    = json_array_get_count(apps_array);
       for (size_t i = 0; i < apps_qty; i++) {
         struct app_t *app = calloc(1, sizeof(struct app_t));

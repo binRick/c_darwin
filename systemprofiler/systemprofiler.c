@@ -14,6 +14,7 @@
 #include "submodules/reproc/reproc/include/reproc/export.h"
 #include "submodules/reproc/reproc/include/reproc/reproc.h"
 #include "systemprofiler/systemprofiler.h"
+#include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "which/src/which.h"
 ////////////////////////////////////////////
@@ -30,18 +31,26 @@ static void __attribute__((constructor)) __constructor__systemprofiler(void){
 }
 ////////////////////////////////////////////
 #define CLEANUP_SYSTEM_PROFILER_CACHE_ITEM() \
-  iwkv_val_dispose(&val);\
+  if (val.size > 0) {                        \
+    iwkv_val_dispose(&val);                  \
+  }                                          \
   iwkv_close(&iwkv);                         \
-  if (cache_item_file)                       \
-  free(cache_item_file);                     \
-  if (cache_item_key)                        \
-  free(cache_item_key);                      \
-  if (cache_item_ts_key)                     \
-  free(cache_item_ts_key);
+  if (cache_item_file) {                     \
+    free(cache_item_file);                   \
+  }                                          \
+  if (cache_item_key) {                      \
+    free(cache_item_key);                    \
+  }                                          \
+  if (cache_item_ts_key) {                   \
+    free(cache_item_ts_key);                 \
+  }
 
 #define INIT_SYSTEM_PROFILER_CACHE_ITEM()                                   \
   char *cache_item_file = NULL, *cache_item_ts_key = NULL, *cache_item_key; \
-  asprintf(&cache_item_file, ".%s.db", stringfn_to_lowercase(ITEM_NAME));   \
+  asprintf(&cache_item_file, "%s/.systemprofiler-cache-%s.db",              \
+           gettempdir(),                                                    \
+           stringfn_to_lowercase(ITEM_NAME)                                 \
+           );                                                               \
   asprintf(&cache_item_key, "%s_data", stringfn_to_lowercase(ITEM_NAME));   \
   asprintf(&cache_item_ts_key, "%s_ts", cache_item_key);                    \
   IWKV_OPTS opts = {                                                        \
@@ -100,24 +109,26 @@ static char *load_system_profiler_cache_item(char *ITEM_NAME, size_t CACHE_TTL){
   rc         = iwkv_get(mydb, &key, &val);
   if (rc) {
     if (SYSTEMPROFILER_DEBUG_MODE == true) {
-      if(rc==IWKV_ERROR_NOTFOUND)
+      if (rc == IWKV_ERROR_NOTFOUND) {
         log_error("Failed to get %s/%s from %s", cache_item_key, cache_item_ts_key, cache_item_file);
-      else
+      }else{
         iwlog_ecode_error3(rc);
+      }
     }
     goto fail;
   }
   rc = iwkv_get(mydb, &tskey, &tsval);
   if (rc) {
-    if(rc==IWKV_ERROR_NOTFOUND)
+    if (rc == IWKV_ERROR_NOTFOUND) {
       log_error("Items %s/%s not found in %s", cache_item_key, cache_item_ts_key, cache_item_file);
-    else
+    }else{
       iwlog_ecode_error3(rc);
+    }
     goto fail;
   }
   char   **ep;
-  size_t ts = (size_t)strtoimax(tsval.data, &ep, 10);
-  char   *s = strdup(val.data);
+  size_t ts      = (size_t)strtoimax(tsval.data, &ep, 10);
+  char   *s      = strdup(val.data);
   bool   expired = ((((size_t)timestamp() - ts) / 1000) > CACHE_TTL) ? true : false;
   if (SYSTEMPROFILER_DEBUG_MODE == true) {
     log_debug("%s> %s cache with ts %lu|age: %s|expired:%d|", ITEM_NAME, bytes_to_string(strlen(s)), ts, milliseconds_to_string(((size_t)timestamp()) - ts), expired);
@@ -131,7 +142,7 @@ static char *load_system_profiler_cache_item(char *ITEM_NAME, size_t CACHE_TTL){
 fail:
   CLEANUP_SYSTEM_PROFILER_CACHE_ITEM()
   return(NULL);
-}
+} /* load_system_profiler_cache_item */
 
 char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
   char *cached = load_system_profiler_cache_item(ITEM_NAME, CACHE_TTL);
@@ -173,24 +184,20 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
     children[i].process   = process;
     children[i].interests = REPROC_EVENT_OUT;
   }
-  log_debug("%s started", ITEM_NAME);
 
   for ( ;;) {
     r = reproc_poll(children, NUM_CHILDREN, REPROC_INFINITE);
     if (r < 0) {
       r = r == REPROC_EPIPE ? 0 : r;
-      log_debug("%s finished", ITEM_NAME);
       goto finish;
     }
 
     for (int i = 0; i < NUM_CHILDREN; i++) {
       if (children[i].process == NULL || !children[i].events) {
-        log_debug("%s no event", ITEM_NAME);
         continue;
       }
       uint8_t output[1024 * 256];
       r = reproc_read(children[i].process, REPROC_STREAM_OUT, output, sizeof(output));
-      log_debug("%s read %s", ITEM_NAME, bytes_to_string(strlen(output)));
       if (r == REPROC_EPIPE) {
         children[i].process = reproc_destroy(children[i].process);
         continue;

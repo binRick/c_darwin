@@ -14,6 +14,7 @@
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
+#include "wildcardcmp/wildcardcmp.h"
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 static bool WINDOW_UTILS_DEBUG_MODE = false;
@@ -25,6 +26,7 @@ static void __attribute__((constructor)) __constructor__window_utils(void){
 }
 
 static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
+  "Install macOS*",
   "Control Center",
   "Dock",
   "universalaccessd",
@@ -136,24 +138,39 @@ struct window_t *get_window_id(size_t WINDOW_ID){
     CFNumberRef id_ref = CFArrayGetValueAtIndex(space_list_ref, 0);
     CFNumberGetValue(id_ref, CFNumberGetType(id_ref), &w->space_id);
   }
+  errno  = 0;
+  w->app = AXUIElementCreateApplication(w->pid);
+  errno  = 0;
   if (window_is_excluded(w) == true) {
     if (WINDOW_UTILS_DEBUG_MODE == true) {
       log_warn("window #%lu is excluded|pid:%d|space:%d|", w->window_id, w->pid, w->space_id);
     }
     return(NULL);
   }
-  w->app = AXUIElementCreateApplication(w->pid);
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
+    log_info("window #%lu |pid:%d| is not excluded", w->window_id, w->pid);
+  }
   if (WINDOW_UTILS_DEBUG_MODE == true) {
     log_info("window #%lu |app:%s|pid:%d|", w->window_id, w->app_name, w->pid);
   }
+  w->psn = PID2PSN(w->pid);
+  SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
   w->app_window_list = calloc(1, sizeof(CFTypeRef));
   AXUIElementCopyAttributeValue(w->app, kAXWindowsAttribute, (CFTypeRef *)&(w->app_window_list));
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
+    log_info("window #%lu |app:%s|pid:%d|w->app_window_list null? %s", w->window_id, w->app_name, w->pid,
+             (w->app_window_list == NULL) ? "Yes" : "No"
+             );
+  }
   w->app_window_list_qty = CFArrayGetCount(w->app_window_list);
-  w->rect                = CGRectMake(w->position.x, w->position.y, w->size.width, w->size.height);
-  w->width               = (int)(w->size.width);
-  w->height              = (int)(w->size.height);
-  w->psn                 = PID2PSN(w->pid);
-  SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
+    log_info("window #%lu |app:%s|pid:%d|w->app_window_list qty: %lu", w->window_id, w->app_name, w->pid,
+             w->app_window_list_qty
+             );
+  }
+  w->rect             = CGRectMake(w->position.x, w->position.y, w->size.width, w->size.height);
+  w->width            = (int)(w->size.width);
+  w->height           = (int)(w->size.height);
   w->display_index    = 100;
   w->display_uuid     = get_window_display_uuid(w);
   w->window_ids_above = get_window_ids_above_window(w);
@@ -665,7 +682,7 @@ bool window_is_excluded(struct window_t *w){
   }
 
   while (*tmp != NULL && excluded_window == false) {
-    if (strcmp(*tmp, w->app_name) == 0) {
+    if (wildcardcmp(*tmp, w->app_name) == 1) {
       return(true);
     }
     tmp++;
@@ -680,7 +697,10 @@ bool window_is_excluded(struct window_t *w){
     return(true);
   }
   if (WINDOW_UTILS_DEBUG_MODE == true) {
-    log_info("wid %lu|y pos:%d|height:%d|", w->window_id, (int)w->position.y, (int)w->size.height);
+    log_info("wid %lu|y pos:%d|height:%d|pid path:%s|app name:%s|",
+             w->window_id, (int)w->position.y, (int)w->size.height,
+             w->pid_path, w->app_name
+             );
   }
   if (((int)w->position.y < 1) && ((int)((int)w->size.height * -1) == (int)w->position.y)) {
     return(true);

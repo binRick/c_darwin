@@ -15,6 +15,8 @@
 #include "parson/parson.h"
 #include "systemprofiler/systemprofiler.h"
 #include "timestamp/timestamp.h"
+#define FONT_UTILS_SYSTEM_PROFILER_MODE    "SPFontsDataType"
+#define FONT_UTILS_SYSTEM_PROFILER_TTL     (60 * 60)
 static bool FONT_UTILS_DEBUG_MODE = false;
 typedef void (^font_parser_b)(struct font_t *font, JSON_Object *font_object);
 const char  *font_file_type_extensions[FONT_FILE_TYPES_QTY + 1] = {
@@ -234,15 +236,15 @@ static void parse_font(struct font_t *font, JSON_Object *font_object){
 }
 struct Vector *get_installed_fonts_v(){
   struct Vector *a   = vector_new();
-  char          *out = run_system_profiler_item_subprocess("SPFontsDataType", 60 * 60);
+  char          *out = run_system_profiler_item_subprocess(FONT_UTILS_SYSTEM_PROFILER_MODE, FONT_UTILS_SYSTEM_PROFILER_TTL);
 
   log_debug("%s", bytes_to_string(strlen(out)));
   JSON_Value *root_value = json_parse_string(out);
 
   if (json_value_get_type(root_value) == JSONObject) {
     JSON_Object *root_object = json_value_get_object(root_value);
-    if (json_object_has_value_of_type(root_object, "SPFontsDataType", JSONArray)) {
-      JSON_Array *fonts_array = json_object_dotget_array(root_object, "SPFontsDataType");
+    if (json_object_has_value_of_type(root_object, FONT_UTILS_SYSTEM_PROFILER_MODE, JSONArray)) {
+      JSON_Array *fonts_array = json_object_dotget_array(root_object, FONT_UTILS_SYSTEM_PROFILER_MODE);
       size_t     fonts_qty    = json_array_get_count(fonts_array);
       for (size_t i = 0; i < fonts_qty; i++) {
         struct font_t *font = calloc(1, sizeof(struct font_t));

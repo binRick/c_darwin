@@ -104,11 +104,11 @@ int list_windows_table(void *ARGS) {
   for (size_t i = 0; i < vector_size(table_windows_v); i++) {
     struct window_t *w = (struct window_t *)vector_get(table_windows_v, i);
     ft_printf_ln(table,
-                 "  %-*s  |%-5d|%-5lu|%-3d|%d|%4dx%-4d|%4dx%-4d|%d/%d|%-3s|%-3s|%3s|%2lu/%2lu",
+                 "  %-*s  |%-5d|%-5lu|%.5s|%d|%4dx%-4d|%4dx%-4d|%d/%d|%-3s|%-3s|%3s|%2lu/%2lu",
                  max_app_name_len + 4, w->app_name,
                  w->pid,
                  w->window_id,
-                 w->display_index,
+                 w->display_uuid,
                  w->space_id,
                  (int)w->size.height, (int)w->size.width,
                  (int)w->position.x, (int)w->position.y,

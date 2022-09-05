@@ -48,13 +48,12 @@ if get_option('enable-binaries')
      c_args: darwin_ls_c_args,
      install: false,
   )
-  test('darwin-ls help', darwin_ls_exec, args: ['--help'], workdir: darwin_ls_dir)
-  test('darwin-ls spaces', darwin_ls_exec, args: ['spaces'], workdir: darwin_ls_dir, timeout: 3)
-  test('darwin-ls dock', darwin_ls_exec, args: ['dock'], workdir: darwin_ls_dir, timeout: 3)
-  test('darwin-ls menu bar', darwin_ls_exec, args: ['menu-bar'], workdir: darwin_ls_dir, timeout: 3)
-  test('darwin-ls displays', darwin_ls_exec, args: ['displays'], workdir: darwin_ls_dir, timeout: 3)
-#  test('darwin-ls windows', darwin_ls_exec, args: ['apps'], workdir: darwin_ls_dir, timeout: 180)
-#  test('darwin-ls windows', darwin_ls_exec, args: ['fonts'], workdir: darwin_ls_dir, timeout: 180)
-#  test('darwin-ls windows', darwin_ls_exec, args: ['windows'], workdir: darwin_ls_dir)
-#  test('darwin-ls current space windows', darwin_ls_exec, args: ['windows','-c'], workdir: darwin_ls_dir)
+  test('darwin-ls help 1', darwin_ls_exec, args: ['--help'], workdir: darwin_ls_dir,timeout: 1)
+  test('darwin-ls help 2', darwin_ls_exec, args: ['-h'], workdir: darwin_ls_dir,timeout: 1)
+  test('darwin-ls help 3', darwin_ls_exec, args: ['help'], workdir: darwin_ls_dir,timeout: 1)
+  test_args = ['spaces','args','dock','menu-bar','displays','apps','fonts','windows']
+  foreach a : test_args
+    test('darwin-ls ' + a + ' help', darwin_ls_exec, args: ['help',a], workdir: darwin_ls_dir, timeout: 1)
+    test('darwin-ls ' + a, darwin_ls_exec, args: [a], workdir: darwin_ls_dir, timeout: 25)
+  endforeach
 endif
