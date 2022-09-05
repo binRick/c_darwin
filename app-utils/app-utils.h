@@ -40,18 +40,6 @@
 #include "iowow/src/log/iwlog.h"
 #include "iowow/src/platform/iwp.h"
 ///////////////////////////////////////////////////////////////////////
-#define APP_UTILS_STDOUT_READ_BUFFER_SIZE                          (1024 * 32)
-#define APP_UTILS_CACHE_FILE                                       ".app-utils-cache.db"
-#define APP_UTILS_SYSTEM_PROFILER_JSON_CACHE_KEY                   "spj"
-#define APP_UTILS_SYSTEM_PROFILER_JSON_TS_CACHE_KEY                "spjts"
-#define APP_UTILS_SYSTEM_PROFILER_TIMEOUT                          60
-#define APP_UTILS_SYSTEM_PROFILER_JSON_CACHE_MINIMUM_SIZE_BYTES    (1024 * 64)
-#define APP_UTILS_SYSTEM_PROFILER_DB_LOCK_MODE                     IWFSM_NOLOCKS
-#define APP_UTILS_SYSTEM_PROFILER_DATABASE_ID                      1
-#define APP_UTILS_SYSTEM_PROFILER_TTL_SECONDS                      60 * 60
-#define APP_UTILS_SYSTEM_PROFILER_DETAIL_LEVEL                     "mini"
-#define APP_UTILS_SYSTEM_PROFILER_APPLICATIONS_DATA_TYPE           "SPApplicationsDataType"
-///////////////////////////////////////////////////////////////////////
 typedef bool (*authorized_test_function_t)(void);
 typedef struct authorized_test_t    authorized_test_t;
 typedef struct authorized_tests_t   authorized_tests_t;
@@ -61,8 +49,6 @@ AXUIElementRef get_frontmost_app();
 ///////////////////////////////////////////////////////////////////////
 struct Vector *get_running_apps_v();
 struct Vector *get_installed_apps_v();
-///////////////////////////////////////////////////////////////////////
-char *run_system_profiler_subprocess();
 ///////////////////////////////////////////////////////////////////////
 typedef void (^app_parser_b)(struct app_t *app, JSON_Object *app_object);
 enum app_parser_type_t {

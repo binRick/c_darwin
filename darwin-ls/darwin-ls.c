@@ -1,7 +1,7 @@
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls.h"
 ////////////////////////////////////////////
-const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
+const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TEXT;
 struct args_t                 *args               = &(struct args_t){
   .verbose            = false,
   .current_space_only = false,
@@ -139,6 +139,12 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "fonts",
+        .description = "List Fonts",
+        .function    = cmds[COMMAND_FONTS].fxn,
+        .about       = "🚥" "\t" COLOR_LIST "List FONTS" AC_RESETALL,
+      },
+      {
         .name        = "apps",
         .description = "List Applications",
         .function    = cmds[COMMAND_APPS].fxn,
@@ -191,6 +197,12 @@ int main(int argc, char **argv) {
         .description = "Start Focused Client",
         .function    = cmds[COMMAND_FOCUSED_CLIENT].fxn,
         .about       = "🍏" "\t" COLOR_START "Start Focused Client" AC_RESETALL,
+      },
+      {
+        .name        = "httpserver",
+        .description = "Start HTTP Server",
+        .function    = cmds[COMMAND_HTTPSERVER].fxn,
+        .about       = "🪐" "\t" COLOR_START "Start HTTP Server" AC_RESETALL,
       },
       {
         .name        = "args",

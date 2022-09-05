@@ -46,3 +46,4 @@ dt
 .display*.png*
 o.*
 .o.*
+.*.db

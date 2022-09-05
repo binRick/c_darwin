@@ -1,6 +1,7 @@
 darwin_ls_srcs = [
   'darwin-ls.c',
   'darwin-ls-commands.c',
+  'darwin-ls-httpserver.c',
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
@@ -12,21 +13,21 @@ darwin_ls_deps = [
   c_fsio_dep,
   c_stringfn_dep,
   ansi_codes_dep,
-  logh_dep,
+  log_dep,
   timestamp_dep,
   ms_dep,
   bytes_dep,
   optparse99_dep,
   core_utils_dep,
   window_utils_dep,
-  app_utils_dep,
+  app_utils_dep,font_utils_dep,
   wrec_utils_dep,
   focused_dep,
   space_utils_dep,
   display_utils_dep,
   dock_utils_dep,
   menu_bar_utils_dep, table_utils_dep,string_utils_dep,process_utils_dep,app_utils_dep,
-  wrec_common_dep,
+  wrec_common_dep,httpserver_h_dep,
   wrec_capture_dep,
   process_dep,
 ]

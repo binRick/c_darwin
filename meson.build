@@ -72,7 +72,10 @@ inc = [include_directories(
 subdir('submodules')
 #############################################################################
 subdir('frameworks')
+subdir('alacritty')
+subdir('systemprofiler')
 subdir('app')
+subdir('font-utils')
 subdir('osx-keys')
 subdir('process')
 subdir('process-utils')

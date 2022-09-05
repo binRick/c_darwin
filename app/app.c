@@ -17,6 +17,19 @@
 #include "timestamp/timestamp.h"
 
 ////////////////////////////////////////////
+const char  *app_type_names[APP_TYPES_QTY + 1] = {
+  [APP_TYPE_APPLE]          = "Apple",
+  [APP_TYPE_ABSENT]         = "Absent",
+  [APP_TYPE_EXISTANT]       = "Existant",
+  [APP_TYPE_SYSTEM]         = "System",
+  [APP_TYPE_SYSTEM_LIBRARY] = "System Library",
+  [APP_TYPE_USER_LIBRARY]   = "User Library",
+  [APP_TYPE_APPLICATIONS]   = "Applications",
+  [APP_TYPE_IDENTIFIED]     = "Identified",
+  [APP_TYPE_UNVERSIONED]    = "Unversioned",
+  [APP_TYPE_VERSIONED]      = "Versioned",
+  [APP_TYPES_QTY]           = NULL,
+};
 static bool APP_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__app(void){

@@ -2,6 +2,7 @@
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
 #include "darwin-ls/darwin-ls-commands.h"
+#include "darwin-ls/darwin-ls-httpserver.h"
 #include "darwin-ls/darwin-ls.h"
 ////////////////////////////////////////////
 static void _command_move_window();
@@ -22,8 +23,10 @@ static void _command_menu_bar();
 static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
+static void _command_httpserver();
 static void _command_dock();
 static void _command_apps();
+static void _command_fonts();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width(uint16_t window_id);
@@ -44,7 +47,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                              {
       .short_name = 'h',
       .long_name = "help",
-      .description = "Print help information and quit.",
+      .description = "Print help information and quit",
       .function = optparse_print_help,
     });
   },
@@ -52,7 +55,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                              {
       .short_name = 'm',
       .long_name = "mode",
-      .description = "Output Mode.",
+      .description = "Output Mode- text, json, or table",
       .arg_name = "OUTPUT-MODE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
@@ -63,7 +66,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                              {
       .short_name = 'v',
       .long_name = "verbose",
-      .description = "Increase verbosity.",
+      .description = "Increase verbosity",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->verbose),
     });
@@ -171,10 +174,12 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_DEBUG_ARGS]            = { .fxn = (*_command_debug_args)            },
   [COMMAND_FOCUSED_SERVER]        = { .fxn = (*_command_focused_server)        },
   [COMMAND_FOCUSED_CLIENT]        = { .fxn = (*_command_focused_client)        },
+  [COMMAND_HTTPSERVER]            = { .fxn = (*_command_httpserver)            },
   [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)         },
   [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)              },
   [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
   [COMMAND_APPS]                  = { .fxn = (*_command_apps)                  },
+  [COMMAND_FONTS]                 = { .fxn = (*_command_fonts)                 },
   [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
   [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
   [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
@@ -182,8 +187,14 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
 };
 
 ////////////////////////////////////////////
+static void _command_httpserver(){
+  log_debug("Starting HTTP Server");
+  return(httpserver_main());
+}
+
 static void _command_set_space_index(){
   log_debug("setting space id from %d to %d", get_space_id(), args->space_id);
+  return(EXIT_SUCCESS);
 }
 
 static void _check_output_mode(char *output_mode){
@@ -243,7 +254,21 @@ static void _command_debug_args(){
   log_info("Space ID:                %d", args->space_id);
   log_info("Window ID:               %d", args->window_id);
   log_info("Output Mode:             %s (%d)", args->output_mode_s, args->output_mode);
-  exit(0);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_fonts(){
+  struct Vector *_installed_fonts_v = get_installed_fonts_v();
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Fonts" AC_RESETALL
+    "\n\t# Installed Fonts      :       %lu"
+    "\n%s",
+    vector_size(_installed_fonts_v),
+    ""
+    );
+
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_apps(){
@@ -394,7 +419,7 @@ static void _command_focused_client(){
   struct focused_config_t *cfg = init_focused_config();
 
   run_client(cfg);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_focused_server(){
@@ -412,7 +437,7 @@ static void _command_focused_server(){
   }
   log_info("done");
   stop_server(cfg);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_move_window(){
@@ -420,7 +445,7 @@ static void _command_move_window(){
 
   log_debug("moving window %lu to %dx%d", w->window_id, args->x, args->y);
   move_window(w, args->x, args->y);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_resize_window(){
@@ -428,7 +453,7 @@ static void _command_resize_window(){
 
   log_debug("resizing window %lu to %dx%d", w->window_id, args->width, args->height);
   resize_window(w, args->width, args->height);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_dock(){
@@ -488,7 +513,7 @@ static void _command_sticky_window(){
   set_window_tags(w);
   get_window_tags(w);
   fade_window(w);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_focus_window(){
@@ -496,7 +521,7 @@ static void _command_focus_window(){
 
   log_debug("focusing window %lu on space %d", w->window_id, w->space_id);
   focus_window(w);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_set_window_all_spaces(){
@@ -504,7 +529,7 @@ static void _command_set_window_all_spaces(){
 
   log_debug("moving window %lu from space %d to all spaces", w->window_id, w->space_id);
   set_window_active_on_all_spaces(w);
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_set_window_space(){
@@ -516,7 +541,7 @@ static void _command_set_window_space(){
 
   log_debug("window %lu is now on space %d", w->window_id, w->space_id);
 
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_set_space(){
@@ -597,32 +622,42 @@ static void _command_displays(){
 
   unsigned long dur = timestamp() - started;
 
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Displays" AC_RESETALL
-    "\n\t# Displays                  :       %lu" AC_RESETALL
-    "\n\tMain ID                     :       %d" AC_RESETALL
-    "\n\tUUID                        :       %s" AC_RESETALL
-    "\n\tCenter                      :       %dx%d"
-    "\n\tSize                        :       %dx%d"
-    "\n\tPosition                    :       %dx%d"
-    "\n\tHeight                      :       %dpixels"
-    "\n\tWidth                       :       %dpixels"
-    "\n\tSpace IDs                   :       %lu"
-    "\n\tDuration                    :       %s" AC_RESETALL
-    "%s",
-    vector_size(_display_ids_v),
-    _id, _uuid,
-    (int)_center.x, (int)_center.y,
-    (int)_rect.size.width, (int)_rect.size.height,
-    (int)_rect.origin.x, (int)_rect.origin.y,
-    _height, _width,
-    vector_size(_space_ids),
-    milliseconds_to_string(dur),
-    ""
-    );
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+    log_info("display table");
+    break;
+  case OUTPUT_MODE_JSON:
+    log_info("display json");
+    break;
+  case OUTPUT_MODE_TEXT:
+    log_info(
+      "\t" AC_YELLOW AC_UNDERLINE "Displays" AC_RESETALL
+      "\n\t# Displays                  :       %lu" AC_RESETALL
+      "\n\tMain ID                     :       %d" AC_RESETALL
+      "\n\tUUID                        :       %s" AC_RESETALL
+      "\n\tCenter                      :       %dx%d"
+      "\n\tSize                        :       %dx%d"
+      "\n\tPosition                    :       %dx%d"
+      "\n\tHeight                      :       %dpixels"
+      "\n\tWidth                       :       %dpixels"
+      "\n\tSpace IDs                   :       %lu"
+      "\n\tDuration                    :       %s" AC_RESETALL
+      "%s",
+      vector_size(_display_ids_v),
+      _id, _uuid,
+      (int)_center.x, (int)_center.y,
+      (int)_rect.size.width, (int)_rect.size.height,
+      (int)_rect.origin.x, (int)_rect.origin.y,
+      _height, _width,
+      vector_size(_space_ids),
+      milliseconds_to_string(dur),
+      ""
+      );
+    break;
+  }
 
   exit(EXIT_SUCCESS);
-}
+} /* _command_displays */
 
 static void _command_spaces(){
   struct Vector *space_ids_v = get_space_ids_v();
@@ -642,7 +677,7 @@ static void _command_spaces(){
       printf("\t%lu\n", window_id);
     }
   }
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 #endif
