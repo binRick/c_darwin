@@ -17,6 +17,7 @@
 #include "font-utils/font-utils.h"
 #include "log/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
+#include "monitor-utils/monitor-utils.h"
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
 #include "space-utils/space-utils.h"

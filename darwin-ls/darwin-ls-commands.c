@@ -27,6 +27,7 @@ static void _command_usb_devices();
 static void _command_httpserver();
 static void _command_dock();
 static void _command_apps();
+static void _command_monitors();
 static void _command_fonts();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
@@ -184,11 +185,25 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
   [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
   [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)           },
+  [COMMAND_MONITORS]              = { .fxn = (*_command_monitors)              },
   [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
 
 ////////////////////////////////////////////
+static void _command_monitors(){
+  struct Vector *_monitors_v = get_monitors_v();
+
+  log_info(
+    "\t" AC_YELLOW AC_UNDERLINE "Monitors" AC_RESETALL
+    "\n\t# Monitors      :       %lu"
+    "\n%s",
+    vector_size(_monitors_v),
+    ""
+    );
+  return(EXIT_SUCCESS);
+}
+
 static void _command_usb_devices(){
   struct Vector *_usb_devices_v = get_usb_devices_v();
 
@@ -199,6 +214,7 @@ static void _command_usb_devices(){
     vector_size(_usb_devices_v),
     ""
     );
+  return(EXIT_SUCCESS);
 }
 
 static void _command_httpserver(){

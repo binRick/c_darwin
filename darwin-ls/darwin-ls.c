@@ -175,6 +175,12 @@ int main(int argc, char **argv) {
         .about       = "🗯" "\t" COLOR_SHOW "Show Focused Window" AC_RESETALL,
       },
       {
+        .name        = "monitors",
+        .description = "Monitors",
+        .function    = cmds[COMMAND_MONITORS].fxn,
+        .about       = "📡" "\t" COLOR_SHOW "Show Monitors" AC_RESETALL,
+      },
+      {
         .name        = "usb",
         .description = "USB Devices",
         .function    = cmds[COMMAND_USB_DEVICES].fxn,
