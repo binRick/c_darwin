@@ -16,7 +16,20 @@
 #include "parson/parson.h"
 #include "systemprofiler/systemprofiler.h"
 #include "timestamp/timestamp.h"
+static bool FONT_UTILS_DEBUG_MODE = false;
 typedef void (^font_parser_b)(struct font_t *font, JSON_Object *font_object);
+const char  *font_file_type_extensions[FONT_FILE_TYPES_QTY + 1] = {
+  [FONT_FILE_TYPE_TRUETYPE]   = "ttf",
+  [FONT_FILE_TYPE_OPENTYPE]   = "otf",
+  [FONT_FILE_TYPE_POSTSCRIPT] = "otf",
+  [FONT_FILE_TYPE_BITMAP]     = "ttf",
+};
+const char  *font_file_type_names[FONT_FILE_TYPES_QTY + 1] = {
+  [FONT_FILE_TYPE_TRUETYPE]   = "truetype",
+  [FONT_FILE_TYPE_OPENTYPE]   = "opentype",
+  [FONT_FILE_TYPE_POSTSCRIPT] = "postscript",
+  [FONT_FILE_TYPE_BITMAP]     = "bitmap",
+};
 enum font_parser_type_t {
   FONT_PARSER_TYPE_TYPEFACES_O = 1,
   FONT_PARSER_TYPE_NAME,
@@ -42,7 +55,6 @@ struct font_parser_t {
   bool enabled;
   void (^parser)(struct font_t *font, JSON_Object *font_object);
 };
-static bool FONT_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__font_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_FONT_UTILS") != NULL) {
     log_debug("Enabling font-utils Debug Mode");
@@ -174,44 +186,44 @@ static struct font_parser_t font_parsers[FONT_PARSER_TYPES_QTY] = {
 };
 
 static void debug_font(struct font_t *font){
-  log_info(""
-           "\n\tFile Name        :   %s"
-           "\n\tName             :   %s"
-           "\n\tPath             :   %s"
-           "\n\tEnabled          :   %s"
-           "\n\tType             :   %s"
-           "\n\tSize             :   %s"
-           "\n\t# Typefaces      :   %lu"
-           "\n\tFamily           :   %s"
-           "\n\tFullname         :   %s"
-           "\n\tStyle            :   %s"
-           "\n\tVersion          :   %s"
-           "\n\tCopy Protected   :   %s"
-           "\n\tEmbeddable       :   %s"
-           "\n\tDuplicate        :   %s"
-           "\n\tValid            :   %s"
-           "\n\tOutline          :   %s"
-           "\n\tUnique           :   %s"
-           "%s",
-           font->file_name,
-           font->name,
-           font->path,
-           (font->enabled == true) ? "Yes" : "No",
-           font->type,
-           bytes_to_string(font->size),
-           font->typefaces_qty,
-           font->family,
-           font->fullname,
-           font->style,
-           font->version,
-           (font->copy_protected == true) ? "Yes" : "No",
-           (font->embeddable == true) ? "Yes" : "No",
-           (font->duplicate == true) ? "Yes" : "No",
-           (font->valid == true) ? "Yes" : "No",
-           (font->outline == true) ? "Yes" : "No",
-           font->unique,
-           "\n"
-           );
+  fprintf(stdout,
+          "\n  File Name        :   " AC_RESETALL AC_GREEN "%s" AC_RESETALL
+          "\n\tName             :   %s"
+          "\n\tPath             :   %s"
+          "\n\tEnabled          :   %s"
+          "\n\tType             :   %s"
+          "\n\tSize             :   " AC_CYAN "%s" AC_RESETALL
+          "\n\t# Typefaces      :   %lu"
+          "\n\tFamily           :   " AC_MAGENTA "%s" AC_RESETALL
+          "\n\tFullname         :   %s"
+          "\n\tStyle            :   %s"
+          "\n\tVersion          :   %s"
+          "\n\tCopy Protected   :   %s"
+          "\n\tEmbeddable       :   %s"
+          "\n\tDuplicate        :   %s"
+          "\n\tValid            :   %s"
+          "\n\tOutline          :   %s"
+          "\n\tUnique           :   %s"
+          "%s",
+          font->file_name,
+          font->name,
+          font->path,
+          (font->enabled == true) ? "Yes" : "No",
+          font->type,
+          bytes_to_string(font->size),
+          font->typefaces_qty,
+          font->family,
+          font->fullname,
+          font->style,
+          font->version,
+          (font->copy_protected == true) ? "Yes" : "No",
+          (font->embeddable == true) ? "Yes" : "No",
+          (font->duplicate == true) ? "Yes" : "No",
+          (font->valid == true) ? "Yes" : "No",
+          (font->outline == true) ? "Yes" : "No",
+          font->unique,
+          "\n"
+          );
 }
 
 static void parse_font(struct font_t *font, JSON_Object *font_object){

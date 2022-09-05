@@ -70,29 +70,29 @@ static void __attribute__((constructor)) __constructor__app_utils(void){
 }
 
 static void debug_app(struct app_t *app){
-  log_info(""
-           "\n\tName             :   %s"
-           "\n\tVersion          :   %s"
-           "\n\tLast Modified    :   %s (%ld) %s"
-           "\n\tInfo             :   %s"
-           "\n\tPath             :   %s (%s" AC_RESETALL ")"
-           "\n\tArch             :   %s"
-           "\n\tObtained from    :   %s"
-           "%s",
-           app->name,
-           app->version,
-           app->last_modified_s,
-           app->last_modified_timestamp,
-           (app->last_modified_timestamp > 0)
+  fprintf(stdout,
+          "\n\tName             :   %s"
+          "\n\tVersion          :   %s"
+          "\n\tLast Modified    :   %s (%ld) %s"
+          "\n\tInfo             :   %s"
+          "\n\tPath             :   %s (%s" AC_RESETALL ")"
+          "\n\tArch             :   %s"
+          "\n\tObtained from    :   %s"
+          "%s",
+          app->name,
+          app->version,
+          app->last_modified_s,
+          app->last_modified_timestamp,
+          (app->last_modified_timestamp > 0)
                   ? milliseconds_to_string(timestamp() - (app->last_modified_timestamp * 1000))
                   : "",
-           app->info,
-           app->path,
-           app->path_exists ? AC_GREEN "Existant" : AC_RED "Absent",
-           app->arch,
-           app->obtained_from,
-           "\n"
-           );
+          app->info,
+          app->path,
+          app->path_exists ? AC_GREEN "Existant" : AC_RED "Absent",
+          app->arch,
+          app->obtained_from,
+          "\n"
+          );
 }
 
 ///////////////////////////////////////////////////////////////////////
