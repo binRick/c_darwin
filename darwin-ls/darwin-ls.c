@@ -34,6 +34,56 @@ int main(int argc, char **argv) {
         .function    = optparse_print_help_subcmd,
       },
       {
+        .name        = "displays",
+        .description = "List Displays",
+        .function    = cmds[COMMAND_DISPLAYS].fxn,
+        .about       = "🐾" "\t" COLOR_LIST "List Displays" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "windows",
+        .description = "List Windows",
+        .function    = cmds[COMMAND_WINDOWS].fxn,
+        .about       = "🥑" "\t" COLOR_LIST "List Windows" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
+          common_options_b[COMMON_OPTION_SPACE_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "monitors",
+        .description = "Monitors",
+        .function    = cmds[COMMAND_MONITORS].fxn,
+        .about       = "📡" "\t" COLOR_LIST "List Monitors" AC_RESETALL,
+      },
+      {
+        .name        = "usb",
+        .description = "USB Devices",
+        .function    = cmds[COMMAND_USB_DEVICES].fxn,
+        .about       = "📡" "\t" COLOR_LIST "List USB Devices" AC_RESETALL,
+      },
+      {
+        .name        = "fonts",
+        .description = "List Fonts",
+        .function    = cmds[COMMAND_FONTS].fxn,
+        .about       = "🚥" "\t" COLOR_LIST "List FONTS" AC_RESETALL,
+      },
+      {
+        .name        = "apps",
+        .description = "List Applications",
+        .function    = cmds[COMMAND_APPS].fxn,
+        .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
+      },
+      {
+        .name        = "spaces",
+        .description = "List Spaces",
+        .function    = cmds[COMMAND_SPACES].fxn,
+        .about       = "💊" "\t" COLOR_LIST "List Spaces" AC_RESETALL,
+      },
+      {
         .name        = "move-window",
         .description = "Move Window",
         .function    = cmds[COMMAND_MOVE_WINDOW].fxn,
@@ -119,44 +169,6 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "displays",
-        .description = "List Displays",
-        .function    = cmds[COMMAND_DISPLAYS].fxn,
-        .about       = "🐾" "\t" COLOR_LIST "List Displays" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = "windows",
-        .description = "List Windows",
-        .function    = cmds[COMMAND_WINDOWS].fxn,
-        .about       = "🥑" "\t" COLOR_LIST "List Windows" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
-          common_options_b[COMMON_OPTION_SPACE_ID](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = "fonts",
-        .description = "List Fonts",
-        .function    = cmds[COMMAND_FONTS].fxn,
-        .about       = "🚥" "\t" COLOR_LIST "List FONTS" AC_RESETALL,
-      },
-      {
-        .name        = "apps",
-        .description = "List Applications",
-        .function    = cmds[COMMAND_APPS].fxn,
-        .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
-      },
-      {
-        .name        = "spaces",
-        .description = "List Spaces",
-        .function    = cmds[COMMAND_SPACES].fxn,
-        .about       = "💊" "\t" COLOR_LIST "List Spaces" AC_RESETALL,
-      },
-      {
         .name        = "focused-space",
         .description = "Show Focused Space",
         .function    = cmds[COMMAND_FOCUSED_SPACE].fxn,
@@ -173,18 +185,6 @@ int main(int argc, char **argv) {
         .description = "Show Focused Window",
         .function    = cmds[COMMAND_FOCUSED_WINDOW].fxn,
         .about       = "🗯" "\t" COLOR_SHOW "Show Focused Window" AC_RESETALL,
-      },
-      {
-        .name        = "monitors",
-        .description = "Monitors",
-        .function    = cmds[COMMAND_MONITORS].fxn,
-        .about       = "📡" "\t" COLOR_SHOW "Show Monitors" AC_RESETALL,
-      },
-      {
-        .name        = "usb",
-        .description = "USB Devices",
-        .function    = cmds[COMMAND_USB_DEVICES].fxn,
-        .about       = "📡" "\t" COLOR_SHOW "Show USB Devices" AC_RESETALL,
       },
       {
         .name        = "dock",

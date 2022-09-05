@@ -14,7 +14,7 @@ typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 #define COLOR_WINDOW    "\x1b[38;2;252;163;50m" AC_UNDERLINE
 #define COLOR_MOVE      "\x1b[38;2;252;83;50m" AC_UNDERLINE
 #define COLOR_START     "\x1b[38;2;62;252;50m" AC_UNDERLINE
-#define COLOR_HELP      "\x1b[38;2;50;186;252m" AC_UNDERLINE
+#define COLOR_HELP      "\x1b[38;2;50;50;252m" AC_UNDERLINE
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE;
 enum output_mode_type_t {
   OUTPUT_MODE_TEXT = 1,

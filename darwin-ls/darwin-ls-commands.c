@@ -192,15 +192,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
 
 ////////////////////////////////////////////
 static void _command_monitors(){
-  struct Vector *_monitors_v = get_monitors_v();
-
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Monitors" AC_RESETALL
-    "\n\t# Monitors      :       %lu"
-    "\n%s",
-    vector_size(_monitors_v),
-    ""
-    );
+  print_monitors();
   return(EXIT_SUCCESS);
 }
 
