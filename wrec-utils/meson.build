@@ -16,7 +16,7 @@ wrec_utils_deps = [
   c_fsio_dep,  
   libterminput_dep,
   bytes_dep,
-  logh_dep,
+  log_dep,
   bench_dep,
   ms_dep,
 ]

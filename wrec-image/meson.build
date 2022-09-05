@@ -13,7 +13,7 @@ wrec_image_deps = [
   stb_dep,
   c_fsio_dep,  
   bytes_dep,
-  logh_dep,
+  log_dep,
   ms_dep,
   tempdir_dep,
 ]

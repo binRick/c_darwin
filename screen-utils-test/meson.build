@@ -13,7 +13,7 @@ screen_utils_test_deps = [
   c_stringfn_dep,
   ansi_codes_dep,
   screen_utils_dep,
-  logh_dep,
+  log_dep,
 ]
 screen_utils_test_c_args = [
 ]
@@ -31,8 +31,8 @@ if get_option('enable-binaries')
      c_args: screen_utils_test_c_args,
      install: false,
   )
-  test('screen-utils-test', 
-    screen_utils_test_exec, args: ['-v','-a'],
-    workdir: screen_utils_test_test_dir,
-  )
+  #  test('screen-utils-test', 
+  #  screen_utils_test_exec, args: ['-v','-a'],
+  #  workdir: screen_utils_test_test_dir,
+  #)
 endif

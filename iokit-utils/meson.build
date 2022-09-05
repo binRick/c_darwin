@@ -12,7 +12,7 @@ iokit_utils_deps = [
   c_vector_dep,
   c_stringfn_dep,
   string_utils_dep,
-  logh_dep,
+  log_dep,
   ansi_codes_dep,
   timestamp_dep,
   bytes_dep, ms_dep,

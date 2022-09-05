@@ -14,7 +14,7 @@ window_utils_deps = [
   c_stringfn_dep,
   parson_dep,
   space_utils_dep,
-  logh_dep,
+  log_dep,
   ansi_codes_dep,
   c_vector_dep,string_utils_dep,process_utils_dep,
   process_dep,

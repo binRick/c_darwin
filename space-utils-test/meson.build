@@ -13,7 +13,7 @@ space_utils_test_deps = [
   c_stringfn_dep,
   space_utils_dep,
   ansi_codes_dep,
-  logh_dep,
+  log_dep,
   timestamp_dep,
   window_utils_dep,process_utils_dep,app_utils_dep,
   active_app_dep,

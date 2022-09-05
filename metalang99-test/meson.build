@@ -16,7 +16,7 @@ metalang99_test_deps = [
   interface99_dep,
   ansi_codes_dep,
   ms_dep,
-  logh_dep,
+  log_dep,
   app_utils_dep,
   window_utils_dep,
   c_stringfn_dep,

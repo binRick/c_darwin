@@ -364,7 +364,7 @@ SUITE(s_process){
   RUN_TEST(t_pids);
   RUN_TEST(t_pid_cwd);
   RUN_TEST(t_get_process_cmdline);
-  RUN_TEST(t_pids_iterate);
+  // RUN_TEST(t_pids_iterate);
   RUN_TEST(t_kitty_pids);
   RUN_TEST(t_kitty_listen_ons);
   RUN_TEST(t_kitty_get_text);

@@ -12,7 +12,7 @@ wrec_common_deps = [
   c_fsio_dep,  
   bytes_dep,
   string_utils_dep,
-  logh_dep,
+  log_dep,
   ms_dep,
   c_img_dep,
 ]

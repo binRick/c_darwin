@@ -10,6 +10,7 @@
 #include "c_vector/vector/vector.h"
 #include "log/log.h"
 #include "ms/ms.h"
+#include "spin/spin.h"
 #include "submodules/reproc/reproc/include/reproc/export.h"
 #include "submodules/reproc/reproc/include/reproc/reproc.h"
 #include "systemprofiler/systemprofiler.h"
@@ -28,34 +29,43 @@ static void __attribute__((constructor)) __constructor__systemprofiler(void){
   }
 }
 ////////////////////////////////////////////
-#define INIT_SYSTEM_PROFILER_CACHE_ITEM()                    \
-  char *cf = NULL, *ck = NULL;                               \
-  asprintf(&cf, ".%s.db", stringfn_to_lowercase(ITEM_NAME)); \
-  asprintf(&ck, "%s_ts", stringfn_to_lowercase(ITEM_NAME));  \
-  IWKV_OPTS opts = {                                         \
-    .path   = cf,                                            \
-    .oflags = IWFSM_NOLOCKS,                                 \
-  };                                                         \
-  IWKV      iwkv;                                            \
-  IWDB      mydb;                                            \
-  iwrc      rc = iwkv_open(&opts, &iwkv);                    \
-  if (rc) {                                                  \
-    iwlog_ecode_error3(rc);                                  \
-    goto fail;                                               \
-  }                                                          \
-  rc = iwkv_db(iwkv, 1, 0, &mydb);                           \
-  if (rc) {                                                  \
-    iwlog_ecode_error2(rc, "Failed to open mydb");           \
-    goto fail;                                               \
-  }                                                          \
-  IWKV_val key, val;                                         \
-  IWKV_val tskey, tsval;                                     \
-  tskey.data = ITEM_NAME;                                    \
-  tskey.size = strlen(tskey.data);                           \
-  key.data   = ck;                                           \
-  key.size   = strlen(key.data);                             \
-  free(cf);                                                  \
-  free(ck);
+#define CLEANUP_SYSTEM_PROFILER_CACHE_ITEM() \
+  iwkv_val_dispose(&val);\
+  iwkv_close(&iwkv);                         \
+  if (cache_item_file)                       \
+  free(cache_item_file);                     \
+  if (cache_item_key)                        \
+  free(cache_item_key);                      \
+  if (cache_item_ts_key)                     \
+  free(cache_item_ts_key);
+
+#define INIT_SYSTEM_PROFILER_CACHE_ITEM()                                   \
+  char *cache_item_file = NULL, *cache_item_ts_key = NULL, *cache_item_key; \
+  asprintf(&cache_item_file, ".%s.db", stringfn_to_lowercase(ITEM_NAME));   \
+  asprintf(&cache_item_key, "%s_data", stringfn_to_lowercase(ITEM_NAME));   \
+  asprintf(&cache_item_ts_key, "%s_ts", cache_item_key);                    \
+  IWKV_OPTS opts = {                                                        \
+    .path   = cache_item_file,                                              \
+    .oflags = IWFSM_NOLOCKS,                                                \
+  };                                                                        \
+  IWKV      iwkv;                                                           \
+  IWDB      mydb;                                                           \
+  iwrc      rc = iwkv_open(&opts, &iwkv);                                   \
+  if (rc) {                                                                 \
+    iwlog_ecode_error3(rc);                                                 \
+    goto fail;                                                              \
+  }                                                                         \
+  rc = iwkv_db(iwkv, 1, 0, &mydb);                                          \
+  if (rc) {                                                                 \
+    iwlog_ecode_error2(rc, "Failed to open mydb");                          \
+    goto fail;                                                              \
+  }                                                                         \
+  IWKV_val key, val;                                                        \
+  IWKV_val tskey, tsval;                                                    \
+  tskey.data = cache_item_key;                                              \
+  tskey.size = strlen(tskey.data);                                          \
+  key.data   = cache_item_ts_key;                                           \
+  key.size   = strlen(key.data);
 
 static int save_system_profiler_cache_item(char *ITEM_NAME, char *SYSTEM_PROFILER_JSON_CONTENT){
   INIT_SYSTEM_PROFILER_CACHE_ITEM()
@@ -73,10 +83,11 @@ static int save_system_profiler_cache_item(char *ITEM_NAME, char *SYSTEM_PROFILE
     iwlog_ecode_error3(rc);
     goto fail;
   }
-  iwkv_close(&iwkv);
+  CLEANUP_SYSTEM_PROFILER_CACHE_ITEM()
   return(EXIT_SUCCESS);
 
 fail:
+  CLEANUP_SYSTEM_PROFILER_CACHE_ITEM()
   return(EXIT_FAILURE);
 }
 
@@ -89,30 +100,36 @@ static char *load_system_profiler_cache_item(char *ITEM_NAME, size_t CACHE_TTL){
   rc         = iwkv_get(mydb, &key, &val);
   if (rc) {
     if (SYSTEMPROFILER_DEBUG_MODE == true) {
-      iwlog_ecode_error3(rc);
+      if(rc==IWKV_ERROR_NOTFOUND)
+        log_error("Failed to get %s/%s from %s", cache_item_key, cache_item_ts_key, cache_item_file);
+      else
+        iwlog_ecode_error3(rc);
     }
     goto fail;
   }
   rc = iwkv_get(mydb, &tskey, &tsval);
   if (rc) {
-    iwlog_ecode_error3(rc);
+    if(rc==IWKV_ERROR_NOTFOUND)
+      log_error("Items %s/%s not found in %s", cache_item_key, cache_item_ts_key, cache_item_file);
+    else
+      iwlog_ecode_error3(rc);
     goto fail;
   }
   char   **ep;
   size_t ts = (size_t)strtoimax(tsval.data, &ep, 10);
   char   *s = strdup(val.data);
-  iwkv_val_dispose(&val);
-  iwkv_close(&iwkv);
-  bool expired = ((((size_t)timestamp() - ts) / 1000) > CACHE_TTL) ? true : false;
+  bool   expired = ((((size_t)timestamp() - ts) / 1000) > CACHE_TTL) ? true : false;
   if (SYSTEMPROFILER_DEBUG_MODE == true) {
     log_debug("%s> %s cache with ts %lu|age: %s|expired:%d|", ITEM_NAME, bytes_to_string(strlen(s)), ts, milliseconds_to_string(((size_t)timestamp()) - ts), expired);
   }
-  if (expired == true) {
+  if (expired == true || strlen(s) < 1024) {
     return(NULL);
   }
+  CLEANUP_SYSTEM_PROFILER_CACHE_ITEM()
   return(s);
 
 fail:
+  CLEANUP_SYSTEM_PROFILER_CACHE_ITEM()
   return(NULL);
 }
 
@@ -125,7 +142,13 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
     }
     return(cached);
   }
+  char *spinner_title;
+
+  asprintf(&spinner_title, "Collecting %s", ITEM_NAME);
+  spinner *spinner = spin_new(utf8_pat1, spinner_title, UTF8_CHAR_WIDTH);
+
   enum { NUM_CHILDREN = 1 };
+  spin_drw(spinner);
 
   reproc_event_source  children[NUM_CHILDREN] = { { 0 } };
   int                  r                      = -1;
@@ -150,21 +173,24 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
     children[i].process   = process;
     children[i].interests = REPROC_EVENT_OUT;
   }
+  log_debug("%s started", ITEM_NAME);
 
   for ( ;;) {
     r = reproc_poll(children, NUM_CHILDREN, REPROC_INFINITE);
     if (r < 0) {
       r = r == REPROC_EPIPE ? 0 : r;
+      log_debug("%s finished", ITEM_NAME);
       goto finish;
     }
 
     for (int i = 0; i < NUM_CHILDREN; i++) {
       if (children[i].process == NULL || !children[i].events) {
+        log_debug("%s no event", ITEM_NAME);
         continue;
       }
-      uint8_t output[1024 * 32];
-      r = reproc_read(children[i].process, REPROC_STREAM_OUT, output,
-                      sizeof(output));
+      uint8_t output[1024 * 256];
+      r = reproc_read(children[i].process, REPROC_STREAM_OUT, output, sizeof(output));
+      log_debug("%s read %s", ITEM_NAME, bytes_to_string(strlen(output)));
       if (r == REPROC_EPIPE) {
         children[i].process = reproc_destroy(children[i].process);
         continue;

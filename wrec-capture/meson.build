@@ -7,7 +7,7 @@ wrec_capture_deps = [
   ansi_codes_dep,
   tempdir_dep,
   ms_dep,
-  logh_dep,
+  log_dep,
   app_utils_dep,
   chan_dep,image_utils_dep,
   window_utils_dep,

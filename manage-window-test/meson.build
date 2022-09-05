@@ -14,7 +14,7 @@ manage_window_test_deps = [
   c_stringfn_dep,
   ansi_codes_dep,
   bytes_dep, ms_dep,
-  logh_dep,
+  log_dep,
   timestamp_dep,
 ]
 manage_window_test_c_args = [

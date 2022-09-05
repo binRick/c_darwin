@@ -15,7 +15,7 @@ screen_utils_deps = [
   active_app_dep,
   c_stringfn_dep,
   parson_dep,image_utils_dep,
-  logh_dep,
+  log_dep,
   ansi_codes_dep,
   timestamp_dep,
   bytes_dep, ms_dep,

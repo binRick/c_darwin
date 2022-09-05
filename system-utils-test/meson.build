@@ -10,7 +10,7 @@ system_utils_test_deps = [
   c_greatest_dep,
   system_utils_dep,
   process_dep,
-  logh_dep,
+  log_dep,
   c_stringfn_dep,process_utils_dep,app_utils_dep,display_utils_dep,
   system_utils_dep,
   dbg_dep,

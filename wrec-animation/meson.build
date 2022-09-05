@@ -12,7 +12,7 @@ wrec_animation_deps = [
   c_string_buffer_dep,
   c_fsio_dep,  
   bytes_dep,
-  logh_dep,
+  log_dep,
   ms_dep,
   msf_gif_dep,
   stb_dep,

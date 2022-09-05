@@ -13,6 +13,7 @@ systemprofiler_deps = [
   ansi_codes_dep,
   c_vector_dep,reproc_dep,which_dep,
   c_fsio_dep,
+  spin_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,

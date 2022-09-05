@@ -10,7 +10,7 @@ pasteboard_deps = [
   c_stringfn_dep,
   pbpaste_dep,
   bench_dep,
-  logh_dep,
+  log_dep,
 ]
 
 pasteboard_link_args = [

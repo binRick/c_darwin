@@ -11,7 +11,7 @@ system_utils_test_deps = [
   kitty_dep,
   system_utils_dep,
   process_dep,
-  logh_dep,
+  log_dep,
   c_stringfn_dep,
   module_dep,
   system_utils_dep,

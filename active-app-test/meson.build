@@ -13,7 +13,7 @@ active_app_test_deps = [
   c_stringfn_dep,
   app_utils_dep,process_utils_dep,app_utils_dep,
   window_utils_dep,
-  logh_dep,
+  log_dep,
   c_greatest_dep,
 ]
 

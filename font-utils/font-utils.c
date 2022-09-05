@@ -2,7 +2,6 @@
 #ifndef FONT_UTILS_C
 #define FONT_UTILS_C
 ////////////////////////////////////////////
-////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"

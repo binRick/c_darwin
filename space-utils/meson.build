@@ -14,7 +14,7 @@ space_utils_deps = [
   parson_dep,
   display_utils_dep,
   string_utils_dep,
-  logh_dep,
+  log_dep,
   ansi_codes_dep,
   timestamp_dep,
   bytes_dep, ms_dep,

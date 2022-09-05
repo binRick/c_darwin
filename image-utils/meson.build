@@ -13,7 +13,7 @@ image_utils_dirs = [
 image_utils_deps = [
   c_stringfn_dep,
   parson_dep,
-  logh_dep,
+  log_dep,
   ansi_codes_dep,
   c_vector_dep,
   c_img_dep,
