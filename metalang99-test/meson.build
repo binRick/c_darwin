@@ -11,7 +11,7 @@ metalang99_test_include_dirs = [
 ]
 metalang99_test_deps = [
   c_greatest_dep,
-  debug_memory_dep,
+  
   metalang99_dep,
   interface99_dep,
   ansi_codes_dep,

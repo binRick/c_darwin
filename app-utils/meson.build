@@ -18,8 +18,7 @@ app_utils_lib = static_library('app-utils',
   dependencies: app_utils_deps,
   c_args: app_utils_c_args,
   include_directories: [
-    inc,
-    '../app-utils',
+    inc,'.',
   ],
 )
 
@@ -27,7 +26,7 @@ app_utils_lib = static_library('app-utils',
 app_utils_dep = declare_dependency(
   include_directories: [
     inc,  
-    '../app-utils',
+    '.',
   ],
   link_with: app_utils_lib,
   link_args: app_utils_link_flags,

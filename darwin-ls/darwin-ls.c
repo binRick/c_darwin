@@ -1,3 +1,4 @@
+#include "memory_leak_detector/leak.h"
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls.h"
 ////////////////////////////////////////////

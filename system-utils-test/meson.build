@@ -3,7 +3,6 @@ system_utils_test_srcs = [
 ]
 system_utils_include_dirs = [
   '.',
-  '../system-utils',
   inc,
 ]
 system_utils_test_deps = [

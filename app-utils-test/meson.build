@@ -3,8 +3,7 @@ app_utils_test_srcs = [
 ]
 app_utils_test_include_dirs = [
   inc,
-  '../window-utils',
-  '../app-utils',
+  '.',
 ]
 app_utils_test_deps = [
   c_greatest_dep,

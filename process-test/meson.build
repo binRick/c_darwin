@@ -4,7 +4,6 @@ process_test_srcs = [
 ]
 process_include_dirs = [
   '.',
-  '../process',
   inc,
 ]
 process_include_cargs = [
@@ -21,7 +20,7 @@ process_test_deps = [
   c_string_buffer_dep,
   c_stringfn_dep,
   c_fsio_dep,
-  debug_memory_dep,
+  
 ]
 if get_option('enable-binaries')
   process_test_exec = executable('process-test',

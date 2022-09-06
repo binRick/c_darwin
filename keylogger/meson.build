@@ -7,7 +7,6 @@ keylogger_cargs = [
 keylogger_inc = [
  inc,
  '.',
- '../keylogger',
 ]
 keylogger_deps = [
  c_string_buffer_dep,
@@ -17,13 +16,12 @@ keylogger_deps = [
  core_utils_dep,
  subprocess_dep,
  timestamp_dep,
- list_dep,
  dbg_dep,
  ansi_codes_dep,
  ansi_utils_dep,
  keylogger_db_dep,
  c_timer_dep,
- debug_memory_dep,
+ 
  djbhash_dep,
  window_utils_dep,
 ]

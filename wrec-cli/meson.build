@@ -12,7 +12,6 @@ wrec_cli_deps = [
   wrec_capture_dep,
   cargs_dep,
   wrec_utils_dep,
-  exec_fzf_dep,
 ]
 wrec_cli_dirs = [
   inc,

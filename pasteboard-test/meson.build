@@ -3,7 +3,6 @@ pasteboard_test_srcs = [
 ]
 pasteboard_include_dirs = [
   '.',
-  '../pasteboard',
   inc,
 ]
 pasteboard_test_deps = [

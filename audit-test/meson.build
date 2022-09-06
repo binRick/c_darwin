@@ -4,7 +4,6 @@ audit_test_srcs = [
 ]
 audit_include_dirs = [
   '.',
-  '../audit',
   inc,
 ]
 audit_include_cargs = [
@@ -22,7 +21,7 @@ audit_test_deps = [
   c_string_buffer_dep,
   c_stringfn_dep,
   c_fsio_dep,
-  debug_memory_dep,
+  
   audit_dep,
 ]
 if get_option('enable-binaries')

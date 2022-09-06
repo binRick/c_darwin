@@ -4,15 +4,7 @@ keylogger_config_srcs = [
   'keylogger-config-logic.c',
 ]
 keylogger_config_dirs = [
-  '../submodules/c_deps',
-  '../submodules/c_deps/submodules',
-  '../keylogger',
-  '../keylogger-db',
-  '../pbpaste',
-  '../submodules/c_deps',
-  '../submodules',
   '.',
-  '../',
   inc,
 ]
 keylogger_config_deps = [

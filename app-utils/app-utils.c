@@ -98,8 +98,8 @@ static void debug_app(struct app_t *app){
           "\n"
           );
 
-  get_icon_data_from_path(app->path);
-  log_debug("ok");
+  //get_icon_data_from_path(app->path);
+  //log_debug("ok");
   //exit(0);
 }
 

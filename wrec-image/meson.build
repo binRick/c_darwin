@@ -18,9 +18,7 @@ wrec_image_deps = [
   tempdir_dep,
 ]
 wrec_image_dirs = [
-  '.',
-  '../',
-  '../wrec-image',
+  '.',inc,
 ]
 
 

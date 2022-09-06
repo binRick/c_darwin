@@ -19,9 +19,7 @@ wrec_animation_deps = [
   tempdir_dep,
 ]
 wrec_animation_dirs = [
-  '.',
-  '../',
-  '../wrec-animation',
+  '.',inc,
 ]
 
 

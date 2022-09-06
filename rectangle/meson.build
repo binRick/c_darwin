@@ -5,13 +5,6 @@ inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 rectangle_dirs = [
   '.',
   inc,
-  '../submodules/c_deps/submodules/iowow/src',
-  '../submodules/c_deps/submodules/iowow/src/kv',
-  '../submodules/c_deps/submodules/iowow/src/fs',
-  '../submodules/c_deps/submodules/iowow/src/log',
-  '../submodules/c_deps/submodules/iowow/src/json',
-  '../submodules/c_deps/submodules/iowow/src/platform',
-  '../submodules/c_deps/submodules/iowow',
 ]
 rectangle_deps = [
   c_vector_dep,
@@ -19,7 +12,7 @@ rectangle_deps = [
   osx_keys_dep,
   c_stringfn_dep,
   ansi_codes_dep,
-  debug_memory_dep,
+  
   iowow_dep,
   subprocess_dep,
   wildcardcmp_dep,

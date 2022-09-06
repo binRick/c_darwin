@@ -6,8 +6,6 @@ table_utils_c_args = [
   ]
 table_utils_dirs = [
     '.',
-    '../app-utils',
-    '../',
     inc,
   ]
 table_utils_deps = [

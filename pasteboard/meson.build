@@ -3,13 +3,11 @@ pasteboard_srcs = [
 ]
 pasteboard_dirs = [
   '.',
-  '../',
   inc,
 ]
 pasteboard_deps = [
   c_stringfn_dep,
   pbpaste_dep,
-  bench_dep,
   log_dep,
 ]
 

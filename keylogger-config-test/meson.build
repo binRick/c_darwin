@@ -2,8 +2,6 @@ keylogger_config_test_srcs = [
   'keylogger-config-test.c',
 ]
 keylogger_config_test_inc = [
- '../keylogger',
- '../keylogger-config-test',
  '.',
  inc,
 ]

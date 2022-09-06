@@ -3,8 +3,7 @@ window_utils_test_srcs = [
 ]
 window_utils_test_include_dirs = [
        inc,
-       '../window-utils',
-       '../app-utils',
+       '.',
 ]
 window_utils_test_deps = [
   c_stringfn_dep,

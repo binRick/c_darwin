@@ -4,7 +4,6 @@ ls_proc_srcs = [
 ]
 process_include_dirs = [
   '.',
-  '../process',
   inc,
 ]
 process_include_cargs = [

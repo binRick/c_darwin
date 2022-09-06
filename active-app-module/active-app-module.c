@@ -1,5 +1,5 @@
 #pragma once
-#include "active-app-module.h"
+#include "active-app-module/active-app-module.h"
 /////////////////////////////////////////////////////////
 static inline void logger_info(char *message);
 static inline void logger_error(char *message);

@@ -21,7 +21,6 @@ kitty_deps = [
 ]
 kitty_dirs = [
   '.',
-  '../submodules/c_deps/submodules/c_ansi',
   inc,
 ]
 kitty_lib =static_library('kitty',

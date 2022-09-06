@@ -10,7 +10,6 @@
 //////////////////////////////////////
 #include <ctype.h>
 #include <inttypes.h>
-#include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -18,49 +17,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <stdbool.h>
 //////////////////////////////////////
-#include "active-app.h"
-#include "app-utils.h"
+#include "active-app/active-app.h"
+#include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
 #include "hidapi/hidapi/hidapi.h"
 #include "hidapi/mac/hidapi_darwin.h"
 #include "int/int.h"
-#ifdef ASSERT_EQ
-#undef ASSERT_EQ
-#endif
 #include "keylogger/keylogger.h"
 #include "libusb/libusb/libusb.h"
 #include "libusb/libusb/os/darwin_usb.h"
 #include "pbpaste/pbpaste.h"
-#include "process.h"
+#include "process/process.h"
 #include "submodules/b64.c/b64.h"
-#include "submodules/c_ansi/ansi-codes/ansi-codes.h"
-#include "submodules/c_ansi/ansi-utils/ansi-utils.h"
-#include "submodules/c_eventemitter/include/eventemitter.h"
-#include "submodules/c_forever/include/forever.h"
-#include "submodules/c_string_buffer/include/stringbuffer.h"
-#include "submodules/c_stringfn/include/stringfn.h"
-#include "submodules/c_stringfn/include/stringfn.h"
-#include "submodules/c_vector/vector/vector.h"
-#include "submodules/catpath/catpath.h"
-#include "submodules/dmt/src/dmt.h"
-#include "submodules/log.h/log.h"
-#include "submodules/sqldbal/src/sqldbal.h"
-#include "submodules/timestamp/timestamp.h"
-#include "window-utils.h"
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string.h>
-#include <sys/time.h>
+#include "c_ansi/ansi-codes/ansi-codes.h"
+#include "c_ansi/ansi-utils/ansi-utils.h"
+#include "c_eventemitter/include/eventemitter.h"
+#include "c_forever/include/forever.h"
+#include "c_string_buffer/include/stringbuffer.h"
+#include "c_stringfn/include/stringfn.h"
+#include "c_vector/vector/vector.h"
+#include "catpath/catpath.h"
+#include "log.h/log.h"
+#include "sqldbal/src/sqldbal.h"
+#include "timestamp/timestamp.h"
+#include "window-utils/window-utils.h"
 //////////////////////////////////////////
 typedef struct DB_STATEMENT_T {
   enum sqldbal_status_code rc;

@@ -2,10 +2,7 @@ active_app_test_srcs = [
   'active-app-test.c',
 ]
 active_app_include_dirs = [
-  '../active-app',
-  '../window-utils',
-  '../app-utils',
-  '../active-app-module',
+  '.',
   inc,
 ]
 active_app_test_deps = [

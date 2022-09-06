@@ -13,7 +13,7 @@ mac_load_test_deps = [
   c_stringfn_dep,
   mac_load_dep,
   ansi_codes_dep,
-  debug_memory_dep,
+  
 ]
 mac_load_test_c_args = [
 ]

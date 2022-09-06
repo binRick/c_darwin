@@ -12,7 +12,7 @@ active_app_c_args = [
   ]
 active_app_dirs = [
     inc,
-    '../',
+    '.',
   ]
 active_app_lib = static_library('active-app',
   active_app_srcs,

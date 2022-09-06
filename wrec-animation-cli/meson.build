@@ -16,7 +16,7 @@ wrec_animation_cli_deps = [
   timestamp_dep,
   optparse99_dep,
   core_utils_dep,
-  debug_memory_dep,
+  
 ]
 wrec_animation_cli_c_args = [
 ]

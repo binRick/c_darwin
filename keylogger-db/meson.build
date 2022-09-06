@@ -3,15 +3,7 @@ keylogger_db_srcs = [
   'keylogger-db.h',
 ]
 keylogger_db_dirs = [
-  '../submodules/c_deps',
-  '../submodules/c_deps/submodules',
-  '../submodules/c_deps/submodules/dbg',
-  '../keylogger',
-  '../pbpaste',
-  '../submodules/c_deps',
-  '../submodules',
   '.',
-  '../',
   inc,
 ]
 keylogger_db_deps = [
@@ -41,7 +33,6 @@ keylogger_db_deps = [
   c_forever_dep,
   dbg_dep,
   c_eventemitter_dep,
-  dmt_dep,
   ansi_utils_dep,
 ]
 keylogger_c_args = [

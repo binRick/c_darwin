@@ -3,7 +3,6 @@ core_utils_srcs = [
 ]
 core_utils_dirs = [
   '.',
-  '../',
   inc,
 ]
 core_utils_deps = [

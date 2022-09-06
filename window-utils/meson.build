@@ -6,8 +6,6 @@ window_utils_c_args = [
   ]
 window_utils_dirs = [
     '.',
-    '../app-utils',
-    '../',
     inc,
   ]
 window_utils_deps = [

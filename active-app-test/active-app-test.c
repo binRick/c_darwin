@@ -1,11 +1,10 @@
-#include "active-app-module.h"
-#include "active-app-test.h"
-#include "app-utils.h"
+#include "active-app-module/active-app-module.h"
+#include "active-app-test/active-app-test.h"
 #include "app-utils/app-utils.h"
 #include "process-utils/process-utils.h"
-#include "submodules/c_greatest/greatest/greatest.h"
-#include "submodules/log.h/log.h"
-#include "window-utils.h"
+#include "c_greatest/greatest/greatest.h"
+#include "log.h/log.h"
+#include "window-utils/window-utils.h"
 bool RUNNING = true;
 
 void show_focus(){

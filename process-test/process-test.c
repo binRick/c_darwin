@@ -1,6 +1,5 @@
 #define DEBUG_MODE                false
 #define DEBUG_KITTEN_LISTEN_ON    false
-//#include "debug-memory/debug_memory.h"
 #include "print.h"
 #include "process-test.h"
 #define CT_STOP_AND_DEBUG(COLOR)    { do {                                                                             \

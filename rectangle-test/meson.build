@@ -13,7 +13,7 @@ rectangle_test_deps = [
   c_fsio_dep,
   c_stringfn_dep,
   ansi_codes_dep,
-  debug_memory_dep,
+  
 ]
 rectangle_test_c_args = [
 ]

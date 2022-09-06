@@ -3,7 +3,6 @@ pbpaste_srcs = [
 ]
 pbpaste_inc = [
  '.',
- '../pbpaste',
  inc,
 ]
 pbpaste_deps = [
@@ -23,7 +22,6 @@ pbpaste_deps = [
  c_vector_dep,
  murmurhash_dep,
  b64_dep,
- libbeaufort_dep,
  timestamp_dep,
  c_eventemitter_dep,
  smaz_dep, 

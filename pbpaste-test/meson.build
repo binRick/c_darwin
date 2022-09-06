@@ -2,8 +2,6 @@ pbpaste_test_srcs = [
   'pbpaste-test.c',
 ]
 pbpaste_test_inc = [
- '../pbpaste',
- '../pbpaste-test',
  '.',
  inc,
 ]
@@ -25,7 +23,6 @@ pbpaste_test_deps = [
  c_vector_dep,
  murmurhash_dep,
  b64_dep,
- libbeaufort_dep,
  timestamp_dep,
  c_eventemitter_dep,
  smaz_dep,

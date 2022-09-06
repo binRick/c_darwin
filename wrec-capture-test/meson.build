@@ -3,7 +3,6 @@ wrec_capture_test_srcs = [
 ]
 wrec_capture_test_include_dirs = [
   '.',
-  '../wrec-capture',
   inc,
 ]
 wrec_capture_test_include_cargs = [

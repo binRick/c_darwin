@@ -6,8 +6,6 @@ image_utils_c_args = [
   ]
 image_utils_dirs = [
     '.',
-    '../app-utils',
-    '../',
     inc,
   ]
 image_utils_deps = [

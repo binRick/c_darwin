@@ -6,8 +6,6 @@ mission_control_utils_c_args = [
   ]
 mission_control_utils_dirs = [
     '.',
-    '../app-utils',
-    '../',
     inc,
   ]
 mission_control_utils_deps = [

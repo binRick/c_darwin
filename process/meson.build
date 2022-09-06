@@ -18,8 +18,6 @@ process_deps = [
 ]
 process_dirs = [
   '.',
-  '../submodules/c_deps/submodules/c_fsio/include',
-  '../submodules/c_deps/submodules/c_fsio',
   inc,
 ]
 process_lib = static_library('process',

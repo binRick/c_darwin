@@ -16,13 +16,11 @@ audit_deps = [
   occurrences_dep,
   parson_dep,
   c_fsio_dep,  
-  debug_memory_dep,  
+    
   kitty_dep,  
 ]
 audit_dirs = [
-  '../submodules/c_deps/submodules/c_fsio/include',
   '.',
-  '../submodules/c_deps/submodules/c_fsio',
   inc,
 ]
 audit_lib =static_library('audit',
