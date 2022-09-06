@@ -6,8 +6,6 @@ process_utils_c_args = [
   ]
 process_utils_dirs = [
     '.',
-    '../app-utils',
-    '../',
     inc,
   ]
 process_utils_deps = [
@@ -34,7 +32,6 @@ process_utils_lib = static_library('process-utils',
   c_args: process_utils_c_args,
   include_directories: process_utils_dirs,
 )
-
 
 process_utils_dep = declare_dependency(
   include_directories: process_utils_dirs,

@@ -12,5 +12,13 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-void alacritty_fxn1(void);
+struct alacritty_t {
+  pid_t pid;
+  char  *path;
+  char  *version;
+  char  *socket;
+  char  *log;
+  char  *config;
+  int   window_id;
+};
 #endif

@@ -54,6 +54,12 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "processes",
+        .description = "Processes",
+        .function    = cmds[COMMAND_PROCESSES].fxn,
+        .about       = "📡" "\t" COLOR_LIST "List Processes" AC_RESETALL,
+      },
+      {
         .name        = "monitors",
         .description = "Monitors",
         .function    = cmds[COMMAND_MONITORS].fxn,

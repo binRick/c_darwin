@@ -6,6 +6,7 @@
 #include "core-utils/core-utils.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
+#include "log/log.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
@@ -73,3 +74,97 @@ int get_focused_pid(){
 
   return(-1);
 }
+
+void process_info_release(struct process_info_t *I){
+  if (I) {
+    if (I->open_ports_v) {
+      vector_release(I->open_ports_v);
+    }
+    if (I->open_files_v) {
+      vector_release(I->open_files_v);
+    }
+    if (I->open_connections_v) {
+      for (size_t i = 0; i < vector_size(I->open_connections_v); i++) {
+        struct open_connection_t *oc = (struct open_connection_t *)vector_get(I->open_connections_v, i);
+        if (oc) {
+          free(oc);
+        }
+      }
+      vector_release(I->open_connections_v);
+    }
+  }
+}
+
+struct Vector *get_all_process_infos_v(){
+  struct Vector *pids_v = get_all_processes();
+  struct Vector *PI     = vector_new();
+
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    struct process_info_t *I = get_process_info((int)(size_t)vector_get(pids_v, i));
+    if (I) {
+      vector_push(PI, (void *)I);
+    }
+  }
+  return(PI);
+}
+
+struct process_info_t *get_process_info(int pid){
+  struct process_info_t *I = calloc(1, sizeof(struct process_info_t));
+
+  I->pid                = pid;
+  I->success            = false;
+  I->open_ports_v       = vector_new();
+  I->open_connections_v = vector_new();
+  I->open_files_v       = vector_new();
+  I->started            = timestamp();
+  if (I->pid == 0) {
+    log_error("Invalid PID %d", I->pid);
+    return(NULL);
+  }
+
+  int bufferSize = proc_pidinfo(I->pid, PROC_PIDLISTFDS, 0, 0, 0);
+
+  if (bufferSize == -1) {
+    log_error("Failed to get PID %d Open File Handles", I->pid);
+    return(NULL);
+  }
+
+  struct proc_fdinfo *procFDInfo = (struct proc_fdinfo *)malloc(bufferSize);
+
+  if (!procFDInfo) {
+    log_error("Failed Allocate memory for PID %d info of size %d", I->pid, bufferSize);
+    return(NULL);
+  }
+  proc_pidinfo(I->pid, PROC_PIDLISTFDS, 0, procFDInfo, bufferSize);
+  int numberOfProcFDs = bufferSize / PROC_PIDLISTFD_SIZE;
+
+  for (int i = 0; i < numberOfProcFDs; i++) {
+    if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_VNODE) {
+      struct vnode_fdinfowithpath vnodeInfo;
+      int                         bytesUsed = proc_pidfdinfo(I->pid, procFDInfo[i].proc_fd, PROC_PIDFDVNODEPATHINFO, &vnodeInfo, PROC_PIDFDVNODEPATHINFO_SIZE);
+      if (bytesUsed == PROC_PIDFDVNODEPATHINFO_SIZE) {
+        vector_push(I->open_files_v, (void *)(char *)vnodeInfo.pvip.vip_path);
+      }
+    } else if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_SOCKET) {
+      struct socket_fdinfo socketInfo;
+      int                  bytesUsed = proc_pidfdinfo(I->pid, procFDInfo[i].proc_fd, PROC_PIDFDSOCKETINFO, &socketInfo, PROC_PIDFDSOCKETINFO_SIZE);
+      if (bytesUsed == PROC_PIDFDSOCKETINFO_SIZE) {
+        if (socketInfo.psi.soi_family == AF_INET && socketInfo.psi.soi_kind == SOCKINFO_TCP) {
+          int localPort  = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_lport);
+          int remotePort = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_fport);
+          if (remotePort == 0) {
+            vector_push(I->open_ports_v, (void *)(size_t)localPort);
+          } else {
+            struct open_connection_t *open_connection = calloc(1, sizeof(struct open_connection_t));
+            open_connection->local_port  = localPort;
+            open_connection->remote_port = remotePort;
+            vector_push(I->open_connections_v, (void *)open_connection);
+          }
+        }
+      }
+    }
+  }
+  I->success = true;
+  I->dur     = timestamp() - I->started;
+  return(I);
+} /* get_process_info */

@@ -20,6 +20,7 @@
 #include "monitor-utils/monitor-utils.h"
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
+#include "process-utils/process-utils.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
 #include "table-utils/table-utils.h"

@@ -15,7 +15,6 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
-
 ////////////////////////////////////////////
 static bool ALACRITTY_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////
@@ -25,23 +24,4 @@ static void __attribute__((constructor)) __constructor__alacritty(void){
     ALACRITTY_DEBUG_MODE = true;
   }
 }
-static void alacritty_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void alacritty_internal_fxn1(void){
-  log_info("Called function alacritty_internal_fxn1");
-  if (ALACRITTY_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void alacritty_fxn1(void){
-  alacritty_internal_fxn1();
-  log_info("Called function alacritty_fxn1");
-  if (ALACRITTY_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-////////////////////////////////////////////
 #endif

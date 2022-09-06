@@ -1,19 +1,23 @@
 #pragma once
 #include "log.h/log.h"
-#include <assert.h>
-#include <ctype.h>
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "osx-keys/osx-keys.h"
 static bool OSX_KEYS_DEBUG_MODE = false;
-static void __attribute__((constructor)) __constructor__osx_keys(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_OSX_KEYS") != NULL) {
-    log_debug("Enabling OSX Keys Debug Mode");
-    OSX_KEYS_DEBUG_MODE = true;
+
+void toKey(CGKeyCode kc, CGEventFlags flags, bool upOrDown) {
+  CGEventRef theEvent = CGEventCreateKeyboardEvent(NULL, kc, upOrDown);
+
+  if (flags) {
+    CGEventSetFlags(theEvent, flags);
+  }
+  CGEventPost(kCGAnnotatedSessionEventTap, theEvent);
+  CFRelease(theEvent);
+}
+
+short AsciiToKeyCode(Ascii2KeyCodeTable *ttable, short asciiCode) {
+  if (asciiCode >= 0 && asciiCode <= 255) {
+    return(ttable->transtable[asciiCode]);
+  } else {
+    return(false);
   }
 }
 
@@ -273,3 +277,9 @@ const char *convertKeyboardCode(const int keyCode) {
   fprintf(stderr, "UNKNOWN KEY: %d\n", keyCode);
   return("[unknown]");
 } /* convertKeyCode */
+static void __attribute__((constructor)) __constructor__osx_keys(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_OSX_KEYS") != NULL) {
+    log_debug("Enabling OSX Keys Debug Mode");
+    OSX_KEYS_DEBUG_MODE = true;
+  }
+}

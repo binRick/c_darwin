@@ -2,6 +2,7 @@
 #ifndef LS_WIN_COMMANDS_H
 #define LS_WIN_COMMANDS_H
 #include "darwin-ls/darwin-ls.h"
+#include "output-utils/output-utils.h"
 ////////////////////////////////////////////
 typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 #include "ansi-codes/ansi-codes.h"
@@ -15,13 +16,6 @@ typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 #define COLOR_MOVE      "\x1b[38;2;252;83;50m" AC_UNDERLINE
 #define COLOR_START     "\x1b[38;2;62;252;50m" AC_UNDERLINE
 #define COLOR_HELP      "\x1b[38;2;50;50;252m" AC_UNDERLINE
-const enum output_mode_type_t DEFAULT_OUTPUT_MODE;
-enum output_mode_type_t {
-  OUTPUT_MODE_TEXT = 1,
-  OUTPUT_MODE_TABLE,
-  OUTPUT_MODE_JSON,
-  OUTPUT_MODES_QTY,
-};
 enum check_command_type_t {
   CHECK_COMMAND_WINDOW_ID = 1,
   CHECK_COMMAND_WIDTH,
@@ -64,6 +58,7 @@ enum command_type_t {
   COMMAND_MENU_BAR,
   COMMAND_DOCK,
   COMMAND_APPS,
+  COMMAND_PROCESSES,
   COMMAND_USB_DEVICES,
   COMMAND_MONITORS,
   COMMAND_FONTS,
@@ -87,7 +82,6 @@ struct check_cmd_t {
 struct cmd_t        cmds[COMMAND_TYPES_QTY + 1];
 struct check_cmd_t  check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
 struct item_color_t item_colors[COLOR_TYPES_QTY + 1];
-const char          *output_modes[OUTPUT_MODES_QTY + 1];
 common_option_b     common_options_b[COMMON_OPTION_NAMES_QTY + 1];
 
 #endif

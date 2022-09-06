@@ -26,6 +26,7 @@ static void _command_focused_space();
 static void _command_usb_devices();
 static void _command_httpserver();
 static void _command_dock();
+static void _command_processes();
 static void _command_apps();
 static void _command_monitors();
 static void _command_fonts();
@@ -36,8 +37,8 @@ static void _check_height(uint16_t window_id);
 static void _check_output_mode(char *output_mode);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
-  [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args) {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                {
+    return((struct optparse_opt)                                                             {
       .short_name = 'c',
       .long_name = "current-space",
       .description = "Windows in current space only",
@@ -45,16 +46,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->current_space_only),
     });
   },
-  [COMMON_OPTION_HELP] = ^ struct optparse_opt (struct args_t *args)          {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args) {
+    return((struct optparse_opt)                                                             {
       .short_name = 'h',
       .long_name = "help",
       .description = "Print help information and quit",
       .function = optparse_print_help,
     });
   },
-  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)   {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)                  {
+    return((struct optparse_opt)                                                             {
       .short_name = 'm',
       .long_name = "mode",
       .description = "Output Mode- text, json, or table",
@@ -64,8 +65,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_mode_s),
     });
   },
-  [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)       {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                      {
+    return((struct optparse_opt)                                                             {
       .short_name = 'v',
       .long_name = "verbose",
       .description = "Increase verbosity",
@@ -73,8 +74,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->verbose),
     });
   },
-  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)     {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                    {
+    return((struct optparse_opt)                                                             {
       .short_name = 'w',
       .long_name = "window-id",
       .description = "window id",
@@ -84,8 +85,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
     });
   },
-  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)      {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)                     {
+    return((struct optparse_opt)                                                             {
       .short_name = 'x',
       .long_name = "window-x",
       .description = "Window X",
@@ -94,8 +95,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->x),
     });
   },
-  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)      {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)                     {
+    return((struct optparse_opt)                                                             {
       .short_name = 'y',
       .long_name = "window-y",
       .description = "Window y",
@@ -104,8 +105,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->y),
     });
   },
-  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args)  {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args)                 {
+    return((struct optparse_opt)                                                             {
       .short_name = 'W',
       .long_name = "window-width",
       .description = "Window Width",
@@ -115,8 +116,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width),
     });
   },
-  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                {
+    return((struct optparse_opt)                                                             {
       .short_name = 'H',
       .long_name = "window-height",
       .description = "Window Height",
@@ -125,8 +126,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height),
     });
   },
-  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)      {
-    return((struct optparse_opt)                                              {
+  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)                     {
+    return((struct optparse_opt)                                                             {
       .short_name = 's',
       .long_name = "space-id",
       .description = "space id",
@@ -156,12 +157,6 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   },
   [CHECK_COMMAND_TYPES_QTY] =   { 0},
 };
-const char         *output_modes[OUTPUT_MODES_QTY + 1] = {
-  [OUTPUT_MODE_TEXT]  = "text",
-  [OUTPUT_MODE_JSON]  = "json",
-  [OUTPUT_MODE_TABLE] = "table",
-  [OUTPUT_MODES_QTY]  = NULL,
-};
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)           },
   [COMMAND_RESIZE_WINDOW]         = { .fxn = (*_command_resize_window)         },
@@ -186,6 +181,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
   [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)           },
   [COMMAND_MONITORS]              = { .fxn = (*_command_monitors)              },
+  [COMMAND_PROCESSES]             = { .fxn = (*_command_processes)             },
   [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
@@ -193,7 +189,36 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
 ////////////////////////////////////////////
 static void _command_monitors(){
   print_monitors();
-  return(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_processes(){
+  struct Vector *_process_infos_v = get_all_process_infos_v();
+
+  fprintf(stdout,
+          "\t" AC_YELLOW AC_UNDERLINE "%lu Processes" AC_RESETALL
+          "%s",
+          vector_size(_process_infos_v),
+          "\n"
+          );
+  for (size_t i = 0; i < vector_size(_process_infos_v); i++) {
+    fprintf(stdout,
+            "\t" AC_CYAN AC_BOLD 
+            "%6.d |%3.lu open ports|%6.lu open files|%4.lu open connections|" AC_RESETALL 
+            AC_MAGENTA "%s" AC_RESETALL "|" 
+            AC_RESETALL
+            "%s",
+            ((struct process_info_t *)vector_get(_process_infos_v, i))->pid,
+            vector_size(((struct process_info_t *)vector_get(_process_infos_v, i))->open_ports_v),
+            vector_size(((struct process_info_t *)vector_get(_process_infos_v, i))->open_files_v),
+            vector_size(((struct process_info_t *)vector_get(_process_infos_v, i))->open_connections_v),
+            milliseconds_to_string(((struct process_info_t *)vector_get(_process_infos_v, i))->dur),
+            "\n"
+            );
+    process_info_release((struct process_info_t *)vector_get(_process_infos_v, i));
+  }
+
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_usb_devices(){
@@ -206,17 +231,17 @@ static void _command_usb_devices(){
     vector_size(_usb_devices_v),
     ""
     );
-  return(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_httpserver(){
   log_debug("Starting HTTP Server");
-  return(httpserver_main());
+  exit(httpserver_main());
 }
 
 static void _command_set_space_index(){
   log_debug("setting space id from %d to %d", get_space_id(), args->space_id);
-  return(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
 
 static void _check_output_mode(char *output_mode){
@@ -224,7 +249,7 @@ static void _check_output_mode(char *output_mode){
   for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++) {
     if (strcmp(output_mode, output_modes[i]) == 0) {
       args->output_mode = i;
-      return(EXIT_SUCCESS);
+      exit(EXIT_SUCCESS);
     }
   }
   log_error("Invalid Output Mode '%s'", output_mode);
@@ -259,7 +284,7 @@ static void _check_window_id(uint16_t window_id){
   if (w) {
     free(w);
   }
-  return(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 
 do_error:
   log_error("Invalid Window ID %lu", (size_t)window_id);
