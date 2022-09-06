@@ -9,7 +9,7 @@ darwin_ls_include_dirs = [
   inc,
 ]
 darwin_ls_deps = [
-  memory_leak_detector_dep,
+  memory_leak_detector_dep,kitty_dep,alacritty_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,

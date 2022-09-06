@@ -12,25 +12,16 @@
 #include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <stdbool.h>
 //////////////////////////////////////
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
-#include "hidapi/hidapi/hidapi.h"
-#include "hidapi/mac/hidapi_darwin.h"
-#include "int/int.h"
-#include "keylogger/keylogger.h"
-#include "libusb/libusb/libusb.h"
-#include "libusb/libusb/os/darwin_usb.h"
-#include "pbpaste/pbpaste.h"
-#include "process/process.h"
-#include "submodules/b64.c/b64.h"
 #include "c_ansi/ansi-codes/ansi-codes.h"
 #include "c_ansi/ansi-utils/ansi-utils.h"
 #include "c_eventemitter/include/eventemitter.h"
@@ -39,8 +30,17 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "catpath/catpath.h"
+#include "hidapi/hidapi/hidapi.h"
+#include "hidapi/mac/hidapi_darwin.h"
+#include "int/int.h"
+#include "keylogger/keylogger.h"
+#include "libusb/libusb/libusb.h"
+#include "libusb/libusb/os/darwin_usb.h"
 #include "log.h/log.h"
+#include "pbpaste/pbpaste.h"
+#include "process/process.h"
 #include "sqldbal/src/sqldbal.h"
+#include "submodules/b64.c/b64.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
 //////////////////////////////////////////

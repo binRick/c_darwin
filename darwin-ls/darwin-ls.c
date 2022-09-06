@@ -1,6 +1,6 @@
-#include "memory_leak_detector/leak.h"
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls.h"
+#include "memory_leak_detector/leak.h"
 ////////////////////////////////////////////
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TEXT;
 struct args_t                 *args               = &(struct args_t){
@@ -53,6 +53,18 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
+      },
+      {
+        .name        = "alacrittys",
+        .description = "Alacritty Terminals",
+        .function    = cmds[COMMAND_ALACRITTYS].fxn,
+        .about       = "📡" "\t" COLOR_LIST "List Alacrittys" AC_RESETALL,
+      },
+      {
+        .name        = "kittys",
+        .description = "Kitty Terminals",
+        .function    = cmds[COMMAND_KITTYS].fxn,
+        .about       = "📡" "\t" COLOR_LIST "List Kittys" AC_RESETALL,
       },
       {
         .name        = "processes",

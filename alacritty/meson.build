@@ -10,8 +10,8 @@ alacritty_include_dirs = [
 ]
 
 alacritty_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
+  ansi_codes_dep,process_dep,
+  c_vector_dep,wildcardcmp_dep,
   c_fsio_dep,
   c_stringfn_dep,
   c_string_buffer_dep,

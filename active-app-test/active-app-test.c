@@ -1,9 +1,9 @@
 #include "active-app-module/active-app-module.h"
 #include "active-app-test/active-app-test.h"
 #include "app-utils/app-utils.h"
-#include "process-utils/process-utils.h"
 #include "c_greatest/greatest/greatest.h"
 #include "log.h/log.h"
+#include "process-utils/process-utils.h"
 #include "window-utils/window-utils.h"
 bool RUNNING = true;
 

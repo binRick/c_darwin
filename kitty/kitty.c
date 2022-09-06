@@ -7,6 +7,7 @@
 #include "core-utils/core-utils.h"
 #include "djbhash/src/djbhash.h"
 #include "kitty/kitty.h"
+#include "log/log.h"
 #include "parson.h"
 #include "process/process.h"
 #include "socket99/socket99.h"
@@ -17,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
+static bool kitty_pid_is_kitty_process(int pid);
 const size_t KITTY_TCP_BUFFER_SIZE                   = 8192;
 const char   *KITTY_ESC_CODE_CLEAR                   = "\x1b_Ga=d,q=2\x1b\\";
 const char   *KITTY_ESC_QUERY                        = "\x1b_Gi=1,a=q;\x1b\\";
@@ -531,10 +533,19 @@ static bool vector_contains_pid(struct Vector *pids_v, int pid){
   return(false);
 }
 
-struct Vector *get_kitty_pids(){
-  struct djbhash kitty_pids_h;
+int get_pid_kitty_pid(int pid){
+  struct Vector *PE = get_process_env(pid);
 
-  djbhash_init(&kitty_pids_h);
+  for (size_t ii = 0; ii < vector_size(PE); ii++) {
+    process_env_t *E = (process_env_t *)(vector_get(PE, ii));
+    if (strcmp(E->key, "KITTY_PID") == 0) {
+      return(atoi(E->val));
+    }
+  }
+  return(-1);
+}
+
+struct Vector *get_kitty_pids(){
   struct Vector *pids_v       = get_all_processes();
   struct Vector *kitty_pids_v = vector_new();
 
@@ -543,26 +554,36 @@ struct Vector *get_kitty_pids(){
     if (vector_contains_pid(kitty_pids_v, pid) == true) {
       continue;
     }
-    struct Vector *cmdline_v = get_process_cmdline(pid);
-    bool          is_kitty   = false;
-    if (cmdline_v) {
-      char *cl = vector_get(cmdline_v, 0);
-      if (stringfn_ends_with(cl, "/kitty") == true) {
-        is_kitty = true;
-      }
+    get_process_cmdline(pid);
+    int kp = get_pid_kitty_pid(pid);
+    if (kp > 1 && (vector_contains_pid(kitty_pids_v, kp) == false)) {
+      vector_push(kitty_pids_v, (void *)(size_t)kp);
     }
-    if (is_kitty == false) {
-      continue;
-    }
-    if (get_kitty_pid_windowid(pid) < 1) {
-      continue;
-    }
-    vector_push(kitty_pids_v, (void *)(size_t)pid);
   }
   return(kitty_pids_v);
 }
 
 #define DEBUG_GET_KITTY_PROCESS_T    false
+
+static bool kitty_pid_is_kitty_process(int pid){
+  struct Vector *e;
+
+  e = get_process_env(pid);
+  if (!e) {
+    return(false);
+  }
+  for (size_t ii = 0; ii < vector_size(e); ii++) {
+    process_env_t *E = (process_env_t *)(vector_get(e, ii));
+    if (strcmp(E->key, "KITTY_INSTALLATION_DIR") == 0
+        || (strcmp(E->key, "KITTY_LISTEN_ON") == 0)
+        || (strcmp(E->key, "KITTY_PID") == 0)
+        || (strcmp(E->key, "KITTY_WINDOW_ID") == 0)
+        ) {
+      return(true);
+    }
+  }
+  return(false);
+}
 
 kitty_process_t *get_kitty_process_t(const size_t PID){
   kitty_process_t *KP = malloc(sizeof(kitty_process_t));

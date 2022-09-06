@@ -3,6 +3,7 @@
 #define LS_WIN_H
 #include "ansi-codes/ansi-codes.h"
 //////////////////////////////////////
+#include "alacritty/alacritty.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -15,6 +16,7 @@
 #include "dock-utils/dock-utils.h"
 #include "focused/focused.h"
 #include "font-utils/font-utils.h"
+#include "kitty/kitty.h"
 #include "log/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "monitor-utils/monitor-utils.h"

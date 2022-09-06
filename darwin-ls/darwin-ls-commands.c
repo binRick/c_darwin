@@ -30,6 +30,8 @@ static void _command_processes();
 static void _command_apps();
 static void _command_monitors();
 static void _command_fonts();
+static void _command_kittys();
+static void _command_alacrittys();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width(uint16_t window_id);
@@ -177,6 +179,8 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
   [COMMAND_APPS]                  = { .fxn = (*_command_apps)                  },
   [COMMAND_FONTS]                 = { .fxn = (*_command_fonts)                 },
+  [COMMAND_KITTYS]                = { .fxn = (*_command_kittys)                },
+  [COMMAND_ALACRITTYS]            = { .fxn = (*_command_alacrittys)            },
   [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
   [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
   [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)           },
@@ -304,16 +308,62 @@ static void _command_debug_args(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_alacrittys(){
+  struct Vector *_alacritty_pids = get_alacritty_pids();
+
+  fprintf(stdout,
+          "\t" AC_YELLOW AC_UNDERLINE "Alacrittys" AC_RESETALL
+          "\n\t# Alacritty Terminals      :       %lu"
+          "%s",
+          vector_size(_alacritty_pids),
+          "\n"
+          );
+  for (size_t i = 0; i < vector_size(_alacritty_pids); i++) {
+    fprintf(stdout,
+            "\t\t" AC_CYAN AC_BOLD "%lu" AC_RESETALL
+            "%s",
+            (size_t)vector_get(_alacritty_pids, i),
+            "\n"
+            );
+  }
+  vector_release(_alacritty_pids);
+
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_kittys(){
+  struct Vector *_kitty_pids = get_kitty_pids();
+
+  fprintf(stdout,
+          "\t" AC_YELLOW AC_UNDERLINE "Kittys" AC_RESETALL
+          "\n\t# Kitty Terminals      :       %lu"
+          "%s",
+          vector_size(_kitty_pids),
+          "\n"
+          );
+  for (size_t i = 0; i < vector_size(_kitty_pids); i++) {
+    fprintf(stdout,
+            "\t\t" AC_CYAN AC_BOLD "%lu" AC_RESETALL
+            "%s",
+            (size_t)vector_get(_kitty_pids, i),
+            "\n"
+            );
+  }
+  vector_release(_kitty_pids);
+
+  exit(EXIT_SUCCESS);
+}
+
 static void _command_fonts(){
   struct Vector *_installed_fonts_v = get_installed_fonts_v();
 
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Fonts" AC_RESETALL
-    "\n\t# Installed Fonts      :       %lu"
-    "\n%s",
-    vector_size(_installed_fonts_v),
-    ""
-    );
+  fprintf(stdout,
+          "\t" AC_YELLOW AC_UNDERLINE "Fonts" AC_RESETALL
+          "\n\t# Installed Fonts      :       %lu"
+          "\n%s",
+          vector_size(_installed_fonts_v),
+          ""
+          );
 
   exit(EXIT_SUCCESS);
 }

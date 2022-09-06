@@ -63,6 +63,8 @@ enum command_type_t {
   COMMAND_USB_DEVICES,
   COMMAND_MONITORS,
   COMMAND_FONTS,
+  COMMAND_KITTYS,
+  COMMAND_ALACRITTYS,
   COMMAND_TYPES_QTY,
 };
 enum color_types_t {

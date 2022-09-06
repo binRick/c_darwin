@@ -21,4 +21,5 @@ struct alacritty_t {
   char  *config;
   int   window_id;
 };
+struct Vector *get_alacritty_pids();
 #endif
