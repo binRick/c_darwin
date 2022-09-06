@@ -28,5 +28,6 @@ struct list_window_table_t {
   int           space_id;
 };
 int list_windows_table(void *ARGS);
+int list_spaces_table(void *ARGS);
 
 #endif

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -eou pipefail
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODE=${1:-windows}
+MODE="${@:-windows}"
 DIR="$(pwd)"
 
 INTERVAL=2
-LF=.o.$MODE
+LF=$(mktemp)
 
 while :; do
 	cd $DIR/../.
-	passh ./build-muon/darwin-ls/dls $MODE >$LF || { sleep 5 && continue; }
+	passh ./build-muon/darwin-ls/dls $MODE >$LF || { sleep 1 && continue; }
 	clear
 	cat $LF
 	sleep $INTERVAL

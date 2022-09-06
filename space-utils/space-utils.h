@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+struct space_t {
+  int           id;
+  bool          is_current;
+  struct Vector *window_ids_v;
+};
 /////////////////////////////////////////////////
 uint32_t get_display_id_for_space(uint32_t sid);
 uint64_t get_display_space_id(uint32_t did);
@@ -14,6 +19,7 @@ struct Vector *get_display_id_space_ids_v(uint32_t did);
 /////////////////////////////////////////////////
 struct Vector *get_space_window_ids_v(size_t space_id);
 struct Vector *get_space_ids_v();
+struct Vector *get_spaces_v();
 /////////////////////////////////////////////////
 bool get_space_is_user(uint64_t sid);
 bool get_space_is_fullscreen(uint64_t sid);

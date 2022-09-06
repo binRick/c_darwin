@@ -806,23 +806,39 @@ static void _command_displays(){
 }
 
 static void _command_spaces(){
-  struct Vector *space_ids_v = get_space_ids_v();
+  struct Vector              *spaces_v;
+  struct list_window_table_t *list_options;
 
-  log_debug(
-    "\t" AC_YELLOW AC_UNDERLINE "Spaces" AC_RESETALL
-    "\n\t# Spaces           :     %lu"
-    "\n\tCurrent            :     %d",
-    vector_size(space_ids_v), get_space_id()
-    );
-  for (size_t i = 0; i < vector_size(space_ids_v); i++) {
-    size_t        space_id            = (size_t)vector_get(space_ids_v, i);
-    struct Vector *space_window_ids_v = get_space_window_ids_v(space_id);
-    printf("#%lu- %lu windows\n", space_id, vector_size(space_window_ids_v));
-    for (size_t I = 0; I < vector_size(space_window_ids_v); I++) {
-      size_t window_id = (size_t)vector_get(space_window_ids_v, I);
-      printf("\t%lu\n", window_id);
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+
+    list_options = &(struct list_window_table_t){
+    };
+    list_spaces_table((void *)list_options);
+    log_info("display table");
+    break;
+  case OUTPUT_MODE_JSON:
+    log_info("display json");
+    break;
+  case OUTPUT_MODE_TEXT:
+    spaces_v = get_spaces_v();
+    log_debug(
+      "\t" AC_YELLOW AC_UNDERLINE "Spaces" AC_RESETALL
+      "\n\t# Spaces           :     %lu"
+      "",
+      vector_size(spaces_v)
+      );
+    for (size_t i = 0; i < vector_size(spaces_v); i++) {
+      struct space_t *space = (struct space_t *)vector_get(spaces_v, i);
+      printf("#%d- %lu windows\n", space->id, vector_size(space->window_ids_v));
+      for (size_t I = 0; I < vector_size(space->window_ids_v); I++) {
+        size_t window_id = (size_t)vector_get(space->window_ids_v, I);
+        printf("\t%lu\n", window_id);
+      }
     }
+    break;
   }
+
   exit(EXIT_SUCCESS);
 }
 

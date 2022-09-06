@@ -11,6 +11,21 @@ static void __attribute__((constructor)) __constructor__space_utils(void){
   }
 }
 
+struct Vector *get_spaces_v(){
+  struct Vector *spaces_v    = vector_new();
+  struct Vector *space_ids_v = get_space_ids_v();
+  int           cur_space_id = get_space_id();
+
+  for (size_t i = 0; i < vector_size(space_ids_v); i++) {
+    size_t         space_id = (size_t)vector_get(space_ids_v, i);
+    struct space_t *space   = calloc(1, sizeof(struct space_t));
+    space->id           = space_id;
+    space->is_current   = (cur_space_id == space->id);
+    space->window_ids_v = get_space_window_ids_v(space->id);
+    vector_push(spaces_v, (void *)space);
+  }
+  return(spaces_v);
+}
 struct Vector *get_space_ids_v(){
   struct Vector *ids  = vector_new();
   struct Vector *dids = get_display_ids_v();
