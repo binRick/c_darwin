@@ -39,12 +39,23 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
+enum common_option_width_or_height_t {
+  COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN = 0,
+  COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT,
+  COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH,
+  COMMON_OPTION_WIDTH_OR_HEIGHT_QTYS,
+};
+char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height);
 struct args_t {
-  bool verbose, current_space_only;
-  int  space_id, window_id;
-  int  x, y;
-  int  width, height;
-  int  output_mode; char *output_mode_s;
+  bool                                 verbose, current_space_only;
+  int                                  space_id, window_id;
+  int                                  x, y;
+  int                                  width, height;
+  int                                  width_or_height_group;
+  int                                  output_mode; char *output_mode_s;
+  char                                 *output_file;
+  enum common_option_width_or_height_t width_or_height;
+  struct window_t                      *window;
 };
 extern struct args_t *args;
 #endif

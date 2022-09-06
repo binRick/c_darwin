@@ -10,7 +10,7 @@ display_utils_deps = [
   c_fsio_dep,c_vector_dep,
   c_stringfn_dep,string_utils_dep,
   ansi_codes_dep,
-  log_dep,
+  log_dep,space_utils_dep,
   timestamp_dep,
   ms_dep,
   bytes_dep,

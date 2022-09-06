@@ -24,15 +24,15 @@ static void __attribute__((constructor)) __constructor__screen_utils(void){
   }
 }
 /////////////////////////////////////////////////////
-static bool save_captured_display(struct display_t *D);
-static bool capture_display(struct display_t *D);
-static bool save_to_file_qoi(struct display_t *D);
+static bool save_captured_display(struct screen_t *D);
+static bool capture_display(struct screen_t *D);
+static bool save_to_file_qoi(struct screen_t *D);
 bool save_captures(struct screen_capture_t *S);
 struct screen_capture_t *init_screen_capture();
-struct display_t *init_display(size_t DISPLAY_ID);
+struct screen_t *init_display(size_t DISPLAY_ID);
 
 ///////////////////////////////////////////////////////////////////
-static bool save_to_file_qoi(struct display_t *D){
+static bool save_to_file_qoi(struct screen_t *D){
   struct qoi_encode_to_file_request_t *qoi_file_req = calloc(1, sizeof(struct qoi_encode_to_file_request_t));
 
   qoi_file_req->desc = calloc(1, sizeof(struct qoi_desc));
@@ -45,7 +45,7 @@ static bool save_to_file_qoi(struct display_t *D){
   struct qoi_encode_to_file_result_t *qoi_encode_to_file_result = qoi_encode_to_file(qoi_file_req);
 }
 
-static bool save_captured_display(struct display_t *D){
+static bool save_captured_display(struct screen_t *D){
   D->save->started_ms = timestamp();
 
   D->save->url_ref         = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(D->save_file_name), kCFURLPOSIXPathStyle, false);
@@ -68,8 +68,8 @@ static bool save_captured_display(struct display_t *D){
   }
 } /* save_captured_display */
 
-struct display_t *init_display(size_t DISPLAY_ID){
-  struct display_t *D = calloc(1, sizeof(struct display_t));
+struct screen_t *init_display(size_t DISPLAY_ID){
+  struct screen_t *D = calloc(1, sizeof(struct screen_t));
   // D->debug_mode = true;
   {
     D->capture = calloc(1, sizeof(struct display_image_t));
@@ -97,7 +97,7 @@ struct display_t *init_display(size_t DISPLAY_ID){
   return(D);
 }
 
-static bool capture_display(struct display_t *D){
+static bool capture_display(struct screen_t *D){
   float resize_factor = 0.3;
 
   D->capture->started_ms = timestamp();
@@ -144,7 +144,7 @@ struct screen_capture_t *screen_capture(){
   C->success    = false;
   C->started_ms = timestamp();
   for (size_t i = 0; i < vector_size(C->displays_v); i++) {
-    bool success = capture_display((struct display_t *)vector_get(C->displays_v, i));
+    bool success = capture_display((struct screen_t *)vector_get(C->displays_v, i));
     if (i == 0) {
       C->success = success;
     }else{
@@ -163,7 +163,7 @@ struct screen_capture_t *screen_capture(){
 
 bool save_captures(struct screen_capture_t *S){
   for (size_t i = 0; i < vector_size(S->displays_v); i++) {
-    struct display_image_t *D = (struct display_t *)vector_get(S->displays_v, i);
+    struct display_image_t *D = (struct screen_t *)vector_get(S->displays_v, i);
     D->resize_factor = S->resize_factor;
     if (SCREEN_UTILS_DEBUG_MODE == true) {
       log_info("resize %f", D->resize_factor);

@@ -20,6 +20,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+struct display_t {
+  size_t        display_id;
+  char          *uuid;
+  int           index;
+  int           width, height;
+  bool          is_main;
+  struct Vector *space_ids_v;
+};
+struct Vector *get_displays_v();
+int get_display_id_width(int display_id);
+int get_display_id_height(int display_id);
+void print_displays();
 //////////////////////////////////////
 struct Vector *get_display_ids_v();
 //////////////////////////////////////

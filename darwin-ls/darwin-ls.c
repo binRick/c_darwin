@@ -11,6 +11,14 @@ struct args_t                 *args               = &(struct args_t){
   .output_mode        = DEFAULT_OUTPUT_MODE,
 };
 
+char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height){
+  switch (width_or_height) {
+  case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT: return("height"); break;
+  case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH: return("width"); break;
+  default: return("UNKNOWN"); break;
+  }
+}
+
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
   assert(is_authorized_for_accessibility() == true);
@@ -33,6 +41,19 @@ int main(int argc, char **argv) {
         .operands    = "COMMAND",
         .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
         .function    = optparse_print_help_subcmd,
+      },
+      {
+        .name        = "capture-window",
+        .description = "Capture Window",
+        .function    = cmds[COMMAND_CAPTURE_WINDOW].fxn,
+        .about       = "🐾" "\t" COLOR_CAPTURE "Capture Window Screenshot" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
+          common_options_b[COMMON_OPTION_WINDOW_WIDTH_GROUP](args),
+          common_options_b[COMMON_OPTION_WINDOW_HEIGHT_GROUP](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "displays",

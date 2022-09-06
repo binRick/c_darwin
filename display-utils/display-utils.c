@@ -1,13 +1,97 @@
 #include "display-utils/display-utils.h"
 #include "frameworks/frameworks.h"
-#include "log.h/log.h"
+#include "log/log.h"
+#include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
+static void print_display(struct display_t *d);
 static bool DISPLAY_UTILS_DEBUG_MODE = false;
-static void __attribute__((constructor)) __constructor__display_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_DISPLAY_UTILS") != NULL) {
-    log_debug("Enabling Table Utils Debug Mode");
-    DISPLAY_UTILS_DEBUG_MODE = true;
+typedef void (^display_parser_b)(struct display_t *d, size_t display_id);
+enum display_parser_type_t {
+  DISPLAY_PARSER_TYPE_UUID = 1,
+  DISPLAY_PARSER_TYPE_DISPLAY_ID,
+  DISPLAY_PARSER_TYPE_WIDTH,
+  DISPLAY_PARSER_TYPE_HEIGHT,
+  DISPLAY_PARSER_TYPE_MAIN,
+  DISPLAY_PARSER_TYPE_SPACE_IDS,
+  DISPLAY_PARSER_TYPES_QTY,
+};
+struct display_parser_t {
+  bool enabled;
+  void (^parser)(struct display_t *d, size_t display_id);
+};
+static struct display_parser_t display_parsers[DISPLAY_PARSER_TYPES_QTY + 1] = {
+  [DISPLAY_PARSER_TYPE_DISPLAY_ID] = { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->display_id = display_id;
+                                       }, },
+  [DISPLAY_PARSER_TYPE_UUID] =       { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->uuid      = get_display_uuid(display_id);
+                                       }, },
+  [DISPLAY_PARSER_TYPE_WIDTH] =      { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->width    = get_display_id_width(display_id);
+                                       }, },
+  [DISPLAY_PARSER_TYPE_HEIGHT] =     { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->height  = get_display_id_height(display_id);
+                                       }, },
+  [DISPLAY_PARSER_TYPE_MAIN] =       { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->is_main   = (display_id == get_main_display_id()) ? true : false;
+                                       }, },
+  [DISPLAY_PARSER_TYPE_SPACE_IDS] =  { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->space_ids_v = get_display_id_space_ids_v((uint32_t)display_id);
+                                       }, },
+  [DISPLAY_PARSER_TYPES_QTY] =       { 0 },
+};
+
+void print_displays(){
+  struct Vector *displays_v = get_displays_v();
+
+  for (size_t i = 0; i < vector_size(displays_v); i++) {
+    print_display((struct display_t *)vector_get(displays_v, i));
   }
+}
+
+static void print_display(struct display_t *d){
+  fprintf(stdout,
+          "Display ID     :       %lu" "\n"
+          "  Main         :       %s"  "\n"
+          "  UUID         :       %s"  "\n"
+          "  Width        :       %d"  "\n"
+          "  Height       :       %d"  "\n"
+          "  # Spaces     :       %lu"  "\n"
+          "%s",
+          d->display_id,
+          d->is_main ? "Yes" : "No",
+          d->uuid,
+          d->width,
+          d->height,
+          vector_size(d->space_ids_v),
+          "\n"
+          );
+}
+
+static void parse_display(struct display_t *d, size_t display_id){
+  for (size_t i = 0; i < DISPLAY_PARSER_TYPES_QTY; i++) {
+    if (display_parsers[i].enabled == true) {
+      display_parsers[i].parser(d, display_id);
+    }
+  }
+}
+struct Vector *get_displays_v(){
+  struct Vector *a              = vector_new();
+  struct Vector *_display_ids_v = get_display_ids_v();
+
+  for (size_t i = 0; i < vector_size(_display_ids_v); i++) {
+    struct display_t *d         = calloc(1, sizeof(struct display_t));
+    size_t           display_id = (size_t)vector_get(_display_ids_v, i);
+    parse_display(d, display_id);
+    vector_push(a, (void *)d);
+  }
+  return(a);
 }
 
 ////////////////////////////////////////////
@@ -132,10 +216,36 @@ int get_display_height(){
   return(h);
 }
 
+int get_display_id_height(int display_id){
+  int    w             = -1;
+  CGRect displayBounds = CGDisplayBounds(display_id);
+
+  w = displayBounds.size.height;
+  return(w);
+}
+
+int get_display_id_width(int display_id){
+  int    w             = -1;
+  CGRect displayBounds = CGDisplayBounds(display_id);
+
+  w = displayBounds.size.width;
+  return(w);
+}
+
 int get_display_width(){
   int    w             = -1;
   CGRect displayBounds = CGDisplayBounds(CGMainDisplayID());
 
   w = displayBounds.size.width;
   return(w);
+}
+static void __attribute__((constructor)) __constructor__display_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DISPLAY_UTILS") != NULL) {
+    log_debug("Enabling Table Utils Debug Mode");
+    DISPLAY_UTILS_DEBUG_MODE = true;
+  }
+}
+
+CGSize get_display_id_size(int display_id){
+  return(CGDisplayScreenSize(display_id));
 }

@@ -52,12 +52,17 @@ int get_pid_alacritty(int pid){
             stringfn_release_strings_struct(slash_split);
             stringfn_release_strings_struct(dash_split);
             stringfn_release_strings_struct(dot_split);
+            vector_release(PE);
             return(apid);
           }
+          stringfn_release_strings_struct(dot_split);
         }
+        stringfn_release_strings_struct(dash_split);
       }
+      stringfn_release_strings_struct(slash_split);
     }
   }
+  vector_release(PE);
   return(-1);
 }
 

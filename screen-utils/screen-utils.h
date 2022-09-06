@@ -70,7 +70,7 @@ struct resize_display_image_t {
   float                  resize_factor;
 };
 
-struct display_t {
+struct screen_t {
   size_t                        id;
   const char                    *save_file_name;
   struct display_image_t        *capture, *save;
@@ -92,7 +92,7 @@ struct screen_capture_t {
 };
 
 /////////////////////////////////////////////////////////
-struct display_t *init_display(size_t DISPLAY_ID);
+struct screen_t *init_display(size_t DISPLAY_ID);
 struct screen_capture_t *init_screen_capture();
 struct screen_capture_t *screen_capture();
 bool save_captures(struct screen_capture_t *S);

@@ -22,6 +22,7 @@ TEST t_cache_utils_get_is_expired(){
   log_debug("%s -> %d", s, cache_utils_is_expired(s, ttl));
   s = "etc_passwd";
   log_debug("%s -> %d", s, cache_utils_is_expired(s, ttl));
+  PASS();
 }
 
 TEST t_cache_utils_get_size(){
@@ -34,6 +35,7 @@ TEST t_cache_utils_get_size(){
   log_debug("%s -> %lu", s, cache_utils_get_size(s));
   s = "etc_passwd";
   log_debug("%s -> %lu", s, cache_utils_get_size(s));
+  PASS();
 }
 
 TEST t_cache_utils_get_age(){
@@ -46,6 +48,7 @@ TEST t_cache_utils_get_age(){
   log_debug("%s -> %d", s, cache_utils_get_age(s));
   s = "etc_passwd";
   log_debug("%s -> %d", s, cache_utils_get_age(s));
+  PASS();
 }
 
 TEST t_cache_utils_set_item(){

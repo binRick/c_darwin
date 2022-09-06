@@ -41,7 +41,10 @@ darwin_ls_link_args = [
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
 test_args = [
   'spaces','args','dock','menu-bar','displays','apps',
-  'fonts','windows','usb','monitors','processes',
+  'fonts',
+  'usb','monitors','processes',
+  'kittys','alacrittys',
+  #'windows',
   ]
 
 if get_option('enable-binaries')

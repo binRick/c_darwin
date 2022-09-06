@@ -12,7 +12,6 @@ space_utils_deps = [
   c_vector_dep,
   c_stringfn_dep,
   parson_dep,
-  display_utils_dep,
   string_utils_dep,
   log_dep,
   ansi_codes_dep,

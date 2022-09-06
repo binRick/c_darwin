@@ -29,22 +29,17 @@
 #include <mach/host_priv.h>
 #include <mach/kern_return.h>
 #include <mach/mach.h>
-#include <mach/mach.h>
 #include <mach/mach_error.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string.h>
 #include <sys/queue.h>
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #include <time.h>
-#include <unistd.h>
 #include <unistd.h>
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
 static bool SYSTEM_UTILS_DEBUG_MODE = false;
