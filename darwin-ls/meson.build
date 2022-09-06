@@ -28,7 +28,7 @@ darwin_ls_deps = [
   dock_utils_dep,output_utils_dep,
   menu_bar_utils_dep, table_utils_dep,string_utils_dep,process_utils_dep,app_utils_dep,
   wrec_common_dep,httpserver_h_dep,usbdevs_utils_dep,monitor_utils_dep,
-  wrec_capture_dep,
+  wrec_capture_dep,icon_utils_dep,
   process_dep,
 ]
 darwin_ls_c_args = [
@@ -38,7 +38,10 @@ darwin_ls_link_args = [
 ]
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
-test_args = ['spaces','args','dock','menu-bar','displays','apps','fonts','windows','usb','monitors']
+test_args = [
+  'spaces','args','dock','menu-bar','displays','apps',
+  'fonts','windows','usb','monitors','processes',
+  ]
 
 if get_option('enable-binaries')
   darwin_ls_exec = executable('dls',

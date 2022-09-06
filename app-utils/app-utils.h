@@ -14,7 +14,6 @@
 #include <unistd.h>
 ///////////////////////////////////////////////////////////////////////
 #include <ApplicationServices/ApplicationServices.h>
-#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreVideo/CVPixelBuffer.h>
 ///////////////////////////////////////////////////////////////////////

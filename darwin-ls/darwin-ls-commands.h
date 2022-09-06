@@ -2,6 +2,7 @@
 #ifndef LS_WIN_COMMANDS_H
 #define LS_WIN_COMMANDS_H
 #include "darwin-ls/darwin-ls.h"
+#include "icon-utils/icon-utils.h"
 #include "output-utils/output-utils.h"
 ////////////////////////////////////////////
 typedef struct optparse_opt (^common_option_b)(struct args_t *args);

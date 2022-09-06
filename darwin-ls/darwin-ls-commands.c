@@ -203,9 +203,9 @@ static void _command_processes(){
           );
   for (size_t i = 0; i < vector_size(_process_infos_v); i++) {
     fprintf(stdout,
-            "\t" AC_CYAN AC_BOLD 
-            "%6.d |%3.lu open ports|%6.lu open files|%4.lu open connections|" AC_RESETALL 
-            AC_MAGENTA "%s" AC_RESETALL "|" 
+            "\t" AC_CYAN AC_BOLD
+            "%6.d |%3.lu open ports|%6.lu open files|%4.lu open connections|" AC_RESETALL
+            AC_MAGENTA "%s" AC_RESETALL "|"
             AC_RESETALL
             "%s",
             ((struct process_info_t *)vector_get(_process_infos_v, i))->pid,

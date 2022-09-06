@@ -2,6 +2,8 @@
 #include "app-utils/app-utils.h"
 #include "app/app.h"
 #include "date.c/date.h"
+#include "icon-utils/icon-utils.h"
+#include "string-utils/string-utils.h"
 #include "systemprofiler/systemprofiler.h"
 #include "timelib/timelib.h"
 #define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
@@ -95,6 +97,10 @@ static void debug_app(struct app_t *app){
           app->obtained_from,
           "\n"
           );
+
+  get_icon_data_from_path(app->path);
+  log_debug("ok");
+  //exit(0);
 }
 
 ///////////////////////////////////////////////////////////////////////
