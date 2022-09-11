@@ -2,7 +2,7 @@
 #include "darwin-ls/darwin-ls.h"
 #include "memory_leak_detector/leak.h"
 ////////////////////////////////////////////
-const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TEXT;
+const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
 struct args_t                 *args               = &(struct args_t){
   .verbose            = false,
   .current_space_only = false,
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
         .name        = "capture-window",
         .description = "Capture Window",
         .function    = cmds[COMMAND_CAPTURE_WINDOW].fxn,
-        .about       = "🐾" "\t" COLOR_CAPTURE "Capture Window Screenshot" AC_RESETALL,
+        .about       = "🙀" "\t" COLOR_CAPTURE "Capture Window Screenshot" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
@@ -79,25 +79,25 @@ int main(int argc, char **argv) {
         .name        = "alacrittys",
         .description = "Alacritty Terminals",
         .function    = cmds[COMMAND_ALACRITTYS].fxn,
-        .about       = "📡" "\t" COLOR_LIST "List Alacrittys" AC_RESETALL,
+        .about       = "♻️" "\t" COLOR_LIST "List Alacrittys" AC_RESETALL,
       },
       {
         .name        = "kittys",
         .description = "Kitty Terminals",
         .function    = cmds[COMMAND_KITTYS].fxn,
-        .about       = "📡" "\t" COLOR_LIST "List Kittys" AC_RESETALL,
+        .about       = "💤" "\t" COLOR_LIST "List Kittys" AC_RESETALL,
       },
       {
         .name        = "processes",
         .description = "Processes",
         .function    = cmds[COMMAND_PROCESSES].fxn,
-        .about       = "📡" "\t" COLOR_LIST "List Processes" AC_RESETALL,
+        .about       = "💒" "\t" COLOR_LIST "List Processes" AC_RESETALL,
       },
       {
         .name        = "monitors",
         .description = "Monitors",
         .function    = cmds[COMMAND_MONITORS].fxn,
-        .about       = "📡" "\t" COLOR_LIST "List Monitors" AC_RESETALL,
+        .about       = "💮" "\t" COLOR_LIST "List Monitors" AC_RESETALL,
       },
       {
         .name        = "usb",
@@ -249,6 +249,39 @@ int main(int argc, char **argv) {
         .description = "Start Focused Client",
         .function    = cmds[COMMAND_FOCUSED_CLIENT].fxn,
         .about       = "🍏" "\t" COLOR_START "Start Focused Client" AC_RESETALL,
+      },
+      {
+        .name        = "get-icon-png",
+        .description = "Get Application Icon as PNG",
+        .function    = cmds[COMMAND_SAVE_APP_ICON_PNG].fxn,
+        .about       = "🪐" "\t" COLOR_GET "Get Application Icon PNG" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "get-icon",
+        .description = "Get Application Icon",
+        .function    = cmds[COMMAND_SAVE_APP_ICON_ICNS].fxn,
+        .about       = "🪐" "\t" COLOR_GET "Get Application Icon" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          common_options_b[COMMON_OPTION_OUTPUT_ICNS_FILE](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "set-icon",
+        .description = "Set Application Icon",
+        .function    = cmds[COMMAND_SET_APP_ICON_ICNS].fxn,
+        .about       = "🪐" "\t" COLOR_SET "Set Application Icon" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          common_options_b[COMMON_OPTION_INPUT_ICNS_FILE](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "httpserver",

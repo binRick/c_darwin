@@ -102,7 +102,7 @@ struct Vector *get_windows(){
     }
     return(0);
   });
-  if (false) {
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
     log_debug("loaded %lu space ids for %lu windows", vector_size(SPACE_IDS), vector_size(WINDOW_IDS));
   }
   return(WINDOWS);
@@ -897,7 +897,7 @@ void print_all_menu_items(FILE *rsp) {
 
 CGImageRef window_capture(struct window_t *window) {
   CGImageRef image_ref = NULL;
-  uint64_t   wid       = window->window_id;
+  uint64_t   wid       = (uint64_t)(window->window_id);
 
   SLSCaptureWindowsContentsToRectWithOptions(g_connection,
                                              &wid,
@@ -911,8 +911,26 @@ CGImageRef window_capture(struct window_t *window) {
   SLSGetScreenRectForWindow(g_connection, wid, &bounds);
   bounds.size.width = (uint32_t)(bounds.size.width + 0.5);
   window->rect.size = bounds.size;
+  log_info("captured image of window %lu :: %dx%d",
+           window->window_id,
+           (int)bounds.size.width, (int)bounds.size.height
+           );
 
   return(image_ref);
+}
+
+bool save_window_cgref_to_png(const CGImageRef image, const char *filename) {
+  bool success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
+  {
+    path        = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);
+    url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
+    destination = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
+    CGImageDestinationAddImage(destination, image, nil);
+    success = CGImageDestinationFinalize(destination);
+  }
+
+  CFRelease(url); CFRelease(path); CFRelease(destination);
+  return((success == true) && fsio_file_exists(filename));
 }
 
 void window_move(struct window_t *window, CGPoint point) {

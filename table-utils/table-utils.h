@@ -1,7 +1,6 @@
 #pragma once
 #ifndef TABLE_UTILS_H
 #define TABLE_UTILS_H
-#include <Carbon/Carbon.h>
 #include <fnmatch.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
@@ -22,12 +21,13 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 ///////////////////////////////////////////////////
-struct list_window_table_t {
+struct list_table_t {
   struct Vector *windows_v;
   bool          current_space_only;
   int           space_id;
 };
 int list_windows_table(void *ARGS);
 int list_spaces_table(void *ARGS);
+int list_displays_table(void *ARGS);
 
 #endif

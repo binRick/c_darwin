@@ -13,7 +13,7 @@ window_utils_deps = [
   wildcardcmp_dep,
   parson_dep,
   space_utils_dep,
-  log_dep,
+  log_dep,image_utils_dep,
   ansi_codes_dep,display_utils_dep,
   c_vector_dep,string_utils_dep,process_utils_dep,
   process_dep,

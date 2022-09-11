@@ -53,7 +53,8 @@ struct args_t {
   int                                  width, height;
   int                                  width_or_height_group;
   int                                  output_mode; char *output_mode_s;
-  char                                 *output_file;
+  char                                 *output_file, *application_path, *output_icns_file, *input_icns_file;
+  char                                 *output_png_file, *input_png_file;
   enum common_option_width_or_height_t width_or_height;
   struct window_t                      *window;
 };

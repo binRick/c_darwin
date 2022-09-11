@@ -44,7 +44,7 @@ test_args = [
   'fonts',
   'usb','monitors','processes',
   'kittys','alacrittys',
-  #'windows',
+  'windows',
   ]
 
 if get_option('enable-binaries')
@@ -61,6 +61,6 @@ if get_option('enable-binaries')
   test('darwin-ls help 3', darwin_ls_exec, args: ['help'], workdir: darwin_ls_dir,timeout: 1)
   foreach a : test_args
     test('darwin-ls ' + a + ' help', darwin_ls_exec, args: ['help',a], workdir: darwin_ls_dir, timeout: 1)
-    test('darwin-ls ' + a, darwin_ls_exec, args: [a], workdir: darwin_ls_dir, timeout: 25)
+    test('darwin-ls ' + a, darwin_ls_exec, args: [a], workdir: darwin_ls_dir, timeout: 60)
   endforeach
 endif

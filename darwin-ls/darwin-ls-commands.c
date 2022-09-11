@@ -4,6 +4,7 @@
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls-httpserver.h"
 #include "darwin-ls/darwin-ls.h"
+#include "table-utils/table-utils.h"
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_resize_window();
@@ -33,6 +34,11 @@ static void _command_fonts();
 static void _command_kittys();
 static void _command_alacrittys();
 static void _command_capture_window();
+static void _command_save_app_icon_to_png();
+static void _command_write_app_icon_from_png();
+static void _command_save_app_icon_to_icns();
+static void _command_write_app_icon_icns();
+static void _command_set_app_icon();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width_group(uint16_t window_id);
@@ -41,6 +47,11 @@ static void _check_width(uint16_t window_id);
 static void _check_height(uint16_t window_id);
 static void _check_output_mode(char *output_mode);
 static void _check_output_file(char *output_file);
+static void _check_output_png_file(char *output_icns_file);
+static void _check_input_png_file(char *input_png_file);
+static void _check_output_icns_file(char *output_icns_file);
+static void _check_input_icns_file(char *input_icns_file);
+static void _check_application_path(char *application_path);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                {
@@ -58,6 +69,61 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "help",
       .description = "Print help information and quit",
       .function = optparse_print_help,
+    });
+  },
+  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)             {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'a',
+      .long_name = "application",
+      .description = "Application",
+      .arg_name = "APPLICATION",
+      .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_PATH].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_APPLICATION_PATH].fxn,
+      .arg_dest = &(args->application_path),
+    });
+  },
+  [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)               {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'f',
+      .long_name = "png-file",
+      .description = "PNG File",
+      .arg_name = "PNG-FILE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_PNG_FILE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_INPUT_PNG_FILE].fxn,
+      .arg_dest = &(args->input_png_file),
+    });
+  },
+  [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)              {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'f',
+      .long_name = "png-file",
+      .description = "PNG File",
+      .arg_name = "PNG-FILE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_PNG_FILE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_OUTPUT_PNG_FILE].fxn,
+      .arg_dest = &(args->output_png_file),
+    });
+  },
+  [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)              {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'f',
+      .long_name = "icns-file",
+      .description = "ICNS File",
+      .arg_name = "ICNS-FILE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_ICNS_FILE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_INPUT_ICNS_FILE].fxn,
+      .arg_dest = &(args->input_icns_file),
+    });
+  },
+  [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)             {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'f',
+      .long_name = "icns-file",
+      .description = "ICNS File",
+      .arg_name = "ICNS-FILE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_ICNS_FILE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_OUTPUT_ICNS_FILE].fxn,
+      .arg_dest = &(args->output_icns_file),
     });
   },
   [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                  {
@@ -181,69 +247,130 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
-  [CHECK_COMMAND_WINDOW_ID] =    {
+  [CHECK_COMMAND_WINDOW_ID] =        {
     .fxn           = (void (*)(void))(*_check_window_id),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH_GROUP] =  {
+  [CHECK_COMMAND_APPLICATION_PATH] = {
+    .fxn           = (void (*)(void))(*_check_application_path),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_WIDTH_GROUP] =      {
     .fxn           = (void (*)(void))(*_check_width_group),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_GROUP] = {
+  [CHECK_COMMAND_HEIGHT_GROUP] =     {
     .fxn           = (void (*)(void))(*_check_height_group),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH] =        {
+  [CHECK_COMMAND_WIDTH] =            {
     .fxn           = (void (*)(void))(*_check_width),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT] =       {
+  [CHECK_COMMAND_HEIGHT] =           {
     .fxn           = (void (*)(void))(*_check_height),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_OUTPUT_MODE] =  {
+  [CHECK_COMMAND_INPUT_ICNS_FILE] =  {
+    .fxn           = (void (*)(void))(*_check_input_icns_file),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_OUTPUT_PNG_FILE] =  {
+    .fxn           = (void (*)(void))(*_check_output_png_file),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_OUTPUT_ICNS_FILE] = {
+    .fxn           = (void (*)(void))(*_check_output_icns_file),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_OUTPUT_MODE] =      {
     .fxn           = (void (*)(void))(*_check_output_mode),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_FILE] =  {
+  [CHECK_COMMAND_INPUT_PNG_FILE] =   {
+    .fxn           = (void (*)(void))(*_check_input_png_file),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_OUTPUT_FILE] =      {
     .fxn           = (void (*)(void))(*_check_output_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_TYPES_QTY] =    { 0},
+  [CHECK_COMMAND_TYPES_QTY] =        { 0},
 };
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
-  [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)           },
-  [COMMAND_RESIZE_WINDOW]         = { .fxn = (*_command_resize_window)         },
-  [COMMAND_FOCUS_WINDOW]          = { .fxn = (*_command_focus_window)          },
-  [COMMAND_SET_WINDOW_SPACE]      = { .fxn = (*_command_set_window_space)      },
-  [COMMAND_SET_WINDOW_ALL_SPACES] = { .fxn = (*_command_set_window_all_spaces) },
-  [COMMAND_SET_SPACE]             = { .fxn = (*_command_set_space)             },
-  [COMMAND_SET_SPACE_INDEX]       = { .fxn = (*_command_set_space_index)       },
-  [COMMAND_WINDOWS]               = { .fxn = (*_command_windows)               },
-  [COMMAND_SPACES]                = { .fxn = (*_command_spaces)                },
-  [COMMAND_DISPLAYS]              = { .fxn = (*_command_displays)              },
-  [COMMAND_DEBUG_ARGS]            = { .fxn = (*_command_debug_args)            },
-  [COMMAND_FOCUSED_SERVER]        = { .fxn = (*_command_focused_server)        },
-  [COMMAND_FOCUSED_CLIENT]        = { .fxn = (*_command_focused_client)        },
-  [COMMAND_HTTPSERVER]            = { .fxn = (*_command_httpserver)            },
-  [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)         },
-  [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)              },
-  [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                  },
-  [COMMAND_APPS]                  = { .fxn = (*_command_apps)                  },
-  [COMMAND_FONTS]                 = { .fxn = (*_command_fonts)                 },
-  [COMMAND_KITTYS]                = { .fxn = (*_command_kittys)                },
-  [COMMAND_ALACRITTYS]            = { .fxn = (*_command_alacrittys)            },
-  [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)        },
-  [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)           },
-  [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)           },
-  [COMMAND_MONITORS]              = { .fxn = (*_command_monitors)              },
-  [COMMAND_PROCESSES]             = { .fxn = (*_command_processes)             },
-  [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)         },
-  [COMMAND_CAPTURE_WINDOW]        = { .fxn = (*_command_capture_window)        },
+  [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)             },
+  [COMMAND_RESIZE_WINDOW]         = { .fxn = (*_command_resize_window)           },
+  [COMMAND_FOCUS_WINDOW]          = { .fxn = (*_command_focus_window)            },
+  [COMMAND_SET_WINDOW_SPACE]      = { .fxn = (*_command_set_window_space)        },
+  [COMMAND_SET_WINDOW_ALL_SPACES] = { .fxn = (*_command_set_window_all_spaces)   },
+  [COMMAND_SET_SPACE]             = { .fxn = (*_command_set_space)               },
+  [COMMAND_SET_SPACE_INDEX]       = { .fxn = (*_command_set_space_index)         },
+  [COMMAND_WINDOWS]               = { .fxn = (*_command_windows)                 },
+  [COMMAND_SPACES]                = { .fxn = (*_command_spaces)                  },
+  [COMMAND_DISPLAYS]              = { .fxn = (*_command_displays)                },
+  [COMMAND_DEBUG_ARGS]            = { .fxn = (*_command_debug_args)              },
+  [COMMAND_FOCUSED_SERVER]        = { .fxn = (*_command_focused_server)          },
+  [COMMAND_FOCUSED_CLIENT]        = { .fxn = (*_command_focused_client)          },
+  [COMMAND_HTTPSERVER]            = { .fxn = (*_command_httpserver)              },
+  [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)           },
+  [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)                },
+  [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                    },
+  [COMMAND_APPS]                  = { .fxn = (*_command_apps)                    },
+  [COMMAND_FONTS]                 = { .fxn = (*_command_fonts)                   },
+  [COMMAND_KITTYS]                = { .fxn = (*_command_kittys)                  },
+  [COMMAND_ALACRITTYS]            = { .fxn = (*_command_alacrittys)              },
+  [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)          },
+  [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)             },
+  [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)             },
+  [COMMAND_MONITORS]              = { .fxn = (*_command_monitors)                },
+  [COMMAND_PROCESSES]             = { .fxn = (*_command_processes)               },
+  [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)           },
+  [COMMAND_CAPTURE_WINDOW]        = { .fxn = (*_command_capture_window)          },
+  [COMMAND_SAVE_APP_ICON_ICNS]    = { .fxn = (*_command_save_app_icon_to_icns)   },
+  [COMMAND_SAVE_APP_ICON_PNG]     = { .fxn = (*_command_save_app_icon_to_png)    },
+  [COMMAND_SET_APP_ICON_PNG]      = { .fxn = (*_command_write_app_icon_from_png) },
+  [COMMAND_SET_APP_ICON_ICNS]     = { .fxn = (*_command_write_app_icon_icns)     },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
 
 ////////////////////////////////////////////
+
+static void _check_application_path(char *application_path){
+  log_info("Validating Application Path %s", application_path);
+  if (fsio_dir_exists(application_path) == false) {
+    log_error("Invalid Application Path '%s'", application_path);
+  }
+  struct StringBuffer *sb = stringbuffer_new();
+  stringbuffer_append_string(sb, application_path);
+  stringbuffer_append_string(sb, "/");
+  stringbuffer_append_string(sb, "Contents");
+  if (fsio_dir_exists(stringbuffer_to_string(sb)) == false) {
+    log_error("Invalid Application Path '%s' (Non existent directory %s)", application_path, stringbuffer_to_string(sb));
+  }
+
+  stringbuffer_release(sb);
+  return(EXIT_FAILURE);
+}
+
+static void _check_output_png_file(char *output_png_file){
+  log_info("Validating output png file %s", output_png_file);
+  return(EXIT_FAILURE);
+}
+
+static void _check_input_png_file(char *input_png_file){
+  log_info("Validating input png file %s", input_png_file);
+  return(EXIT_FAILURE);
+}
+
+static void _check_input_icns_file(char *input_icns_file){
+  log_info("Validating input icns file %s", input_icns_file);
+  return(EXIT_FAILURE);
+}
+
+static void _check_output_icns_file(char *output_icns_file){
+  log_info("Validating output file %s", output_icns_file);
+  return(EXIT_FAILURE);
+}
 
 static void _check_output_file(char *output_mode){
   log_info("Validating output file %s", output_mode);
@@ -311,6 +438,31 @@ do_error:
 }
 
 ////////////////////////////////////////////
+static void _command_write_app_icon_from_png(){
+  log_info("setting app icon from app %s from png file %s", args->application_path, args->output_png_file);
+  bool ok = false;
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
+static void _command_save_app_icon_to_png(){
+  log_info("getting app icon from app %s and writing to png file %s", args->application_path, args->output_png_file);
+  bool ok = false;
+  ok = write_app_icon_to_png(args->application_path, args->output_png_file);
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
+static void _command_save_app_icon_to_icns(){
+  log_info("getting app icon from app %s and writing to icns file %s", args->application_path, args->output_icns_file);
+  bool ok = false;
+  ok = save_app_icon_to_icns_file(args->application_path, args->output_icns_file);
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
+static void _command_write_app_icon_icns(){
+  log_info("setting app icon for app %s fron icns %s", args->application_path, args->input_icns_file);
+  exit(EXIT_SUCCESS);
+}
+
 static void _command_monitors(){
   print_monitors();
   exit(EXIT_SUCCESS);
@@ -389,6 +541,35 @@ static void _command_capture_window(){
         : common_option_width_or_height_name(args->width_or_height),
            args->width_or_height_group
            );
+  CGImageRef img_ref     = window_capture(get_window_id(args->window_id));
+  int        orig_width  = CGImageGetWidth(img_ref);
+  int        orig_height = CGImageGetHeight(img_ref);
+  if (args->width_or_height_group > 0) {
+    int   new_width    = CGImageGetWidth(img_ref);
+    int   new_height   = CGImageGetHeight(img_ref);
+    float resize_ratio = 0;
+    switch (args->width_or_height) {
+    case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH:
+      new_width    = args->width_or_height_group;
+      resize_ratio = ((float)orig_width) / ((float)new_width);
+      new_height   = (int)((float)orig_height / resize_ratio);
+      break;
+    case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT:
+      new_height   = args->width_or_height_group;
+      resize_ratio = ((float)(orig_height)) / ((float)new_height);
+      new_width    = (int)((float)orig_width / resize_ratio);
+      break;
+    default:
+      break;
+    }
+    log_info("resizing from %dx%d to %dx%d using ratio %f......",
+             orig_width, orig_height,
+             new_width, new_height,
+             resize_ratio
+             );
+    img_ref = resize_cgimage(img_ref, new_width, new_height);
+  }
+  assert(save_window_cgref_to_png(img_ref, args->output_file) == true);
   exit(EXIT_SUCCESS);
 }
 
@@ -772,7 +953,7 @@ void _command_windows(){
     vector_size(windows_v),
     ""
     );
-  struct list_window_table_t *list_options = &(struct list_window_table_t){
+  struct list_table_t *list_options = &(struct list_table_t){
     .current_space_only = args->current_space_only,
     .space_id           = args->space_id,
   };
@@ -793,7 +974,7 @@ void _command_windows(){
 static void _command_displays(){
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-    log_info("display table");
+    list_displays_table((void *)0);
     break;
   case OUTPUT_MODE_JSON:
     log_info("display json");
@@ -806,19 +987,16 @@ static void _command_displays(){
 }
 
 static void _command_spaces(){
-  struct Vector              *spaces_v;
-  struct list_window_table_t *list_options;
+  struct Vector       *spaces_v;
+  struct list_table_t *list_options;
 
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-
-    list_options = &(struct list_window_table_t){
+    list_options = &(struct list_table_t){
     };
     list_spaces_table((void *)list_options);
-    log_info("display table");
     break;
   case OUTPUT_MODE_JSON:
-    log_info("display json");
     break;
   case OUTPUT_MODE_TEXT:
     spaces_v = get_spaces_v();

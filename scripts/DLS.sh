@@ -9,7 +9,7 @@ LF=$(mktemp)
 
 while :; do
 	cd $DIR/../.
-	passh ./build-muon/darwin-ls/dls $MODE >$LF || { sleep 1 && continue; }
+	passh ./build/darwin-ls/dls $MODE >$LF || { sleep 1 && continue; }
 	clear
 	cat $LF
 	sleep $INTERVAL

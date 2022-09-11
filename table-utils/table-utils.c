@@ -25,7 +25,79 @@ static void __attribute__((constructor)) __constructor__table_utils(void){
   }
 }
 
-int list_spaces_table(void *ARGS) {
+int list_displays_table(__attribute__((unused)) void *ARGS) {
+  unsigned long list_displays_table_started = timestamp();
+  struct Vector *displays_v                 = get_displays_v();
+  ft_table_t    *table                      = ft_create_table();
+
+  {
+    ft_set_border_style(table, FT_FRAME_STYLE);
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_RIGHT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
+
+    ft_write_ln(table,
+                "ID",
+                "Main",
+                "Width",
+                "Height",
+                "# Spaces"
+                );
+  }
+
+  for (size_t i = 0; i < vector_size(displays_v); i++) {
+    struct display_t *display = (struct display_t *)vector_get(displays_v, i);
+    ft_printf_ln(table,
+                 "%lu"
+                 "|%s"
+                 "|%d"
+                 "|%d"
+                 "|%lu"
+                 "%s",
+                 display->display_id,
+                 display->is_main ? "Yes" : "No",
+                 display->width,
+                 display->height,
+                 vector_size(display->space_ids_v),
+                 ""
+
+                 );
+
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+  }
+  char *table_s = ft_to_string(table);
+
+  fprintf(stdout,
+          "" AC_YELLOW AC_BOLD AC_UNDERLINE "%lu Spaces" AC_RESETALL
+          "\n",
+          vector_size(displays_v)
+          );
+  fprintf(stdout, "%s\n", table_s);
+  unsigned long list_displays_table_dur = timestamp() - list_displays_table_started;
+
+  if (TABLE_UTILS_DEBUG_MODE == true) {
+    log_info("Rendered %s %lu row, %lu column table from %lu spaces in %s",
+             bytes_to_string(strlen(table_s)),
+             ft_row_count(table),
+             ft_col_count(table),
+             vector_size(displays_v),
+             milliseconds_to_string(list_displays_table_dur)
+             );
+    ft_destroy_table(table);
+  }
+  return(0);
+} /* list_displays_table */
+
+int list_spaces_table(__attribute__((unused)) void *ARGS) {
   unsigned long list_windows_table_started = timestamp();
   int           terminal_width             = get_terminal_width();
   struct Vector *spaces_v                  = get_spaces_v();
@@ -108,11 +180,11 @@ int list_spaces_table(void *ARGS) {
 } /* list_windows_table */
 
 int list_windows_table(void *ARGS) {
-  unsigned long              list_windows_table_started = timestamp();
-  struct list_window_table_t *args                      = 0;
+  unsigned long       list_windows_table_started = timestamp();
+  struct list_table_t *args                      = 0;
 
   if (ARGS != 0) {
-    args = (struct list_window_table_t *)ARGS;
+    args = (struct list_table_t *)ARGS;
   }
   struct Vector *windows; struct Vector *display_ids_v; struct Vector *space_ids_v;
   int           cur_space_id;
@@ -145,7 +217,7 @@ int list_windows_table(void *ARGS) {
                 "Disp",
                 "Spc",
                 "Size",
-                "Position",
+                "Pos",
                 "Lyr/Lvl",
                 "Foc", "Vis", "Min",
                 "Abv/Blw"
@@ -163,7 +235,6 @@ int list_windows_table(void *ARGS) {
   }
 
   struct Vector *table_windows_v = vector_new();
-  struct Vector *table_space_ids = vector_new();
   int           max_app_name_len = 0;
 
   for (size_t i = 0; i < vector_size(windows); i++) {
@@ -263,30 +334,12 @@ int list_windows_table(void *ARGS) {
     }
   }
   ft_add_separator(table);
-  ft_set_cell_span(table, vector_size(table_windows_v) + 1, 5, 1);
 
   ft_printf_ln(table,
-               "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+               "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+               "abc",
                "",
-               "",
-               "",
-               "",
-               "",
-               "",
-               "",
-               "",
-               "",
-               "",
-               "",
-               ""
-               );
-  ft_printf_ln(table,
-               "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-               "",
-               "",
-               "",
-               "",
-               "",
+               "def",
                "",
                "",
                "",
@@ -295,6 +348,8 @@ int list_windows_table(void *ARGS) {
                "",
                ""
                );
+  ft_set_cell_span(table, vector_size(table_windows_v) + 1, 0, 2);
+  ft_set_cell_span(table, vector_size(table_windows_v) + 1, 2, 3);
 
   char *table_s = ft_to_string(table);
 
