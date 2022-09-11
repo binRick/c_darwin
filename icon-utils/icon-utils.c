@@ -21,11 +21,16 @@
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
 
+struct icns_t {
+  uint8_t bytes;
+  size_t  size;
+};
 ////////////////////////////////////////////
 static bool icon_utils_DEBUG_MODE = false;
-static bool save_cfdataref_to_icns_file(CFDataRef data_ref, char *png_file_path);
-static bool write_icns_file_to_png(char *icns_file_path, char *png_file_path);
-static icns_family_t *get_icns_file_info(char *icns_file_path);
+static bool save_cfdataref_to_icns_file(CFDataRef data_ref, FILE *fp);
+static bool write_icns_file_to_png(FILE *fp, char *png_file_path);
+static icns_family_t *get_icns_file_info(FILE *fp);
+static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref);
 ///////////////////////////////////////////////////////////////////////
 static const icns_type_t iconset_types[] = {
   ICNS_16x16_32BIT_DATA,
@@ -42,7 +47,6 @@ static const icns_type_t iconset_types[] = {
 };
 static void __attribute__((constructor)) __constructor__icon_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
-    log_debug("Enabling icon-utils Debug Mode");
     icon_utils_DEBUG_MODE = true;
   }
 }
@@ -93,121 +97,78 @@ CFDataRef get_icon_from_path(char *path) {
   return(copyIconDataForPath(cfstring_from_cstring(path)));
 }
 
-void get_icon_data_from_path(char *path) {
-  CFDataRef cfdata = get_icon_from_path(path);
-/*
- *
- *
- * CFDataRef new_data_ref = CGDataProviderCopyData(CGImageGetDataProvider(new_image_ref));
- *
- *
- * CGDataProviderRef imgDataProvider = CGDataProviderCreateWithCFData(cfdata);
- * if(imgDataProvider == NULL){
- * log_error("invalid provider!");
- * exit(1);
- * }
- * log_info("working with cfdata of size %lu, %dx%d",length,image_width,image_height);
- * CGImageRef image = CGImageCreateWithPNGDataProvider(imgDataProvider, NULL, true, kCGRenderingIntentDefault);
- * int pp = CGImageGetBitsPerPixel(image);
- * log_info("pp:%d",pp);
- */
-/*CFDataRef imgData = (CFDataRef)CFArrayGetValueAtIndex(cfdata,0);
- * if(imgData == NULL){
- * log_error("invalid provider!");
- * exit(1);
- * }
- * CGImageRef image1 = CGImageCreateWithPNGDataProvider(imgDataProvider, NULL, true, kCGRenderingIntentDefault);
- * size_t bpp = CGImageGetBytesPerRow(image1);
- * image_width = CGImageGetWidth(image1);
- * image_height = CGImageGetHeight(image1);
- * log_info("got image1 of size %lu, %dx%d",bpp,image_width,image_height);
- * exit(0);
- */
-/*
- * log_info("pp:%d",pp);
- *
- *      void *buf = malloc(size);
- * memcpy(buf, CFDataGetBytePtr(cfdata), size);
- * int x, y, channels;
- *
- * unsigned char *img = stbi_load_from_memory(buf,size,&x,&y,&channels,4);
- * log_info("loaded png from memory, x:%d,y:%d,channels:%d",x,y,channels);
- * exit(0);
- *
- * CGColorSpaceRef colorspace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
- * CGBitmapInfo    bitmapInfo = CGImageGetBitmapInfo(cfdata);
- * // CGDataProviderRef   provider = CGDataProviderCreateWithCFData(cfdata);
- *
- *
- *
- * CGImageRef image = CGImageCreate(image_width, image_height, 8, 32, image_width * 4, colorspace,
- *                          bitmapInfo | kCGBitmapByteOrder32Little,
- *                          provider, NULL, FALSE, kCGRenderingIntentDefault);
- *
- * image_width = CGImageGetWidth(image);
- * image_height = CGImageGetHeight(image);
- *
- * log_info("path:%s|len:%lu|size:%dx%d",
- *    path, (size_t)length,
- *    image_width,image_height
- *    );
- */
-}
-
-bool save_app_icon_to_icns_file(char *app_path, char *icns_file_path){
-  CFDataRef cfdata = get_icon_from_path(app_path);
-
-  return(save_cfdataref_to_icns_file(cfdata, icns_file_path));
-}
-
-static bool save_cfdataref_to_icns_file(CFDataRef data_ref, char *icns_file_path){
+static bool save_cfdataref_to_icns_file(CFDataRef data_ref, FILE *fp){
   size_t              length  = CFDataGetLength(data_ref);
   const unsigned char *buffer = CFDataGetBytePtr(data_ref);
+  size_t              written = fwrite(buffer, 1, length, fp);
 
-  fsio_write_binary_file(icns_file_path, buffer, length);
   if (buffer) {
     free(buffer);
   }
-  get_icns_file_info(icns_file_path);
+
+  fflush(fp);
+  fclose(fp);
+  assert(written == length);
   return(true);
 }
 
-static icns_family_t *get_icns_file_info(char *icns_file_path){
-  icns_family_t *iconFamily = NULL;
-  FILE          *inFile     = fopen(icns_file_path, "r");
+static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref){
+  struct   icns_t *data = calloc(1, sizeof(struct icns_t));
 
-  assert(icns_read_family_from_file(inFile, &iconFamily) == 0);
-  fclose(inFile);
+  data->bytes = CFDataGetBytePtr(data_ref);
+  data->size  = CFDataGetLength(data_ref);
+  return(data);
+}
+
+static icns_family_t *get_icns_file_info(FILE *fp){
+  icns_family_t *iconFamily = NULL;
+
+  assert(icns_read_family_from_file(fp, &iconFamily) == 0);
   return(iconFamily);
 }
 
-bool write_app_icon_to_png(char *app_path, char *png_file_path){
-  char *icns_path = "/tmp/a.icns";
+static bool write_icns_file_to_png(FILE *fp, char *png_file_path){
+  icns_family_t *iconFamily = get_icns_file_info(fp);
 
-  assert(save_app_icon_to_icns_file(app_path, icns_path) == true);
-  return(write_icns_file_to_png(icns_path, png_file_path));
-}
-
-static bool write_icns_file_to_png(char *icns_file_path, char *png_file_path){
-  icns_family_t *iconFamily = get_icns_file_info(icns_file_path);
-
-  if (png_file_path == NULL) {
-    struct StringFNStrings icns_split = stringfn_split(icns_file_path, '.');
-    char                   *png_file_path;
-    asprintf(&png_file_path, "%s.png", strdup(icns_split.strings[0]));
-    stringfn_release_strings_struct(icns_split);
-  }
-  log_info("writing png to %s", png_file_path);
+  fclose(fp);
   icns_image_t   *iconImage   = calloc(1, sizeof(icns_image_t));
   icns_element_t *iconElement = calloc(1, sizeof(icns_element_t));
 
   assert(icns_get_element_from_family(iconFamily, iconset_types[9], &iconElement) == 0);
-  log_info("got icon element %d", iconElement->elementSize);
   assert(icns_get_image_from_element(iconElement, iconImage) == 0);
-  log_info("got image %dx%d %s, %d", iconImage->imageWidth, iconImage->imageWidth, bytes_to_string(iconImage->imageDataSize), iconImage->imagePixelDepth);
-  stbi_write_png(png_file_path, iconImage->imageWidth, iconImage->imageHeight, iconImage->imageChannels, iconImage->imageData, 0);
-  log_info("wrote png %s", png_file_path);
+  if (fsio_file_exists(png_file_path) == true) {
+    fsio_remove(png_file_path);
+  }
+  stbi_write_png(
+    png_file_path,
+    iconImage->imageWidth,
+    iconImage->imageHeight,
+    iconImage->imageChannels,
+    iconImage->imageData,
+    0
+    );
   return(fsio_file_exists(png_file_path));
+}
+
+bool write_app_icon_to_png(char *app_path, char *png_file_path){
+  CFDataRef     data_ref   = get_icon_from_path(app_path);
+  struct icns_t *icns_data = cfdataref_to_icns_bytes(data_ref);
+  void          *buf       = calloc(1, icns_data->size);
+  FILE          *fp        = fmemopen(buf, icns_data->size, "ab");
+
+  save_cfdataref_to_icns_file(data_ref, fp);
+  fclose(fp);
+  fp = fmemopen(buf, icns_data->size, "r");
+  return(write_icns_file_to_png(fp, png_file_path));
+}
+
+bool save_app_icon_to_icns_file(char *app_path, char *icns_file_path){
+  CFDataRef cfdata = get_icon_from_path(app_path);
+  FILE      *fp    = fopen(icns_file_path, "r");
+  bool      ok     = save_cfdataref_to_icns_file(cfdata, fp);
+
+  fclose(fp);
+  return(ok);
 }
 
 #endif
