@@ -48,32 +48,32 @@ static const icns_type_t            iconset_types[] = {
 };
 static const int                    APP_ICON_INITIAL_INDEX = 1;
 static const struct app_icon_size_t app_icon_sizes[]       = {
-  { "16 Pixels",   16,   APP_ICON_INITIAL_INDEX,      },
-  { "32 Pixels",   32,   APP_ICON_INITIAL_INDEX + 2,  },
-  { "128 Pixels",  128,  APP_ICON_INITIAL_INDEX + 4,  },
-  { "256 Pixels",  256,  APP_ICON_INITIAL_INDEX + 6,  },
-  { "512 Pixels",  512,  APP_ICON_INITIAL_INDEX + 8,  },
-  { "1024 Pixels", 1024, APP_ICON_INITIAL_INDEX + 10, },
+  { "32 Pixels",   32,   APP_ICON_INITIAL_INDEX + 0, },
+  { "128 Pixels",  128,  APP_ICON_INITIAL_INDEX + 2, },
+  { "256 Pixels",  256,  APP_ICON_INITIAL_INDEX + 4, },
+  { "512 Pixels",  512,  APP_ICON_INITIAL_INDEX + 6, },
+  { "1024 Pixels", 1024, APP_ICON_INITIAL_INDEX + 8, },
 };
 
 ////////////////////////////////////////////
 static const size_t                 app_icon_sizes_qty          = ((sizeof(app_icon_sizes) / sizeof(app_icon_sizes[0])));
 static const int                    DEFAULT_APP_ICON_SIZE_INDEX = 3;
 static const struct app_icon_size_t *DEFAULT_APP_ICON_SIZE      = &(app_icon_sizes[DEFAULT_APP_ICON_SIZE_INDEX]);
-static bool                         icon_utils_DEBUG_MODE       = false;
+static bool                         ICON_UTILS_DEBUG_MODE       = false;
 static bool save_cfdataref_to_icns_file(CFDataRef data_ref, FILE *fp);
 static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_size);
 static icns_family_t *get_icns_file_info(FILE *fp);
 static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref);
 static int get_icon_size_pixels(size_t icon_size);
 static int get_icon_size_value(size_t icon_size);
+static struct Vector *get_app_icon_sizes_v();
 static struct app_icon_size_t *get_icon_size(size_t icon_size);
 static icns_type_t get_icon_size_type(size_t icon_size);
 static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, int32_t *height);
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__icon_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
-    icon_utils_DEBUG_MODE = true;
+    ICON_UTILS_DEBUG_MODE = true;
   }
 }
 static struct app_icon_size_t *get_icon_size(size_t icon_size){
@@ -176,8 +176,14 @@ static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref){
 
 static icns_family_t *get_icns_file_info(FILE *fp){
   icns_family_t *iconFamily = NULL;
+  size_t        fp_size     = get_fp_size(fp);
+
+  if (ICON_UTILS_DEBUG_MODE == true) {
+    log_info("icns file size: %s", bytes_to_string(fp_size));
+  }
 
   assert(icns_read_family_from_file(fp, &iconFamily) == 0);
+
   return(iconFamily);
 }
 
@@ -214,8 +220,13 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
     return(FALSE);
   }
   log_info("png bpp:%d", png_bpp);
-
-  icns_create_family(&iconFamily);
+  //icns_family_t *iconFamily = get_icns_file_info(icnsfile);
+  if (icns_read_family_from_file(icnsfile, &iconFamily) != ICNS_STATUS_OK) {
+    log_info("Creating new icon family");
+    icns_create_family(&iconFamily);
+  }else{
+    log_info("Opening Existing icon family");
+  }
   icns_image_t     icnsImage;
   icns_image_t     icnsMask;
   icns_type_t      iconType;
@@ -299,36 +310,6 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
     log_error("icns_new_element_from_image error");
     exit(1);
   }
-/*
- * if( (iconType != ICNS_1024x1024_32BIT_ARGB_DATA) && (iconType != ICNS_512x512_32BIT_ARGB_DATA) && (iconType != ICNS_256x256_32BIT_ARGB_DATA) )
- *  {
- *    icns_init_image_for_type(maskType, &icnsMask);
- *
- *    iconDataOffset = 0;
- *    maskDataOffset = 0;
- *
- *    while ((iconDataOffset < icnsImage.imageDataSize) && (maskDataOffset < icnsMask.imageDataSize))
- *    {
- *      icnsMask.imageData[maskDataOffset] = icnsImage.imageData[iconDataOffset+3];
- *      iconDataOffset += 4;
- *      maskDataOffset += 1;
- *    }
- *
- *    icnsErr = icns_new_element_from_mask(&icnsMask, maskType, &maskElement);
- *
- *    if (maskElement != NULL)
- *    {
- *      if (icnsErr == ICNS_STATUS_OK)
- *      {
- *        icns_set_element_in_family(iconFamily, maskElement);
- *      }
- *      free(maskElement);
- *    }
- *
- *    icns_free_image(&icnsMask);
- *  }
- */
-
   if (icns_write_family_to_file(icnsfile, iconFamily) != ICNS_STATUS_OK) {
     fprintf(stderr, "Failed to write icns file\n");      fclose(icnsfile);
 
@@ -342,119 +323,6 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
   if (iconFamily != NULL) {
     free(iconFamily);
   }
-  /*
-   *
-   * icns_set_print_errors(1);
-   *
-   * icnsErr = icns_new_element_from_image(&icnsImage, iconType, &iconElement);
-   * if (iconElement != NULL)
-   * {
-   * if (icnsErr == ICNS_STATUS_OK)
-   * {
-   * icns_set_element_in_family(iconFamily, iconElement);
-   * }else{
-   * log_error("Failed to set element in family");
-   * free(iconElement);
-   * exit(1);
-   * }
-   * }else{
-   * log_error("Failed to create new element from image");
-   * exit(1);
-   * }
-   *
-   * if(maskType != ICNS_NULL_TYPE){
-   * icns_init_image_for_type(maskType, &icnsMask);
-   *
-   * iconDataOffset = 0;
-   * maskDataOffset = 0;
-   *
-   * while (((size_t)iconDataOffset < (size_t)icnsImage.imageDataSize) && ((size_t)maskDataOffset < (size_t)icnsMask.imageDataSize))
-   * {
-   * icnsMask.imageData[maskDataOffset] = icnsImage.imageData[iconDataOffset+3];
-   * iconDataOffset += 4;
-   * maskDataOffset += 1;
-   * }
-   *
-   * icnsErr = icns_new_element_from_mask(&icnsMask, maskType, &maskElement);
-   *
-   * if (maskElement != NULL)
-   * {
-   * if (icnsErr == ICNS_STATUS_OK)
-   * {
-   * icns_set_element_in_family(iconFamily, maskElement);
-   * }
-   * free(maskElement);
-   * }
-   *
-   * icns_free_image(&icnsMask);
-   * }
-   *
-   * free(png_buffer);
-   *
-   *
-   *
-   * if (icns_write_family_to_file(icnsfile, iconFamily) != ICNS_STATUS_OK)
-   * {
-   * log_error("Failed to write icns file");
-   * fclose(icnsfile);
-   * exit(1);
-   * }
-   *
-   * fclose(icnsfile);
-   *
-   * log_info("Saved icns file to %s",icnsfile_path);
-   */
-/*
- *  icnsImage.imageWidth = width;
- *  icnsImage.imageHeight = height;
- *  icnsImage.imageChannels = 4;
- *  icnsImage.imagePixelDepth = 8;
- *  icnsImage.imageDataSize = width * height * 4;
- *  icnsImage.imageData = rgb_pixels;
- *
- *
- *  iconInfo.isImage = 1;
- *  iconInfo.iconWidth = icnsImage.imageWidth;
- *  iconInfo.iconHeight = icnsImage.imageHeight;
- *  iconInfo.iconBitDepth = 32;
- *  iconInfo.iconChannels = 4;
- *  iconInfo.iconPixelDepth = 8;
- *
- *  iconType = icns_get_type_from_image_info(iconInfo);
- *  maskType = icns_get_mask_type_for_icon_type(iconType);
- *
- *  icns_type_str(iconType,iconStr);
- *  icns_type_str(maskType,maskStr);
- *
- *  ("iconType:%s|%d",iconStr,iconType);
- *  log_info("maskType:%s|%d",maskStr,maskType);
- *
- *
- *
- *  icns_get_element_from_family(iconFamily, iconType, &iconElement);
- *  icns_new_element_from_image(&icnsImage, iconType, &iconElement);
- *  icns_set_element_in_family(iconFamily, iconElement);
- *  icns_free_image(&icnsMask);
- *
- *
- *  icns_write_family_to_file(icnsfile, iconFamily);
- *
- *  fclose(icnsfile);
- *
- *
- *  stbi_image_free(rgb_pixels);
- */
-  /*
-   * iconInfo.iconChannels = (bpp == 32 ? 4 : 1);
-   * iconInfo.iconPixelDepth = bpp / iconInfo.iconChannels;
-   *
-   * iconType = icns_get_type_from_image_info(iconInfo);
-   * maskType = icns_get_mask_type_for_icon_type(iconType);
-   *
-   * icns_type_str(iconType,iconStr);
-   * icns_type_str(maskType,maskStr);
-   *
-   */
 
   return(true);
 } /* write_app_icon_from_png */
@@ -463,11 +331,12 @@ static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_si
   icns_family_t *iconFamily = get_icns_file_info(fp);
 
   fclose(fp);
+  // icns_family_t   *iconFamily   = calloc(1, sizeof(icns_family_t));
   icns_image_t   *iconImage   = calloc(1, sizeof(icns_image_t));
   icns_element_t *iconElement = calloc(1, sizeof(icns_element_t));
 
-  assert(icns_get_element_from_family(iconFamily, get_icon_size_type(icon_size), &iconElement) == 0);
-  assert(icns_get_image_from_element(iconElement, iconImage) == 0);
+  assert(icns_get_element_from_family(iconFamily, get_icon_size_type(icon_size), &iconElement) == ICNS_STATUS_OK);
+  assert(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK);
   if (fsio_file_exists(png_file_path) == true) {
     fsio_remove(png_file_path);
   }
@@ -494,12 +363,55 @@ bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size
   return(write_icns_file_to_png(fp, png_file_path, icon_size));
 }
 
+bool get_icon_info(char *icns_file_path){
+  if (ICON_UTILS_DEBUG_MODE == true) {
+    log_info("icns_file_path %s", icns_file_path);
+  }
+  FILE          *fp         = fopen(icns_file_path, "rb");
+  icns_family_t *iconFamily = get_icns_file_info(fp);
+  char          iconStr[5]  = { 0, 0, 0, 0, 0 };
+  icns_type_str(iconFamily->resourceType, iconStr);
+  int32_t       element_qty = -1;
+  icns_element_t *iconElement  = NULL;
+  struct Vector  *icon_sizes_v = get_app_icon_sizes_v();
+  assert(icns_count_elements_in_family(iconFamily, &element_qty) == ICNS_STATUS_OK);
+  printf(
+    "[" AC_RESETALL AC_BLUE "%s" AC_RESETALL "] "
+    "<Icon Family> "
+    "|Size: " AC_RESETALL AC_CYAN "%6s" AC_RESETALL
+    "|Type: " AC_RESETALL AC_YELLOW "%s" AC_RESETALL
+    "|# Elements: " AC_GREEN "%d" AC_RESETALL "|\n",
+    icns_file_path,
+    bytes_to_string(iconFamily->resourceSize),
+    iconStr,
+    element_qty
+    );
+  for (size_t i = 0; i < vector_size(icon_sizes_v); i++) {
+    size_t cur_size = (size_t)vector_get(icon_sizes_v, i);
+    assert(icns_get_element_from_family(iconFamily, get_icon_size_type(cur_size), &iconElement) == ICNS_STATUS_OK);
+    icns_type_str(iconFamily->resourceType, iconStr);
+    icns_image_t *iconImage = calloc(1, sizeof(icns_image_t));
+    assert(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK);
+
+    printf("  %12s |Type: %s|Size:%dx%d|Data Size:%6s|\n",
+           get_icon_size_name(cur_size),
+           iconStr,
+           iconImage->imageWidth, iconImage->imageHeight,
+           bytes_to_string(iconImage->imageDataSize)
+           );
+    free(iconImage);
+  }
+
+  return(ok);
+}
+
 bool write_app_icon_to_icns(char *app_path, char *icns_file_path){
   CFDataRef cfdata = get_icon_from_path(app_path);
-  FILE      *fp    = fopen(icns_file_path, "ab");
+  FILE      *fp    = fopen(icns_file_path, "wb");
   bool      ok     = save_cfdataref_to_icns_file(cfdata, fp);
 
   fclose(fp);
+  log_info("set icns");
   return(ok);
 }
 
@@ -632,5 +544,14 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
 
   return(TRUE);
 } /* read_png */
+static struct Vector *get_app_icon_sizes_v(){
+  struct Vector *v = vector_new();
 
+  for (size_t i = 0; i < app_icon_sizes_qty; i++) {
+    if (app_icon_sizes[i].pixels > 0) {
+      vector_push(v, (void *)(size_t)app_icon_sizes[i].pixels);
+    }
+  }
+  return(v);
+}
 #endif

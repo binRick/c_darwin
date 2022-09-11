@@ -38,6 +38,7 @@ static void _command_save_app_icon_to_png();
 static void _command_write_app_icon_from_png();
 static void _command_save_app_icon_to_icns();
 static void _command_write_app_icon_icns();
+static void _command_icon_info();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width_group(uint16_t window_id);
@@ -345,6 +346,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SAVE_APP_ICON_PNG]     = { .fxn = (*_command_save_app_icon_to_png)    },
   [COMMAND_SET_APP_ICON_PNG]      = { .fxn = (*_command_write_app_icon_from_png) },
   [COMMAND_SET_APP_ICON_ICNS]     = { .fxn = (*_command_write_app_icon_icns)     },
+  [COMMAND_ICON_INFO]             = { .fxn = (*_command_icon_info)               },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
 
@@ -360,7 +362,6 @@ static void _check_icon_size(size_t icon_size){
 }
 
 static void _check_application_path(char *application_path){
-  log_info("Validating Application Path %s", application_path);
   if (fsio_dir_exists(application_path) == false) {
     log_error("Invalid Application Path '%s'", application_path);
   }
@@ -378,7 +379,6 @@ static void _check_application_path(char *application_path){
 }
 
 static void _check_output_png_file(char *output_png_file){
-  log_info("Validating output png file %s", output_png_file);
   return(EXIT_SUCCESS);
 }
 
@@ -392,7 +392,10 @@ static void _check_input_png_file(char *input_png_file){
 }
 
 static void _check_input_icns_file(char *input_icns_file){
-  log_info("Validating input icns file %s", input_icns_file);
+  if (fsio_file_exists(input_icns_file) == false) {
+    log_error("Invalid Input ICNS Path '%s'", input_icns_file);
+    exit(EXIT_FAILURE);
+  }
   return(EXIT_FAILURE);
 }
 
@@ -443,8 +446,6 @@ static void _check_width(uint16_t width){
 }
 
 static void _check_window_id(uint16_t window_id){
-  log_info("Validating Window ID %lu", (size_t)window_id);
-
   if (window_id < 1) {
     log_error("Window ID too small");
     goto do_error;
@@ -467,6 +468,12 @@ do_error:
 }
 
 ////////////////////////////////////////////
+static void _command_icon_info(){
+  bool ok = get_icon_info(args->input_icns_file);
+
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
 static void _command_write_app_icon_from_png(){
   log_info("setting app icon from app %s from png file %s", args->application_path, args->input_png_file);
 
@@ -489,8 +496,9 @@ static void _command_save_app_icon_to_icns(){
 }
 
 static void _command_write_app_icon_icns(){
-  log_info("setting app icon for app %s fron icns %s", args->application_path, args->input_icns_file);
-  exit(EXIT_SUCCESS);
+  log_info("setting app icon for app %s from icns %s", args->application_path, args->input_icns_file);
+  bool ok = write_app_icon_to_icns(args->application_path, args->input_icns_file);
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_monitors(){

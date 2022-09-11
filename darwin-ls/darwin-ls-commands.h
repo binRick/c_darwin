@@ -95,6 +95,7 @@ enum command_type_t {
   COMMAND_SET_APP_ICON_PNG,
   COMMAND_SAVE_APP_ICON_ICNS,
   COMMAND_SET_APP_ICON_ICNS,
+  COMMAND_ICON_INFO,
   COMMAND_TYPES_QTY,
 };
 enum color_types_t {

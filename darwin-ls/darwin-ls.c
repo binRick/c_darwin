@@ -252,9 +252,9 @@ int main(int argc, char **argv) {
       },
       {
         .name        = "get-icon-png",
-        .description = "Get Application Icon as PNG",
+        .description = "Get App Icon as PNG",
         .function    = cmds[COMMAND_SAVE_APP_ICON_PNG].fxn,
-        .about       = "🪐" "\t" COLOR_GET "Get Application Icon PNG" AC_RESETALL,
+        .about       = "🪐" "\t" COLOR_GET "Get App Icon PNG" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
@@ -263,10 +263,20 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "icon-info",
+        .description = "Get Icon Info",
+        .function    = cmds[COMMAND_ICON_INFO].fxn,
+        .about       = "🪐" "\t" COLOR_GET "Get Icon Info" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_INPUT_ICNS_FILE](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "get-icon",
-        .description = "Get Application Icon",
+        .description = "Get App Icon",
         .function    = cmds[COMMAND_SAVE_APP_ICON_ICNS].fxn,
-        .about       = "🪐" "\t" COLOR_GET "Get Application Icon" AC_RESETALL,
+        .about       = "🪐" "\t" COLOR_GET "Get App Icon" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_OUTPUT_ICNS_FILE](args),
@@ -275,9 +285,9 @@ int main(int argc, char **argv) {
       },
       {
         .name        = "set-icon-png",
-        .description = "Set Application Icon From PNG",
+        .description = "Set App Icon From PNG",
         .function    = cmds[COMMAND_SET_APP_ICON_PNG].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Set Application Icon From PNG" AC_RESETALL,
+        .about       = "🪐" "\t" COLOR_SET "Set App Icon From PNG" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_INPUT_PNG_FILE](args),
@@ -286,9 +296,9 @@ int main(int argc, char **argv) {
       },
       {
         .name        = "set-icon",
-        .description = "Set Application Icon",
+        .description = "Set App Icon from ICNS",
         .function    = cmds[COMMAND_SET_APP_ICON_ICNS].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Set Application Icon" AC_RESETALL,
+        .about       = "🪐" "\t" COLOR_SET "Set App Icon from ICNS" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_INPUT_ICNS_FILE](args),
