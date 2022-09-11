@@ -258,6 +258,7 @@ int main(int argc, char **argv) {
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
+          common_options_b[COMMON_OPTION_ICON_SIZE](args),
           { END_OF_OPTIONS },
         },
       },

@@ -52,6 +52,7 @@ static void _check_input_png_file(char *input_png_file);
 static void _check_output_icns_file(char *output_icns_file);
 static void _check_input_icns_file(char *input_icns_file);
 static void _check_application_path(char *application_path);
+static void _check_icon_size(size_t icon_size);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                {
@@ -69,6 +70,17 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "help",
       .description = "Print help information and quit",
       .function = optparse_print_help,
+    });
+  },
+  [COMMON_OPTION_ICON_SIZE] = ^ struct optparse_opt (struct args_t *args)                    {
+    return((struct optparse_opt)                                                             {
+      .short_name = 's',
+      .long_name = "icon-size",
+      .description = "Icon Size",
+      .arg_name = "ICON-SIZE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_ICON_SIZE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_ICON_SIZE].fxn,
+      .arg_dest = &(args->icon_size),
     });
   },
   [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)             {
@@ -251,6 +263,10 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_window_id),
     .arg_data_type = DATA_TYPE_INT,
   },
+  [CHECK_COMMAND_ICON_SIZE] =        {
+    .fxn           = (void (*)(void))(*_check_icon_size),
+    .arg_data_type = DATA_TYPE_UINT64,
+  },
   [CHECK_COMMAND_APPLICATION_PATH] = {
     .fxn           = (void (*)(void))(*_check_application_path),
     .arg_data_type = DATA_TYPE_STR,
@@ -334,6 +350,15 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
 };
 
 ////////////////////////////////////////////
+
+static void _check_icon_size(size_t icon_size){
+  errno = 0;
+  if (app_icon_size_is_valid(icon_size) == false) {
+    log_error("Invalid Icon Size %lu", icon_size);
+    exit(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
+}
 
 static void _check_application_path(char *application_path){
   log_info("Validating Application Path %s", application_path);
@@ -446,15 +471,14 @@ static void _command_write_app_icon_from_png(){
 
 static void _command_save_app_icon_to_png(){
   log_info("getting app icon from app %s and writing to png file %s", args->application_path, args->output_png_file);
-  bool ok = false;
-  ok = write_app_icon_to_png(args->application_path, args->output_png_file);
+  bool ok = write_app_icon_to_png(args->application_path, args->output_png_file, args->icon_size);
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_save_app_icon_to_icns(){
   log_info("getting app icon from app %s and writing to icns file %s", args->application_path, args->output_icns_file);
   bool ok = false;
-  ok = save_app_icon_to_icns_file(args->application_path, args->output_icns_file);
+  ok = write_app_icon_to_icns(args->application_path, args->output_icns_file);
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 

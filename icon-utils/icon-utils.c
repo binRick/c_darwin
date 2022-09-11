@@ -13,26 +13,22 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "icns/src/icns.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
-
 struct icns_t {
   uint8_t bytes;
   size_t  size;
 };
-////////////////////////////////////////////
-static bool icon_utils_DEBUG_MODE = false;
-static bool save_cfdataref_to_icns_file(CFDataRef data_ref, FILE *fp);
-static bool write_icns_file_to_png(FILE *fp, char *png_file_path);
-static icns_family_t *get_icns_file_info(FILE *fp);
-static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref);
-///////////////////////////////////////////////////////////////////////
-static const icns_type_t iconset_types[] = {
+struct app_icon_size_t {
+  char   *name;
+  size_t pixels;
+  int    value;
+};
+static const icns_type_t            iconset_types[] = {
   ICNS_16x16_32BIT_DATA,
   ICNS_16x16_2X_32BIT_ARGB_DATA,
   ICNS_32x32_32BIT_DATA,
@@ -45,10 +41,59 @@ static const icns_type_t iconset_types[] = {
   ICNS_512x512_2X_32BIT_ARGB_DATA,
   ICNS_NULL_TYPE
 };
+static const struct app_icon_size_t app_icon_sizes[] = {
+  { "16 Pixels",  16,  1, },
+  { "32 Pixels",  32,  3, },
+  { "128 Pixels", 128, 5, },
+  { "256 Pixels", 256, 7, },
+  { "512 Pixels", 512, 9, },
+};
+////////////////////////////////////////////
+static const size_t                 app_icon_sizes_qty          = ((sizeof(app_icon_sizes) / sizeof(app_icon_sizes[0])));
+static const int                    DEFAULT_APP_ICON_SIZE_INDEX = 3;
+static const struct app_icon_size_t *DEFAULT_APP_ICON_SIZE      = &(app_icon_sizes[DEFAULT_APP_ICON_SIZE_INDEX]);
+static bool                         icon_utils_DEBUG_MODE       = false;
+static bool save_cfdataref_to_icns_file(CFDataRef data_ref, FILE *fp);
+static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_size);
+static icns_family_t *get_icns_file_info(FILE *fp);
+static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref);
+static int get_icon_size_pixels(size_t icon_size);
+static int get_icon_size_value(size_t icon_size);
+static struct app_icon_size_t *get_icon_size(size_t icon_size);
+static icns_type_t get_icon_size_type(size_t icon_size);
+///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__icon_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
     icon_utils_DEBUG_MODE = true;
   }
+}
+static struct app_icon_size_t *get_icon_size(size_t icon_size){
+  for (size_t i = 0; i < app_icon_sizes_qty; i++) {
+    if (app_icon_sizes[i].pixels == icon_size) {
+      return(&(app_icon_sizes[i]));
+    }
+  }
+  return(NULL);
+}
+
+static int get_icon_size_value(size_t icon_size){
+  struct app_icon_size_t *is = get_icon_size(icon_size);
+
+  if (is) {
+    return(is->value);
+  }
+  DEFAULT_APP_ICON_SIZE->value;
+  return(0);
+}
+
+static int get_icon_size_pixels(size_t icon_size){
+  struct app_icon_size_t *is = get_icon_size(icon_size);
+
+  if (is) {
+    return(is->pixels);
+  }
+
+  return(0);
 }
 
 CFDataRef copyIconDataForURL(CFURLRef URL){
@@ -127,14 +172,18 @@ static icns_family_t *get_icns_file_info(FILE *fp){
   return(iconFamily);
 }
 
-static bool write_icns_file_to_png(FILE *fp, char *png_file_path){
+static icns_type_t get_icon_size_type(size_t icon_size){
+  return((icns_type_t)(iconset_types[get_icon_size_value(icon_size)]));
+}
+
+static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_size){
   icns_family_t *iconFamily = get_icns_file_info(fp);
 
   fclose(fp);
   icns_image_t   *iconImage   = calloc(1, sizeof(icns_image_t));
   icns_element_t *iconElement = calloc(1, sizeof(icns_element_t));
 
-  assert(icns_get_element_from_family(iconFamily, iconset_types[9], &iconElement) == 0);
+  assert(icns_get_element_from_family(iconFamily, get_icon_size_type(icon_size), &iconElement) == 0);
   assert(icns_get_image_from_element(iconElement, iconImage) == 0);
   if (fsio_file_exists(png_file_path) == true) {
     fsio_remove(png_file_path);
@@ -150,7 +199,7 @@ static bool write_icns_file_to_png(FILE *fp, char *png_file_path){
   return(fsio_file_exists(png_file_path));
 }
 
-bool write_app_icon_to_png(char *app_path, char *png_file_path){
+bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size){
   CFDataRef     data_ref   = get_icon_from_path(app_path);
   struct icns_t *icns_data = cfdataref_to_icns_bytes(data_ref);
   void          *buf       = calloc(1, icns_data->size);
@@ -159,16 +208,29 @@ bool write_app_icon_to_png(char *app_path, char *png_file_path){
   save_cfdataref_to_icns_file(data_ref, fp);
   fclose(fp);
   fp = fmemopen(buf, icns_data->size, "r");
-  return(write_icns_file_to_png(fp, png_file_path));
+  return(write_icns_file_to_png(fp, png_file_path, icon_size));
 }
 
-bool save_app_icon_to_icns_file(char *app_path, char *icns_file_path){
+bool write_app_icon_to_icns(char *app_path, char *icns_file_path){
   CFDataRef cfdata = get_icon_from_path(app_path);
-  FILE      *fp    = fopen(icns_file_path, "r");
+  FILE      *fp    = fopen(icns_file_path, "ab");
   bool      ok     = save_cfdataref_to_icns_file(cfdata, fp);
 
   fclose(fp);
   return(ok);
+}
+
+bool app_icon_size_is_valid(size_t icon_size){
+  return((get_icon_size(icon_size) != NULL) ? true : false);
+}
+
+char *get_icon_size_name(size_t icon_size){
+  struct app_icon_size_t *is = get_icon_size(icon_size);
+
+  if (is) {
+    return(is->name);
+  }
+  return(0);
 }
 
 #endif

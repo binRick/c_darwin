@@ -57,6 +57,7 @@ struct args_t {
   char                                 *output_png_file, *input_png_file;
   enum common_option_width_or_height_t width_or_height;
   struct window_t                      *window;
+  size_t                               icon_size;
 };
 extern struct args_t *args;
 #endif
