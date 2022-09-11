@@ -1,3 +1,4 @@
+subdir('c_deps/meson/deps/png')
 subdir('c_deps/meson/gd')
 subdir('c_deps/meson/osx')
 subdir('c_deps/meson/args')

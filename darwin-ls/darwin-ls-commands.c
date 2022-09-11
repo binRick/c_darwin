@@ -38,7 +38,6 @@ static void _command_save_app_icon_to_png();
 static void _command_write_app_icon_from_png();
 static void _command_save_app_icon_to_icns();
 static void _command_write_app_icon_icns();
-static void _command_set_app_icon();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width_group(uint16_t window_id);
@@ -291,6 +290,10 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_input_icns_file),
     .arg_data_type = DATA_TYPE_STR,
   },
+  [CHECK_COMMAND_INPUT_PNG_FILE] =   {
+    .fxn           = (void (*)(void))(*_check_input_png_file),
+    .arg_data_type = DATA_TYPE_STR,
+  },
   [CHECK_COMMAND_OUTPUT_PNG_FILE] =  {
     .fxn           = (void (*)(void))(*_check_output_png_file),
     .arg_data_type = DATA_TYPE_STR,
@@ -301,10 +304,6 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   },
   [CHECK_COMMAND_OUTPUT_MODE] =      {
     .fxn           = (void (*)(void))(*_check_output_mode),
-    .arg_data_type = DATA_TYPE_STR,
-  },
-  [CHECK_COMMAND_INPUT_PNG_FILE] =   {
-    .fxn           = (void (*)(void))(*_check_input_png_file),
     .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_OUTPUT_FILE] =      {
@@ -371,20 +370,25 @@ static void _check_application_path(char *application_path){
   stringbuffer_append_string(sb, "Contents");
   if (fsio_dir_exists(stringbuffer_to_string(sb)) == false) {
     log_error("Invalid Application Path '%s' (Non existent directory %s)", application_path, stringbuffer_to_string(sb));
+    exit(EXIT_FAILURE);
   }
 
   stringbuffer_release(sb);
-  return(EXIT_FAILURE);
+  return(EXIT_SUCCESS);
 }
 
 static void _check_output_png_file(char *output_png_file){
   log_info("Validating output png file %s", output_png_file);
-  return(EXIT_FAILURE);
+  return(EXIT_SUCCESS);
 }
 
 static void _check_input_png_file(char *input_png_file){
   log_info("Validating input png file %s", input_png_file);
-  return(EXIT_FAILURE);
+  if (fsio_file_exists(input_png_file) == false) {
+    log_error("Invalid Input PNG Path '%s'", input_png_file);
+    exit(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
 }
 
 static void _check_input_icns_file(char *input_icns_file){
@@ -407,7 +411,7 @@ static void _check_output_mode(char *output_mode){
   for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++) {
     if (strcmp(output_mode, output_modes[i]) == 0) {
       args->output_mode = i;
-      return(EXIT_SUCCESS);
+      exit(EXIT_SUCCESS);
     }
   }
   log_error("Invalid Output Mode '%s'", output_mode);
@@ -464,8 +468,10 @@ do_error:
 
 ////////////////////////////////////////////
 static void _command_write_app_icon_from_png(){
-  log_info("setting app icon from app %s from png file %s", args->application_path, args->output_png_file);
+  log_info("setting app icon from app %s from png file %s", args->application_path, args->input_png_file);
+
   bool ok = false;
+  ok = write_app_icon_from_png(args->application_path, args->input_png_file);
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 

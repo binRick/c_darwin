@@ -22,6 +22,7 @@ icon_utils_deps = [
 ]
 
 icon_utils_c_args = [
+  '-I/usr/local/Cellar/libpng/1.6.37/include/libpng16',
 ]
 
 icon_utils_link_args = [

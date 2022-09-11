@@ -16,6 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
+bool write_app_icon_from_png(char *app_path, char *png_file_path);
 bool write_app_icon_to_icns(char *app_path, char *icns_file_path);
 bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size);
 char *get_icon_size_name(size_t icon_size);

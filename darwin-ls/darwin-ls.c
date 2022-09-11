@@ -274,6 +274,17 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "set-icon-png",
+        .description = "Set Application Icon From PNG",
+        .function    = cmds[COMMAND_SET_APP_ICON_PNG].fxn,
+        .about       = "🪐" "\t" COLOR_SET "Set Application Icon From PNG" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          common_options_b[COMMON_OPTION_INPUT_PNG_FILE](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "set-icon",
         .description = "Set Application Icon",
         .function    = cmds[COMMAND_SET_APP_ICON_ICNS].fxn,
