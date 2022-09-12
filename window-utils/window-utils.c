@@ -24,7 +24,7 @@ static void __attribute__((constructor)) __constructor__window_utils(void){
     WINDOW_UTILS_DEBUG_MODE = true;
   }
 }
-
+static const char *window_levels[]             = { "Base", "Minimum", "Desktop", "Backstop", "Normal", "Floating", "TornOffMenu", "Dock", "MainMenu", "Status", "ModalPanel", "PopUpMenu", "Dragging", "ScreenSaver", "Maximum", "Overlay", "Help", "Utility", "DesktopIcon", "Cursor", "AssistiveTechHigh" };
 static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Install macOS*",
   "Control Center",
@@ -112,10 +112,10 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   CFArrayRef window_list = CGWindowListCopyWindowInfo((kCGWindowListExcludeDesktopElements | kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow), WINDOW_ID);
   int        qty         = CFArrayGetCount(window_list);
 
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
+    log_error("window #%lu has %d windows", WINDOW_ID, qty);
+  }
   if (qty != 1) {
-    if (WINDOW_UTILS_DEBUG_MODE == true) {
-      log_error("window #%lu has %d windows", WINDOW_ID, qty);
-    }
     return(NULL);
   }
   struct window_t *w = calloc(1, sizeof(struct window_t));
@@ -147,14 +147,12 @@ struct window_t *get_window_id(size_t WINDOW_ID){
     }
     return(NULL);
   }
-  if (WINDOW_UTILS_DEBUG_MODE == true) {
-    log_info("window #%lu |pid:%d| is not excluded", w->window_id, w->pid);
-  }
-  if (WINDOW_UTILS_DEBUG_MODE == true) {
-    log_info("window #%lu |app:%s|pid:%d|", w->window_id, w->app_name, w->pid);
-  }
   w->psn = PID2PSN(w->pid);
   SLSGetConnectionIDForPSN(g_connection, &w->psn, &w->connection_id);
+  w->level = get_window_level(w);
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
+    log_info("window #%lu |pid:%d| level:%d| is not excluded", w->window_id, w->pid, w->level);
+  }
   w->app_window_list = calloc(1, sizeof(CFTypeRef));
   AXUIElementCopyAttributeValue(w->app, kAXWindowsAttribute, (CFTypeRef *)&(w->app_window_list));
   if (WINDOW_UTILS_DEBUG_MODE == true) {
@@ -422,7 +420,9 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
 int get_window_level(struct window_t *w){
   int level = 0;
 
-  SLSGetWindowLevel(g_connection, w->window_id, &level);
+  CGSGetWindowLevel(w->connection_id, (CGWindowID)(w->window_id), &level);
+  //CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(w->window_id), &level);
+  //SLSGetWindowLevel(w->connection_id, (uint32_t)(w->window_id), &level);
   return(level);
 }
 

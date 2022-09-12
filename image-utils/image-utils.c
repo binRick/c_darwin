@@ -40,3 +40,38 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   CGContextRelease(context);
   return(newImageRef);
 }
+
+void * CompressToPNG(int width, int height, const void *rgb, const void *mask, long *outsize){
+  CFMutableDataRef      data     = CFDataCreateMutable(kCFAllocatorDefault, 0);
+  CGImageDestinationRef dest     = CGImageDestinationCreateWithData(data, kUTTypePNG, 1, NULL);
+  CGColorSpaceRef       space    = CGColorSpaceCreateDeviceRGB();
+  CGDataProviderRef     provider = CGDataProviderCreateWithData(NULL, rgb, 4 * width * height, NULL);
+  const CGFloat         decode[] = { 0, 1, 0, 1, 0, 1 };
+  CGImageRef            image;
+
+  if (mask) {
+    for (int i = 0; i < width * height; i++) {
+      ((char *)rgb)[i * 4] = ((char *)mask)[i];                 // ignoring const; should allocate new memory...
+    }
+    image = CGImageCreate(width, height, 8, 32, 4 * width, space, kCGImageAlphaFirst, provider, decode, true, kCGRenderingIntentDefault);
+  }else {
+    image = CGImageCreate(width, height, 8, 32, 4 * width, space, kCGImageAlphaNoneSkipFirst, provider, decode, true, kCGRenderingIntentDefault);
+  }
+
+  CGImageDestinationAddImage(dest, image, NULL);
+  CGImageDestinationFinalize(dest);
+
+  long size = CFDataGetLength(data);
+  void *buf = malloc(size);
+
+  CFDataGetBytes(data, CFRangeMake(0, size), buf);
+  *outsize = size;
+
+  CGDataProviderRelease(provider);
+  CGColorSpaceRelease(space);
+  CGImageRelease(image);
+  CFRelease(dest);
+  CFRelease(data);
+
+  return(buf);
+}

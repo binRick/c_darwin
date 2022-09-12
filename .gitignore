@@ -48,3 +48,5 @@ o.*
 .o.*
 .*.db
 .fonts.json
+icons
+tmp

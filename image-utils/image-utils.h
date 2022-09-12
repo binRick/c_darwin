@@ -22,5 +22,6 @@
 ///////////////////////////////////////////////////
 
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height);
+void * CompressToPNG(int width, int height, const void *rgb, const void *mask, long *outsize);
 
 #endif

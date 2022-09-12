@@ -9,6 +9,8 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <dirent.h>
+#include <dlfcn.h>
+#include <errno.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -30,16 +32,20 @@
 #include <mach/kern_return.h>
 #include <mach/mach.h>
 #include <mach/mach_error.h>
+#include <pthread.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string.h>
 #include <sys/queue.h>
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #include <time.h>
+#include <TargetConditionals.h>
 #include <unistd.h>
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof((a)[0]))
 static bool SYSTEM_UTILS_DEBUG_MODE = false;
@@ -503,3 +509,184 @@ void get_mem(void) {
     }
   }
 }
+/*
+ * static int pthread_setname_np(const char *name) {
+ * char namebuf[64];
+ * int  err;
+ *
+ * strncpy(namebuf, name, sizeof(namebuf) - 1);
+ * namebuf[sizeof(namebuf) - 1] = '\0';
+ *
+ * err = pthread_setname_np(namebuf);
+ * if (err) {
+ *  return(err);
+ * }
+ *
+ * return(0);
+ * }
+ *
+ * int set_process_title(const char *title) {
+ * CFStringRef     (*pCFStringCreateWithCString)(CFAllocatorRef, const char *, CFStringEncoding);
+ * CFBundleRef     (*pCFBundleGetBundleWithIdentifier)(CFStringRef);
+ * void            *(*pCFBundleGetDataPointerForName)(CFBundleRef, CFStringRef);
+ * void            *(*pCFBundleGetFunctionPointerForName)(CFBundleRef, CFStringRef);
+ * CFTypeRef       (*pLSGetCurrentApplicationASN)(void);
+ * OSStatus        (*pLSSetApplicationInformationItem)(int, CFTypeRef, CFStringRef, CFStringRef, CFDictionaryRef *);
+ * void            *application_services_handle;
+ * void            *core_foundation_handle;
+ * CFBundleRef     launch_services_bundle;
+ * CFStringRef     *display_name_key;
+ * CFDictionaryRef (*pCFBundleGetInfoDictionary)(CFBundleRef);
+ * CFBundleRef     (*pCFBundleGetMainBundle)(void);
+ * CFDictionaryRef (*pLSApplicationCheckIn)(int, CFDictionaryRef);
+ * void            (*pLSSetApplicationLaunchServicesServerConnectionStatus)(uint64_t, void *);
+ * CFTypeRef       asn;
+ * int             err;
+ *
+ * err                         = 0;
+ * application_services_handle = dlopen("/System/Library/Frameworks/"
+ *                                     "ApplicationServices.framework/"
+ *                                     "Versions/A/ApplicationServices",
+ *                                     RTLD_LAZY | RTLD_LOCAL);
+ * core_foundation_handle = dlopen("/System/Library/Frameworks/"
+ *                                "CoreFoundation.framework/"
+ *                                "Versions/A/CoreFoundation",
+ *                                RTLD_LAZY | RTLD_LOCAL);
+ *
+ * if (application_services_handle == NULL || core_foundation_handle == NULL) {
+ *  goto out;
+ * }
+ *
+ *(void **)(&pCFStringCreateWithCString) =
+ *  dlsym(core_foundation_handle, "CFStringCreateWithCString");
+ *(void **)(&pCFBundleGetBundleWithIdentifier) =
+ *  dlsym(core_foundation_handle, "CFBundleGetBundleWithIdentifier");
+ *(void **)(&pCFBundleGetDataPointerForName) =
+ *  dlsym(core_foundation_handle, "CFBundleGetDataPointerForName");
+ *(void **)(&pCFBundleGetFunctionPointerForName) =
+ *  dlsym(core_foundation_handle, "CFBundleGetFunctionPointerForName");
+ *
+ * if (pCFStringCreateWithCString == NULL
+ || pCFBundleGetBundleWithIdentifier == NULL
+ || pCFBundleGetDataPointerForName == NULL
+ || pCFBundleGetFunctionPointerForName == NULL) {
+ || goto out;
+ ||}
+ ||
+ #define S(s)    pCFStringCreateWithCString(NULL, (s), kCFStringEncodingUTF8)
+ ||
+ ||launch_services_bundle =
+ || pCFBundleGetBundleWithIdentifier(S("com.apple.LaunchServices"));
+ ||
+ ||if (launch_services_bundle == NULL) {
+ || goto out;
+ ||}
+ ||
+ *(void **)(&pLSGetCurrentApplicationASN) =
+ *  pCFBundleGetFunctionPointerForName(launch_services_bundle,
+ *                                     S("_LSGetCurrentApplicationASN"));
+ *
+ * if (pLSGetCurrentApplicationASN == NULL) {
+ *  goto out;
+ * }
+ *
+ *(void **)(&pLSSetApplicationInformationItem) =
+ *  pCFBundleGetFunctionPointerForName(launch_services_bundle,
+ *                                     S("_LSSetApplicationInformationItem"));
+ *
+ * if (pLSSetApplicationInformationItem == NULL) {
+ *  goto out;
+ * }
+ *
+ * display_name_key = pCFBundleGetDataPointerForName(launch_services_bundle,
+ *                                                  S("_kLSDisplayNameKey"));
+ *
+ * if (display_name_key == NULL || *display_name_key == NULL) {
+ *  goto out;
+ * }
+ *
+ *(void **)(&pCFBundleGetInfoDictionary) = dlsym(core_foundation_handle,
+ *                                                "CFBundleGetInfoDictionary");
+ *(void **)(&pCFBundleGetMainBundle) = dlsym(core_foundation_handle,
+ *                                            "CFBundleGetMainBundle");
+ * if (pCFBundleGetInfoDictionary == NULL || pCFBundleGetMainBundle == NULL) {
+ *  goto out;
+ * }
+ *
+ *(void **)(&pLSApplicationCheckIn) = pCFBundleGetFunctionPointerForName(
+ *  launch_services_bundle,
+ *  S("_LSApplicationCheckIn"));
+ *
+ * if (pLSApplicationCheckIn == NULL) {
+ *  goto out;
+ * }
+ *
+ *(void **)(&pLSSetApplicationLaunchServicesServerConnectionStatus) =
+ *  pCFBundleGetFunctionPointerForName(
+ *    launch_services_bundle,
+ *    S("_LSSetApplicationLaunchServicesServerConnectionStatus"));
+ *
+ * if (pLSSetApplicationLaunchServicesServerConnectionStatus == NULL) {
+ *  goto out;
+ * }
+ *
+ * pLSSetApplicationLaunchServicesServerConnectionStatus(0, NULL);
+ *
+ * pLSApplicationCheckIn(-2,
+ *                      pCFBundleGetInfoDictionary(pCFBundleGetMainBundle()));
+ *
+ * asn = pLSGetCurrentApplicationASN();
+ *
+ * if (pLSSetApplicationInformationItem(-2,
+ *                                     asn,
+ * display_name_key,
+ *                                     S(title),
+ *                                     NULL) != noErr) {
+ *  goto out;
+ * }
+ *
+ * pthread_setname_np(title);
+ * err = 0;
+ *
+ * out:
+ * if (core_foundation_handle != NULL) {
+ *  dlclose(core_foundation_handle);
+ * }
+ *
+ * if (application_services_handle != NULL) {
+ *  dlclose(application_services_handle);
+ * }
+ *
+ * return(err);
+ * }
+ *
+ * char *vlc_getProxyUrl(const char *url){
+ * char            *proxy_url = NULL;
+ * CFDictionaryRef dicRef     = CFNetworkCopySystemProxySettings();
+ *
+ * if (NULL != dicRef) {
+ *  const CFStringRef proxyCFstr = (const CFStringRef)CFDictionaryGetValue(
+ *    dicRef, (const void *)kCFNetworkProxiesHTTPProxy);
+ *  const CFNumberRef portCFnum = (const CFNumberRef)CFDictionaryGetValue(
+ *    dicRef, (const void *)kCFNetworkProxiesHTTPPort);
+ *  if (NULL != proxyCFstr && NULL != portCFnum) {
+ *    int port = 0;
+ *    if (!CFNumberGetValue(portCFnum, kCFNumberIntType, &port)) {
+ *      CFRelease(dicRef);
+ *      return(NULL);
+ *    }
+ *
+ *    char host_buffer[4096];
+ *    memset(host_buffer, 0, sizeof(host_buffer));
+ *    if (CFStringGetCString(proxyCFstr, host_buffer, sizeof(host_buffer)
+ *                           - 1, kCFStringEncodingUTF8)) {
+ *      asprintf(&proxy_url, "http://%s:%d", host_buffer, port);
+ *    }
+ *  }
+ *
+ *  CFRelease(dicRef);
+ * }
+ *
+ * return(proxy_url);
+ * }
+ */

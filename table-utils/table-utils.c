@@ -239,17 +239,14 @@ int list_windows_table(void *ARGS) {
 
   for (size_t i = 0; i < vector_size(windows); i++) {
     struct window_t *w = (struct window_t *)vector_get(windows, i);
-    if (args->space_id > 0 && w->space_id != args->space_id) {
+    if (args->space_id > 0 && (w->space_id != args->space_id)) {
       continue;
     }
-    if (args->current_space_only == true && w->space_id != cur_space_id) {
-      continue;
-    }
-    if (w == NULL || window_is_excluded(w) == true) {
+    if (args->current_space_only == true && (w->space_id != cur_space_id)) {
       continue;
     }
     if ((int)w->position.y < 25 && (int)w->size.height < 50 && w->layer > 24) {
-      //continue;
+      continue;
     }
     max_app_name_len = (strlen(w->app_name) > (size_t)max_app_name_len) ? (int)strlen(w->app_name) : max_app_name_len;
     vector_push(table_windows_v, (void *)w);

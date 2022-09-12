@@ -367,11 +367,11 @@ bool get_icon_info(char *icns_file_path){
   if (ICON_UTILS_DEBUG_MODE == true) {
     log_info("icns_file_path %s", icns_file_path);
   }
-  FILE          *fp         = fopen(icns_file_path, "rb");
-  icns_family_t *iconFamily = get_icns_file_info(fp);
-  char          iconStr[5]  = { 0, 0, 0, 0, 0 };
+  FILE           *fp         = fopen(icns_file_path, "rb");
+  icns_family_t  *iconFamily = get_icns_file_info(fp);
+  char           iconStr[5]  = { 0, 0, 0, 0, 0 };
   icns_type_str(iconFamily->resourceType, iconStr);
-  int32_t       element_qty = -1;
+  int32_t        element_qty   = -1;
   icns_element_t *iconElement  = NULL;
   struct Vector  *icon_sizes_v = get_app_icon_sizes_v();
   assert(icns_count_elements_in_family(iconFamily, &element_qty) == ICNS_STATUS_OK);
@@ -403,7 +403,7 @@ bool get_icon_info(char *icns_file_path){
   }
 
   return(ok);
-}
+} /* get_icon_info */
 
 bool write_app_icon_to_icns(char *app_path, char *icns_file_path){
   CFDataRef cfdata = get_icon_from_path(app_path);
