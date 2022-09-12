@@ -20,6 +20,7 @@ image_utils_deps = [
   ms_dep,
   string_utils_dep,
   timestamp_dep,
+  stb_dep,
 ]
 image_utils_link_flags = [
   osx_link_args,

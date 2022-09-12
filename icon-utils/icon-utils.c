@@ -1,9 +1,6 @@
 #pragma once
 #ifndef ICON_UTILS_C
 #define ICON_UTILS_C
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "/usr/local/Cellar/libpng/1.6.37/include/libpng16/png.h"
 #include "icns/src/icns.h"
 #if PNG_LIBPNG_VER >= 10209
@@ -24,6 +21,7 @@
 #include "stb/stb_image_write.h"
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
+#include "image-utils/image-utils.h"
 struct icns_t {
   uint8_t bytes;
   size_t  size;

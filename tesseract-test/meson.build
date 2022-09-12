@@ -24,7 +24,7 @@ tesseract_test_deps = [
   space_utils_dep,
   display_utils_dep,
   window_utils_dep,
-  app_utils_dep,
+  app_utils_dep,image_utils_dep,
 ]
 tesseract_test_c_args = [
   tesseract_cflags,

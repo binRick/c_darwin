@@ -1,6 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
@@ -21,6 +18,7 @@
 #include "tesseract-test/tesseract-test.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
+#include "image-utils/image-utils.h"
 ///////////////////////////////////////////////////////////
 static const char         *tess_lang = "eng";
 static TessBaseAPI        *api;
@@ -63,6 +61,7 @@ TEST t_tesseract_capture_windows(){
     CGImageRef      image_ref = window_capture(window);
     asprintf(&image_filename, "/tmp/window-%lu.png", window->window_id);
     save_window_cgref_to_png(image_ref, image_filename);
+
     vector_push(window_id_images, (void *)strdup(image_filename));
     window_ids_bytes += fsio_file_size(image_filename);
     asprintf(&msg, "Captured %s Window in %s",
@@ -83,15 +82,15 @@ TEST t_tesseract_capture_spaces(){
 
   space_ids_v = get_space_ids_v();
   char   *msg;
-  char   *image_filename;
   size_t space_ids_bytes = 0;
 
   for (size_t i = 0; i < vector_size(space_ids_v); i++) {
-    size_t        space_id = (size_t)vector_get(space_ids_v, i);
     unsigned long started  = timestamp();
-    log_info("capturing space %lu", space_id);
+    size_t        space_id = (size_t)vector_get(space_ids_v, i);
+  char   *image_filename;
     CGImageRef    image_ref = space_capture(space_id);
     asprintf(&image_filename, "/tmp/space-%lu.png", space_id);
+    log_info("capturing space %lu to %s", space_id,image_filename);
     save_window_cgref_to_png(image_ref, image_filename);
     vector_push(space_id_images, (void *)strdup(image_filename));
     space_ids_bytes += fsio_file_size(image_filename);
@@ -218,6 +217,16 @@ TEST t_tesseract_read_image(void *IMG_PATH){
   unsigned long started     = timestamp();
   char          *image_path = (char *)IMG_PATH;
 
+  /*
+char *tif_image_filename;
+asprintf(&tif_image_filename,"%s-gs.tif",image_path);
+
+    FILE *input_png_file = fopen(image_path,"rb");
+    CGImageRef png_gs = png_file_to_grayscale_cgimage_ref_resized(input_png_file,400);
+    bool ok = write_cgimage_ref_to_tif_file_path(png_gs,tif_image_filename);
+    ASSERT_EQ(ok,true);
+    */
+
   img = pixRead(image_path);
   ASSERT_NEQ(img, NULL);
   char *msg;
@@ -317,7 +326,7 @@ int main(int argc, char **argv) {
   int verbosity = greatest_get_verbosity();
   TESSERACT_TEST_DEBUG_MODE = (getenv("DEBUG") != NULL || verbosity > 1) ? true : false;
   RUN_SUITE(s_tesseract_test);
-  RUN_SUITE(s_tesseract_windows);
   RUN_SUITE(s_tesseract_spaces);
+  RUN_SUITE(s_tesseract_windows);
   GREATEST_MAIN_END();
 }

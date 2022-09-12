@@ -2,7 +2,6 @@
 #include <unistd.h>
 ////////////////////////////////////////////////////
 #define MSF_GIF_IMPL
-#define STB_IMAGE_IMPLEMENTATION
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
 #include "wrec-animation/wrec-animation.h"

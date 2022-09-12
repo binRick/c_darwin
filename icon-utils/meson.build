@@ -17,7 +17,7 @@ icon_utils_deps = [
   c_string_buffer_dep,
   timestamp_dep,
   log_dep,
-  ms_dep,
+  ms_dep,image_utils_dep,
   bytes_dep,
 ]
 

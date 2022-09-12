@@ -39,6 +39,7 @@ static void _command_write_app_icon_from_png();
 static void _command_save_app_icon_to_icns();
 static void _command_write_app_icon_icns();
 static void _command_icon_info();
+static void _command_grayscale_png();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width_group(uint16_t window_id);
@@ -52,6 +53,7 @@ static void _check_input_png_file(char *input_png_file);
 static void _check_output_icns_file(char *output_icns_file);
 static void _check_input_icns_file(char *input_icns_file);
 static void _check_application_path(char *application_path);
+static void _check_resize_factor(double resize_factor);
 static void _check_icon_size(size_t icon_size);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
@@ -92,6 +94,17 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_PATH].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_APPLICATION_PATH].fxn,
       .arg_dest = &(args->application_path),
+    });
+  },
+  [COMMON_OPTION_RESIZE_FACTOR] = ^ struct optparse_opt (struct args_t *args)               {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'r',
+      .long_name = "resize-factor",
+      .description = "Resize Factor",
+      .arg_name = "RESIZE-FACTOR",
+      .arg_data_type = check_cmds[CHECK_COMMAND_RESIZE_FACTOR].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_RESIZE_FACTOR].fxn,
+      .arg_dest = &(args->resize_factor),
     });
   },
   [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)               {
@@ -138,9 +151,20 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_icns_file),
     });
   },
+  [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                  {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'i',
+      .long_name = "input-file",
+      .description = "Input File",
+      .arg_name = "INPUT-FILE",
+      .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_FILE].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_INPUT_FILE].fxn,
+      .arg_dest = &(args->input_file),
+    });
+  },
   [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                  {
     return((struct optparse_opt)                                                             {
-      .short_name = 'f',
+      .short_name = 'o',
       .long_name = "output-file",
       .description = "Output File",
       .arg_name = "OUTPUT-FILE",
@@ -279,6 +303,10 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_height_group),
     .arg_data_type = DATA_TYPE_INT,
   },
+  [CHECK_COMMAND_RESIZE_FACTOR] =            {
+    .fxn           = (void (*)(void))(*_check_resize_factor),
+    .arg_data_type = DATA_TYPE_DBL,
+  },
   [CHECK_COMMAND_WIDTH] =            {
     .fxn           = (void (*)(void))(*_check_width),
     .arg_data_type = DATA_TYPE_INT,
@@ -347,10 +375,21 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SET_APP_ICON_PNG]      = { .fxn = (*_command_write_app_icon_from_png) },
   [COMMAND_SET_APP_ICON_ICNS]     = { .fxn = (*_command_write_app_icon_icns)     },
   [COMMAND_ICON_INFO]             = { .fxn = (*_command_icon_info)               },
+  [COMMAND_GRAYSCALE_PNG_FILE]             = { .fxn = (*_command_grayscale_png)               },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
 
 ////////////////////////////////////////////
+
+static void _check_resize_factor(double resize_factor){
+  errno = 0;
+  log_info("resize factor:%f",resize_factor);
+  if (resize_factor<=0){
+    log_error("Invalid Resize Factor %f", resize_factor);
+    exit(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
+}
 
 static void _check_icon_size(size_t icon_size){
   errno = 0;
@@ -474,6 +513,14 @@ static void _command_icon_info(){
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
+static void _command_grayscale_png(){
+  log_info("Converting %s to grayscale %s", args->input_file,args->output_file);
+  bool ok = false;
+  FILE *input_png_file = fopen(args->input_file,"rb");
+  CGImageRef png_gs = png_file_to_grayscale_cgimage_ref_resized(input_png_file,args->resize_factor);
+  ok = write_cgimage_ref_to_tif_file_path(png_gs,args->output_file);
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
 static void _command_write_app_icon_from_png(){
   log_info("setting app icon from app %s from png file %s", args->application_path, args->input_png_file);
 

@@ -1,5 +1,4 @@
 #pragma once
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-image/wrec-image.h"

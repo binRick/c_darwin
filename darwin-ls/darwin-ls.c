@@ -251,6 +251,18 @@ int main(int argc, char **argv) {
         .about       = "🍏" "\t" COLOR_START "Start Focused Client" AC_RESETALL,
       },
       {
+        .name        = "grayscale-png",
+        .description = "Grayscale PNG Conversion",
+        .function    = cmds[COMMAND_GRAYSCALE_PNG_FILE].fxn,
+        .about       = "🪐" "\t" COLOR_GET "Grayscale PNG Conversion" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_INPUT_FILE](args),
+          common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
+          common_options_b[COMMON_OPTION_RESIZE_FACTOR](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "get-icon-png",
         .description = "Get App Icon as PNG",
         .function    = cmds[COMMAND_SAVE_APP_ICON_PNG].fxn,

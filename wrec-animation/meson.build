@@ -4,7 +4,7 @@ wrec_animation_srcs = [
 wrec_animation_link_flags = []
 wrec_animation_c_args = []
 wrec_animation_deps = [
-  ansi_codes_dep,
+  ansi_codes_dep,image_utils_dep,
   wrec_common_dep,
   wrec_utils_dep,
   c_stringfn_dep,
