@@ -76,6 +76,7 @@ static struct app_icon_size_t *get_icon_size(size_t icon_size);
 static icns_type_t get_icon_size_type(size_t icon_size);
 static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, int32_t *height);
 static CFDataRef get_icon_from_path(char *path);
+static char **cmd_to_cmd_array(char *cmd);
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__icon_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
@@ -411,25 +412,40 @@ bool get_icon_info(char *icns_file_path){
   return(ok);
 } /* get_icon_info */
 
-bool clear_icons_cache(){
-  char *cmd; bool ok = false;
+struct Vector *get_clear_icons_cmds(){
+  size_t        CMDS_QTY = 3;
+  struct Vector *v       = vector_new();
+  char          *cmd[CMDS_QTY];
 
-  asprintf(&cmd, "%s %s /private/var/folders/ -name com.apple.dock.iconcache -delete",
+  asprintf(&cmd[0], "%s %s /private/var/folders -type f -maxdepth 4 -name com.apple.dock.iconcache -or -name com.apple.iconservices -exec rm -rfv {} ;",
            which("sudo"),
            which("find")
            );
+  asprintf(&cmd[1], "%s /Applications -type d -maxdepth 1 -exec %s %s {} ;",
+           which("find"),
+           which("sudo"),
+           which("touch")
+           );
+  asprintf(&cmd[2], "%s Dock Finder",
+           which("killall")
+           );
+  for (size_t i = 0; i < CMDS_QTY; i++) {
+    vector_push(v, (void *)cmd_to_cmd_array(cmd[i]));
+  }
+
+  return(v);
+}
+
+static char **cmd_to_cmd_array(char *cmd){
   struct StringFNStrings cmd_s   = stringfn_split(cmd, ' ');
   char                   **cmd_a = cmd_s.strings;
 
   cmd_a[cmd_s.count] = NULL;
-  char *cmd_joined = stringfn_join(cmd_a, " ", 0, cmd_s.count - 1);
+  return(cmd_a);
+}
 
-  if (ICON_UTILS_DEBUG_MODE == true) {
-    log_info("clearing icons cache with command " AC_YELLOW "%s" AC_RESETALL,
-             cmd_joined
-             );
-  }
-
+bool run_cmd_in_parent(char **cmd_a){
+  bool     ok       = false;
   reproc_t *process = NULL;
   int      r        = REPROC_ENOMEM;
 
@@ -457,13 +473,27 @@ finish:
   reproc_destroy(process);
 
   if (r < 0) {
-    fprintf(stderr, "%s\n", reproc_strerror(r));
+    fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
   }
 
   if (ICON_UTILS_DEBUG_MODE) {
     log_info("cleared icons cache with result %d", r);
   }
 
+  return(ok);
+}
+
+bool clear_icons_cache(){
+  bool          ok      = false;
+  struct Vector *cmds_v = get_clear_icons_cmds();
+
+  for (size_t i = 0; i < vector_size(cmds_v); i++) {
+    char **cmd = (char **)vector_get(cmds_v, i);
+    if (run_cmd_in_parent(cmd) != true) {
+      return(false);
+    }
+  }
+  ok = true;
   return(ok);
 } /* clear_icons_cache */
 
