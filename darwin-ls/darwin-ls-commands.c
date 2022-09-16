@@ -371,45 +371,146 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   [CHECK_COMMAND_TYPES_QTY] =        { 0},
 };
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
-  [COMMAND_MOVE_WINDOW]           = { .fxn = (*_command_move_window)             },
-  [COMMAND_RESIZE_WINDOW]         = { .fxn = (*_command_resize_window)           },
-  [COMMAND_FOCUS_WINDOW]          = { .fxn = (*_command_focus_window)            },
-  [COMMAND_SET_WINDOW_SPACE]      = { .fxn = (*_command_set_window_space)        },
-  [COMMAND_SET_WINDOW_ALL_SPACES] = { .fxn = (*_command_set_window_all_spaces)   },
-  [COMMAND_SET_SPACE]             = { .fxn = (*_command_set_space)               },
-  [COMMAND_SET_SPACE_INDEX]       = { .fxn = (*_command_set_space_index)         },
-  [COMMAND_WINDOWS]               = { .fxn = (*_command_windows)                 },
-  [COMMAND_SPACES]                = { .fxn = (*_command_spaces)                  },
-  [COMMAND_DISPLAYS]              = { .fxn = (*_command_displays)                },
-  [COMMAND_DEBUG_ARGS]            = { .fxn = (*_command_debug_args)              },
-  [COMMAND_FOCUSED_SERVER]        = { .fxn = (*_command_focused_server)          },
-  [COMMAND_FOCUSED_CLIENT]        = { .fxn = (*_command_focused_client)          },
-  [COMMAND_HTTPSERVER]            = { .fxn = (*_command_httpserver)              },
-  [COMMAND_STICKY_WINDOW]         = { .fxn = (*_command_sticky_window)           },
-  [COMMAND_MENU_BAR]              = { .fxn = (*_command_menu_bar)                },
-  [COMMAND_DOCK]                  = { .fxn = (*_command_dock)                    },
-  [COMMAND_APPS]                  = { .fxn = (*_command_apps)                    },
-  [COMMAND_FONTS]                 = { .fxn = (*_command_fonts)                   },
-  [COMMAND_KITTYS]                = { .fxn = (*_command_kittys)                  },
-  [COMMAND_ALACRITTYS]            = { .fxn = (*_command_alacrittys)              },
-  [COMMAND_FOCUSED_WINDOW]        = { .fxn = (*_command_focused_window)          },
-  [COMMAND_FOCUSED_PID]           = { .fxn = (*_command_focused_pid)             },
-  [COMMAND_USB_DEVICES]           = { .fxn = (*_command_usb_devices)             },
-  [COMMAND_MONITORS]              = { .fxn = (*_command_monitors)                },
-  [COMMAND_PROCESSES]             = { .fxn = (*_command_processes)               },
-  [COMMAND_FOCUSED_SPACE]         = { .fxn = (*_command_focused_space)           },
-  [COMMAND_CAPTURE_WINDOW]        = { .fxn = (*_command_capture_window)          },
-  [COMMAND_SAVE_APP_ICON_ICNS]    = { .fxn = (*_command_save_app_icon_to_icns)   },
-  [COMMAND_SAVE_APP_ICON_PNG]     = { .fxn = (*_command_save_app_icon_to_png)    },
-  [COMMAND_SET_APP_ICON_PNG]      = { .fxn = (*_command_write_app_icon_from_png) },
-  [COMMAND_SET_APP_ICON_ICNS]     = { .fxn = (*_command_write_app_icon_icns)     },
-  [COMMAND_ICON_INFO]             = { .fxn = (*_command_icon_info)               },
-  [COMMAND_APP_PLIST_INFO_PATH]   = { .fxn = (*_command_app_info_plist_path)     },
-  [COMMAND_APP_ICNS_PATH]         = { .fxn = (*_command_app_icns_path)           },
-  [COMMAND_PARSE_XML_FILE]        = { .fxn = (*_command_parse_xml_file)          },
-  [COMMAND_GRAYSCALE_PNG_FILE]    = { .fxn = (*_command_grayscale_png)           },
-  [COMMAND_CLEAR_ICONS_CACHE]     = { .fxn = (*_command_clear_icons_cache)       },
-  [COMMAND_TYPES_QTY]             = { 0 },
+  [COMMAND_MOVE_WINDOW] =           {
+    .name = "move-window",           .icon = "🪟", .color = COLOR_WINDOW, .description = "Move Window",
+    .fxn  = (*_command_move_window),
+  },
+  [COMMAND_RESIZE_WINDOW] =         {
+    .name = "resize-window",           .icon = "💡", .color = COLOR_WINDOW, .description = "Resize Window",
+    .fxn  = (*_command_resize_window),
+  },
+  [COMMAND_FOCUS_WINDOW] =          {
+    .name = "focus-window",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Focus Window",
+    .fxn  = (*_command_focus_window),
+  },
+  [COMMAND_SET_WINDOW_SPACE] =      {
+    .fxn = (*_command_set_window_space)
+  },
+  [COMMAND_SET_WINDOW_ALL_SPACES] = {
+    .fxn = (*_command_set_window_all_spaces)
+  },
+  [COMMAND_SET_SPACE] =             {
+    .name = "set-space",           .icon = "💣", .color = COLOR_SPACE, .description = "Set Space",
+    .fxn  = (*_command_set_space),
+  },
+  [COMMAND_SET_SPACE_INDEX] =       {
+    .fxn = (*_command_set_space_index)
+  },
+  [COMMAND_WINDOWS] =               {
+    .name = "windows", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Windows",
+    .fxn  = (*_command_windows)
+  },
+  [COMMAND_SPACES] =                {
+    .name = "spaces", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Spaces",
+    .fxn  = (*_command_spaces)
+  },
+  [COMMAND_DISPLAYS] =              {
+    .name = "displays", .icon = "🐾", .color = COLOR_WINDOW, .description = "List Displays",
+    .fxn  = (*_command_displays)
+  },
+  [COMMAND_DEBUG_ARGS] =            {
+    .fxn = (*_command_debug_args)
+  },
+  [COMMAND_FOCUSED_SERVER] =        {
+    .fxn = (*_command_focused_server)
+  },
+  [COMMAND_FOCUSED_CLIENT] =        {
+    .fxn = (*_command_focused_client)
+  },
+  [COMMAND_HTTPSERVER] =            {
+    .fxn = (*_command_httpserver)
+  },
+  [COMMAND_STICKY_WINDOW] =         {
+    .name        = "sticky-window",     .icon = "🕰", .color = COLOR_WINDOW,
+    .description = "Set Window Sticky",
+    .fxn         = (*_command_sticky_window)
+  },
+  [COMMAND_MENU_BAR] =              {
+    .name        = "menu-bar",      .icon = "📀", .color = COLOR_SHOW,
+    .description = "Menu Bar Info",
+    .fxn         = (*_command_menu_bar)
+  },
+  [COMMAND_DOCK] =                  {
+    .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
+    .description = "Dock Info",
+    .fxn         = (*_command_dock)
+  },
+  [COMMAND_APPS] =                  {
+    .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
+    .description = "Dock Info",
+    .fxn         = (*_command_apps)
+  },
+  [COMMAND_FONTS] =                 {
+    .name        = "fonts", .icon = "🦓", .color = COLOR_SHOW,
+    .description = "Fonts",
+    .fxn         = (*_command_fonts)
+  },
+  [COMMAND_KITTYS] =                {
+    .name        = "kittys", .icon = "💤", .color = COLOR_LIST,
+    .description = "Kittys",
+    .fxn         = (*_command_kittys)
+  },
+  [COMMAND_ALACRITTYS] =            {
+    .name        = "alacrittys", .icon = "💮", .color = COLOR_LIST,
+    .description = "Alacrittys",
+    .fxn         = (*_command_alacrittys)
+  },
+  [COMMAND_FOCUSED_WINDOW] =        {
+    .name        = "focused-window", .icon = "💮", .color = COLOR_LIST,
+    .description = "Focused Window",
+    .fxn         = (*_command_focused_window)
+  },
+  [COMMAND_FOCUSED_PID] =           {
+    .name        = "focused-pid", .icon = "🌈", .color = COLOR_LIST,
+    .description = "Focused PID",
+    .fxn         = (*_command_focused_pid)
+  },
+  [COMMAND_USB_DEVICES] =           {
+    .fxn = (*_command_usb_devices)
+  },
+  [COMMAND_MONITORS] =              {
+    .fxn = (*_command_monitors)
+  },
+  [COMMAND_PROCESSES] =             {
+    .fxn = (*_command_processes)
+  },
+  [COMMAND_FOCUSED_SPACE] =         {
+    .fxn = (*_command_focused_space)
+  },
+  [COMMAND_CAPTURE_WINDOW] =        {
+    .fxn = (*_command_capture_window)
+  },
+  [COMMAND_SAVE_APP_ICON_ICNS] =    {
+    .fxn = (*_command_save_app_icon_to_icns)
+  },
+  [COMMAND_SAVE_APP_ICON_PNG] =     {
+    .fxn = (*_command_save_app_icon_to_png)
+  },
+  [COMMAND_SET_APP_ICON_PNG] =      {
+    .fxn = (*_command_write_app_icon_from_png)
+  },
+  [COMMAND_SET_APP_ICON_ICNS] =     {
+    .fxn = (*_command_write_app_icon_icns)
+  },
+  [COMMAND_ICON_INFO] =             {
+    .fxn = (*_command_icon_info)
+  },
+  [COMMAND_APP_PLIST_INFO_PATH] =   {
+    .fxn = (*_command_app_info_plist_path)
+  },
+  [COMMAND_APP_ICNS_PATH] =         {
+    .fxn = (*_command_app_icns_path)
+  },
+  [COMMAND_PARSE_XML_FILE] =        {
+    .fxn = (*_command_parse_xml_file)
+  },
+  [COMMAND_GRAYSCALE_PNG_FILE] =    {
+    .fxn = (*_command_grayscale_png)
+  },
+  [COMMAND_CLEAR_ICONS_CACHE] =     {
+    .fxn = (*_command_clear_icons_cache)
+  },
+  [COMMAND_TYPES_QTY] =             { 0},
 };
 
 ////////////////////////////////////////////
@@ -1213,6 +1314,17 @@ static void _command_spaces(){
   }
 
   exit(EXIT_SUCCESS);
+}
+
+char *get_command_about(enum command_type_t COMMAND_ID){
+  char *about;
+
+  asprintf(&about, AC_RESETALL "%s\t%s%s" AC_RESETALL,
+           cmds[COMMAND_ID].icon,
+           cmds[COMMAND_ID].color,
+           cmds[COMMAND_ID].description
+           );
+  return(about);
 }
 
 #endif

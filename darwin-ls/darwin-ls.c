@@ -21,8 +21,10 @@ char *common_option_width_or_height_name(enum common_option_width_or_height_t wi
 
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
-  assert(is_authorized_for_accessibility() == true);
-  args->window_id = 123;//get_focused_window_id();
+  if (is_authorized_for_accessibility() != true) {
+    fprintf(stderr, "Application is not authorized for accessibility\n");
+    // exit(EXIT_FAILURE);
+  }
   struct optparse_cmd main_cmd = {
     .about       = "darwin-ls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
@@ -56,19 +58,19 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "displays",
-        .description = "List Displays",
+        .name        = cmds[COMMAND_DISPLAYS].name,
+        .description = cmds[COMMAND_DISPLAYS].description,
         .function    = cmds[COMMAND_DISPLAYS].fxn,
-        .about       = "🐾" "\t" COLOR_LIST "List Displays" AC_RESETALL,
+        .about       = get_command_about(COMMAND_DISPLAYS),
         .options     = (struct optparse_opt[]){
           { END_OF_OPTIONS },
         },
       },
       {
-        .name        = "windows",
-        .description = "List Windows",
+        .name        = cmds[COMMAND_WINDOWS].name,
+        .description = cmds[COMMAND_WINDOWS].description,
         .function    = cmds[COMMAND_WINDOWS].fxn,
-        .about       = "🥑" "\t" COLOR_LIST "List Windows" AC_RESETALL,
+        .about       = get_command_about(COMMAND_WINDOWS),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
@@ -76,16 +78,16 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "alacrittys",
-        .description = "Alacritty Terminals",
+        .name        = cmds[COMMAND_ALACRITTYS].name,
+        .description = cmds[COMMAND_ALACRITTYS].description,
         .function    = cmds[COMMAND_ALACRITTYS].fxn,
-        .about       = "♻️" "\t" COLOR_LIST "List Alacrittys" AC_RESETALL,
+        .about       = get_command_about(COMMAND_ALACRITTYS),
       },
       {
-        .name        = "kittys",
-        .description = "Kitty Terminals",
+        .name        = cmds[COMMAND_KITTYS].name,
+        .description = cmds[COMMAND_KITTYS].description,
         .function    = cmds[COMMAND_KITTYS].fxn,
-        .about       = "💤" "\t" COLOR_LIST "List Kittys" AC_RESETALL,
+        .about       = get_command_about(COMMAND_KITTYS),
       },
       {
         .name        = "processes",
@@ -106,10 +108,10 @@ int main(int argc, char **argv) {
         .about       = "📡" "\t" COLOR_LIST "List USB Devices" AC_RESETALL,
       },
       {
-        .name        = "fonts",
-        .description = "List Fonts",
+        .name        = cmds[COMMAND_FONTS].name,
+        .description = cmds[COMMAND_FONTS].description,
         .function    = cmds[COMMAND_FONTS].fxn,
-        .about       = "🦓" "\t" COLOR_LIST "List Fonts" AC_RESETALL,
+        .about       = get_command_about(COMMAND_FONTS),
       },
       {
         .name        = "apps",
@@ -118,16 +120,16 @@ int main(int argc, char **argv) {
         .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
       },
       {
-        .name        = "spaces",
-        .description = "List Spaces",
+        .name        = cmds[COMMAND_SPACES].name,
+        .description = cmds[COMMAND_SPACES].description,
         .function    = cmds[COMMAND_SPACES].fxn,
-        .about       = "💊" "\t" COLOR_LIST "List Spaces" AC_RESETALL,
+        .about       = get_command_about(COMMAND_SPACES),
       },
       {
-        .name        = "move-window",
-        .description = "Move Window",
+        .name        = cmds[COMMAND_MOVE_WINDOW].name,
+        .description = cmds[COMMAND_MOVE_WINDOW].description,
         .function    = cmds[COMMAND_MOVE_WINDOW].fxn,
-        .about       = "🍏" "\t" COLOR_MOVE "Move Window" AC_RESETALL,
+        .about       = get_command_about(COMMAND_MOVE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_X](args),
@@ -136,10 +138,10 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "resize-window",
-        .description = "Resize Window",
+        .name        = cmds[COMMAND_RESIZE_WINDOW].name,
+        .description = cmds[COMMAND_RESIZE_WINDOW].description,
         .function    = cmds[COMMAND_RESIZE_WINDOW].fxn,
-        .about       = "💡" "\t" COLOR_WINDOW "Resize Window" AC_RESETALL,
+        .about       = get_command_about(COMMAND_RESIZE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_WIDTH](args),
@@ -148,20 +150,20 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "focus-window",
-        .description = "Focus Window",
+        .name        = cmds[COMMAND_FOCUS_WINDOW].name,
+        .description = cmds[COMMAND_FOCUS_WINDOW].description,
         .function    = cmds[COMMAND_FOCUS_WINDOW].fxn,
-        .about       = "🔅" "\t" COLOR_WINDOW "Focus Window" AC_RESETALL,
+        .about       = get_command_about(COMMAND_FOCUS_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
       },
       {
-        .name        = "sticky-window",
-        .description = "Sticky Window",
+        .name        = cmds[COMMAND_STICKY_WINDOW].name,
+        .description = cmds[COMMAND_STICKY_WINDOW].description,
         .function    = cmds[COMMAND_STICKY_WINDOW].fxn,
-        .about       = "🕰" "\t" COLOR_WINDOW "Set Window Sticky" AC_RESETALL,
+        .about       = get_command_about(COMMAND_STICKY_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
@@ -199,10 +201,10 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "set-space",
-        .description = "Set Space",
+        .name        = cmds[COMMAND_SET_SPACE].name,
+        .description = cmds[COMMAND_SET_SPACE].description,
         .function    = cmds[COMMAND_SET_SPACE].fxn,
-        .about       = "💣" "\t" COLOR_SPACE "Set Active Space" AC_RESETALL,
+        .about       = get_command_about(COMMAND_SET_SPACE),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
@@ -215,28 +217,28 @@ int main(int argc, char **argv) {
         .about       = "🍕" "\t" COLOR_SHOW "Show Focused Space" AC_RESETALL,
       },
       {
-        .name        = "focused-pid",
-        .description = "Show Focused PID",
+        .name        = cmds[COMMAND_FOCUSED_PID].name,
+        .description = cmds[COMMAND_FOCUSED_PID].description,
         .function    = cmds[COMMAND_FOCUSED_PID].fxn,
-        .about       = "🌈" "\t" COLOR_SHOW "Show Focused PID" AC_RESETALL,
+        .about       = get_command_about(COMMAND_FOCUSED_PID),
       },
       {
-        .name        = "focused-window",
-        .description = "Show Focused Window",
+        .name        = cmds[COMMAND_FOCUSED_WINDOW].name,
+        .description = cmds[COMMAND_FOCUSED_WINDOW].description,
         .function    = cmds[COMMAND_FOCUSED_WINDOW].fxn,
-        .about       = "🗯" "\t" COLOR_SHOW "Show Focused Window" AC_RESETALL,
+        .about       = get_command_about(COMMAND_FOCUSED_WINDOW),
       },
       {
-        .name        = "dock",
-        .description = "Dock Info",
+        .name        = cmds[COMMAND_DOCK].name,
+        .description = cmds[COMMAND_DOCK].description,
         .function    = cmds[COMMAND_DOCK].fxn,
-        .about       = "📡" "\t" COLOR_SHOW "Show Dock Info" AC_RESETALL,
+        .about       = get_command_about(COMMAND_DOCK),
       },
       {
-        .name        = "menu-bar",
-        .description = "Menu Bar Info",
+        .name        = cmds[COMMAND_MENU_BAR].name,
+        .description = cmds[COMMAND_MENU_BAR].description,
         .function    = cmds[COMMAND_MENU_BAR].fxn,
-        .about       = "📀" "\t" COLOR_SHOW "Show Menu Bar Info" AC_RESETALL,
+        .about       = get_command_about(COMMAND_MENU_BAR),
       },
       {
         .name        = "focused-server",

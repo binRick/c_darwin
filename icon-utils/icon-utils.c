@@ -28,7 +28,7 @@
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
 #include "which/src/which.h"
-#define CLEAR_ICONS_CMDS_QTY 4
+#define CLEAR_ICONS_CMDS_QTY    4
 ///////////////////////////////////////////////
 struct icns_t {
   uint8_t bytes;
@@ -418,6 +418,7 @@ bool get_icon_info(char *icns_file_path){
 
 static char *get_touch_app_cmd(char *app_path){
   char *cmd;
+
   asprintf(&cmd, "%s touch %s",
            which("sudo"),
            which("touch")
@@ -426,7 +427,7 @@ static char *get_touch_app_cmd(char *app_path){
 }
 
 struct Vector *get_clear_app_icon_cmds(char *app_path){
-  struct Vector *v       = vector_new();
+  struct Vector *v = vector_new();
   char          *cmds[CLEAR_ICONS_CMDS_QTY];
 
   asprintf(&cmds[0], "%s %s /private/var/folders -type f -maxdepth 4 -name com.apple.dock.iconcache -or -name com.apple.iconservices -exec rm -rfv {} ;",
@@ -438,26 +439,31 @@ struct Vector *get_clear_app_icon_cmds(char *app_path){
            which("touch"),
            app_path
            );
-  asprintf(&cmds[2], "%s",get_killall_dock_cmd());
-  asprintf(&cmds[3], "%s",get_killall_finder_cmd());
+  asprintf(&cmds[2], "%s", get_killall_dock_cmd());
+  asprintf(&cmds[3], "%s", get_killall_finder_cmd());
   for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++) {
     char *cmd = cmds[i];
-    if(ICON_UTILS_DEBUG_MODE==true)
-      log_info("%s",cmd);
+    if (ICON_UTILS_DEBUG_MODE == true) {
+      log_info("%s", cmd);
+    }
     vector_push(v, (void *)cmd_to_cmd_array(cmd));
   }
 
   return(v);
 }
+
 static char *get_killall_finder_cmd(){
   char *cmd;
+
   asprintf(&cmd, "%s Finder",
            which("killall")
            );
   return(cmd);
 }
+
 static char *get_killall_dock_cmd(){
   char *cmd;
+
   asprintf(&cmd, "%s Dock",
            which("killall")
            );
@@ -465,7 +471,7 @@ static char *get_killall_dock_cmd(){
 }
 
 struct Vector *get_clear_icons_cmds(){
-  struct Vector *v       = vector_new();
+  struct Vector *v = vector_new();
   char          *cmds[CLEAR_ICONS_CMDS_QTY];
 
   asprintf(&cmds[0], "%s %s /private/var/folders -type f -maxdepth 4 -name com.apple.dock.iconcache -or -name com.apple.iconservices -exec rm -rfv {} ;",
@@ -477,8 +483,8 @@ struct Vector *get_clear_icons_cmds(){
            which("sudo"),
            which("touch")
            );
-  asprintf(&cmds[2], "%s",get_killall_dock_cmd());
-  asprintf(&cmds[3], "%s",get_killall_finder_cmd());
+  asprintf(&cmds[2], "%s", get_killall_dock_cmd());
+  asprintf(&cmds[3], "%s", get_killall_finder_cmd());
   for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++) {
     vector_push(v, (void *)cmd_to_cmd_array(cmds[i]));
   }
@@ -546,6 +552,7 @@ bool clear_app_icon_cache(char *app_path){
   ok = true;
   return(ok);
 } /* clear_icons_cache */
+
 bool clear_icons_cache(){
   bool          ok      = false;
   struct Vector *cmds_v = get_clear_icons_cmds();

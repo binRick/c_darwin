@@ -119,7 +119,9 @@ struct item_color_t {
   const char *color;
 };
 struct cmd_t {
-  void (*fxn)(void);
+  void            (*fxn)(void);
+  char            *name, *description, *icon, *color;
+  common_option_b *options;
 };
 struct check_cmd_t {
   void (*fxn)(void);
@@ -130,5 +132,5 @@ struct cmd_t        cmds[COMMAND_TYPES_QTY + 1];
 struct check_cmd_t  check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
 struct item_color_t item_colors[COLOR_TYPES_QTY + 1];
 common_option_b     common_options_b[COMMON_OPTION_NAMES_QTY + 1];
-
+char *get_command_about(enum command_type_t COMMAND_ID);
 #endif
