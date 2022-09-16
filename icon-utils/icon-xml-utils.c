@@ -5,20 +5,18 @@
 #include <libxml/xmlreader.h>
 #include <stdbool.h>
 #include <stdio.h>
+#define PLIST_INFO_ICNS_PROPERTY_NAME    "CFBundleIconFile"
 
 static char *extract_xml_text_property(char *xml_file_name, char *xml_text_property_name){
-  int              ret;
-  xmlTextReaderPtr reader            = xmlReaderForFile(xml_file_name, NULL, 0);
-  int              qty               = 0;
   bool             in_requested_prop = false;
+  xmlTextReaderPtr reader            = xmlReaderForFile(xml_file_name, NULL, 0);
 
   if (reader != NULL) {
-    ret = xmlTextReaderRead(reader);
+    int ret = xmlTextReaderRead(reader);
     while (ret == 1) {
       xmlChar *value;
       value = xmlTextReaderConstValue(reader);
       if (value != NULL && strlen(value) > 4) {
-        qty++;
         if (in_requested_prop == true) {
           in_requested_prop = false;
           return(value);
@@ -34,9 +32,8 @@ static char *extract_xml_text_property(char *xml_file_name, char *xml_text_prope
 }
 
 char *get_app_list_icon_file_name(char *xml_file_path){
-  char *xml_text_property_name = "CFBundleIconFile";
-  char *ret                    = NULL;
-  char *extracted_text_value   = extract_xml_text_property(xml_file_path, xml_text_property_name);
+  char *ret                  = NULL;
+  char *extracted_text_value = extract_xml_text_property(xml_file_path, PLIST_INFO_ICNS_PROPERTY_NAME);
 
   asprintf(&ret, "%s", extracted_text_value);
   xmlCleanupParser();

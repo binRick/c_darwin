@@ -50,3 +50,9 @@ o.*
 .fonts.json
 icons
 tmp
+*/.DS_Store
+*.plist
+*.icns
+*.txt
+*.bmp
+.DS_Store

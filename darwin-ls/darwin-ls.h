@@ -60,6 +60,7 @@ struct args_t {
   size_t                               icon_size;
   double                               resize_factor;
   char                                 *xml_file_path;
+  bool                                 clear_icons_cache;
 };
 extern struct args_t *args;
 #endif

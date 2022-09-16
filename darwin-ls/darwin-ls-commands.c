@@ -43,6 +43,7 @@ static void _command_app_info_plist_path();
 static void _command_app_icns_path();
 static void _command_parse_xml_file();
 static void _command_grayscale_png();
+static void _command_clear_icons_cache();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width_group(uint16_t window_id);
@@ -197,6 +198,15 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
       .arg_dest = &(args->output_mode_s),
+    });
+  },
+  [COMMON_OPTION_CLEAR_ICONS_CACHE] = ^ struct optparse_opt (struct args_t *args)            {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'c',
+      .long_name = "clear-icons-cache",
+      .description = "Clear Icons Cache",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->clear_icons_cache),
     });
   },
   [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                      {
@@ -398,6 +408,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_APP_ICNS_PATH]         = { .fxn = (*_command_app_icns_path)           },
   [COMMAND_PARSE_XML_FILE]        = { .fxn = (*_command_parse_xml_file)          },
   [COMMAND_GRAYSCALE_PNG_FILE]    = { .fxn = (*_command_grayscale_png)           },
+  [COMMAND_CLEAR_ICONS_CACHE]     = { .fxn = (*_command_clear_icons_cache)       },
   [COMMAND_TYPES_QTY]             = { 0 },
 };
 
@@ -537,18 +548,33 @@ do_error:
 }
 
 ////////////////////////////////////////////
+static void _command_clear_icons_cache(){
+  bool ok = clear_icons_cache();
+
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
 static void _command_app_icns_path(){
   bool ok                   = false;
   char *app_plist_info_path = get_app_path_plist_info_path(args->application_path);
 
-  log_info("Application %s has plist file %s", args->application_path, app_plist_info_path);
+  if (COMMAND_DEBUG_ARGS == true) {
+    log_info("Application %s has plist file %s", args->application_path, app_plist_info_path);
+  }
   char *app_icns_file_path = get_info_plist_icon_file_path(app_plist_info_path);
 
-  log_info("Application %s has icns file name %s", args->application_path, app_icns_file_path);
+  if (COMMAND_DEBUG_ARGS == true) {
+    log_info("Application %s has icns file name %s", args->application_path, app_icns_file_path);
+  }
   char *icns_file_path = get_app_path_icns_file_path_icon_file_path(args->application_path, app_icns_file_path);
 
-  log_info("Application %s has icns file %s", args->application_path, icns_file_path);
+  if (COMMAND_DEBUG_ARGS == true) {
+    log_info("Application %s has icns file %s", args->application_path, icns_file_path);
+  }
   ok = (fsio_file_exists(icns_file_path)) ? true : false;
+  if (ok == true) {
+    fprintf(stdout, "%s\n", icns_file_path);
+  }
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -607,8 +633,28 @@ static void _command_save_app_icon_to_icns(){
 }
 
 static void _command_write_app_icon_icns(){
-  log_info("setting app icon for app %s from icns %s", args->application_path, args->input_icns_file);
+  if (COMMAND_DEBUG_ARGS == true) {
+    log_info("setting app icon for app %s from icns %s", args->application_path, args->input_icns_file);
+  }
   bool ok = write_icns_to_app_path(args->input_icns_file, args->application_path);
+  if (ok == true) {
+    fprintf(stdout, "Set Application %s icon using icns file %s\n", args->application_path, args->input_icns_file);
+  }
+  if (ok == true && isatty(STDOUT_FILENO) && args->clear_icons_cache == true) {
+    ok = clear_icons_cache();
+    if (ok == false) {
+      log_error("Failed to clear icons cache");
+    }else{
+      fprintf(stderr, "Cleared icons cache\n");
+    }
+    if (COMMAND_DEBUG_ARGS == true) {
+      log_debug("Cleared icons cache");
+    }
+  }else{
+    if (COMMAND_DEBUG_ARGS == true) {
+      log_info("not clearing icons cache");
+    }
+  }
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 

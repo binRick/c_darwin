@@ -20,7 +20,7 @@ icon_utils_deps = [
   log_dep,
   ms_dep,image_utils_dep,
   xml2_dep,
-  bytes_dep,path_module_dep,extname_c_dep,
+  bytes_dep,path_module_dep,extname_c_dep,which_dep,reproc_dep,
 ]
 
 icon_utils_c_args = [

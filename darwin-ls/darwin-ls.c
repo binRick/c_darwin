@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
         .name        = "fonts",
         .description = "List Fonts",
         .function    = cmds[COMMAND_FONTS].fxn,
-        .about       = "🚥" "\t" COLOR_LIST "List FONTS" AC_RESETALL,
+        .about       = "🦓" "\t" COLOR_LIST "List Fonts" AC_RESETALL,
       },
       {
         .name        = "apps",
@@ -252,9 +252,9 @@ int main(int argc, char **argv) {
       },
       {
         .name        = "grayscale-png",
-        .description = "Grayscale PNG Conversion",
+        .description = "Grayscale PNG",
         .function    = cmds[COMMAND_GRAYSCALE_PNG_FILE].fxn,
-        .about       = "🪐" "\t" COLOR_GET "Grayscale PNG Conversion" AC_RESETALL,
+        .about       = "☁️" "\t" COLOR_GET "Grayscale PNG" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_INPUT_FILE](args),
           common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
         .name        = "get-icon-png",
         .description = "Get App Icon as PNG",
         .function    = cmds[COMMAND_SAVE_APP_ICON_PNG].fxn,
-        .about       = "🪐" "\t" COLOR_GET "Get App Icon PNG" AC_RESETALL,
+        .about       = "☀️" "\t" COLOR_ICNS "Get App Icon PNG" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
         .name        = "icon-info",
         .description = "Get Icon Info",
         .function    = cmds[COMMAND_ICON_INFO].fxn,
-        .about       = "🪐" "\t" COLOR_GET "Get Icon Info" AC_RESETALL,
+        .about       = "♦️" "\t" COLOR_ICNS "Get Icon Info" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_INPUT_ICNS_FILE](args),
           { END_OF_OPTIONS },
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
         .name        = "get-icon",
         .description = "Get App Icon",
         .function    = cmds[COMMAND_SAVE_APP_ICON_ICNS].fxn,
-        .about       = "🪐" "\t" COLOR_GET "Get App Icon" AC_RESETALL,
+        .about       = "♻️" "\t" COLOR_ICNS "Get App Icon" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_OUTPUT_ICNS_FILE](args),
@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
         .name        = "app-icns-file",
         .description = "Get App Icns File Path",
         .function    = cmds[COMMAND_APP_ICNS_PATH].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Get App Icns File Path" AC_RESETALL,
+        .about       = "🎱" "\t" COLOR_ICNS "Get App Icns File Path" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           { END_OF_OPTIONS },
@@ -309,9 +309,30 @@ int main(int argc, char **argv) {
         .name        = "info-plist",
         .description = "Get App Info Plist Path",
         .function    = cmds[COMMAND_APP_PLIST_INFO_PATH].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Get App Info Plist Path" AC_RESETALL,
+        .about       = "🐳" "\t" COLOR_ICNS "Get App Info Plist Path" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "set-app-icon",
+        .description = "Set App Icon from ICNS",
+        .function    = cmds[COMMAND_SET_APP_ICON_ICNS].fxn,
+        .about       = "🦄" "\t" COLOR_ICNS "Set App Icon from ICNS" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          common_options_b[COMMON_OPTION_INPUT_ICNS_FILE](args),
+          common_options_b[COMMON_OPTION_CLEAR_ICONS_CACHE](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "clear-icons-cache",
+        .description = "Clear Icons Cache",
+        .function    = cmds[COMMAND_CLEAR_ICONS_CACHE].fxn,
+        .about       = "🦄" "\t" COLOR_ICNS "Clear Icons Cache" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
           { END_OF_OPTIONS },
         },
       },
@@ -319,7 +340,7 @@ int main(int argc, char **argv) {
         .name        = "parse-xml",
         .description = "Parse XML File",
         .function    = cmds[COMMAND_PARSE_XML_FILE].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Parse XML File" AC_RESETALL,
+        .about       = "🍉" "\t" COLOR_SET "Parse XML File" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_XML_FILE](args),
           { END_OF_OPTIONS },
@@ -329,7 +350,7 @@ int main(int argc, char **argv) {
         .name        = "set-icon-png",
         .description = "Set App Icon From PNG",
         .function    = cmds[COMMAND_SET_APP_ICON_PNG].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Set App Icon From PNG" AC_RESETALL,
+        .about       = "🚦" "\t" COLOR_SET "Set App Icon From PNG" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_INPUT_PNG_FILE](args),
@@ -337,21 +358,10 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "set-icon",
-        .description = "Set App Icon from ICNS",
-        .function    = cmds[COMMAND_SET_APP_ICON_ICNS].fxn,
-        .about       = "🪐" "\t" COLOR_SET "Set App Icon from ICNS" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
-          common_options_b[COMMON_OPTION_INPUT_ICNS_FILE](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
         .name        = "httpserver",
         .description = "Start HTTP Server",
         .function    = cmds[COMMAND_HTTPSERVER].fxn,
-        .about       = "🪐" "\t" COLOR_START "Start HTTP Server" AC_RESETALL,
+        .about       = "🇺" "\t" COLOR_START "Start HTTP Server" AC_RESETALL,
       },
       {
         .name        = "args",

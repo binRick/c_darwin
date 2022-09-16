@@ -21,10 +21,14 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "path_module/src/path.h"
+#include "reproc/reproc/include/reproc/export.h"
+#include "reproc/reproc/include/reproc/reproc.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
+#include "which/src/which.h"
+///////////////////////////////////////////////
 struct icns_t {
   uint8_t bytes;
   size_t  size;
@@ -71,24 +75,12 @@ static struct Vector *get_app_icon_sizes_v();
 static struct app_icon_size_t *get_icon_size(size_t icon_size);
 static icns_type_t get_icon_size_type(size_t icon_size);
 static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, int32_t *height);
-static char *find_app_path_icns_file(char *app_path);
 static CFDataRef get_icon_from_path(char *path);
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__icon_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
     ICON_UTILS_DEBUG_MODE = true;
   }
-}
-
-static char *find_app_path_icns_file(char *app_path){
-  char      *icns_file = NULL;
-  CFDataRef data_ref   = get_icon_from_path(app_path);
-
-  log_info("app path: %s|icns_file: %s",
-           app_path,
-           icns_file
-           );
-  return(icns_file);
 }
 
 static struct app_icon_size_t *get_icon_size(size_t icon_size){
@@ -419,18 +411,92 @@ bool get_icon_info(char *icns_file_path){
   return(ok);
 } /* get_icon_info */
 
-bool write_icns_to_app_path(char *icns_file_path, char *app_path){
-  bool ok         = true;
-  char *icns_path = find_app_path_icns_file(app_path);
+bool clear_icons_cache(){
+  char *cmd; bool ok = false;
 
-  log_info("set app %s from icns path %s",
-           app_path,
-           icns_file_path
+  asprintf(&cmd, "%s %s /private/var/folders/ -name com.apple.dock.iconcache -delete",
+           which("sudo"),
+           which("find")
            );
+  struct StringFNStrings cmd_s   = stringfn_split(cmd, ' ');
+  char                   **cmd_a = cmd_s.strings;
+
+  cmd_a[cmd_s.count] = NULL;
+  char *cmd_joined = stringfn_join(cmd_a, " ", 0, cmd_s.count - 1);
+
+  if (ICON_UTILS_DEBUG_MODE == true) {
+    log_info("clearing icons cache with command " AC_YELLOW "%s" AC_RESETALL,
+             cmd_joined
+             );
+  }
+
+  reproc_t *process = NULL;
+  int      r        = REPROC_ENOMEM;
+
+  process = reproc_new();
+  if (process == NULL) {
+    goto finish;
+  }
+
+  r = reproc_start(process, cmd_a,
+                   (reproc_options){
+    .redirect.parent = true,
+    .deadline        = 15000,
+  });
+  if (r < 0) {
+    goto finish;
+  }
+
+  r = reproc_wait(process, REPROC_INFINITE);
+  if (r < 0) {
+    goto finish;
+  }
+  ok = true;
+
+finish:
+  reproc_destroy(process);
+
+  if (r < 0) {
+    fprintf(stderr, "%s\n", reproc_strerror(r));
+  }
+
+  if (ICON_UTILS_DEBUG_MODE) {
+    log_info("cleared icons cache with result %d", r);
+  }
+
+  return(ok);
+} /* clear_icons_cache */
+
+bool write_icns_to_app_path(char *new_icns_file_path, char *app_path){
+  bool ok = false;
+
+  if (ICON_UTILS_DEBUG_MODE == true) {
+    log_info("writing app %s to icns %s", app_path, new_icns_file_path);
+  }
+  char *app_plist_info_path = get_app_path_plist_info_path(app_path);
+  char *app_icns_file_path  = get_info_plist_icon_file_path(app_plist_info_path);
+  char *icns_file_path      = get_app_path_icns_file_path_icon_file_path(app_path, app_icns_file_path);
+
+  if (fsio_file_exists(icns_file_path) == true && fsio_file_exists(new_icns_file_path)) {
+    ok = fsio_copy_file(new_icns_file_path, icns_file_path);
+    if (ok == false) {
+      log_error("Failed to copy file %s to file %s", new_icns_file_path, icns_file_path);
+    }else{
+      if (ICON_UTILS_DEBUG_MODE == true) {
+        log_info("set app %s icns file %s from new icns path %s",
+                 app_path,
+                 icns_file_path,
+                 new_icns_file_path
+                 );
+      }
+    }
+  }
+
   return(ok);
 }
 
 bool write_app_icon_to_icns(char *app_path, char *icns_file_path){
+  log_info("writing app %s to icns %s", app_path, icns_file_path);
   CFDataRef cfdata = get_icon_from_path(app_path);
   FILE      *fp    = fopen(icns_file_path, "wb");
   bool      ok     = save_cfdataref_to_icns_file(cfdata, fp);
@@ -606,7 +672,9 @@ char *get_info_plist_icon_file_path(char *xml_file_path){
   if (icns_file_ext == NULL || strlen(icns_file_ext) == 0) {
     asprintf(&icns_file, "%s.icns", icns_file);
   }
-  log_info("icns file:%s|ext:%s", icns_file, icns_file_ext);
+  if (ICON_UTILS_DEBUG_MODE == true) {
+    log_info("icns file:%s|ext:%s", icns_file, icns_file_ext);
+  }
   asprintf(&ret, "%s", icns_file);
   return(ret);
 }

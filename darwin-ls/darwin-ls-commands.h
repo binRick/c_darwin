@@ -20,6 +20,7 @@ typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 #define COLOR_GET        "\x1b[38;2;252;50;252m" AC_UNDERLINE
 #define COLOR_SET        "\x1b[38;2;252;163;252m" AC_UNDERLINE
 #define COLOR_HELP       "\x1b[38;2;50;50;252m" AC_UNDERLINE
+#define COLOR_ICNS       "\x1b[38;2;252;252;252m" AC_UNDERLINE
 enum check_command_type_t {
   CHECK_COMMAND_WINDOW_ID = 1,
   CHECK_COMMAND_WIDTH,
@@ -66,6 +67,7 @@ enum common_option_name_t {
   COMMON_OPTION_ICON_SIZE,
   COMMON_OPTION_XML_FILE,
   COMMON_OPTION_RESIZE_FACTOR,
+  COMMON_OPTION_CLEAR_ICONS_CACHE,
   COMMON_OPTION_NAMES_QTY,
 };
 enum command_type_t {
@@ -106,6 +108,7 @@ enum command_type_t {
   COMMAND_PARSE_XML_FILE,
   COMMAND_APP_PLIST_INFO_PATH,
   COMMAND_APP_ICNS_PATH,
+  COMMAND_CLEAR_ICONS_CACHE,
   COMMAND_TYPES_QTY,
 };
 enum color_types_t {
