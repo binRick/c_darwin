@@ -296,6 +296,36 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "app-icns-file",
+        .description = "Get App Icns File Path",
+        .function    = cmds[COMMAND_APP_ICNS_PATH].fxn,
+        .about       = "🪐" "\t" COLOR_SET "Get App Icns File Path" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "info-plist",
+        .description = "Get App Info Plist Path",
+        .function    = cmds[COMMAND_APP_PLIST_INFO_PATH].fxn,
+        .about       = "🪐" "\t" COLOR_SET "Get App Info Plist Path" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = "parse-xml",
+        .description = "Parse XML File",
+        .function    = cmds[COMMAND_PARSE_XML_FILE].fxn,
+        .about       = "🪐" "\t" COLOR_SET "Parse XML File" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_XML_FILE](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "set-icon-png",
         .description = "Set App Icon From PNG",
         .function    = cmds[COMMAND_SET_APP_ICON_PNG].fxn,

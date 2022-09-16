@@ -1,5 +1,6 @@
 icon_utils_srcs = [
   'icon-utils.c',
+  'icon-xml-utils.c',
 ]
 
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
@@ -18,7 +19,8 @@ icon_utils_deps = [
   timestamp_dep,
   log_dep,
   ms_dep,image_utils_dep,
-  bytes_dep,
+  xml2_dep,
+  bytes_dep,path_module_dep,extname_c_dep,
 ]
 
 icon_utils_c_args = [

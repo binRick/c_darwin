@@ -30,5 +30,4 @@ CGImageRef resize_png_file_factor(FILE *fp, double resize_factor);
 CGImageRef rgb_pixels_to_png_cgimage_ref(unsigned char *rgb_pixels, int width, int height);
 CGImageRef png_file_to_grayscale_cgimage_ref_resized(FILE *fp, double resize_factor);
 
-
 #endif

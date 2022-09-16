@@ -54,11 +54,12 @@ struct args_t {
   int                                  width_or_height_group;
   int                                  output_mode; char *output_mode_s;
   char                                 *application_path, *output_icns_file, *input_icns_file;
-  char                                 *output_png_file, *input_png_file, *input_file,*output_file;
+  char                                 *output_png_file, *input_png_file, *input_file, *output_file;
   enum common_option_width_or_height_t width_or_height;
   struct window_t                      *window;
   size_t                               icon_size;
-  double resize_factor;
+  double                               resize_factor;
+  char                                 *xml_file_path;
 };
 extern struct args_t *args;
 #endif
