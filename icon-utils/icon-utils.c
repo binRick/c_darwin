@@ -28,6 +28,7 @@
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
 #include "which/src/which.h"
+#define CLEAR_ICONS_CMDS_QTY 4
 ///////////////////////////////////////////////
 struct icns_t {
   uint8_t bytes;
@@ -77,6 +78,9 @@ static icns_type_t get_icon_size_type(size_t icon_size);
 static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, int32_t *height);
 static CFDataRef get_icon_from_path(char *path);
 static char **cmd_to_cmd_array(char *cmd);
+static char *get_touch_app_cmd(char *app_path);
+static char *get_killall_dock_cmd(void);
+static char *get_killall_finder_cmd(void);
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__icon_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
@@ -412,25 +416,71 @@ bool get_icon_info(char *icns_file_path){
   return(ok);
 } /* get_icon_info */
 
-struct Vector *get_clear_icons_cmds(){
-  size_t        CMDS_QTY = 3;
-  struct Vector *v       = vector_new();
-  char          *cmd[CMDS_QTY];
+static char *get_touch_app_cmd(char *app_path){
+  char *cmd;
+  asprintf(&cmd, "%s touch %s",
+           which("sudo"),
+           which("touch")
+           );
+  return(cmd);
+}
 
-  asprintf(&cmd[0], "%s %s /private/var/folders -type f -maxdepth 4 -name com.apple.dock.iconcache -or -name com.apple.iconservices -exec rm -rfv {} ;",
+struct Vector *get_clear_app_icon_cmds(char *app_path){
+  struct Vector *v       = vector_new();
+  char          *cmds[CLEAR_ICONS_CMDS_QTY];
+
+  asprintf(&cmds[0], "%s %s /private/var/folders -type f -maxdepth 4 -name com.apple.dock.iconcache -or -name com.apple.iconservices -exec rm -rfv {} ;",
            which("sudo"),
            which("find")
            );
-  asprintf(&cmd[1], "%s /Applications -type d -maxdepth 1 -exec %s %s {} ;",
+  asprintf(&cmds[1], "%s %s %s",
+           which("sudo"),
+           which("touch"),
+           app_path
+           );
+  asprintf(&cmds[2], "%s",get_killall_dock_cmd());
+  asprintf(&cmds[3], "%s",get_killall_finder_cmd());
+  for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++) {
+    char *cmd = cmds[i];
+    if(ICON_UTILS_DEBUG_MODE==true)
+      log_info("%s",cmd);
+    vector_push(v, (void *)cmd_to_cmd_array(cmd));
+  }
+
+  return(v);
+}
+static char *get_killall_finder_cmd(){
+  char *cmd;
+  asprintf(&cmd, "%s Finder",
+           which("killall")
+           );
+  return(cmd);
+}
+static char *get_killall_dock_cmd(){
+  char *cmd;
+  asprintf(&cmd, "%s Dock",
+           which("killall")
+           );
+  return(cmd);
+}
+
+struct Vector *get_clear_icons_cmds(){
+  struct Vector *v       = vector_new();
+  char          *cmds[CLEAR_ICONS_CMDS_QTY];
+
+  asprintf(&cmds[0], "%s %s /private/var/folders -type f -maxdepth 4 -name com.apple.dock.iconcache -or -name com.apple.iconservices -exec rm -rfv {} ;",
+           which("sudo"),
+           which("find")
+           );
+  asprintf(&cmds[1], "%s /Applications -type d -maxdepth 1 -exec %s %s {} ;",
            which("find"),
            which("sudo"),
            which("touch")
            );
-  asprintf(&cmd[2], "%s Dock Finder",
-           which("killall")
-           );
-  for (size_t i = 0; i < CMDS_QTY; i++) {
-    vector_push(v, (void *)cmd_to_cmd_array(cmd[i]));
+  asprintf(&cmds[2], "%s",get_killall_dock_cmd());
+  asprintf(&cmds[3], "%s",get_killall_finder_cmd());
+  for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++) {
+    vector_push(v, (void *)cmd_to_cmd_array(cmds[i]));
   }
 
   return(v);
@@ -483,6 +533,19 @@ finish:
   return(ok);
 }
 
+bool clear_app_icon_cache(char *app_path){
+  bool          ok      = false;
+  struct Vector *cmds_v = get_clear_app_icon_cmds(app_path);
+
+  for (size_t i = 0; i < vector_size(cmds_v); i++) {
+    char **cmd = (char **)vector_get(cmds_v, i);
+    if (run_cmd_in_parent(cmd) != true) {
+      return(false);
+    }
+  }
+  ok = true;
+  return(ok);
+} /* clear_icons_cache */
 bool clear_icons_cache(){
   bool          ok      = false;
   struct Vector *cmds_v = get_clear_icons_cmds();

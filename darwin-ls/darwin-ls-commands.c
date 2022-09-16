@@ -641,7 +641,7 @@ static void _command_write_app_icon_icns(){
     fprintf(stdout, "Set Application %s icon using icns file %s\n", args->application_path, args->input_icns_file);
   }
   if (ok == true && isatty(STDOUT_FILENO) && args->clear_icons_cache == true) {
-    ok = clear_icons_cache();
+    ok = clear_app_icon_cache(args->application_path);
     if (ok == false) {
       log_error("Failed to clear icons cache");
     }else{

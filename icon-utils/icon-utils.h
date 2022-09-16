@@ -28,4 +28,5 @@ bool clear_icons_cache(void);
 char *get_info_plist_icon_file_path(char *xml_file_path);
 char *get_app_path_plist_info_path(char *app_path);
 char *get_app_path_icns_file_path_icon_file_path(char *app_path, char *icns_file_path);
+bool clear_app_icon_cache(char *app_path);
 #endif
