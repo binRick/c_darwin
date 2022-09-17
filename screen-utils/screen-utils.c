@@ -70,7 +70,6 @@ static bool save_captured_display(struct screen_t *D){
 
 struct screen_t *init_display(size_t DISPLAY_ID){
   struct screen_t *D = calloc(1, sizeof(struct screen_t));
-  // D->debug_mode = true;
   {
     D->capture = calloc(1, sizeof(struct display_image_t));
     D->save    = calloc(1, sizeof(struct display_image_t));
@@ -95,6 +94,21 @@ struct screen_t *init_display(size_t DISPLAY_ID){
               );
   }
   return(D);
+}
+
+CGImageRef capture_display_id(size_t display_id){
+  char *display_uuid = get_display_uuid(display_id);
+
+  if (!display_uuid) {
+    log_error("Cannot find display #%lu", display_id);
+    return(NULL);
+  }
+  log_debug("Capturing Display #%lu |uuid:%s|",
+            display_id, display_uuid
+            );
+  CGImageRef img_ref = CGDisplayCreateImage(display_id);
+
+  return(img_ref);
 }
 
 static bool capture_display(struct screen_t *D){

@@ -39,7 +39,7 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-char *EXECUTABLE_PATH_DIRNAME, *EXECUTABLE_PATH, *EXECUTABLE, **ARGV;
+char *EXECUTABLE_PATH_DIRNAME, *EXECUTABLE_PATH, *EXECUTABLE, **ARGV, *ASSETS_DIR;
 enum common_option_width_or_height_t {
   COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN = 0,
   COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT,

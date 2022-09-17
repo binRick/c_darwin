@@ -179,6 +179,8 @@ GENERATE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(bottom, sixty);
 int handle_action(enum action_type_t action_type, void *action);
 struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key);
 int execute_hotkey_config_key(struct key_t *key);
+bool disable_hotkey_config_key(struct key_t *key);
+bool enable_hotkey_config_key(struct key_t *key);
 //////////////////////////////////////
 static struct action_type_handler_t __attribute__((unused)) action_type_handlers[] = {
 ////////////////////////////////////////////////////////////

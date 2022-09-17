@@ -1,12 +1,14 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
+
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls-httpserver.h"
 #include "darwin-ls/darwin-ls.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "keylogger/keylogger.h"
 #include "table-utils/table-utils.h"
+
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {

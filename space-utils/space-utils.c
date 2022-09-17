@@ -184,15 +184,12 @@ uint32_t *get_space_minimized_window_list(uint64_t sid, int *count){
 }
 
 CGImageRef space_capture(uint32_t sid) {
-  uint64_t   dsid  = get_dsid_from_sid(sid);
-  CGImageRef image = NULL;
+  CGImageRef image  = NULL;
+  CFArrayRef result = SLSHWCaptureSpace(g_connection, sid, 0);
+  uint32_t   count  = CFArrayGetCount(result);
 
-  if (dsid) {
-    CFArrayRef result = SLSHWCaptureSpace(g_connection, dsid, 0);
-    uint32_t   count  = CFArrayGetCount(result);
-    if (count > 0) {
-      image = (CGImageRef)CFArrayGetValueAtIndex(result, 0);
-    }
+  if (count > 0) {
+    image = (CGImageRef)CFArrayGetValueAtIndex(result, 0);
   }
   return(image);
 }

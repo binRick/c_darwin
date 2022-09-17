@@ -31,8 +31,10 @@ darwin_ls_deps = [
   wrec_common_dep,httpserver_h_dep,usbdevs_utils_dep,monitor_utils_dep,
   wrec_capture_dep,icon_utils_dep,
   process_dep,keylogger_dep,hotkey_utils_dep,
-  url_h_dep,libyuarel_dep,querystring_c_dep,
-  b64_dep,
+  url_h_dep,
+  #libyuarel_dep,
+  querystring_c_dep,
+  b64_dep,screen_utils_dep,incbin_dep,
 ]
 darwin_ls_c_args = [
   '-Wno-missing-field-initializers',

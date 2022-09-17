@@ -324,6 +324,14 @@ char *get_yaml_config_file_path(char **argv){
   return(path);
 }
 
+bool disable_hotkey_config_key(struct key_t *key){
+  log_info("disabling key %s", key);
+  return(true);
+}
+bool enable_hotkey_config_key(struct key_t *key){
+  log_info("enabling key %s", key);
+  return(true);
+}
 ////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__hotkey_utils(void){
   if (getenv("DEBUG") != NULL || getenv("VERBOSE_DEBUG_HOTKEY_UTILS") != NULL) {

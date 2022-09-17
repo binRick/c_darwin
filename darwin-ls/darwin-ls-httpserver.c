@@ -1,55 +1,308 @@
 #pragma once
 #ifndef LS_WIN_HTTPSERVER_C
 #define LS_WIN_HTTPSERVER_C
-#define DARWIN_LS_HTTPSERVER_PORT    49225
 #define HTTPSERVER_IMPL
+#define INCBIN_SILENCE_BITCODE_WARNING
+#define INCBIN_STYLE                                  INCBIN_STYLE_SNAKE
+#define INCBIN_PREFIX                                 inc_
+#define INCLUDE_FAVICON_FILE                          "assets/favicon.ico"
+#define INCLUDE_ERROR_IMAGE                           "assets/error.png"
+#define INCLUDE_REVEAL_MULTIPLE_PRESENTATIONS_HTML    "assets/multiple-presentations.html"
+#define INCLUDE_REVEAL_DIST_REVEAL_JS                 "../submodules/c_deps/submodules/reveal.js/dist/reveal.js"
+#define INCLUDE_REVEAL_DIST_REVEAL_CSS                "../submodules/c_deps/submodules/reveal.js/dist/reveal.css"
+#define INCLUDE_REVEAL_DIST_THEME_WHITE_CSS           "../submodules/c_deps/submodules/reveal.js/dist/theme/white.css"
+#define INCLUDE_REVEAL_DIST_MONOKAI_CSS               "../submodules/c_deps/submodules/reveal.js/plugin/highlight/monokai.css"
+#define INCLUDE_REVEAL_DIST_HIGHLIGHT_JS              "../submodules/c_deps/submodules/reveal.js/plugin/highlight/highlight.js"
+#define INCLUDE_REVEAL_DIST_MARKDOWN_JS               "../submodules/c_deps/submodules/reveal.js/plugin/markdown/markdown.js"
+#define INCLUDE_REVEAL_DIST_MATH_JS                   "../submodules/c_deps/submodules/reveal.js/plugin/math/math.js"
+#include "incbin/incbin.h"
+INCBIN(favicon, INCLUDE_FAVICON_FILE);
+INCBIN(errorpng, INCLUDE_ERROR_IMAGE);
+INCBIN(reveal_js, INCLUDE_REVEAL_DIST_REVEAL_JS);
+INCBIN(reveal_css, INCLUDE_REVEAL_DIST_REVEAL_CSS);
+INCBIN(reveal_theme_white_css, INCLUDE_REVEAL_DIST_THEME_WHITE_CSS);
+INCBIN(reveal_monokai_css, INCLUDE_REVEAL_DIST_MONOKAI_CSS);
+INCBIN(reveal_highlight_js, INCLUDE_REVEAL_DIST_HIGHLIGHT_JS);
+INCBIN(reveal_markdown_js, INCLUDE_REVEAL_DIST_MARKDOWN_JS);
+INCBIN(reveal_math_js, INCLUDE_REVEAL_DIST_MATH_JS);
+INCBIN(reveal_multiple_presentations_html, INCLUDE_REVEAL_MULTIPLE_PRESENTATIONS_HTML);
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
+#include "darwin-ls/darwin-ls-httpserver.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "httpserver.h/httpserver.h"
-#include "libyuarel/yuarel.h"
 #include "log/log.h"
 #include "monitor-utils/monitor-utils.h"
 #include "parson/parson.h"
 #include "querystring.c/querystring.h"
+#include "screen-utils/screen-utils.h"
 #include "space-utils/space-utils.h"
 #include "submodules/b64.c/b64.h"
 #include "timestamp/timestamp.h"
 #include "url.h/url.h"
 #include "window-utils/window-utils.h"
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/utsname.h>
+#include <unistd.h>
+static int request_target_is(volatile const struct http_request_s *request, volatile const char *target);
+static struct parsed_data *parse_request(volatile const struct http_request_s *request);
 #define RESPONSE         "Hello, World!"
 #define MAX_URL_PARTS    10
-static bool DARWIN_LS_HTTPSERVER_DEBUG_MODE = false;
+#define RETURN_ERROR_PNG(CAPTURE_TYPE, CAPTURE_TYPE_ID)                          \
+  log_error("Failed to capture %s #%lu", CAPTURE_TYPE, (size_t)CAPTURE_TYPE_ID); \
+  http_response_header(response, "Content-Type", "image/png");                   \
+  http_response_body(response, inc_errorpng_data, inc_errorpng_size);
+struct incbin_response_t {
+  size_t size;
+  char   *data; char *content_type; char *request_path;
+};
+
+static int iterate_incbin_responses(struct http_request_s *request, struct http_response_s *response){
+  if (request_target_is(request, "/dist/theme/white.css")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_CSS);
+    http_response_body(response, inc_reveal_theme_white_css_data, inc_reveal_theme_white_css_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }else if (request_target_is(request, "/plugin/highlight/monokai.css")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_CSS);
+    http_response_body(response, inc_reveal_monokai_css_data, inc_reveal_monokai_css_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }else if (request_target_is(request, "/dist/reveal.js")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_JAVASCRIPT);
+    http_response_body(response, inc_reveal_js_data, inc_reveal_js_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }else if (request_target_is(request, "/plugin/highlight/highlight.js")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_JAVASCRIPT);
+    http_response_body(response, inc_reveal_highlight_js_data, inc_reveal_highlight_js_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }else if (request_target_is(request, "/plugin/markdown/markdown.js")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_JAVASCRIPT);
+    http_response_body(response, inc_reveal_markdown_js_data, inc_reveal_markdown_js_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }else if (request_target_is(request, "/plugin/math/math.js")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_JAVASCRIPT);
+    http_response_body(response, inc_reveal_math_js_data, inc_reveal_math_js_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }else if (request_target_is(request, "/dist/reveal.css")) {
+    http_response_header(response, "Content-Type", CONTENT_TYPE_CSS);
+    http_response_body(response, inc_reveal_css_data, inc_reveal_css_size);
+    http_respond(request, response);
+    return(EXIT_SUCCESS);
+  }
+  return(EXIT_FAILURE);
+}
+
+static const int DARWIN_LS_HTTPSERVER_PORT       = 49225;
+static bool      DARWIN_LS_HTTPSERVER_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_httpserver(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_HTTPSERVEr") != NULL) {
     log_debug("Enabling darwin-ls httpserver Debug Mode");
     DARWIN_LS_HTTPSERVER_DEBUG_MODE = true;
   }
 }
+static struct http_server_s *server;
+
 struct parsed_data {
-  char *name;
-  int  age;
-  int  size;
+  size_t window_id, space_id, display_id, screen_id, pid;
 };
 
-int request_target_is(struct http_request_s *request, char const *target) {
-  http_string_t url = http_request_target(request);
+void parser(void *data, char *fst, char *snd) {
+  struct parsed_data *parsed_data = (struct parsed_data *)data;
 
-  return(url.buf && target && (memcmp(url.buf, target, url.len)) == 0);
+  if (strcmp(fst, "window_id") == 0) {
+    parsed_data->window_id = (size_t)atoi(snd);
+  }else if (strcmp(fst, "pid") == 0) {
+    parsed_data->pid = (size_t)atoi(snd);
+  }else if (strcmp(fst, "display_id") == 0) {
+    parsed_data->display_id = (size_t)atoi(snd);
+  }else if (strcmp(fst, "space_id") == 0) {
+    parsed_data->space_id = (size_t)atoi(snd);
+  }
 }
 
+static struct parsed_data *parse_request(volatile const struct http_request_s *request){
+  volatile http_string_t url = http_request_target(request);
+  char                   *urlbuf = strdup(url.buf), *purl;
+
+  asprintf(&purl, "http://localhost:%d/%s", DARWIN_LS_HTTPSERVER_PORT, urlbuf);
+  url_data_t         *parsed = url_parse(purl);
+  char               *query  = strdup(parsed->query);
+  struct parsed_data *data   = calloc(1, sizeof(struct parsed_data));
+
+  data->window_id = -1;
+  data->space_id  = -1;
+  parse_querystring(query, (void *)data, parser);
+  return(data);
+}
+
+static int request_target_is(volatile const struct http_request_s *request, volatile const char *target) {
+  volatile http_string_t url;
+  int                    res = EXIT_FAILURE;
+
+  if (request && target) {
+    url = http_request_target(request);
+    char *urlbuf = strdup(url.buf);
+    int  urllen  = url.len;
+    if (url.buf && url.len > 0) {
+      volatile char *purl = NULL, *url_buf = stringfn_substring(urlbuf, 1, urllen - 1);
+      if (url_buf) {
+        asprintf(&purl, "http://localhost:%d/%s", DARWIN_LS_HTTPSERVER_PORT, url_buf);
+        if (purl) {
+          url_data_t *parsed   = url_parse(purl);
+          char       *pathname = strdup(parsed->pathname);
+          if (pathname) {
+            res = (url.buf && target && pathname && (memcmp(pathname, target, strlen(pathname))) == 0);
+            if (res == EXIT_SUCCESS && strcmp(pathname, "/favicon.ico") != 0) {
+              log_debug("%s", url_buf);
+              log_debug("%s", purl);
+              if (parsed) {
+                // url_data_inspect(parsed);
+              }
+            }
+          }
+          if (parsed) {
+            url_free(parsed);
+          }
+          if (pathname) {
+            free(pathname);
+          }
+          if (purl) {
+            free(purl);
+          }
+          if (url_buf) {
+            free(url_buf);
+          }
+        }
+      }
+    }
+  }
+  return(res);
+} /* request_target_is */
+
 void handle_request(struct http_request_s *request) {
+  char *response_body = "{\"response_code\":404,\"response_data\":null}";
+
   http_request_connection(request, HTTP_AUTOMATIC);
   struct http_response_s *response = http_response_init();
+
   http_response_status(response, 200);
+  if (iterate_incbin_responses(request, response) == EXIT_SUCCESS) {
+    return;
+  }
   if (request_target_is(request, "/echo")) {
     http_string_t body = http_request_body(request);
     http_response_header(response, "Content-Type", "text/plain");
     http_response_body(response, body.buf, body.len);
+  } else if (request_target_is(request, "/enable_configured_key")) {
+    http_string_t body = http_request_body(request);
+    if (body.len > 1) {
+      JSON_Value              *schema   = json_parse_string(body.buf);
+      char                    *key      = json_object_get_string(json_object(schema), "key");
+      char                    *cfg_path = get_homedir_yaml_config_file_path();
+      struct hotkeys_config_t *cfg      = load_yaml_config_file_path(cfg_path);
+      struct key_t            *k        = get_hotkey_config_key(cfg, key);
+      if (key && strlen(key) > 0 && k) {
+        log_info("enabling key %s", key);
+        bool ok = enable_hotkey_config_key(k->key);
+        cfg = load_yaml_config_file_path(cfg_path);
+        k   = get_hotkey_config_key(cfg, key);
+        ok  = (ok == true && k->enabled == true) ? true : false;
+        asprintf(&response_body,
+                 "{\"response_code\":%d,\"response_data\":\"%s\",\"ts\":%lu"
+                 "}"
+                 "%s",
+                 (ok == true) ? 200 : 500, (ok == true) ? "key_enabled" : "failed", (size_t)timestamp(),
+                 ""
+                 );
+      }
+    }
+    http_response_header(response, "Content-Type", "application/json");
+    http_response_body(response, response_body, strlen(response_body));
+  } else if (request_target_is(request, "/multiple-presentations.html")) {
+    http_response_header(response, "Content-Type", "text/html; charset=UTF-8");
+    http_response_body(response, inc_reveal_multiple_presentations_html_data, inc_reveal_multiple_presentations_html_size);
+  } else if (request_target_is(request, "/favicon.ico")) {
+    http_response_header(response, "Cache-Control", "max-age:3600, immutable");
+    http_response_header(response, "Content-Type", "image/x-icon");
+    http_response_body(response, inc_favicon_data, inc_favicon_size);
+  } else if (request_target_is(request, "/capture/display")) {
+    struct parsed_data *data      = parse_request(request);
+    size_t             display_id = (data->display_id > 0) ? (size_t)(data->display_id) : (size_t)(get_main_display_id());
+    char               *output_file;
+    asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
+    CGImageRef         img_ref = capture_display_id(display_id);
+    if (save_window_cgref_to_png(img_ref, output_file) == true) {
+      size_t        png_len   = fsio_file_size(output_file);
+      unsigned char *png_data = fsio_read_binary_file(output_file);
+      fsio_remove(output_file);
+      http_response_header(response, "Content-Type", "image/png");
+      http_response_body(response, png_data, png_len);
+    }else{
+      RETURN_ERROR_PNG("Display", display_id);
+    }
+  } else if (request_target_is(request, "/capture/space")) {
+    struct parsed_data *data    = parse_request(request);
+    size_t             space_id = (data->space_id > 0) ? (size_t)(data->space_id) : (size_t)(get_space_id());
+    char               *output_file;
+    asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
+    CGImageRef         img_ref = space_capture((uint32_t)space_id);
+    if (save_window_cgref_to_png(img_ref, output_file) == true) {
+      size_t        png_len   = fsio_file_size(output_file);
+      unsigned char *png_data = fsio_read_binary_file(output_file);
+      fsio_remove(output_file);
+      http_response_header(response, "Content-Type", "image/png");
+      http_response_body(response, png_data, png_len);
+    }else{
+      RETURN_ERROR_PNG("Space", space_id);
+    }
+  } else if (request_target_is(request, "/capture/window")) {
+    struct parsed_data *data     = parse_request(request);
+    size_t             window_id = (data->window_id > 0) ? (size_t)(data->window_id) : (size_t)(get_focused_window_id());
+    char               *output_file;
+    asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
+    CGImageRef         img_ref = window_capture(get_window_id(window_id));
+    if (save_window_cgref_to_png(img_ref, output_file) == true) {
+      size_t        png_len   = fsio_file_size(output_file);
+      unsigned char *png_data = fsio_read_binary_file(output_file);
+      fsio_remove(output_file);
+      http_response_header(response, "Content-Type", "image/png");
+      http_response_body(response, png_data, png_len);
+    }else{
+      RETURN_ERROR_PNG("Window", window_id);
+    }
+  } else if (request_target_is(request, "/disable_configured_key")) {
+    http_string_t body = http_request_body(request);
+    if (body.len > 1) {
+      JSON_Value              *schema   = json_parse_string(body.buf);
+      char                    *key      = json_object_get_string(json_object(schema), "key");
+      char                    *cfg_path = get_homedir_yaml_config_file_path();
+      struct hotkeys_config_t *cfg      = load_yaml_config_file_path(cfg_path);
+      struct key_t            *k        = get_hotkey_config_key(cfg, key);
+      if (key && strlen(key) > 0 && k) {
+        log_info("disabling key %s", key);
+        bool ok = disable_hotkey_config_key(k->key);
+        cfg = load_yaml_config_file_path(cfg_path);
+        k   = get_hotkey_config_key(cfg, key);
+        ok  = (ok == true && k->enabled == false) ? true : false;
+        asprintf(&response_body,
+                 "{\"response_code\":%d,\"response_data\":\"%s\",\"ts\":%lu"
+                 "}"
+                 "%s",
+                 (ok == true) ? 200 : 500, (ok == true) ? "key_disabled" : "failed", (size_t)timestamp(),
+                 ""
+                 );
+      }
+    }
+    http_response_header(response, "Content-Type", "application/json");
+    http_response_body(response, response_body, strlen(response_body));
   } else if (request_target_is(request, "/config")) {
-    http_string_t body           = http_request_body(request);
-    char          *response_body = "{\"response_code\":404,\"response_data\":null}";
+    http_string_t body = http_request_body(request);
     if (body.len > 1) {
       log_info("%s", body.buf);
       JSON_Value *schema = json_parse_string(body.buf);
@@ -58,9 +311,9 @@ void handle_request(struct http_request_s *request) {
       if (name && strlen(name) > 0) {
         if (type && strlen(type) > 0) {
           char                    *cfg_path         = get_homedir_yaml_config_file_path();
+          struct hotkeys_config_t *cfg              = load_yaml_config_file_path(cfg_path);
           char                    *cfg_contents     = fsio_read_text_file(cfg_path);
           char                    *cfg_contents_b64 = b64_encode(cfg_contents, strlen(cfg_contents));
-          struct hotkeys_config_t *cfg              = load_yaml_config_file_path(cfg_path);
           JSON_Value              *cfg_data         = json_value_init_object();
           {
             json_object_set_value(json_object(cfg_data), "config", json_value_init_object());
@@ -198,7 +451,47 @@ void handle_request(struct http_request_s *request) {
             }
           }
           {
+            uid_t          euid  = geteuid();
+            struct passwd  *user = getpwuid(euid);
+            struct utsname buffer;
+            struct statvfs info;
+
+            errno = 0;
+            if (uname(&buffer) < 0) {
+              log_error("uname error");
+              exit(EXIT_FAILURE);
+            }
+
+            if (statvfs("/", &info)) {
+              log_error("statvfs error");
+              exit(EXIT_FAILURE);
+            }
+            unsigned long left      = (info.f_bavail * info.f_frsize) / 1024 / 1024;
+            unsigned long total     = (info.f_blocks * info.f_frsize) / 1024 / 1024;
+            unsigned long used      = total - left;
+            int           used_perc = ((int)((float)used * 100 / (float)total * 100)) / 100;
+            int           free_perc = 100 - used_perc;
+
             json_object_set_number(status_o, "pid", getpid());
+            json_object_set_string(status_o, "sysname", buffer.sysname);
+            json_object_set_string(status_o, "nodename", buffer.nodename);
+            json_object_set_string(status_o, "version", buffer.version);
+            json_object_set_string(status_o, "machine", buffer.machine);
+            json_object_set_string(status_o, "release", buffer.release);
+            json_object_set_number(status_o, "disk_space_total_mb", total);
+            json_object_set_number(status_o, "disk_space_free_mb", left);
+            json_object_set_number(status_o, "disk_space_used_mb", total - left);
+            json_object_set_number(status_o, "disk_space_used_percent", used_perc);
+            json_object_set_number(status_o, "disk_space_free_percent", free_perc);
+            json_object_set_number(status_o, "euid", geteuid());
+            json_object_set_number(status_o, "uid", getuid());
+            json_object_set_boolean(status_o, "is_root", (euid == 0) ? true : false);
+            json_object_set_string(status_o, "username", user->pw_name);
+            json_object_set_string(status_o, "homedir", user->pw_dir);
+            json_object_set_number(status_o, "gid", getgid());
+            json_object_set_number(status_o, "egid", getegid());
+            json_object_set_string(status_o, "shell", user->pw_shell);
+            json_object_set_number(status_o, "port", DARWIN_LS_HTTPSERVER_PORT);
             json_object_set_number(status_o, "space_id", cur_space_id);
             json_object_set_number(status_o, "display_id", get_display_id_for_space(cur_space_id));
           }
@@ -271,12 +564,12 @@ void handle_request(struct http_request_s *request) {
   http_respond(request, response);
 } /* handle_request */
 
-struct http_server_s *server;
-
 void handle_sigterm(int signum) {
   (void)signum;
-  free(server);
-  exit(0);
+  if (server) {
+    free(server);
+  }
+  exit(EXIT_SUCCESS);
 }
 
 int httpserver_main() {
