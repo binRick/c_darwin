@@ -181,10 +181,10 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = cmds[COMMAND_WINDOW_PID_INFO].name,
-        .description = cmds[COMMAND_WINDOW_PID_INFO].description,
-        .function    = cmds[COMMAND_WINDOW_PID_INFO].fxn,
-        .about       = get_command_about(COMMAND_WINDOW_PID_INFO),
+        .name        = cmds[COMMAND_WINDOW_PID_INFOS].name,
+        .description = cmds[COMMAND_WINDOW_PID_INFOS].description,
+        .function    = cmds[COMMAND_WINDOW_PID_INFOS].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_PID_INFOS),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_PID](args),
           { END_OF_OPTIONS },

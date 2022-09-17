@@ -50,13 +50,15 @@ typedef struct {
   int     movedWindow;
 } MoveWinCtx;
 struct window_info_t {
-  const char    *name, *title;
-  size_t        window_id, memory_usage;
-  pid_t         pid;
-  int           layer, sharing_state, store_type;
-  bool          is_onscreen;
-  CGRect        rect;
-  unsigned long started, dur;
+  const char      *name, *title;
+  size_t          window_id, memory_usage;
+  pid_t           pid;
+  int             layer, sharing_state, store_type;
+  bool            is_onscreen, is_focused;
+  CGRect          rect;
+  unsigned long   started, dur;
+  AXUIElementRef  *app;
+  CFDictionaryRef window;
 };
 struct window_t {
   size_t              window_id;
@@ -203,5 +205,9 @@ void print_all_window_items(FILE *rsp);
 struct Vector *get_window_infos_v(void);
 struct window_info_t *get_window_id_info(size_t window_id);
 struct Vector *get_window_pid_infos(pid_t pid);
+struct window_info_t *get_focused_window_info();
+bool resize_window_info(struct window_info_t *w, const int WIDTH, const int HEIGHT);
+bool move_window_info(struct window_info_t *w, const int X, const int Y);
+CGRect get_resized_window_info_rect_by_factor(struct window_info_t *w, float width_factor, float height_factor);
 ///////////////////////////////////////////////////
 #endif

@@ -59,7 +59,7 @@ static void _command_window_is_minimized();
 static void _command_window_layer();
 static void _command_window_level();
 static void _command_window_infos();
-static void _command_window_pid_info();
+static void _command_window_pid_infos();
 static void _command_window_id_info();
 static void _command_hotkeys();
 ////////////////////////////////////////////
@@ -422,10 +422,10 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
-  [COMMAND_WINDOW_PID_INFO] =       {
-    .name        = "window-pid-info",           .icon = "🔅", .color = COLOR_WINDOW,
-    .description = "Window PID Info",
-    .fxn         = (*_command_window_pid_info),
+  [COMMAND_WINDOW_PID_INFOS] =      {
+    .name        = "window-pid-infos",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window PID Infos",
+    .fxn         = (*_command_window_pid_infos),
   },
   [COMMAND_WINDOW_INFOS] =          {
     .name        = "window-infos",           .icon = "🔅", .color = COLOR_WINDOW,
@@ -1305,24 +1305,30 @@ static void _command_sticky_window(){
   exit(EXIT_SUCCESS);
 }
 
-#define PRINT_WINDOW_INFO(WINDOW_INFO)                                                                                                       \
-  fprintf(stdout,                                                                                                                            \
-          "Window Info: |id:" AC_YELLOW "%lu" AC_RESETALL "|pid:" AC_CYAN "%d" AC_RESETALL "|name:" AC_MAGENTA "%s" AC_RESETALL "|dur:%s|\n" \
-          "             |title:" AC_BLUE "%s" AC_RESETALL "|\n"                                                                              \
-          "             |layer:" AC_RED "%d" AC_RESETALL "|size:%dx%d|pos:%dx%d|onscreen:%s" AC_RESETALL "|\n"                               \
-          "             |mem:%lu|\n"                                                                                                         \
-          "%s",                                                                                                                              \
-          WINDOW_INFO->window_id,                                                                                                            \
-          WINDOW_INFO->pid,                                                                                                                  \
-          WINDOW_INFO->name,                                                                                                                 \
-          milliseconds_to_string(WINDOW_INFO->dur),                                                                                          \
-          WINDOW_INFO->title,                                                                                                                \
-          WINDOW_INFO->layer,                                                                                                                \
-          (int)WINDOW_INFO->rect.size.height, (int)WINDOW_INFO->rect.size.width,                                                             \
-          (int)WINDOW_INFO->rect.origin.x, (int)WINDOW_INFO->rect.origin.y,                                                                  \
-          (WINDOW_INFO->is_onscreen == true) ? AC_GREEN "Yes" : AC_RED "No",                                                                 \
-          WINDOW_INFO->memory_usage,                                                                                                         \
-          ""                                                                                                                                 \
+#define PRINT_WINDOW_INFO(WINDOW_INFO)                                           \
+  fprintf(stdout,                                                                \
+          "Window Info: |id:" AC_YELLOW "%lu" AC_RESETALL                        \
+          "|pid:" AC_CYAN "%d" AC_RESETALL                                       \
+          "|name:" AC_MAGENTA "%s" AC_RESETALL "|dur:%s|\n"                      \
+          "             |title:" AC_BLUE "%s" AC_RESETALL "|\n"                  \
+          "             |layer:" AC_RED "%d" AC_RESETALL                         \
+          "|size:%dx%d|pos:%dx%d|"                                               \
+          "onscreen:%s" AC_RESETALL "|"                                          \
+          "focused:%s" AC_RESETALL "|\n"                                         \
+          "             |mem:%lu|\n"                                             \
+          "%s",                                                                  \
+          WINDOW_INFO->window_id,                                                \
+          WINDOW_INFO->pid,                                                      \
+          WINDOW_INFO->name,                                                     \
+          milliseconds_to_string(WINDOW_INFO->dur),                              \
+          WINDOW_INFO->title,                                                    \
+          WINDOW_INFO->layer,                                                    \
+          (int)WINDOW_INFO->rect.size.height, (int)WINDOW_INFO->rect.size.width, \
+          (int)WINDOW_INFO->rect.origin.x, (int)WINDOW_INFO->rect.origin.y,      \
+          (WINDOW_INFO->is_onscreen == true) ? AC_GREEN "Yes" : AC_RED "No",     \
+          (WINDOW_INFO->is_focused == true) ? AC_GREEN "Yes" : AC_RED "No",      \
+          WINDOW_INFO->memory_usage,                                             \
+          ""                                                                     \
           );
 
 static void _command_window_id_info(){
@@ -1332,7 +1338,7 @@ static void _command_window_id_info(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_window_pid_info(){
+static void _command_window_pid_infos(){
   unsigned long started         = timestamp();
   struct Vector *window_infos_v = get_window_pid_infos(args->pid);
 

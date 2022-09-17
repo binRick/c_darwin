@@ -259,7 +259,17 @@ int get_window_display_id(struct window_t *window){
 }
 
 int get_focused_window_id(){
-  return(get_focused_window()->window_id);
+    int focused_pid = get_focused_pid();
+    AXUIElementRef focused_app = AXUIElementCreateApplication(focused_pid);
+    CFTypeRef window_ref = NULL;
+    AXUIElementCopyAttributeValue(focused_app, kAXFocusedWindowAttribute, &window_ref);
+    if (!window_ref) return 0;
+
+    int window_id = (int)ax_window_id(window_ref);
+    CFRelease(window_ref);
+
+    return window_id;
+
 }
 
 struct window_t *get_focused_window(){
@@ -997,11 +1007,11 @@ void move_current_window(int center, int x, int y, int w, int h){
 
 #define WINDOW_DICTIONARY_INIT_WINDOW_LIST()\
   unsigned long started      = timestamp();\
+  int focused_pid = get_focused_pid();\
+  int focused_window_id = get_focused_window_id();\
   CFArrayRef    windows_list  = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements|kCGWindowListOptionAll, kCGNullWindowID);\
   size_t windows_count = (size_t)CFArrayGetCount(windows_list);\
   struct Vector *window_infos_v = vector_new();
-
-#define WINDOW_DICTIONARY_FREE_WINDOW_LIST()\
 
 #define WINDOW_DICTIONARY_INFO_REFS(DICT)\
   CFStringRef     name_ref         = CFDictionaryGetValue(DICT, kCGWindowOwnerName);\
@@ -1013,7 +1023,9 @@ void move_current_window(int center, int x, int y, int w, int h){
   CFNumberRef     memory_usage_ref  = CFDictionaryGetValue(DICT, kCGWindowMemoryUsage);\
   CFNumberRef     sharing_state_ref = CFDictionaryGetValue(DICT, kCGWindowSharingState);\
   CFNumberRef     store_type_ref    = CFDictionaryGetValue(DICT, kCGWindowStoreType);\
-  CFBooleanRef    is_onscreen_ref   = CFDictionaryGetValue(DICT, kCGWindowIsOnscreen);
+  CFBooleanRef    is_onscreen_ref   = CFDictionaryGetValue(DICT, kCGWindowIsOnscreen);\
+  CFDictionaryRef  window = CFDictionaryCreateCopy(NULL, DICT);\
+  AXUIElementRef  *app;
 
 #define WINDOW_DICTIONARY_VALIDATE_INFO_REFS()\
   if (!name_ref || !title_ref || !pid_ref || !layer_ref || !window_id_ref) continue;
@@ -1021,7 +1033,7 @@ void move_current_window(int center, int x, int y, int w, int h){
 #define WINDOW_DICTIONARY_INIT_ITEMS()\
  uint64_t      window_id = 0, sharing_state = 0, store_type = 0;\
  long long int layer = 0, memory_usage = 0, pid = 0;\
- bool          is_onscreen = false;\
+ bool          is_onscreen = false, is_focused;\
  char          *name = NULL, *title = NULL;\
  struct window_info_t *i = calloc(1,sizeof(struct window_info_t));\
  i->started = timestamp();
@@ -1034,9 +1046,11 @@ void move_current_window(int center, int x, int y, int w, int h){
  CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state);\
  CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);\
  CFNumberGetValue(pid_ref, CFNumberGetType(pid_ref), &pid);\
+ app = AXUIElementCreateApplication(pid);\
  if(is_onscreen_ref) is_onscreen = CFBooleanGetValue(is_onscreen_ref);\
  CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);\
  name = cfstring_copy(name_ref);\
+ is_focused = ((size_t)focused_pid == (size_t)pid && (size_t)focused_window_id == (size_t)window_id) ? true : false;\
  if(title_ref) title = cfstring_copy(title_ref);
 
 #define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS()\
@@ -1048,10 +1062,13 @@ void move_current_window(int center, int x, int y, int w, int h){
  i->window_id = (size_t)window_id;\
  i->memory_usage = (size_t)memory_usage;\
  i->pid = (pid_t)pid;\
+ i->app = &app;\
+ i->window = window;\
  i->layer = (int)layer;\
  i->sharing_state = (int)sharing_state;\
  i->store_type = (int)store_type;\
  i->is_onscreen = is_onscreen;\
+ i->is_focused = is_focused;\
  i->rect = (CGRect)bounds;\
  i->dur = timestamp()-i->started;
 
@@ -1085,7 +1102,6 @@ void move_current_window(int center, int x, int y, int w, int h){
 struct Vector *get_window_pid_infos(pid_t pid){
   struct Vector *window_infos_v = get_window_infos_v();
   struct Vector *pid_window_infos_v = vector_new();
-  struct window_info_t *window_info = NULL;
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {
     struct window_info_t *wi = (struct window_info_t*)vector_get(window_infos_v,i);
     if(wi->pid == pid)
@@ -1096,6 +1112,18 @@ struct Vector *get_window_pid_infos(pid_t pid){
   return(pid_window_infos_v);
 }
 
+struct window_info_t *get_focused_window_info(){
+  struct Vector *window_infos_v = get_window_infos_v();
+  struct window_info_t *window_info = NULL;
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    struct window_info_t *wi = (struct window_info_t*)vector_get(window_infos_v,i);
+    if(wi->is_focused == true)
+      window_info = wi;
+    else
+      free(wi);
+  }
+  return(window_info);
+}
 struct window_info_t *get_window_id_info(size_t window_id){
   struct Vector *window_infos_v = get_window_infos_v();
   struct window_info_t *window_info = NULL;
@@ -1127,7 +1155,9 @@ struct Vector *get_window_infos_v(){
     WINDOW_DICTIONARY_APPEND_WINDOW_INFO()
     WINDOW_DICTIONARY_FREE_ITEMS()
   }
-  log_debug("Collected %lu Window Infos in %s",
+  CFRelease(windows_list);
+  if(WINDOW_UTILS_DEBUG_MODE)
+    log_debug("Collected %lu Window Infos in %s",
             vector_size(window_infos_v),
             milliseconds_to_string(timestamp() - started)
             );
@@ -1361,15 +1391,63 @@ uint32_t display_manager_active_display_count(void){
   return(count);
 }
 
+CGRect get_resized_window_info_rect_by_factor(struct window_info_t *w, float width_factor, float height_factor){
+    float
+    cur_width = w->rect.size.width,
+    cur_height = w->rect.size.height,
+    cur_x = w->rect.origin.x,
+    cur_y = w->rect.origin.y,
+    new_width = cur_width*width_factor,
+    new_height = cur_height*height_factor,
+    new_x = (cur_x == 0)
+              ? cur_x
+              : cur_x - (new_width-cur_width)
+      ,
+    new_y = cur_y
+      ;
+    CGRect new_rect = CGRectMake((float)new_x,(float)new_y,(float)new_width,(float)new_height);
+    return(new_rect);
+}
+
 bool move_window(struct window_t *w, const int X, const int Y){
   CGPoint newPosition;
-
   newPosition.x = X;
   newPosition.y = Y;
   AXUIElementRef app = AXWindowFromCGWindow(w->window);
 
   AXWindowSetPosition(app, newPosition);
   return(true);
+}
+
+bool move_window_info(struct window_info_t *w, const int X, const int Y){
+  AXUIElementRef app = AXWindowFromCGWindow(w->window);
+  if(!app){
+    log_error("Invalid app");
+    return(false);
+  }
+  CGPoint newPosition;
+  newPosition.x = X;
+  newPosition.y = Y;
+  AXWindowSetPosition(app, newPosition);
+  bool ok = true;
+  if(ok==false)
+    log_error("Failed moving app");
+  return(ok);
+}
+
+bool resize_window_info(struct window_info_t *w, const int WIDTH, const int HEIGHT){
+  AXUIElementRef app = AXWindowFromCGWindow(w->window);
+  if(!app){
+    log_error("Invalid app");
+    return(false);
+  }
+  CGSize         size      = CGSizeMake(WIDTH, HEIGHT);
+  AXValueRef     attrValue = AXValueCreate(kAXValueCGSizeType, &size);
+  AXError error = AXUIElementSetAttributeValue(app, kAXSizeAttribute, attrValue);
+  bool ok = (error==kAXErrorSuccess) ? true : false;
+  if(ok==false)
+    log_error("Failed resizing app");
+  return(ok);
 }
 
 bool resize_window(struct window_t *w, const int WIDTH, const int HEIGHT){

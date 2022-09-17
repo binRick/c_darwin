@@ -66,35 +66,71 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
   return(NULL);
 }
 
-int increase_focused_application_width_ten_percent(){
-  int cur_width = -1, cur_height = -1, cur_x = -1, cur_y = -1, new_width = -1, new_height = -1, new_x = -1, new_y = -1, pid = -1;
-
-  pid = get_focused_pid();
-  log_info("Increasing focused app width 10%%|pid:%d|cur size:%dx%d|cur pos:%dx%d|new size:%dx%d,new pos:%dx%d",
-           pid,
-           cur_width, cur_height,
-           cur_x, cur_y,
-           new_width, new_height,
-           new_x, new_y
+#define DEBUG_WINDOW_RESIZE(RESIZE_MODE)\
+    log_info("%s focused app width %f%% & height %f%%|pid:%d|name:%s|windowid:%lu|\n"\
+           "                                 |cur size:%dx%d|cur pos:%dx%d|\n"\
+           "                                 |new size:%dx%d,new pos:%dx%d"\
+           "%s",\
+           RESIZE_MODE,\
+           width_factor,height_factor,\
+           focused_window_info->pid,\
+           focused_window_info->name,\
+           focused_window_info->window_id,\
+           (int)focused_window_info->rect.size.width,(int)focused_window_info->rect.size.height,\
+           (int)focused_window_info->rect.origin.x,(int)focused_window_info->rect.origin.y,\
+           (int)new_rect.size.width,(int)new_rect.size.height,\
+           (int)new_rect.origin.x,(int)new_rect.origin.y,\
+           ""\
            );
 
-//  log_debug("resizing window %lu to %dx%d", w->window_id, args->width, args->height);
-  //resize_window(w, args->width, args->height);
-  return(EXIT_FAILURE);
+#define WINDOW_RESIZE()\
+  if((int)new_rect.origin.x != (int)focused_window_info->rect.origin.x){\
+    if(HOTKEY_UTILS_DEBUG_MODE)\
+      log_debug("Moving window prior to resize!");\
+    move_window_info(focused_window_info, (int)new_rect.origin.x, (int)new_rect.origin.y);\
+  }\
+  bool ok = resize_window_info(focused_window_info, (int)new_rect.size.width,(int)new_rect.size.height);\
+  return((ok==true) ? EXIT_SUCCESS : EXIT_FAILURE);
+
+int decrease_focused_application_height_ten_percent(){
+  float width_factor = 1.00, height_factor = 0.90;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Decreasing Height")
+  WINDOW_RESIZE()
+}
+
+int increase_focused_application_height_ten_percent(){
+  float width_factor = 1.00, height_factor = 1.10;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Increasing Height")
+  WINDOW_RESIZE()
+}
+
+int increase_focused_application_width_ten_percent(){
+  float width_factor = 1.10, height_factor = 1.00;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Increasing Width")
+  WINDOW_RESIZE()
 }
 
 int decrease_focused_application_width_ten_percent(){
-  int cur_width = -1, cur_height = -1, cur_x = -1, cur_y = -1, new_width = -1, new_height = -1, new_x = -1, new_y = -1, pid = -1;
+  float width_factor = 0.90, height_factor = 1.00;
+  struct window_info_t *focused_window_info;
 
-  pid = get_focused_pid();
-  log_info("Decreasing focused app width 10%%|pid:%d|cur size:%dx%d|cur pos:%dx%d|new size:%dx%d,new pos:%dx%d",
-           pid,
-           cur_width, cur_height,
-           cur_x, cur_y,
-           new_width, new_height,
-           new_x, new_y
-           );
-  return(EXIT_FAILURE);
+  focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Decreasing Width")
+  WINDOW_RESIZE()
 }
 
 int minimize_application(void *APPLICATION_NAME){
