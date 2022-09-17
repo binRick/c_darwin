@@ -1,369 +1,104 @@
 #pragma once
-#include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
-#include <signal.h>
-#include <stdint.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <unistd.h>
 /**********************************/
+#include "c_string_buffer/include/stringbuffer.h"
+#include "c_stringfn/include/stringfn.h"
 #include "core-utils/core-utils.h"
-#include "djbhash/src/djbhash.h"
-#include "keylogger.h"
+#include "keylogger/keylogger.h"
 #include "log/log.h"
-#include "process-utils/process-utils.h"
-#include "string-utils/string-utils.h"
+#include "timestamp/timestamp.h"
 /**********************************/
-typedef struct ctx_t              ctx_t;
-typedef struct mouse_location_t   mouse_location_t;
-typedef struct pids_t             pids_t;
-typedef struct db_stats_t         db_stats_t;
-typedef struct updates_t          updates_t;
-typedef struct windows_t          windows_t;
-typedef struct focus_t            focus_t;
-typedef struct event_t            event_t;
-typedef struct displays_t         displays_t;
-/**********************************/
-struct djbhash downkeys_h = { 0 };
-struct keybindings_t {
-  char          *name;
-  char          *description;
-  struct Vector *keys_v;
-  char          *keys[24];
-} static keybindings[] = {
-  { .name = "ctrl+k",       .description = "test0 desc", .keys = { "control", "k",      NULL } },
-  { .name = "ctrl+shift+k", .description = "test1 desc", .keys = { "control", "shift",  "k", NULL} },
-  { .name = "ctrl+return",  .description = "",           .keys = { "control", "return", NULL } },
-  { .name = "ctrl+\\",      .description = "",           .keys = { "control", "\\",     NULL } },
-  { .name = "a",            .description = "",           .keys = { "a",       NULL } },
-  { NULL },
-};
-
-#define KEYBINDING(INDEX)                                          keybindings[INDEX]
-#define KEYBINDING_INDEX_KEYS_VECTOR(INDEX)                        keybindings[INDEX].keys_v
-#define KEYBINDING_INDEX(KEYBINDING_INDEX)                         keybindings[KEYBINDING_INDEX]
-#define KEYBINDING_INDEX_KEYS_QTY(KEYBINDING_INDEX)                sizeof(KEYBINDING_INDEX(KEYBINDING_INDEX)) / sizeof(KEYBINDING_INDEX(KEYBINDING_INDEX)[0])
-#define KEYBINDING_INDEX_KEY_INDEX(KEYBINDING_INDEX, KEY_INDEX)    keybindings[KEYBINDING_INDEX].keys[KEY_INDEX]
-#define KEYBINDING_INDEX_QTY(INDEX)                                sizeof(KEYBINDING(INDEX).keys) / sizeof(KEYBINDING(INDEX).keys[0])
-#define KEYBINDINGS_QTY    sizeof(keybindings) / sizeof(keybindings[0]) - 1
-
-struct Vector *split_keys_by_plus_v(const char *STR){
-  struct Vector          *v      = vector_new();
-  struct StringFNStrings str_fns = stringfn_split(STR, '+');
-
-  for (size_t i = 0; i < str_fns.count; i++) {
-    vector_push(v, str_fns.strings[i]);
-  }
-  stringfn_release_strings_struct(str_fns);
-  return(v);
-}
-
-bool compare_key_vectors(struct Vector *v0, struct Vector *v1){
-  size_t matches_qty;
-
-  for (size_t i0 = 0; i0 < vector_size(v0); i0++) {
-    for (size_t i1 = 0; i1 < vector_size(v1); i1++) {
-      if (strcmp(vector_get(v0, i0), vector_get(v1, i1)) == 0) {
-        matches_qty++;
-      }
-    }
-  }
-  return(true);
-}
-
-struct Vector *get_keybindings_index_keys_v(const size_t INDEX){
-  if (keybindings[INDEX].keys_v != NULL) {
-    return(keybindings[INDEX].keys_v);
-  }
-  keybindings[INDEX].keys_v = vector_new();
-  char **tmp = (&keybindings[INDEX])->keys;
-  while (*tmp != NULL) {
-    vector_push(keybindings[INDEX].keys_v, *tmp++);
-  }
-  return(keybindings[INDEX].keys_v);
-}
-
-struct keybindings_t *get_bound_keybinding(const char *CURRENT_DOWNKEYS_EVENT_STRING){
-  char                 *debug_msg, *kb_debug_msg;
-  char                 *debug_msg_color    = AC_YELLOW;
-  struct keybindings_t *tmp                = keybindings;
-  char                 *kb_debug_msg_color = AC_BLUE;
-  bool                 kb_match            = false;
-  char                 *kb_match_color     = AC_RED;
-  struct Vector        *kb_keys_v;
-  size_t               qty   = 0;
-  struct Vector        *dk_v = split_keys_by_plus_v(CURRENT_DOWNKEYS_EVENT_STRING);
-
-  for (size_t i = 0; tmp->name != NULL && i < KEYBINDINGS_QTY; i++) {
-    kb_keys_v = get_keybindings_index_keys_v(i);
-    kb_match  = compare_key_vectors(dk_v, kb_keys_v);
-    asprintf(&kb_debug_msg, AC_RESETALL "     " AC_CYAN "[get_bound_keybinding #%lu/%lu]  "AC_RESETALL "  " AC_YELLOW "<%s>"AC_RESETALL
-             AC_RESETALL "  " "%s" "|match:%s|" AC_RESETALL
-             AC_RESETALL "  " "|vec qty:%lu|" AC_RESETALL,
-             i + 1, KEYBINDINGS_QTY,
-             tmp->name,
-             kb_match_color, kb_match ? "Yes" : "No",
-             vector_size(kb_keys_v)
-             );
-    if (false) {
-      fprintf(stderr, AC_RESETALL "%s" "%s" AC_RESETALL "\n", kb_debug_msg_color, kb_debug_msg);
-    }
-    free(kb_debug_msg);
-    tmp++;
-  }
-
-  asprintf(&debug_msg, "[get_bound_keybinding]  cur:'%s'|dk_v qty:%lu|",
-           CURRENT_DOWNKEYS_EVENT_STRING,
-           vector_size(dk_v)
-           );
-  if (false) {
-    fprintf(stderr, AC_RESETALL AC_REVERSED "%s" "%s" AC_RESETALL "\n", debug_msg_color, debug_msg);
-  }
-  free(debug_msg);
-  return(NULL);
-}
-
-struct ctx_t {
-  struct Vector *downkeys_v;
-  char          *downkeys_csv;
-  //////////////////////////////////////////
-  enum {
-    THREAD_RECEIVER,
-    THREADS_QTY,
-  }             worker_thread_type_id_t;
-  //////////////////////////////////////////
-  unsigned long last_event_ts;
-  struct displays_t {
-    int           qty;
-    unsigned long last_update_ts;
-  } displays_t;
-  struct event_t {
-    int qty;
-  } event_t;
-  struct focus_t {
-    int           qty, key_code, key_action;
-    unsigned long last_update_ts;
-  } focus_t;
-  struct db_stats_t {
-    size_t        table_size, rows_qty;
-    unsigned long last_update_ts;
-  } db_stats_t;
-  struct windows_t {
-    int           qty;
-    int           pixels_x, pixels_y;
-    unsigned long last_update_ts;
-  } windows_t;
-  struct mouse_location_t {
-    int           x, y;
-    unsigned long last_update_ts;
-  }                mouse_location_t;
-  //////////////////////////////////////////
-  mouse_location_t mouse_location;
-  windows_t        windows;
-  event_t          event;
-  db_stats_t       db_stats;
-  //////////////////////////////////////////
-};
-static ctx_t ctx = {
-  .downkeys_v   = NULL,
-  .downkeys_csv = NULL,
-  .windows      = {
-    .qty          = 0,
-  },
-  .mouse_location = {
-    .x            = 0, .y= 0,
-  },
-};
-static bool IsMouseEvent(CGEventType type);
-
-static CFArrayRef windowList;
-unsigned int      windows_qty    = 0;
-static CGPoint    mouse_location = { .x = 0, .y = 0, };
-unsigned long
-                  events_qty = 0,
-  mouse_events_qty           = 0,
-  kb_events_qty              = 0
-;
-
-/**********************************/
-static bool IsMouseEvent(CGEventType type) {
-  return(
-    type == kCGEventLeftMouseDown
-    || type == kCGEventLeftMouseUp
-    || type == kCGEventRightMouseDown
-    || type == kCGEventLeftMouseDragged
-    || type == kCGEventRightMouseDragged
-    || type == kCGEventRightMouseUp
-    || type == kCGEventMouseMoved
-    || type == kCGEventOtherMouseUp
-    || type == kCGEventOtherMouseDown
-    || type == kCGEventOtherMouseDragged
-    || type == kCGEventLeftMouseDragged
-    || type == kCGEventScrollWheel
-    || type == kCGEventRightMouseDragged
-    );
-}
-
-/**********************************/
-static volatile CGEventMask kb_events = (
-  CGEventMaskBit(kCGEventKeyDown)
-  | CGEventMaskBit(kCGEventFlagsChanged)
-  );
-static volatile CGEventMask kb_down_events = (
+static int keylogger_init();
+static int setup_event_tap();
+static int setup_event_tap_with_callback(void ( *cb )(char *key));
+static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, __attribute__((unused)) CGEventType type, CGEventRef event, void *CALLBACK);
+static const char *keylogger_convertKeyboardCode(int);
+static CGEventMask kb_events = (
   CGEventMaskBit(kCGEventKeyDown)
   | CGEventMaskBit(kCGEventFlagsChanged)
   );
 
-static volatile CGEventMask mouse_and_kb_events = (
-  CGEventMaskBit(kCGEventKeyDown)
-  | CGEventMaskBit(kCGEventKeyUp)
-  | CGEventMaskBit(kCGEventFlagsChanged)
-  | CGEventMaskBit(kCGEventLeftMouseDown)
-  | CGEventMaskBit(kCGEventLeftMouseUp)
-  | CGEventMaskBit(kCGEventRightMouseDown)
-  | CGEventMaskBit(kCGEventRightMouseUp)
-  | CGEventMaskBit(kCGEventMouseMoved)
-  | CGEventMaskBit(kCGEventOtherMouseDown)
-  | CGEventMaskBit(kCGEventOtherMouseUp)
-  | CGEventMaskBit(kCGEventOtherMouseDragged)
-  | CGEventMaskBit(kCGEventScrollWheel)
-  | CGEventMaskBit(kCGEventLeftMouseDragged)
-  | CGEventMaskBit(kCGEventRightMouseDragged)
-  );
-
-/**********************************/
 static int tap_events(){
   CFRunLoopRun();
-  return(0);
-}
-
-bool isKeyboardEvent(CGEventType type) {
-  return((type == kCGEventKeyDown) || (type == kCGEventKeyUp));
-}
-
-bool isMouseCursorEvent(CGEventType type) {
-  return((type == kCGEventLeftMouseDown)
-         || (type == kCGEventLeftMouseUp)
-         || (type == kCGEventRightMouseDown)
-         || (type == kCGEventRightMouseUp)
-         || (type == kCGEventMouseMoved));
+  return(EXIT_SUCCESS);
 }
 
 static int setup_event_tap_with_callback(void ( *cb )(char *key)){
   CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, kb_events, event_handler, (void *)cb);
 
   if (!event_tap) {
-    fprintf(stderr, "ERROR: Unable to create keyboard event tap.\n");
-    return(1);
+    log_error("ERROR: Unable to create keyboard event tap.");
+    return(EXIT_FAILURE);
   }
   CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap, 0);
 
   CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
   CGEventTapEnable(event_tap, true);
-  return(0);
+  return(EXIT_SUCCESS);
 }
 
 static int setup_event_tap(){
   CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, kb_events, event_handler, NULL);
 
   if (!event_tap) {
-    fprintf(stderr, "ERROR: Unable to create keyboard event tap.\n");
-    return(1);
+    log_error("ERROR: Unable to create keyboard event tap.");
+    return(EXIT_FAILURE);
   }
   CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap, 0);
 
   CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
   CGEventTapEnable(event_tap, true);
-  return(0);
+  return(EXIT_SUCCESS);
 }
 
 /**********************************/
-int keylogger_init(){
-  mouse_location   = CGEventGetLocation(event_handler);
-  ctx.downkeys_v   = vector_new();
-  ctx.downkeys_csv = "";
-  djbhash_init(&downkeys_h);
-  return(0);
+static int keylogger_init(){
+  return(EXIT_SUCCESS);
 }
 
 /**********************************/
-
-void key_not_down(const size_t KEYCODE){
-  for (int i = 0; i < vector_size(ctx.downkeys_v); i++) {
-    if ((size_t)vector_get(ctx.downkeys_v, i) == KEYCODE) {
-      vector_remove(ctx.downkeys_v, i);
-      return;
-    }
-  }
-  return;
-}
-
-bool key_is_down(const size_t KEYCODE){
-  for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
-    if ((size_t)vector_get(ctx.downkeys_v, i) == KEYCODE) {
-      return(true);
-    }
-  }
-  return(false);
-}
-
-char *down_keys_csv(){
-  struct StringBuffer *SB = stringbuffer_new_with_options(1024, true);
-
-  for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
-    size_t dk = (size_t)vector_get(ctx.downkeys_v, i);
-    if (i > 0) {
-      stringbuffer_append_string(SB, ", ");
-    }
-    stringbuffer_append_int(SB, dk);
-  }
-  char *S = stringbuffer_to_string(SB);
-
-  stringbuffer_release(SB);
-  return(S);
-}
-
-CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *CALLBACK) {
-  char          *ckc = "UNKNOWN", *event_flag;
-  CGKeyCode     keyCode     = 0;
+static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, __attribute__((unused)) CGEventType type, CGEventRef event, void *CALLBACK) {
   unsigned long event_flags = (int)CGEventGetFlags(event);
 
-  keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-  if (keyCode > 0) {
-    ckc = keylogger_convertKeyboardCode(keyCode);
-    if (strlen(ckc) > 0) {
-      struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
-      if (event_flags & kCGEventFlagMaskAlternate) {
-        stringbuffer_append_string(event_flag_sb, "alt+");
-      }
-      if (event_flags & kCGEventFlagMaskSecondaryFn) {
-        stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
-      }
-      if (event_flags & kCGEventFlagMaskCommand) {
-        stringbuffer_append_string(event_flag_sb, "cmd+");
-      }
-      if (event_flags & kCGEventFlagMaskControl) {
-        stringbuffer_append_string(event_flag_sb, "ctrl+");
-      }
-      if (event_flags & kCGEventFlagMaskShift) {
-        stringbuffer_append_string(event_flag_sb, "shift+");
-      }
-      stringbuffer_append_string(event_flag_sb, ckc);
+  if (event_flags > 0) {
+    CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+    if (keyCode > 0) {
+      char *ckc = keylogger_convertKeyboardCode(keyCode);
+      if (strlen(ckc) > 0) {
+        struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
+        if (event_flags & kCGEventFlagMaskAlternate) {
+          stringbuffer_append_string(event_flag_sb, "alt+");
+        }
+        if (event_flags & kCGEventFlagMaskSecondaryFn) {
+          stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
+        }
+        if (event_flags & kCGEventFlagMaskCommand) {
+          stringbuffer_append_string(event_flag_sb, "cmd+");
+        }
+        if (event_flags & kCGEventFlagMaskControl) {
+          stringbuffer_append_string(event_flag_sb, "ctrl+");
+        }
+        if (event_flags & kCGEventFlagMaskShift) {
+          stringbuffer_append_string(event_flag_sb, "shift+");
+        }
+        stringbuffer_append_string(event_flag_sb, ckc);
 
-      event_flag = stringbuffer_to_string(event_flag_sb);
-      stringbuffer_release(event_flag_sb);
+        char *event_flag = stringbuffer_to_string(event_flag_sb);
+        stringbuffer_release(event_flag_sb);
 
-      if (stringfn_ends_with(event_flag, "+")) {
-        stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
-      }
-      stringfn_mut_trim(event_flag);
-      if (CALLBACK != NULL) {
-        ((void (*)(char *)) CALLBACK)(event_flag);
+        if (stringfn_ends_with(event_flag, "+")) {
+          stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
+        }
+        stringfn_mut_trim(event_flag);
+        if (CALLBACK != NULL) {
+          ((void (*)(char *)) CALLBACK)(event_flag);
+        }
       }
     }
   }
@@ -612,7 +347,7 @@ int keylogger_exec_with_callback(void ( *cb )(char *)) {
   log_info("Keylogger Event Tap Setup");
   assert(tap_events() == 0);
   log_info("Keylogger Events Tapped");
-  return(0);
+  return(EXIT_SUCCESS);
 }
 
 int keylogger_exec() {
@@ -623,6 +358,6 @@ int keylogger_exec() {
   log_info("Keylogger Event Tap Setup");
   assert(tap_events() == 0);
   log_info("Keylogger Events Tapped");
-  return(0);
+  return(EXIT_SUCCESS);
 }
 /**********************************/

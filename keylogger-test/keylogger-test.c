@@ -6,6 +6,7 @@
 #ifdef ASSERT_EQ
 #undef ASSERT_EQ
 #endif
+#include "log/log.h"
 #include "submodules/c_greatest/greatest/greatest.h"
 
 //////////////////////////////////////////////
