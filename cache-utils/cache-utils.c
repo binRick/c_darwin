@@ -19,6 +19,7 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "murmurhash.c/murmurhash.h"
+#include "string-utils/string-utils.h"
 #include "tempdir.c/tempdir.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
@@ -32,11 +33,6 @@ struct cache_utils_item_t {
   IWKV_OPTS opts;
 };
 
-static size_t string_to_size_t(char *s){
-  char **ep;
-
-  return((size_t)strtoimax(s, &ep, 10));
-}
 ////////////////////////////////////////////
 #define CLEANUP_CACHE_UTILS_ITEM() \
   iwkv_close(&iwkv);               \
@@ -136,7 +132,7 @@ int cache_utils_get_age(char *ITEM_KEY){
   rc         = iwkv_get(mydb, &tskey, &tsval);
   log_debug("tskey:%s", (char *)tskey.data);
   if (!rc) {
-    res = (int)((size_t)((size_t)timestamp() - string_to_size_t((char *)tsval.data)) / 1000);
+    res = (int)((size_t)((size_t)timestamp() - string_size_to_size_t((char *)tsval.data)) / 1000);
   }
 
   CLEANUP_CACHE_UTILS_ITEM()

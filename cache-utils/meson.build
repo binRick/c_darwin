@@ -19,6 +19,7 @@ cache_utils_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
+  string_utils_dep,
 ]
 
 cache_utils_c_args = [

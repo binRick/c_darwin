@@ -26,10 +26,9 @@
 ////////////////////////////////////////////
 static bool HOTKEY_UTILS_DEBUG_MODE = false, HOTKEY_UTILS_VERBOSE_DEBUG_MODE;
 static char *EXECUTABLE_PATH_DIRNAME;
-static size_t get_config_file_hash(char *CONFIG_FILE_PATH);
 
 ///////////////////////////////////////////////////////////////////////
-static size_t get_config_file_hash(char *CONFIG_FILE_PATH){
+size_t get_config_file_hash(char *CONFIG_FILE_PATH){
   char *config_contents = fsio_read_text_file(CONFIG_FILE_PATH);
   size_t config_hash = ((size_t)murmurhash(
            (const char *)config_contents,
@@ -76,7 +75,7 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
     log_info("%s focused app width %f%% & height %f%%|pid:%d|name:%s|windowid:%lu|\n"\
            "                                 |cur size:%dx%d|cur pos:%dx%d|\n"\
            "                                 |new size:%dx%d,new pos:%dx%d|\n"\
-           "                                 |dis size:%dx%d|\n"\
+           "                                 |cur dis size:%dx%d|\n"\
            "%s",\
            RESIZE_MODE,\
            width_factor,height_factor,\
@@ -101,6 +100,47 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
   bool ok = resize_window_info(focused_window_info, (int)new_rect.size.width,(int)new_rect.size.height);\
   return((ok==true) ? EXIT_SUCCESS : EXIT_FAILURE);
 
+int decrease_focused_application_height_five_percent(){
+  float width_factor = 1.00, height_factor = 0.95;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Decreasing Height")
+  WINDOW_RESIZE()
+}
+int increase_focused_application_height_five_percent(){
+  float width_factor = 1.00, height_factor = 1.05;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Increasing Height")
+  WINDOW_RESIZE()
+}
+
+int increase_focused_application_width_five_percent(){
+  float width_factor = 1.05, height_factor = 1.00;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Increasing Width")
+  WINDOW_RESIZE()
+}
+
+int decrease_focused_application_width_five_percent(){
+  float width_factor = 0.95, height_factor = 1.00;
+  struct window_info_t *focused_window_info;
+
+  focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Decreasing Width")
+  WINDOW_RESIZE()
+}
+
+
 int decrease_focused_application_height_ten_percent(){
   float width_factor = 1.00, height_factor = 0.90;
   struct window_info_t *focused_window_info = get_focused_window_info();
@@ -108,6 +148,36 @@ int decrease_focused_application_height_ten_percent(){
 
   if(HOTKEY_UTILS_DEBUG_MODE)
     DEBUG_WINDOW_RESIZE("Decreasing Height")
+  WINDOW_RESIZE()
+}
+int increase_focused_application_height_ten_percent(){
+  float width_factor = 1.00, height_factor = 1.10;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Increasing Height")
+  WINDOW_RESIZE()
+}
+
+int increase_focused_application_width_ten_percent(){
+  float width_factor = 1.10, height_factor = 1.00;
+  struct window_info_t *focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Increasing Width")
+  WINDOW_RESIZE()
+}
+
+int decrease_focused_application_width_ten_percent(){
+  float width_factor = 0.90, height_factor = 1.00;
+  struct window_info_t *focused_window_info;
+
+  focused_window_info = get_focused_window_info();
+  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
+  if(HOTKEY_UTILS_DEBUG_MODE)
+    DEBUG_WINDOW_RESIZE("Decreasing Width")
   WINDOW_RESIZE()
 }
 
@@ -182,36 +252,6 @@ int right_percent_focused_application(float right_factor){
   return(EXIT_SUCCESS);
 }
 
-int increase_focused_application_height_ten_percent(){
-  float width_factor = 1.00, height_factor = 1.10;
-  struct window_info_t *focused_window_info = get_focused_window_info();
-  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
-
-  if(HOTKEY_UTILS_DEBUG_MODE)
-    DEBUG_WINDOW_RESIZE("Increasing Height")
-  WINDOW_RESIZE()
-}
-
-int increase_focused_application_width_ten_percent(){
-  float width_factor = 1.10, height_factor = 1.00;
-  struct window_info_t *focused_window_info = get_focused_window_info();
-  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
-
-  if(HOTKEY_UTILS_DEBUG_MODE)
-    DEBUG_WINDOW_RESIZE("Increasing Width")
-  WINDOW_RESIZE()
-}
-
-int decrease_focused_application_width_ten_percent(){
-  float width_factor = 0.90, height_factor = 1.00;
-  struct window_info_t *focused_window_info;
-
-  focused_window_info = get_focused_window_info();
-  CGRect new_rect = get_resized_window_info_rect_by_factor(focused_window_info, width_factor, height_factor);
-  if(HOTKEY_UTILS_DEBUG_MODE)
-    DEBUG_WINDOW_RESIZE("Decreasing Width")
-  WINDOW_RESIZE()
-}
 
 int minimize_application(void *APPLICATION_NAME){
   log_info("Minimize app %s", (char *)APPLICATION_NAME);
