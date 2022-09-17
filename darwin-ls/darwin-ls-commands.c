@@ -4,6 +4,8 @@
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls-httpserver.h"
 #include "darwin-ls/darwin-ls.h"
+#include "hotkey-utils/hotkey-utils.h"
+#include "keylogger/keylogger.h"
 #include "table-utils/table-utils.h"
 ////////////////////////////////////////////
 static void _command_move_window();
@@ -44,6 +46,7 @@ static void _command_app_icns_path();
 static void _command_parse_xml_file();
 static void _command_grayscale_png();
 static void _command_clear_icons_cache();
+static void _command_hotkeys();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_width_group(uint16_t window_id);
@@ -379,6 +382,10 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name = "resize-window",           .icon = "💡", .color = COLOR_WINDOW, .description = "Resize Window",
     .fxn  = (*_command_resize_window),
   },
+  [COMMAND_HOTKEYS] =               {
+    .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Hotkeys",
+    .fxn  = (*_command_hotkeys),
+  },
   [COMMAND_FOCUS_WINDOW] =          {
     .name = "focus-window",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Focus Window",
     .fxn  = (*_command_focus_window),
@@ -649,6 +656,41 @@ do_error:
 }
 
 ////////////////////////////////////////////
+static void hotkey_callback(char *KEYS){
+  char                    *config_path = get_homedir_yaml_config_file_path();
+  struct hotkeys_config_t *cfg         = load_yaml_config_file_path(config_path);
+
+  if (COMMAND_DEBUG_ARGS == true) {
+    log_info("Keys: " AC_YELLOW "%s" AC_RESETALL "|" "hotkey config %s with %lu hotkeys", KEYS, config_path, cfg->keys_count);
+  }
+  struct key_t *key = get_hotkey_config_key(cfg, KEYS);
+
+  if (key == NULL) {
+    if (COMMAND_DEBUG_ARGS == true) {
+      log_debug("Non existent hotkey %s", KEYS);
+    }
+  }else{
+    if (COMMAND_DEBUG_ARGS == true) {
+      log_debug("Existent hotkey %s", KEYS);
+    }
+    int rc = execute_hotkey_config_key(key);
+    if (rc != EXIT_SUCCESS) {
+      log_error("Failed to execute Action %s", key->action);
+    }else{
+      if (COMMAND_DEBUG_ARGS == true) {
+        log_debug("Executed Action %s", key->action);
+      }
+    }
+  }
+}
+
+static void _command_hotkeys(){
+  bool ok = false;
+
+  keylogger_exec_with_callback(hotkey_callback);
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
 static void _command_clear_icons_cache(){
   bool ok = clear_icons_cache();
 

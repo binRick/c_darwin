@@ -8,7 +8,6 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "libspinner/spinner.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "submodules/reproc/reproc/include/reproc/export.h"
@@ -153,23 +152,6 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
     }
     return(cached);
   }
-  int spinner_icon_index = 48;
-
-  spinner_icon_index = 1;
-  spinner_t *spinner = spinner_new(spinner_icon_index);
-
-  spinner->delay = 1000 * 100;
-  char *spinner_prefix, *spinner_suffix, *spinner_final_msg;
-
-  asprintf(&spinner_prefix, AC_CYAN AC_BOLD "Collecting " AC_RESETALL);
-  asprintf(&spinner_suffix, " %s",
-           ITEM_NAME
-           );
-  asprintf(&spinner_final_msg, "\n");
-  spinner->prefix    = spinner_prefix;
-  spinner->suffix    = spinner_suffix;
-  spinner->final_msg = spinner_final_msg;
-  spinner_start(spinner);
 
   enum { NUM_CHILDREN = 1 };
 
@@ -223,8 +205,6 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
       stringbuffer_append_string(SB, output);
     }
   }
-  spinner_stop(spinner);
-  spinner_free(spinner);
 
 finish:
   for (int i = 0; i < NUM_CHILDREN; i++) {

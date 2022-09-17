@@ -1,22 +1,27 @@
 name: abc
 keys:
   - name: Activate Alacritty
-    key: ctrl-5
+    key: alt+shift+5
     action: alacritty
     action_type: ActivateApplication
     enabled: yes
   - name: Dectivate Alacritty
-    key: ctrl-6
+    key: alt+shift+6
     action: alacritty
     action_type: DeactivateApplication
     enabled: yes
   - name: Activate Kitty
-    key: ctrl-7
+    key: alt+shift+7
     action: kitty
     action_type: ActivateApplication
     enabled: yes
-  - name: Deactivate Kitty
-    key: ctrl-8
+  - name: Activate Kitty
+    key: alt+shift+0
     action: kitty
-    action_type: DeactivateApplication
+    action_type: ActivateApplication
+    enabled: yes
+  - name: Activate Richard
+    key: alt+shift+9
+    action: richard
+    action_type: ActivateApplication
     enabled: yes

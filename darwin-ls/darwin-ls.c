@@ -25,6 +25,12 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Application is not authorized for accessibility\n");
     // exit(EXIT_FAILURE);
   }
+  ARGV = argv;
+  log_info("argv0: %s", argv[0]);
+  realpath(argv[0], EXECUTABLE_PATH);
+  EXECUTABLE              = basename(EXECUTABLE_PATH);
+  EXECUTABLE_PATH_DIRNAME = dirname(EXECUTABLE_PATH);
+
   struct optparse_cmd main_cmd = {
     .about       = "darwin-ls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
@@ -118,6 +124,12 @@ int main(int argc, char **argv) {
         .description = "List Applications",
         .function    = cmds[COMMAND_APPS].fxn,
         .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
+      },
+      {
+        .name        = cmds[COMMAND_HOTKEYS].name,
+        .description = cmds[COMMAND_HOTKEYS].description,
+        .function    = cmds[COMMAND_HOTKEYS].fxn,
+        .about       = get_command_about(COMMAND_HOTKEYS),
       },
       {
         .name        = cmds[COMMAND_SPACES].name,

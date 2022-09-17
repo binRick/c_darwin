@@ -24,15 +24,42 @@ static bool HOTKEY_UTILS_DEBUG_MODE = false;
 static char *EXECUTABLE_PATH_DIRNAME;
 
 ///////////////////////////////////////////////////////////////////////
+char *get_homedir_yaml_config_file_path(){
+  char *path;
+  char *home = getenv("HOME");
+
+  if (!home) {
+    log_error("HOME Environment variable not set!");
+    exit(EXIT_FAILURE);
+  }
+  asprintf(&path, "%s/.config/darwin-ls/hotkeys.yaml", home);
+  if (HOTKEY_UTILS_DEBUG_MODE == true) {
+    log_debug("Config path:  %s", path);
+  }
+  if (fsio_file_exists(path) == false) {
+    fsio_mkdirs_parent(path, 0700);
+    log_error("Config File %s is Missing. Create it.", path);
+    exit(EXIT_FAILURE);
+  }
+  if (HOTKEY_UTILS_DEBUG_MODE == true) {
+    log_debug("Using Hotkeys file %s", path);
+  }
+  return(path);
+}
+
 int execute_hotkey_config_key(struct key_t *key){
   return(handle_action(key->action_type, key->action));
 }
 
 struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
   for (size_t i = 0; i < cfg->keys_count; i++) {
-    log_info("Comparing key %s to %s", cfg->keys[i].key, key);
+    if (HOTKEY_UTILS_DEBUG_MODE == true) {
+      log_info("Comparing key %s to %s", cfg->keys[i].key, key);
+    }
     if (strcmp(cfg->keys[i].key, key) == 0) {
-      log_debug("Key Match!");
+      if (HOTKEY_UTILS_DEBUG_MODE == true) {
+        log_debug("Key Match!");
+      }
       return(&(cfg->keys[i]));
     }
   }
@@ -40,12 +67,16 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
 }
 
 int activate_application(void *APPLICATION_NAME){
-  log_info("Activating Application %s", (char *)APPLICATION_NAME);
+  if (HOTKEY_UTILS_DEBUG_MODE == true) {
+    log_info("Activating Application %s", (char *)APPLICATION_NAME);
+  }
   size_t window_id = get_first_window_id_by_app_name((char *)APPLICATION_NAME);
   if (window_id == 0) {
     log_error("Failed to find window named '%s'", APPLICATION_NAME);
   }else{
-    log_info("Got Window ID %lu", window_id);
+    if (HOTKEY_UTILS_DEBUG_MODE == true) {
+      log_info("Got Window ID %lu", window_id);
+    }
     focus_window_id(window_id);
   }
   return(EXIT_SUCCESS);
@@ -70,10 +101,12 @@ struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path){
     log_error("%s", cyaml_strerror(err));
     return(NULL);
   }
-  log_info("Loaded %lu hotkeys from Config file %s in %s",
-           hotkeys_config->keys_count, config_file_path,
-           milliseconds_to_string(timestamp() - started)
-           );
+  if (HOTKEY_UTILS_DEBUG_MODE == true) {
+    log_info("Loaded %lu hotkeys from Config file %s in %s",
+             hotkeys_config->keys_count, config_file_path,
+             milliseconds_to_string(timestamp() - started)
+             );
+  }
   return(hotkeys_config);
 }
 
@@ -82,7 +115,9 @@ char *get_yaml_config_file_path(char **argv){
 
   realpath(argv[0], EXECUTABLE_PATH);
   EXECUTABLE_PATH_DIRNAME = dirname(EXECUTABLE_PATH);
-  log_info("EXECUTABLE_PATH_DIRNAME:%s", EXECUTABLE_PATH_DIRNAME);
+  if (HOTKEY_UTILS_DEBUG_MODE == true) {
+    log_info("EXECUTABLE_PATH_DIRNAME:%s", EXECUTABLE_PATH_DIRNAME);
+  }
   char *path;
 
   asprintf(&path, "%s/../../hotkey-utils/%s", EXECUTABLE_PATH_DIRNAME, HOTKEYS_CONFIG_FILE_NAME);

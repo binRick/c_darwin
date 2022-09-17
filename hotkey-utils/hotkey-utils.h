@@ -40,6 +40,7 @@ static const cyaml_strval_t action_type_strings[] = {
 };
 //////////////////////////////////////
 char *get_yaml_config_file_path(char **argv);
+char *get_homedir_yaml_config_file_path(void);
 struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path);
 int activate_application(void *APPLICATION_NAME);
 int deactivate_application(void *APPLICATION_NAME);

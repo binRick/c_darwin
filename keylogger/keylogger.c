@@ -14,12 +14,8 @@
 /**********************************/
 #include "core-utils/core-utils.h"
 #include "djbhash/src/djbhash.h"
-#include "hidapi/hidapi/hidapi.h"
-#include "hidapi/mac/hidapi_darwin.h"
 #include "keylogger.h"
-#include "libusb/libusb/libusb.h"
-#include "libusb/libusb/os/darwin_usb.h"
-#include "pbpaste.h"
+#include "log/log.h"
 #include "process-utils/process-utils.h"
 #include "string-utils/string-utils.h"
 /**********************************/
@@ -32,7 +28,6 @@ typedef struct windows_t          windows_t;
 typedef struct focus_t            focus_t;
 typedef struct event_t            event_t;
 typedef struct displays_t         displays_t;
-typedef struct clipboard_t        clipboard_t;
 /**********************************/
 struct djbhash downkeys_h = { 0 };
 struct keybindings_t {
@@ -143,12 +138,6 @@ struct ctx_t {
   }             worker_thread_type_id_t;
   //////////////////////////////////////////
   unsigned long last_event_ts;
-  struct clipboard_t {
-    char              *contents, *b64_encoded;
-    size_t            contents_size, b64_encoded_size;
-    unsigned long     last_update_ts;
-    clipboard_event_t event;
-  } clipboard_t;
   struct displays_t {
     int           qty;
     unsigned long last_update_ts;
@@ -178,7 +167,6 @@ struct ctx_t {
   windows_t        windows;
   event_t          event;
   db_stats_t       db_stats;
-  clipboard_t      clipboard;
   //////////////////////////////////////////
 };
 static ctx_t ctx = {
@@ -224,7 +212,6 @@ static bool IsMouseEvent(CGEventType type) {
 /**********************************/
 static volatile CGEventMask kb_events = (
   CGEventMaskBit(kCGEventKeyDown)
-  | CGEventMaskBit(kCGEventKeyUp)
   | CGEventMaskBit(kCGEventFlagsChanged)
   );
 static volatile CGEventMask kb_down_events = (
@@ -267,8 +254,22 @@ bool isMouseCursorEvent(CGEventType type) {
          || (type == kCGEventMouseMoved));
 }
 
+static int setup_event_tap_with_callback(void ( *cb )(char *key)){
+  CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, kb_events, event_handler, (void *)cb);
+
+  if (!event_tap) {
+    fprintf(stderr, "ERROR: Unable to create keyboard event tap.\n");
+    return(1);
+  }
+  CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap, 0);
+
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
+  CGEventTapEnable(event_tap, true);
+  return(0);
+}
+
 static int setup_event_tap(){
-  CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, mouse_and_kb_events, event_handler, NULL);
+  CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, kb_events, event_handler, NULL);
 
   if (!event_tap) {
     fprintf(stderr, "ERROR: Unable to create keyboard event tap.\n");
@@ -283,8 +284,6 @@ static int setup_event_tap(){
 
 /**********************************/
 int keylogger_init(){
-  assert(keylogger_init_db() == 0);
-  assert(keylogger_create_db() == 0);
   mouse_location   = CGEventGetLocation(event_handler);
   ctx.downkeys_v   = vector_new();
   ctx.downkeys_csv = "";
@@ -329,162 +328,50 @@ char *down_keys_csv(){
   return(S);
 }
 
-struct Vector *get_usb_devices_v(){
-  struct Vector *usb_devices_v = vector_new();
-  libusb_device **devs;
-  ssize_t       qty;
+CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *CALLBACK) {
+  char          *ckc = "UNKNOWN", *event_flag;
+  CGKeyCode     keyCode     = 0;
+  unsigned long event_flags = (int)CGEventGetFlags(event);
 
-  int           r = libusb_init(NULL);
-
-  if (r < 0) {
-    return(usb_devices_v);
-  }
-
-  qty = libusb_get_device_list(NULL, &devs);
-  if (qty < 0) {
-    libusb_exit(NULL);
-    return(usb_devices_v);
-  }
-  libusb_device *dev;
-  int           i = 0, j = 0;
-  uint8_t       path[8];
-
-  while ((dev = devs[i++]) != NULL) {
-    struct libusb_device_descriptor desc;
-    int                             r = libusb_get_device_descriptor(dev, &desc);
-    if (r < 0) {
-      fprintf(stderr, "failed to get device descriptor");
-      return;
-    }
-    char *dev_desc;
-    asprintf(&dev_desc, "%04x:%04x (bus %d, device %d)",
-             desc.idVendor, desc.idProduct,
-             libusb_get_bus_number(dev), libusb_get_device_address(dev));
-
-    free(dev_desc);
-    vector_push(usb_devices_v, dev_desc);
-
-    r = libusb_get_port_numbers(dev, path, sizeof(path));
-    if (r > 0) {
-      for (j = 1; j < r; j++) {
-      }
-    }
-    printf("\n");
-  }
-
-  libusb_free_device_list(devs, 1);
-
-  libusb_exit(NULL);
-  return(usb_devices_v);
-} /* get_usb_devices_v */
-
-CGEventRef event_handler(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-  unsigned long TS = (unsigned long)timestamp();
-  char          *action = "UNKNOWN", *ckc = "UNKNOWN", *input_type = "UNKNOWN";
-  CGKeyCode     keyCode = 0;
-
-  bool
-    key_up      = ((type == kCGEventKeyUp) ? true : false),
-    key_down    = ((type == kCGEventKeyDown) ? true : false),
-    is_mouse    = ((IsMouseEvent(type)) ? true : false),
-    is_keyboard = ((is_mouse) ? false : true)
-  ;
-
-  unsigned long       event_flags    = (int)CGEventGetFlags(event);
-  struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
-  char                *event_flag;
-
-  input_type = ((is_mouse) ? "mouse" : ((is_keyboard) ? ("keyboard") : ("UNKNOWN")));
-  action     = ((key_up) ? "UP" : ((key_down) ? "DOWN" : is_mouse ? "MOUSE" : "UNKNOWN"));
-
-  if (is_mouse) {
-    mouse_location = CGEventGetLocation(event);
-    keyCode        = (CGKeyCode)CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber) + 1;
-    ckc            = "MOUSE";
-  }else{
-    keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-    ckc     = convertKeyboardCode(keyCode);
-    if (key_up && key_is_down((size_t)keyCode)) {
-      key_not_down((size_t)keyCode);
-    }else if (key_down && !key_is_down((size_t)keyCode)) {
-      vector_push(ctx.downkeys_v, (void *)(size_t)keyCode);
-    }
-    if (key_down) {
+  keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+  if (keyCode > 0) {
+    ckc = keylogger_convertKeyboardCode(keyCode);
+    if (strlen(ckc) > 0) {
+      struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
       if (event_flags & kCGEventFlagMaskAlternate) {
-        stringbuffer_append_string(event_flag_sb, "alternate+");
+        stringbuffer_append_string(event_flag_sb, "alt+");
       }
       if (event_flags & kCGEventFlagMaskSecondaryFn) {
         stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
       }
       if (event_flags & kCGEventFlagMaskCommand) {
-        stringbuffer_append_string(event_flag_sb, "command+");
+        stringbuffer_append_string(event_flag_sb, "cmd+");
       }
       if (event_flags & kCGEventFlagMaskControl) {
-        stringbuffer_append_string(event_flag_sb, "control+");
+        stringbuffer_append_string(event_flag_sb, "ctrl+");
       }
       if (event_flags & kCGEventFlagMaskShift) {
         stringbuffer_append_string(event_flag_sb, "shift+");
       }
-      for (size_t i = 0; i < vector_size(ctx.downkeys_v); i++) {
-        char *_down_key_str  = (char *)convertKeyboardCode((size_t)vector_get(ctx.downkeys_v, i));
-        char *__down_key_str = stringfn_remove(_down_key_str, "[");
-        char *down_key_str   = stringfn_remove(__down_key_str, "]");
-        stringfn_mut_to_lowercase(down_key_str);
-        if (down_key_str && strlen(down_key_str) > 0) {
-          stringfn_mut_trim(down_key_str);
-          if (strlen(down_key_str) > 0) {
-            stringbuffer_append_string(event_flag_sb, down_key_str);
-            stringbuffer_append_string(event_flag_sb, "+");
-          }
-        }
+      stringbuffer_append_string(event_flag_sb, ckc);
+
+      event_flag = stringbuffer_to_string(event_flag_sb);
+      stringbuffer_release(event_flag_sb);
+
+      if (stringfn_ends_with(event_flag, "+")) {
+        stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
+      }
+      stringfn_mut_trim(event_flag);
+      if (CALLBACK != NULL) {
+        ((void (*)(char *)) CALLBACK)(event_flag);
       }
     }
-  }
-  event_flag = stringbuffer_to_string(event_flag_sb);
-  stringbuffer_release(event_flag_sb);
-  if (stringfn_ends_with(event_flag, "+")) {
-    stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
-  }
-  stringfn_mut_trim(event_flag);
-
-  struct keybindings_t *BOUND_KEYBINDING;
-
-  if (event_flag && strlen(event_flag) > 0) {
-    BOUND_KEYBINDING = get_bound_keybinding(event_flag);
-  }
-
-  int focused_pid       = (int)get_focused_pid(),
-      focused_window_id = (int)get_pid_window_id(focused_pid);
-
-  int ok1 = keylogger_insert_db_row(&(logged_key_event_t){
-    .ts               = (uint64_t)TS,
-    .qty              = 1,
-    .key_code         = (unsigned long)keyCode,
-    .key_string       = (char *)strdup(ckc),
-    .action           = (char *)strdup(action),
-    .mouse_x          = (unsigned long)mouse_location.x,
-    .mouse_y          = (unsigned long)mouse_location.y,
-    .input_type       = input_type,
-    .downkeys_v       = ctx.downkeys_v,
-    .downkeys_csv     = down_keys_csv(),
-    .focused_pid      = focused_pid,
-    .active_window_id = focused_window_id,
-    .event_flags      = event_flags,
-    .event_flag       = event_flag,
-    .usb_devices_v    = get_usb_devices_v(),
-  });
-
-  assert(ok1 == 0);
-
-  if (keyCode == 13) {
-    int ok2 = keylogger_insert_db_window_row();
-    assert(ok2 == 0);
   }
 
   return(event);
 } /* CGEventCallback */
 
-static const char *convertKeyboardCode(int keyCode) {
+static const char *keylogger_convertKeyboardCode(int keyCode) {
   switch ((int)keyCode) {
   case 0:   return("a");
 
@@ -717,10 +604,25 @@ static const char *convertKeyboardCode(int keyCode) {
 } /* convertKeyCode */
 
 /**********************************/
-int keylogger_exec() {
+int keylogger_exec_with_callback(void ( *cb )(char *)) {
+  assert(is_authorized_for_accessibility() == true);
   assert(keylogger_init() == 0);
-  assert(setup_event_tap() == 0);
+  log_info("Keylogger Initialized");
+  assert(setup_event_tap_with_callback(cb) == 0);
+  log_info("Keylogger Event Tap Setup");
   assert(tap_events() == 0);
+  log_info("Keylogger Events Tapped");
+  return(0);
+}
+
+int keylogger_exec() {
+  assert(is_authorized_for_accessibility() == true);
+  assert(keylogger_init() == 0);
+  log_info("Keylogger Initialized");
+  assert(setup_event_tap() == 0);
+  log_info("Keylogger Event Tap Setup");
+  assert(tap_events() == 0);
+  log_info("Keylogger Events Tapped");
   return(0);
 }
 /**********************************/

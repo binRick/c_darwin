@@ -25,12 +25,11 @@ static struct sqldbal_db  *db;
 static unsigned long      last_qty_checks = 0, last_qty_check_ts = 0, last_clipboard_check_ts = 0,
                           check_qty_interval_ms = 1000,
                           check_clipboard_interval_ms = 2000;
-static size_t            tbl_events_qty = 0, tbl_windows_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
-static struct Vector     *pids_v;
-static clipboard_event_t CLIPBOARD_EVENT;
-static size_t            updates_qty = 0;
-static bool              initialized = false;
-static unsigned long     last_ts     = 0;
+static size_t        tbl_events_qty = 0, tbl_windows_qty = 0, inserted_events_qty = 0, table_size_bytes = 0;
+static struct Vector *pids_v;
+static size_t        updates_qty = 0;
+static bool          initialized = false;
+static unsigned long last_ts     = 0;
 #define ASSERT_SQLDB_RESULT()          \
   { do {                               \
       assert(rc == SQLDBAL_STATUS_OK); \
@@ -259,19 +258,9 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     signal(SIGQUIT, __at_exit);
     atexit(__at_exit);
   }
-  db_statement_t db_st                 = NEW_DB_STATEMENT();
-  unsigned long  updated_dur           = cur_ts - last_ts;
-  unsigned long  clipboard_updated_dur = cur_ts - last_clipboard_check_ts;
+  db_statement_t db_st       = NEW_DB_STATEMENT();
+  unsigned long  updated_dur = cur_ts - last_ts;
 
-  if (clipboard_updated_dur > check_clipboard_interval_ms) {
-    char *clipboard_content = read_clipboard();
-    if (clipboard_content == NULL) {
-      printf("invalid clipboard content!");
-      exit(1);
-    }
-    CLIPBOARD_EVENT         = encode_clipboard_event(clipboard_content);
-    last_clipboard_check_ts = cur_ts;
-  }
   if (updated_dur > check_qty_interval_ms) {
     tbl_events_qty    = keylogger_count_table_rows("events");
     tbl_windows_qty   = keylogger_count_table_rows("windows");
@@ -304,7 +293,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             "\n\t  | event flag:    |" AC_BOLD "%s" AC_PLAIN
             "\n\t  | window size:   |x:%d|y:%d|w:%d|h:%d|"
             "\n\t  | mouse loc:     |x:%lu|y:%lu|"
-            "\n\t  | clipboard:     |" AC_BOLD "%s" AC_PLAIN
             "|" AC_UNDERLINE "%.30s" AC_NOUNDERLINE AC_PLAIN " " AC_UNDERLINE "..." AC_NOUNDERLINE
             "|" AC_ITALIC AC_YELLOW "%.30s" AC_RESETALL AC_PLAIN " " AC_UNDERLINE "..." AC_NOUNDERLINE
             "|"
@@ -327,7 +315,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             LOGGED_EVENT->event_flag,
             ss.x, ss.y, ss.w, ss.h,
             LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y,
-            bytes_to_string(CLIPBOARD_EVENT.raw_size), CLIPBOARD_EVENT.b64, CLIPBOARD_EVENT.raw,
             "\n"
             );
   }
