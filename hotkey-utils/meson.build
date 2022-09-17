@@ -19,6 +19,7 @@ hotkey_utils_deps = [
   log_dep,
   ms_dep,
   bytes_dep,libcyaml_dep,path_module_dep,window_utils_dep,app_utils_dep,
+  murmurhash_dep,
 ]
 
 hotkey_utils_c_args = [
