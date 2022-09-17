@@ -209,5 +209,9 @@ struct window_info_t *get_focused_window_info();
 bool resize_window_info(struct window_info_t *w, const int WIDTH, const int HEIGHT);
 bool move_window_info(struct window_info_t *w, const int X, const int Y);
 CGRect get_resized_window_info_rect_by_factor(struct window_info_t *w, float width_factor, float height_factor);
+CGRect get_resized_window_info_rect_by_factor_left_side(struct window_info_t *w, float width_factor, float height_factor);
+CGRect get_resized_window_info_rect_by_factor_right_side(struct window_info_t *w, float width_factor, float height_factor);
+CGRect get_resized_window_info_rect_by_factor_bottom_side(struct window_info_t *w, float width_factor, float height_factor);
+CGRect get_resized_window_info_rect_by_factor_top_side(struct window_info_t *w, float width_factor, float height_factor);
 ///////////////////////////////////////////////////
 #endif
