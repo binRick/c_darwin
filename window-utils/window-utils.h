@@ -25,6 +25,14 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 ///////////////////////////////////////////////////
+enum window_flag_t {
+  WINDOW_FLAG_SHADOW     = 1 << 0,
+  WINDOW_FLAG_FULLSCREEN = 1 << 1,
+  WINDOW_FLAG_MINIMIZE   = 1 << 2,
+  WINDOW_FLAG_FLOAT      = 1 << 3,
+  WINDOW_FLAG_STICKY     = 1 << 4,
+  WINDOW_FLAGS_QTY,
+};
 typedef struct {
   int longDisplay;
   int id;
@@ -41,6 +49,14 @@ typedef struct {
   int     hasSize;
   int     movedWindow;
 } MoveWinCtx;
+struct window_info_t {
+  const char *name, *title;
+  size_t     window_id, memory_usage;
+  pid_t      pid;
+  int        layer, sharing_state, store_type;
+  bool       is_onscreen;
+  CGRect     rect;
+};
 struct window_t {
   size_t              window_id;
   pid_t               pid;
@@ -62,7 +78,31 @@ struct window_t {
   ProcessSerialNumber psn;
   unsigned long       dur, started;
 };
+static const char *ax_error_str[] =
+{
+  [-kAXErrorSuccess]                           = "kAXErrorSuccess",
+  [-kAXErrorFailure]                           = "kAXErrorFailure",
+  [-kAXErrorIllegalArgument]                   = "kAXErrorIllegalArgument",
+  [-kAXErrorInvalidUIElement]                  = "kAXErrorInvalidUIElement",
+  [-kAXErrorInvalidUIElementObserver]          = "kAXErrorInvalidUIElementObserver",
+  [-kAXErrorCannotComplete]                    = "kAXErrorCannotComplete",
+  [-kAXErrorAttributeUnsupported]              = "kAXErrorAttributeUnsupported",
+  [-kAXErrorActionUnsupported]                 = "kAXErrorActionUnsupported",
+  [-kAXErrorNotificationUnsupported]           = "kAXErrorNotificationUnsupported",
+  [-kAXErrorNotImplemented]                    = "kAXErrorNotImplemented",
+  [-kAXErrorNotificationAlreadyRegistered]     = "kAXErrorNotificationAlreadyRegistered",
+  [-kAXErrorNotificationNotRegistered]         = "kAXErrorNotificationNotRegistered",
+  [-kAXErrorAPIDisabled]                       = "kAXErrorAPIDisabled",
+  [-kAXErrorNoValue]                           = "kAXErrorNoValue",
+  [-kAXErrorParameterizedAttributeUnsupported] = "kAXErrorParameterizedAttributeUnsupported",
+  [-kAXErrorNotEnoughPrecision]                = "kAXErrorNotEnoughPrecision"
+};
+static const char *window_levels[] = { "Base", "Minimum", "Desktop", "Backstop", "Normal", "Floating", "TornOffMenu", "Dock", "MainMenu", "Status", "ModalPanel", "PopUpMenu", "Dragging", "ScreenSaver", "Maximum", "Overlay", "Help", "Utility", "DesktopIcon", "Cursor", "AssistiveTechHigh" };
 ///////////////////////////////////////////////////
+int get_window_id_space_id(size_t window_id);
+bool get_pid_is_minimized(int pid);
+bool get_window_id_is_minimized(size_t window_id);
+bool get_window_is_minimized(struct window_t *w);
 struct Vector *get_window_ids_above_window(struct window_t *w);
 struct Vector *get_window_ids_below_window(struct window_t *w);
 struct Vector *get_window_space_ids_v(struct Vector *windows_v);
@@ -90,7 +130,6 @@ bool window_can_resize(struct window_t *w);
 bool window_can_minimize(struct window_t *w);
 bool window_is_topmost(struct window_t *w);
 size_t get_first_window_id_by_app_name(char *app_name);
-void focus_window_id(size_t WINDOW_ID);
 uint32_t getWindowId(AXUIElementRef window);
 
 char *windowTitle(char *appName, char *windowName);
@@ -99,8 +138,14 @@ void AXWindowSetPosition(AXUIElementRef window, CGPoint position);
 CGPoint CGWindowGetPosition(CFDictionaryRef window);
 CGSize CGWindowGetSize(CFDictionaryRef window);
 
+void set_window_id_flags(size_t window_id, enum window_flag_t flags);
+void set_window_flags(struct window_t *w, enum window_flag_t flags);
+
 void get_window_tags(struct window_t *w);
+void focus_window_id(size_t WINDOW_ID);
 void focus_window(struct window_t *w);
+void minimize_window_id(size_t WINDOW_ID);
+void minimize_window(struct window_t *w);
 void make_key_window(struct window_t *w);
 
 bool get_window_is_focused(struct window_t *w);
@@ -152,5 +197,7 @@ uint32_t display_active_display_id(void);
 int get_focused_window_id();
 ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);
 int get_window_id_pid(int window_id);
+int get_window_id_level(size_t window_id);
+void print_all_window_items(FILE *rsp);
 ///////////////////////////////////////////////////
 #endif

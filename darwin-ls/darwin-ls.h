@@ -62,6 +62,7 @@ struct args_t {
   double                               resize_factor;
   char                                 *xml_file_path;
   bool                                 clear_icons_cache;
+  int                                  pid;
 };
 extern struct args_t *args;
 #endif

@@ -23,7 +23,7 @@ char *common_option_width_or_height_name(enum common_option_width_or_height_t wi
 int main(int argc, char **argv) {
   if (is_authorized_for_accessibility() != true) {
     fprintf(stderr, "Application is not authorized for accessibility\n");
-    // exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
   }
   ARGV = argv;
   log_info("argv0: %s", argv[0]);
@@ -158,6 +158,56 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_WIDTH](args),
           common_options_b[COMMON_OPTION_WINDOW_HEIGHT](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_WINDOW_IS_MINIMIZED].name,
+        .description = cmds[COMMAND_WINDOW_IS_MINIMIZED].description,
+        .function    = cmds[COMMAND_WINDOW_IS_MINIMIZED].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_IS_MINIMIZED),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_WINDOW_LEVEL].name,
+        .description = cmds[COMMAND_WINDOW_LEVEL].description,
+        .function    = cmds[COMMAND_WINDOW_LEVEL].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_LEVEL),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_WINDOW_LAYER].name,
+        .description = cmds[COMMAND_WINDOW_LAYER].description,
+        .function    = cmds[COMMAND_WINDOW_LAYER].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_LAYER),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_PID_IS_MINIMIZED].name,
+        .description = cmds[COMMAND_PID_IS_MINIMIZED].description,
+        .function    = cmds[COMMAND_PID_IS_MINIMIZED].fxn,
+        .about       = get_command_about(COMMAND_PID_IS_MINIMIZED),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_PID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_MINIMIZE_WINDOW].name,
+        .description = cmds[COMMAND_MINIMIZE_WINDOW].description,
+        .function    = cmds[COMMAND_MINIMIZE_WINDOW].fxn,
+        .about       = get_command_about(COMMAND_MINIMIZE_WINDOW),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
       },

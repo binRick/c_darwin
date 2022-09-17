@@ -14,7 +14,6 @@
 #include "log/log.h"
 #include "timestamp/timestamp.h"
 /**********************************/
-static int keylogger_init();
 static int setup_event_tap();
 static int setup_event_tap_with_callback(void ( *cb )(char *key));
 static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, __attribute__((unused)) CGEventType type, CGEventRef event, void *CALLBACK);
@@ -57,12 +56,6 @@ static int setup_event_tap(){
   return(EXIT_SUCCESS);
 }
 
-/**********************************/
-static int keylogger_init(){
-  return(EXIT_SUCCESS);
-}
-
-/**********************************/
 static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, __attribute__((unused)) CGEventType type, CGEventRef event, void *CALLBACK) {
   unsigned long event_flags = (int)CGEventGetFlags(event);
 
@@ -71,7 +64,7 @@ static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, _
     if (keyCode > 0) {
       char *ckc = keylogger_convertKeyboardCode(keyCode);
       if (strlen(ckc) > 0) {
-        struct StringBuffer *event_flag_sb = stringbuffer_new_with_options(0, true);
+        struct StringBuffer *event_flag_sb = stringbuffer_new();
         if (event_flags & kCGEventFlagMaskAlternate) {
           stringbuffer_append_string(event_flag_sb, "alt+");
         }
@@ -97,12 +90,13 @@ static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, _
         }
         stringfn_mut_trim(event_flag);
         if (CALLBACK != NULL) {
-          ((void (*)(char *)) CALLBACK)(event_flag);
+          if (((int (*)(char *)) CALLBACK)(event_flag) == EXIT_SUCCESS) {
+            return(NULL);
+          }
         }
       }
     }
   }
-
   return(event);
 } /* CGEventCallback */
 
@@ -334,15 +328,13 @@ static const char *keylogger_convertKeyboardCode(int keyCode) {
 
   case 126: return("[up]");
   } /* switch */
-  fprintf(stderr, "UNKNOWN KEY: %d\n", keyCode);
+  log_error("UNKNOWN KEY: %d", keyCode);
   return("[unknown]");
 } /* convertKeyCode */
 
 /**********************************/
 int keylogger_exec_with_callback(void ( *cb )(char *)) {
   assert(is_authorized_for_accessibility() == true);
-  assert(keylogger_init() == 0);
-  log_info("Keylogger Initialized");
   assert(setup_event_tap_with_callback(cb) == 0);
   log_info("Keylogger Event Tap Setup");
   assert(tap_events() == 0);
@@ -352,8 +344,6 @@ int keylogger_exec_with_callback(void ( *cb )(char *)) {
 
 int keylogger_exec() {
   assert(is_authorized_for_accessibility() == true);
-  assert(keylogger_init() == 0);
-  log_info("Keylogger Initialized");
   assert(setup_event_tap() == 0);
   log_info("Keylogger Event Tap Setup");
   assert(tap_events() == 0);

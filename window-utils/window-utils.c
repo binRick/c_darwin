@@ -24,7 +24,6 @@ static void __attribute__((constructor)) __constructor__window_utils(void){
     WINDOW_UTILS_DEBUG_MODE = true;
   }
 }
-static const char *window_levels[]             = { "Base", "Minimum", "Desktop", "Backstop", "Normal", "Floating", "TornOffMenu", "Dock", "MainMenu", "Status", "ModalPanel", "PopUpMenu", "Dragging", "ScreenSaver", "Maximum", "Overlay", "Help", "Utility", "DesktopIcon", "Cursor", "AssistiveTechHigh" };
 static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "Install macOS*",
   "Control Center",
@@ -48,6 +47,7 @@ static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
   "com.apple.preference.displays.A",
   NULL,
 };
+static char *get_axerror_name(AXError err);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -123,7 +123,7 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   w->started   = timestamp();
   w->window    = CFArrayGetValueAtIndex(window_list, 0);
   w->window_id = (size_t)CFDictionaryGetInt(w->window, kCGWindowNumber);
-  w->layer     = CFDictionaryGetInt(w->window, kCGWindowLayer);
+  w->layer     = window_layer(w->window);
   w->pid       = CFDictionaryGetInt(w->window, kCGWindowOwnerPID);
   w->position  = CGWindowGetPosition(w->window);
   w->size      = CGWindowGetSize(w->window);
@@ -170,6 +170,7 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   w->width            = (int)(w->size.width);
   w->height           = (int)(w->size.height);
   w->display_index    = 100;
+  w->layer            = window_layer(w->window);
   w->display_uuid     = get_window_display_uuid(w);
   w->window_ids_above = get_window_ids_above_window(w);
   w->window_ids_below = get_window_ids_below_window(w);
@@ -190,6 +191,28 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   }
   return(w);
 } /* get_window_id */
+
+void set_window_id_flags(size_t window_id, enum window_flag_t flags){
+  struct window_t *w = get_window_id(window_id);
+
+  if (!w) {
+    return;
+  }
+  return(set_window_flags(w, flags));
+}
+
+void set_window_flags(struct window_t *w, enum window_flag_t flags){
+  log_info("Setting flags %d on window #%lu", flags, w->window_id);
+  switch (flags) {
+  case WINDOW_FLAG_MINIMIZE:
+    log_debug("Minimizing window");
+    AXUIElementSetAttributeValue(w->app, kAXMinimizedAttribute, kCFBooleanTrue);
+    break;
+  default:
+    log_error("Unhandled flag %d", flags);
+    break;
+  }
+}
 
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   char           *pid_s;
@@ -311,11 +334,17 @@ size_t get_pid_window_id(int PID){
   return(WINDOW_ID);
 }
 
+int get_window_id_space_id(__attribute__((unused)) size_t window_id){
+  int space_id = -1;
+
+  return(space_id);
+}
+
 int get_window_space_id(struct window_t *w){
   int           space_id     = -1;
   uint32_t      *window_list = 0;
   int           window_count = 0;
-  struct Vector *space_ids_v = vector_new();   //get_space_ids_v();
+  struct Vector *space_ids_v = vector_new();
 
   for (size_t i = 0; i <= vector_size(space_ids_v) && space_id == -1; i++) {
     window_count = 0;
@@ -417,12 +446,21 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   return(NULL);
 }
 
+int get_window_id_level(size_t window_id){
+  int level = 0;
+
+  //CGSGetWindowLevel(w->connection_id, (CGWindowID)(w->window_id), &level);
+  //CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(w->window_id), &level);
+  SLSGetWindowLevel(g_connection, (uint32_t)(window_id), &level);
+  return(level);
+}
+
 int get_window_level(struct window_t *w){
   int level = 0;
 
-  CGSGetWindowLevel(w->connection_id, (CGWindowID)(w->window_id), &level);
+  //CGSGetWindowLevel(w->connection_id, (CGWindowID)(w->window_id), &level);
   //CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(w->window_id), &level);
-  //SLSGetWindowLevel(w->connection_id, (uint32_t)(w->window_id), &level);
+  SLSGetWindowLevel(w->connection_id, (uint32_t)(w->window_id), &level);
   return(level);
 }
 
@@ -565,8 +603,72 @@ void get_window_tags(struct window_t *w){
   }
 }
 
+void minimize_window_id(size_t WINDOW_ID){
+  return(minimize_window(get_window_id(WINDOW_ID)));
+}
+
 void focus_window_id(size_t WINDOW_ID){
   return(focus_window(get_window_id(WINDOW_ID)));
+}
+
+bool get_pid_is_minimized(int pid){
+  AXError        err;
+  AXUIElementRef app = AXUIElementCreateApplication(pid);
+  CFArrayRef     appWindowList;
+
+  AXUIElementCopyAttributeValue(
+    app, kAXWindowsAttribute, (CFTypeRef *)&appWindowList
+    );
+  int window_count = CFArrayGetCount(appWindowList);
+
+  log_info("pid %d has %d windows", pid, window_count);
+
+  CFTypeRef isMinimizedBoolRef;
+
+  err = AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &isMinimizedBoolRef);
+  if (err == kAXErrorSuccess) {
+    log_info("Got is min for pid %d", pid);
+  }else{
+    log_error("Failed to get pid %d is minimized attribute: %s", pid, get_axerror_name(err));
+  }
+
+  CFBooleanRef boolRef;
+
+  err = AXUIElementCopyAttributeValue(app, kAXHiddenAttribute, &boolRef);
+  bool is_hidden = CFBooleanGetValue(boolRef);
+
+  if (err == kAXErrorSuccess) {
+    log_info("Got is hidden for pid %d: %s", pid, is_hidden?"Yes":"No");
+  }else{
+    log_error("Failed to get pid %d is hidden attribute: %s", pid, get_axerror_name(err));
+  }
+
+  Boolean   result = 0;
+  CFTypeRef value;
+
+  err = AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &value);
+  if (err == kAXErrorSuccess) {
+    result = CFBooleanGetValue(value);
+    CFRelease(value);
+  }else{
+    log_error("Failed to get pid %d is minimized attribute: %s", pid, get_axerror_name(err));
+  }
+  return(result);
+} /* get_pid_is_minimized */
+
+void minimize_window(struct window_t *w){
+  CFTypeRef value = NULL;
+
+  if (AXUIElementCopyAttributeValue(w->window, kAXMinimizedAttribute, &value) == kAXErrorSuccess) {
+    CFRelease(value);
+  }else{
+    log_error("Failed to copy minimized attribute");
+  }
+  if (AXUIElementSetAttributeValue(w->window, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
+    log_info("Set minimized property");
+  }else{
+    log_error("Failed to set minimized property");
+  }
 }
 
 void focus_window(struct window_t *w){
@@ -663,6 +765,7 @@ int get_window_layer(struct window_t *w){
   int         window_layer;
 
   CFNumberGetValue(objc_window_layer, kCFNumberIntType, &window_layer);
+  log_info("Window #%lu has layer %d", w->window_id, window_layer);
   return(window_layer);
 }
 
@@ -680,7 +783,7 @@ CGSize AXWindowGetSize(AXUIElementRef window) {
   return(size);
 }
 
-bool get_window_is_onscreen(struct window_t *w){
+bool get_window_is_onscreen(__attribute__((unused)) struct window_t *w){
   bool result = true;
 
   return(result);
@@ -772,6 +875,28 @@ void window_send_to_space(struct window_t *window, uint64_t dsid) {
   }
 }
 
+static char *get_axerror_name(AXError err){
+  return(ax_error_str[-err]);
+}
+
+bool get_window_id_is_minimized(size_t window_id){
+  bool            is_min = false;
+  CFTypeRef       value;
+  struct window_t *w  = get_window_id(window_id);
+  AXError         err = AXUIElementCopyAttributeValue(w->app, kAXMinimizedAttribute, &value);
+
+  if (err == kAXErrorSuccess) {
+    is_min = CFBooleanGetValue(value);
+    CFRelease(value);
+  }else{
+    log_error("Failed to copy minimized attribute for window ID #%lu. Error: %s",
+              window_id,
+              get_axerror_name(err)
+              );
+  }
+  return(is_min);
+}
+
 bool get_window_is_minimized(struct window_t *w){
   bool is_min = false;
   int  space_minimized_window_qty;
@@ -788,6 +913,7 @@ bool get_window_is_minimized(struct window_t *w){
       free(minimized_window_list);
     }
   }
+
   return(is_min);
 }
 
@@ -868,62 +994,82 @@ void move_current_window(int center, int x, int y, int w, int h){
   CFRelease(temp);
 }
 
-void print_all_menu_items(FILE *rsp) {
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
-  if (__builtin_available(macOS 11.0, *)) {
-    if (!CGRequestScreenCaptureAccess()) {
-      printf("[!] Query (default_menu_items): Screen Recording "
-             "Permissions not given\n");
-      return;
-    }
-  }
-#endif
-  CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll,
-                                                      kCGNullWindowID);
-  int        window_count = CFArrayGetCount(window_list);
+void print_all_window_items(FILE *rsp) {
+  unsigned long started      = timestamp();
+  CFArrayRef    window_list  = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  int           window_count = CFArrayGetCount(window_list);
 
-  fprintf(rsp, "[\n");
-  int counter = 0;
+  size_t        qty = 0;
+
   for (int i = 0; i < window_count; ++i) {
     CFDictionaryRef dictionary = CFArrayGetValueAtIndex(window_list, i);
     if (!dictionary) {
       continue;
     }
 
-    CFStringRef owner_ref = CFDictionaryGetValue(dictionary,
-                                                 kCGWindowOwnerName);
+    CFStringRef     owner_ref         = CFDictionaryGetValue(dictionary, kCGWindowOwnerName);
+    CFNumberRef     owner_pid_ref     = CFDictionaryGetValue(dictionary, kCGWindowOwnerPID);
+    CFStringRef     name_ref          = CFDictionaryGetValue(dictionary, kCGWindowName);
+    CFNumberRef     layer_ref         = CFDictionaryGetValue(dictionary, kCGWindowLayer);
+    CFNumberRef     window_id_ref     = CFDictionaryGetValue(dictionary, kCGWindowNumber);
+    CFDictionaryRef window_bounds     = CFDictionaryGetValue(dictionary, kCGWindowBounds);
+    CFNumberRef     memory_usage_ref  = CFDictionaryGetValue(dictionary, kCGWindowMemoryUsage);
+    CFNumberRef     sharing_state_ref = CFDictionaryGetValue(dictionary, kCGWindowSharingState);
+    CFNumberRef     store_type_ref    = CFDictionaryGetValue(dictionary, kCGWindowStoreType);
+    CFBooleanRef    is_onscreen_ref   = CFDictionaryGetValue(dictionary, kCGWindowIsOnscreen);
 
-    CFNumberRef owner_pid_ref = CFDictionaryGetValue(dictionary,
-                                                     kCGWindowOwnerPID);
-
-    CFStringRef name_ref  = CFDictionaryGetValue(dictionary, kCGWindowName);
-    CFNumberRef layer_ref = CFDictionaryGetValue(dictionary, kCGWindowLayer);
-    if (!name_ref || !owner_ref || !owner_pid_ref || !layer_ref) {
+    if (!name_ref || !owner_ref || !owner_pid_ref || !layer_ref || !window_id_ref) {
       continue;
     }
 
-    long long int layer = 0;
-    CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);
-    uint64_t      owner_pid = 0;
-    CFNumberGetValue(owner_pid_ref,
-                     CFNumberGetType(owner_pid_ref),
-                     &owner_pid);
+    uint64_t      owner_pid = 0, window_id = 0, sharing_state = 0, store_type = 0;
+    long long int layer = 0, memory_usage = 0;
+    bool          is_onscreen = false;
+    char          *name, *owner;
 
-    char *owner = cfstring_copy(owner_ref);
-    char *name  = cfstring_copy(name_ref);
+    CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);
+    CFNumberGetValue(memory_usage_ref, CFNumberGetType(memory_usage_ref), &memory_usage);
+    CGRect bounds;
+    CFNumberGetValue(store_type_ref, CFNumberGetType(store_type_ref), &store_type);
+    CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state);
+    CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);
+    CFNumberGetValue(owner_pid_ref, CFNumberGetType(owner_pid_ref), &owner_pid);
+    if (is_onscreen_ref) {
+      is_onscreen = CFBooleanGetValue(is_onscreen_ref);
+    }
+    CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);
+    owner = cfstring_copy(owner_ref);
+    name  = cfstring_copy(name_ref);
 
     if (strcmp(name, "") != 0) {
-      if (counter++ > 0) {
-        fprintf(rsp, ", \n");
-      }
-      fprintf(rsp, "\t\"%s,%s\"", owner, name);
+      qty++;
+      fprintf(rsp,
+              " owner:%s,window id:%lld,pid:%lld,name:%s,layer:%lld,"
+              "size:%dx%d,pos:%dx%d,mem:%lld,sharingstate:%lld,storetype:%lld,"
+              "onscreen:%s,"
+              "\n",
+              owner,
+              window_id,
+              owner_pid,
+              name,
+              layer,
+              (int)bounds.size.height, (int)bounds.size.width,
+              (int)bounds.origin.x, (int)bounds.origin.y,
+              memory_usage,
+              sharing_state,
+              store_type,
+              is_onscreen?"Yes":"No"
+              );
     }
 
     free(owner);
     free(name);
   }
-  fprintf(rsp, "\n]\n");
   CFRelease(window_list);
+  log_debug("Listed %lu Window Items in %s",
+            qty,
+            milliseconds_to_string(timestamp() - started)
+            );
 } /* print_all_menu_items */
 
 CGImageRef window_capture(struct window_t *window) {
@@ -997,7 +1143,7 @@ uint32_t display_active_display_id(void) {
   return(result);
 }
 
-ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w){
+ProcessSerialNumber get_window_ProcessSerialNumber(__attribute__((unused)) struct window_t *w){
   ProcessSerialNumber psn = {};
 
   _SLPSGetFrontProcess(&psn);
@@ -1336,7 +1482,7 @@ int get_window_id_pid(int window_id){
   return(-1);
 }
 
-CGWindowID CGWindowWithInfo(AXUIElementRef window, CGPoint location) {
+CGWindowID CGWindowWithInfo(AXUIElementRef window, __attribute__((unused)) CGPoint location) {
   AXError    error;
   CGWindowID windowID = kCGNullWindowID;
 
@@ -1431,7 +1577,8 @@ void _set_window_size(AXUIElementRef ax_window, CGSize *size) {
 
 void _set_window_position(AXUIElementRef ax_window, CGPoint *position) {
   AXValueRef ax_position = AXValueCreate(kAXValueCGPointType, position);
-  AXError    error       = AXUIElementSetAttributeValue(ax_window, kAXPositionAttribute, ax_position);
+
+  AXUIElementSetAttributeValue(ax_window, kAXPositionAttribute, ax_position);
 }
 
 CGWindowID CGWindowAtPosition(CGPoint position) {

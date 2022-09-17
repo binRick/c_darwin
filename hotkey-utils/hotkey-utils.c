@@ -66,13 +66,25 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
   return(NULL);
 }
 
+int minimize_application(void *APPLICATION_NAME){
+  log_info("Minimize app %s", (char *)APPLICATION_NAME);
+  size_t window_id = get_first_window_id_by_app_name((char *)APPLICATION_NAME);
+  set_window_id_flags(window_id, WINDOW_FLAG_MINIMIZE);
+  return(EXIT_SUCCESS);
+}
+
+int fullscreen_application(void *APPLICATION_NAME){
+  log_info("Fullscreen app %s", (char *)APPLICATION_NAME);
+  return(EXIT_SUCCESS);
+}
+
 int activate_application(void *APPLICATION_NAME){
   if (HOTKEY_UTILS_DEBUG_MODE == true) {
     log_info("Activating Application %s", (char *)APPLICATION_NAME);
   }
   size_t window_id = get_first_window_id_by_app_name((char *)APPLICATION_NAME);
   if (window_id == 0) {
-    log_error("Failed to find window named '%s'", APPLICATION_NAME);
+    log_error("Failed to find window named '%s'", (char *)APPLICATION_NAME);
   }else{
     if (HOTKEY_UTILS_DEBUG_MODE == true) {
       log_info("Got Window ID %lu", window_id);

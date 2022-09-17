@@ -10,7 +10,10 @@ subdir('submodules/c_deps/meson/git')
 subdir('submodules/c_deps/meson/version')
 subdir('meson')
 inc = [include_directories(
-  '.','submodules/c_deps/submodules','submodules','submodules/c_deps',
+  '.',
+  'submodules',
+  'submodules/c_deps/submodules',
+  'submodules/c_deps',
   'submodules/c_deps/submodules/c_ansi',
   'submodules/c_deps/submodules/reproc',
   'submodules/c_deps/submodules/reproc/reproc',

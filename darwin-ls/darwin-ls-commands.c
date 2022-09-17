@@ -11,6 +11,7 @@
 static void _command_move_window();
 static void _command_resize_window();
 static void _command_focus_window();
+static void _command_minimize_window();
 static void _command_set_window_space();
 static void _command_set_space();
 static void _command_set_space_index();
@@ -46,6 +47,10 @@ static void _command_app_icns_path();
 static void _command_parse_xml_file();
 static void _command_grayscale_png();
 static void _command_clear_icons_cache();
+static void _command_pid_is_minimized();
+static void _command_window_is_minimized();
+static void _command_window_layer();
+static void _command_window_level();
 static void _command_hotkeys();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
@@ -63,8 +68,20 @@ static void _check_application_path(char *application_path);
 static void _check_resize_factor(double resize_factor);
 static void _check_xml_file(char *xml_file_path);
 static void _check_icon_size(size_t icon_size);
+static void _check_pid(int pid);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
+  [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'p',
+      .long_name = "pid",
+      .description = "PID",
+      .arg_name = "PID",
+      .arg_data_type = check_cmds[CHECK_COMMAND_PID].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_PID].fxn,
+      .arg_dest = &(args->pid),
+    });
+  },
   [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                {
     return((struct optparse_opt)                                                             {
       .short_name = 'c',
@@ -311,6 +328,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
+  [CHECK_COMMAND_PID] =              {
+    .fxn           = (void (*)(void))(*_check_pid),
+    .arg_data_type = DATA_TYPE_INT,
+  },
   [CHECK_COMMAND_WINDOW_ID] =        {
     .fxn           = (void (*)(void))(*_check_window_id),
     .arg_data_type = DATA_TYPE_INT,
@@ -385,6 +406,31 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_HOTKEYS] =               {
     .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Hotkeys",
     .fxn  = (*_command_hotkeys),
+  },
+  [COMMAND_WINDOW_LEVEL] =          {
+    .name        = "window-level",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window Level",
+    .fxn         = (*_command_window_level),
+  },
+  [COMMAND_WINDOW_LAYER] =          {
+    .name        = "window-layer",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window Layer",
+    .fxn         = (*_command_window_layer),
+  },
+  [COMMAND_WINDOW_IS_MINIMIZED] =   {
+    .name        = "window-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window is Minimized",
+    .fxn         = (*_command_window_is_minimized),
+  },
+  [COMMAND_PID_IS_MINIMIZED] =      {
+    .name        = "pid-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "PID is Minimized",
+    .fxn         = (*_command_pid_is_minimized),
+  },
+  [COMMAND_MINIMIZE_WINDOW] =       {
+    .name        = "minimize-window",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Minimize Window",
+    .fxn         = (*_command_minimize_window),
   },
   [COMMAND_FOCUS_WINDOW] =          {
     .name = "focus-window",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Focus Window",
@@ -532,6 +578,15 @@ static void _check_resize_factor(double resize_factor){
   return(EXIT_SUCCESS);
 }
 
+static void _check_pid(int pid){
+  errno = 0;
+  if (pid < 2) {
+    log_error("Invalid Pid %d", pid);
+    exit(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
+}
+
 static void _check_icon_size(size_t icon_size){
   errno = 0;
   if (app_icon_size_is_valid(icon_size) == false) {
@@ -544,6 +599,7 @@ static void _check_icon_size(size_t icon_size){
 static void _check_application_path(char *application_path){
   if (fsio_dir_exists(application_path) == false) {
     log_error("Invalid Application Path '%s'", application_path);
+    exit(EXIT_FAILURE);
   }
   struct StringBuffer *sb = stringbuffer_new();
   stringbuffer_append_string(sb, application_path);
@@ -559,11 +615,14 @@ static void _check_application_path(char *application_path){
 }
 
 static void _check_output_png_file(char *output_png_file){
+  if (!output_png_file || strlen(output_png_file) < 5) {
+    log_error("Invalid output PNG File");
+    exit(EXIT_FAILURE);
+  }
   return(EXIT_SUCCESS);
 }
 
 static void _check_input_png_file(char *input_png_file){
-  log_info("Validating input png file %s", input_png_file);
   if (fsio_file_exists(input_png_file) == false) {
     log_error("Invalid Input PNG Path '%s'", input_png_file);
     exit(EXIT_FAILURE);
@@ -588,17 +647,22 @@ static void _check_input_icns_file(char *input_icns_file){
 }
 
 static void _check_output_icns_file(char *output_icns_file){
-  log_info("Validating output file %s", output_icns_file);
-  return(EXIT_FAILURE);
+  if (!output_icns_file || strlen(output_icns_file) < 5) {
+    log_error("Invalid output ICNS File");
+    exit(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
 }
 
-static void _check_output_file(char *output_mode){
-  log_info("Validating output file %s", output_mode);
-  return(EXIT_FAILURE);
+static void _check_output_file(char *output_file){
+  if (!output_file || strlen(output_file) < 5) {
+    log_error("Invalid output File");
+    exit(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
 }
 
 static void _check_output_mode(char *output_mode){
-  log_info("Validating output mode %s", output_mode);
   for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++) {
     if (strcmp(output_mode, output_modes[i]) == 0) {
       args->output_mode = i;
@@ -638,15 +702,16 @@ static void _check_window_id(uint16_t window_id){
     log_error("Window ID too small");
     goto do_error;
   }
-  args->window = get_window_id((size_t)window_id);
+  args->window_id = (int)window_id;
+  args->window    = get_window_id((size_t)window_id);
 
   if (!args->window) {
     log_error("Window is Null");
-    goto do_error;
-  }
-  if ((size_t)args->window->window_id != (size_t)window_id) {
-    log_error("Window id mismatch: %lu|%lu", (size_t)window_id, args->window->window_id);
-    goto do_error;
+  }else{
+    if ((size_t)args->window->window_id != (size_t)window_id) {
+      log_error("Window id mismatch: %lu|%lu", (size_t)window_id, args->window->window_id);
+      goto do_error;
+    }
   }
   return(EXIT_SUCCESS);
 
@@ -656,7 +721,7 @@ do_error:
 }
 
 ////////////////////////////////////////////
-static void hotkey_callback(char *KEYS){
+static int hotkey_callback(char *KEYS){
   char                    *config_path = get_homedir_yaml_config_file_path();
   struct hotkeys_config_t *cfg         = load_yaml_config_file_path(config_path);
 
@@ -680,21 +745,18 @@ static void hotkey_callback(char *KEYS){
       if (COMMAND_DEBUG_ARGS == true) {
         log_debug("Executed Action %s", key->action);
       }
+      return(EXIT_SUCCESS);
     }
   }
+  return(EXIT_FAILURE);
 }
 
 static void _command_hotkeys(){
-  bool ok = false;
-
-  keylogger_exec_with_callback(hotkey_callback);
-  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((keylogger_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_clear_icons_cache(){
-  bool ok = clear_icons_cache();
-
-  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((clear_icons_cache() == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_app_icns_path(){
@@ -1213,6 +1275,42 @@ static void _command_sticky_window(){
   set_window_tags(w);
   get_window_tags(w);
   fade_window(w);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_window_level(){
+  int level = get_window_id_level((size_t)args->window_id);
+
+  log_debug("Window #%d Level: %d", args->window_id, level);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_window_layer(){
+  int layer = get_window_layer(get_window_id((size_t)args->window_id));
+
+  log_debug("Window #%d Layer: %d", args->window_id, layer);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_window_is_minimized(){
+  bool is_minimized = get_window_id_is_minimized((size_t)args->window_id);
+
+  log_debug("Window #%d is Minimized? %s", args->window_id, is_minimized ? "Yes" : "No");
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_pid_is_minimized(){
+  print_all_window_items(stdout);
+  bool is_minimized = get_pid_is_minimized(args->pid);
+  log_debug("PID %d is Minimized? %s", args->pid, is_minimized ? "Yes" : "No");
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_minimize_window(){
+  struct window_t *w = get_window_id(args->window_id);
+
+  log_debug("minimizing window %lu on space %d", w->window_id, w->space_id);
+  minimize_window(w);
   exit(EXIT_SUCCESS);
 }
 
