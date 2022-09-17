@@ -1,0 +1,10 @@
+name: abc
+keys:
+  - name: xxxxxxxx
+    key: ctrl-t
+    action: action1
+    enabled: yes
+  - name: xxxxxxxx
+    key: ctrl-t
+    action: action1
+    enabled: no
