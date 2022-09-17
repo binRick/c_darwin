@@ -50,12 +50,13 @@ typedef struct {
   int     movedWindow;
 } MoveWinCtx;
 struct window_info_t {
-  const char *name, *title;
-  size_t     window_id, memory_usage;
-  pid_t      pid;
-  int        layer, sharing_state, store_type;
-  bool       is_onscreen;
-  CGRect     rect;
+  const char    *name, *title;
+  size_t        window_id, memory_usage;
+  pid_t         pid;
+  int           layer, sharing_state, store_type;
+  bool          is_onscreen;
+  CGRect        rect;
+  unsigned long started, dur;
 };
 struct window_t {
   size_t              window_id;
@@ -199,5 +200,8 @@ ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);
 int get_window_id_pid(int window_id);
 int get_window_id_level(size_t window_id);
 void print_all_window_items(FILE *rsp);
+struct Vector *get_window_infos_v(void);
+struct window_info_t *get_window_id_info(size_t window_id);
+struct Vector *get_window_pid_infos(pid_t pid);
 ///////////////////////////////////////////////////
 #endif

@@ -7,6 +7,13 @@
 #include "hotkey-utils/hotkey-utils.h"
 #include "keylogger/keylogger.h"
 #include "table-utils/table-utils.h"
+static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
+    log_debug("Enabling Darwin Ls Debug Mode");
+    DARWIN_LS_COMMANDS_DEBUG_MODE = true;
+  }
+}
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_resize_window();
@@ -51,6 +58,9 @@ static void _command_pid_is_minimized();
 static void _command_window_is_minimized();
 static void _command_window_layer();
 static void _command_window_level();
+static void _command_window_infos();
+static void _command_window_pid_info();
+static void _command_window_id_info();
 static void _command_hotkeys();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
@@ -407,6 +417,21 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Hotkeys",
     .fxn  = (*_command_hotkeys),
   },
+  [COMMAND_WINDOW_ID_INFO] =        {
+    .name        = "window-id-info",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window ID Info",
+    .fxn         = (*_command_window_id_info),
+  },
+  [COMMAND_WINDOW_PID_INFO] =       {
+    .name        = "window-pid-info",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window PID Info",
+    .fxn         = (*_command_window_pid_info),
+  },
+  [COMMAND_WINDOW_INFOS] =          {
+    .name        = "window-infos",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Window Infos",
+    .fxn         = (*_command_window_infos),
+  },
   [COMMAND_WINDOW_LEVEL] =          {
     .name        = "window-level",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window Level",
@@ -706,7 +731,9 @@ static void _check_window_id(uint16_t window_id){
   args->window    = get_window_id((size_t)window_id);
 
   if (!args->window) {
-    log_error("Window is Null");
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+      log_error("Window is Null");
+    }
   }else{
     if ((size_t)args->window->window_id != (size_t)window_id) {
       log_error("Window id mismatch: %lu|%lu", (size_t)window_id, args->window->window_id);
@@ -725,24 +752,24 @@ static int hotkey_callback(char *KEYS){
   char                    *config_path = get_homedir_yaml_config_file_path();
   struct hotkeys_config_t *cfg         = load_yaml_config_file_path(config_path);
 
-  if (COMMAND_DEBUG_ARGS == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
     log_info("Keys: " AC_YELLOW "%s" AC_RESETALL "|" "hotkey config %s with %lu hotkeys", KEYS, config_path, cfg->keys_count);
   }
   struct key_t *key = get_hotkey_config_key(cfg, KEYS);
 
   if (key == NULL) {
-    if (COMMAND_DEBUG_ARGS == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
       log_debug("Non existent hotkey %s", KEYS);
     }
   }else{
-    if (COMMAND_DEBUG_ARGS == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
       log_debug("Existent hotkey %s", KEYS);
     }
     int rc = execute_hotkey_config_key(key);
     if (rc != EXIT_SUCCESS) {
       log_error("Failed to execute Action %s", key->action);
     }else{
-      if (COMMAND_DEBUG_ARGS == true) {
+      if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
         log_debug("Executed Action %s", key->action);
       }
       return(EXIT_SUCCESS);
@@ -763,17 +790,17 @@ static void _command_app_icns_path(){
   bool ok                   = false;
   char *app_plist_info_path = get_app_path_plist_info_path(args->application_path);
 
-  if (COMMAND_DEBUG_ARGS == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
     log_info("Application %s has plist file %s", args->application_path, app_plist_info_path);
   }
   char *app_icns_file_path = get_info_plist_icon_file_path(app_plist_info_path);
 
-  if (COMMAND_DEBUG_ARGS == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
     log_info("Application %s has icns file name %s", args->application_path, app_icns_file_path);
   }
   char *icns_file_path = get_app_path_icns_file_path_icon_file_path(args->application_path, app_icns_file_path);
 
-  if (COMMAND_DEBUG_ARGS == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
     log_info("Application %s has icns file %s", args->application_path, icns_file_path);
   }
   ok = (fsio_file_exists(icns_file_path)) ? true : false;
@@ -838,7 +865,7 @@ static void _command_save_app_icon_to_icns(){
 }
 
 static void _command_write_app_icon_icns(){
-  if (COMMAND_DEBUG_ARGS == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
     log_info("setting app icon for app %s from icns %s", args->application_path, args->input_icns_file);
   }
   bool ok = write_icns_to_app_path(args->input_icns_file, args->application_path);
@@ -852,11 +879,11 @@ static void _command_write_app_icon_icns(){
     }else{
       fprintf(stderr, "Cleared icons cache\n");
     }
-    if (COMMAND_DEBUG_ARGS == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
       log_debug("Cleared icons cache");
     }
   }else{
-    if (COMMAND_DEBUG_ARGS == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
       log_info("not clearing icons cache");
     }
   }
@@ -1275,6 +1302,61 @@ static void _command_sticky_window(){
   set_window_tags(w);
   get_window_tags(w);
   fade_window(w);
+  exit(EXIT_SUCCESS);
+}
+
+#define PRINT_WINDOW_INFO(WINDOW_INFO)                                                                                                       \
+  fprintf(stdout,                                                                                                                            \
+          "Window Info: |id:" AC_YELLOW "%lu" AC_RESETALL "|pid:" AC_CYAN "%d" AC_RESETALL "|name:" AC_MAGENTA "%s" AC_RESETALL "|dur:%s|\n" \
+          "             |title:" AC_BLUE "%s" AC_RESETALL "|\n"                                                                              \
+          "             |layer:" AC_RED "%d" AC_RESETALL "|size:%dx%d|pos:%dx%d|onscreen:%s" AC_RESETALL "|\n"                               \
+          "             |mem:%lu|\n"                                                                                                         \
+          "%s",                                                                                                                              \
+          WINDOW_INFO->window_id,                                                                                                            \
+          WINDOW_INFO->pid,                                                                                                                  \
+          WINDOW_INFO->name,                                                                                                                 \
+          milliseconds_to_string(WINDOW_INFO->dur),                                                                                          \
+          WINDOW_INFO->title,                                                                                                                \
+          WINDOW_INFO->layer,                                                                                                                \
+          (int)WINDOW_INFO->rect.size.height, (int)WINDOW_INFO->rect.size.width,                                                             \
+          (int)WINDOW_INFO->rect.origin.x, (int)WINDOW_INFO->rect.origin.y,                                                                  \
+          (WINDOW_INFO->is_onscreen == true) ? AC_GREEN "Yes" : AC_RED "No",                                                                 \
+          WINDOW_INFO->memory_usage,                                                                                                         \
+          ""                                                                                                                                 \
+          );
+
+static void _command_window_id_info(){
+  struct window_info_t *window_info = get_window_id_info(args->window_id);
+
+  PRINT_WINDOW_INFO(window_info);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_window_pid_info(){
+  unsigned long started         = timestamp();
+  struct Vector *window_infos_v = get_window_pid_infos(args->pid);
+
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    struct window_info_t *window_info = (struct window_info_t *)vector_get(window_infos_v, i);
+    PRINT_WINDOW_INFO(window_info);
+  }
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_debug("%lu Window Infos in %s", vector_size(window_infos_v), milliseconds_to_string(timestamp() - started));
+  }
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_window_infos(){
+  unsigned long started         = timestamp();
+  struct Vector *window_infos_v = get_window_infos_v();
+
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    struct window_info_t *window_info = (struct window_info_t *)vector_get(window_infos_v, i);
+    PRINT_WINDOW_INFO(window_info);
+  }
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_debug("%lu Window Infos in %s", vector_size(window_infos_v), milliseconds_to_string(timestamp() - started));
+  }
   exit(EXIT_SUCCESS);
 }
 

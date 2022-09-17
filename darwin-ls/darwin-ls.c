@@ -26,7 +26,6 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
   ARGV = argv;
-  log_info("argv0: %s", argv[0]);
   realpath(argv[0], EXECUTABLE_PATH);
   EXECUTABLE              = basename(EXECUTABLE_PATH);
   EXECUTABLE_PATH_DIRNAME = dirname(EXECUTABLE_PATH);
@@ -170,6 +169,32 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           { END_OF_OPTIONS },
         },
+      },
+      {
+        .name        = cmds[COMMAND_WINDOW_ID_INFO].name,
+        .description = cmds[COMMAND_WINDOW_ID_INFO].description,
+        .function    = cmds[COMMAND_WINDOW_ID_INFO].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_ID_INFO),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_WINDOW_PID_INFO].name,
+        .description = cmds[COMMAND_WINDOW_PID_INFO].description,
+        .function    = cmds[COMMAND_WINDOW_PID_INFO].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_PID_INFO),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_PID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_WINDOW_INFOS].name,
+        .description = cmds[COMMAND_WINDOW_INFOS].description,
+        .function    = cmds[COMMAND_WINDOW_INFOS].fxn,
+        .about       = get_command_about(COMMAND_WINDOW_INFOS),
       },
       {
         .name        = cmds[COMMAND_WINDOW_LEVEL].name,

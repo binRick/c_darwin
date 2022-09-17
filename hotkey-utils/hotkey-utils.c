@@ -66,6 +66,37 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
   return(NULL);
 }
 
+int increase_focused_application_width_ten_percent(){
+  int cur_width = -1, cur_height = -1, cur_x = -1, cur_y = -1, new_width = -1, new_height = -1, new_x = -1, new_y = -1, pid = -1;
+
+  pid = get_focused_pid();
+  log_info("Increasing focused app width 10%%|pid:%d|cur size:%dx%d|cur pos:%dx%d|new size:%dx%d,new pos:%dx%d",
+           pid,
+           cur_width, cur_height,
+           cur_x, cur_y,
+           new_width, new_height,
+           new_x, new_y
+           );
+
+//  log_debug("resizing window %lu to %dx%d", w->window_id, args->width, args->height);
+  //resize_window(w, args->width, args->height);
+  return(EXIT_FAILURE);
+}
+
+int decrease_focused_application_width_ten_percent(){
+  int cur_width = -1, cur_height = -1, cur_x = -1, cur_y = -1, new_width = -1, new_height = -1, new_x = -1, new_y = -1, pid = -1;
+
+  pid = get_focused_pid();
+  log_info("Decreasing focused app width 10%%|pid:%d|cur size:%dx%d|cur pos:%dx%d|new size:%dx%d,new pos:%dx%d",
+           pid,
+           cur_width, cur_height,
+           cur_x, cur_y,
+           new_width, new_height,
+           new_x, new_y
+           );
+  return(EXIT_FAILURE);
+}
+
 int minimize_application(void *APPLICATION_NAME){
   log_info("Minimize app %s", (char *)APPLICATION_NAME);
   size_t window_id = get_first_window_id_by_app_name((char *)APPLICATION_NAME);

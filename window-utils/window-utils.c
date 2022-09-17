@@ -994,11 +994,150 @@ void move_current_window(int center, int x, int y, int w, int h){
   CFRelease(temp);
 }
 
+
+#define WINDOW_DICTIONARY_INIT_WINDOW_LIST()\
+  unsigned long started      = timestamp();\
+  CFArrayRef    windows_list  = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements|kCGWindowListOptionAll, kCGNullWindowID);\
+  size_t windows_count = (size_t)CFArrayGetCount(windows_list);\
+  struct Vector *window_infos_v = vector_new();
+
+#define WINDOW_DICTIONARY_FREE_WINDOW_LIST()\
+
+#define WINDOW_DICTIONARY_INFO_REFS(DICT)\
+  CFStringRef     name_ref         = CFDictionaryGetValue(DICT, kCGWindowOwnerName);\
+  CFNumberRef     pid_ref     = CFDictionaryGetValue(DICT, kCGWindowOwnerPID);\
+  CFStringRef     title_ref         = CFDictionaryGetValue(DICT, kCGWindowName);\
+  CFNumberRef     layer_ref         = CFDictionaryGetValue(DICT, kCGWindowLayer);\
+  CFNumberRef     window_id_ref     = CFDictionaryGetValue(DICT, kCGWindowNumber);\
+  CFDictionaryRef window_bounds     = CFDictionaryGetValue(DICT, kCGWindowBounds);\
+  CFNumberRef     memory_usage_ref  = CFDictionaryGetValue(DICT, kCGWindowMemoryUsage);\
+  CFNumberRef     sharing_state_ref = CFDictionaryGetValue(DICT, kCGWindowSharingState);\
+  CFNumberRef     store_type_ref    = CFDictionaryGetValue(DICT, kCGWindowStoreType);\
+  CFBooleanRef    is_onscreen_ref   = CFDictionaryGetValue(DICT, kCGWindowIsOnscreen);
+
+#define WINDOW_DICTIONARY_VALIDATE_INFO_REFS()\
+  if (!name_ref || !title_ref || !pid_ref || !layer_ref || !window_id_ref) continue;
+
+#define WINDOW_DICTIONARY_INIT_ITEMS()\
+ uint64_t      window_id = 0, sharing_state = 0, store_type = 0;\
+ long long int layer = 0, memory_usage = 0, pid = 0;\
+ bool          is_onscreen = false;\
+ char          *name = NULL, *title = NULL;\
+ struct window_info_t *i = calloc(1,sizeof(struct window_info_t));\
+ i->started = timestamp();
+
+#define WINDOW_DICTIONARY_SET_ITEMS()\
+ CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);\
+ CFNumberGetValue(memory_usage_ref, CFNumberGetType(memory_usage_ref), &memory_usage);\
+ CGRect bounds;\
+ CFNumberGetValue(store_type_ref, CFNumberGetType(store_type_ref), &store_type);\
+ CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state);\
+ CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);\
+ CFNumberGetValue(pid_ref, CFNumberGetType(pid_ref), &pid);\
+ if(is_onscreen_ref) is_onscreen = CFBooleanGetValue(is_onscreen_ref);\
+ CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);\
+ name = cfstring_copy(name_ref);\
+ if(title_ref) title = cfstring_copy(title_ref);
+
+#define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS()\
+ if (!name || strlen(name)<1 || pid<1 || !title){ free(i);  continue; }
+
+#define WINDOW_DICTIONARY_SET_WINDOW_INFO()\
+ i->name = (name != NULL) ? strdup(name) : "";\
+ i->title = (title != NULL) ? strdup(title) : "";\
+ i->window_id = (size_t)window_id;\
+ i->memory_usage = (size_t)memory_usage;\
+ i->pid = (pid_t)pid;\
+ i->layer = (int)layer;\
+ i->sharing_state = (int)sharing_state;\
+ i->store_type = (int)store_type;\
+ i->is_onscreen = is_onscreen;\
+ i->rect = (CGRect)bounds;\
+ i->dur = timestamp()-i->started;
+
+#define WINDOW_DICTIONARY_APPEND_WINDOW_INFO()\
+ vector_push(window_infos_v,(void*)i);
+
+
+#define WINDOW_DICTIONARY_PRINT_ITEMS(FILE_DESCRIPTOR)\
+ fprintf(FILE_DESCRIPTOR,\
+              " name:%s,window id:%lld,pid:%lld,title:%s,layer:%lld,"\
+              "  size:%dx%d,pos:%dx%d,mem:%lld,sharingstate:%lld,storetype:%lld,"\
+              "  onscreen:%s,"\
+              "\n",\
+              name,\
+              window_id,\
+              pid,\
+              title,\
+              layer,\
+              (int)bounds.size.height, (int)bounds.size.width,\
+              (int)bounds.origin.x, (int)bounds.origin.y,\
+              memory_usage,\
+              sharing_state,\
+              store_type,\
+              is_onscreen?"Yes":"No"\
+              );
+
+#define WINDOW_DICTIONARY_FREE_ITEMS()\
+ if(name) free(name);\
+ if(title) free(title);
+
+struct Vector *get_window_pid_infos(pid_t pid){
+  struct Vector *window_infos_v = get_window_infos_v();
+  struct Vector *pid_window_infos_v = vector_new();
+  struct window_info_t *window_info = NULL;
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    struct window_info_t *wi = (struct window_info_t*)vector_get(window_infos_v,i);
+    if(wi->pid == pid)
+      vector_push(pid_window_infos_v,(void*)wi);
+    else
+      free(wi);
+  }
+  return(pid_window_infos_v);
+}
+
+struct window_info_t *get_window_id_info(size_t window_id){
+  struct Vector *window_infos_v = get_window_infos_v();
+  struct window_info_t *window_info = NULL;
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    struct window_info_t *wi = (struct window_info_t*)vector_get(window_infos_v,i);
+    if(wi->window_id == window_id)
+      window_info = wi;
+    else
+      free(wi);
+  }
+  return(window_info);
+}
+
+struct Vector *get_window_infos_v(){
+  WINDOW_DICTIONARY_INIT_WINDOW_LIST()
+  for (size_t i = 0; i < windows_count; ++i) {
+    CFDictionaryRef dictionary = CFArrayGetValueAtIndex(windows_list, i);
+    if (!dictionary) {
+      continue;
+    }
+    WINDOW_DICTIONARY_INIT_ITEMS()
+    WINDOW_DICTIONARY_INFO_REFS(dictionary)
+    WINDOW_DICTIONARY_VALIDATE_INFO_REFS()
+    WINDOW_DICTIONARY_SET_ITEMS()
+    if(WINDOW_UTILS_DEBUG_MODE==true)
+      WINDOW_DICTIONARY_PRINT_ITEMS(stderr)
+    WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS()
+    WINDOW_DICTIONARY_SET_WINDOW_INFO()
+    WINDOW_DICTIONARY_APPEND_WINDOW_INFO()
+    WINDOW_DICTIONARY_FREE_ITEMS()
+  }
+  log_debug("Collected %lu Window Infos in %s",
+            vector_size(window_infos_v),
+            milliseconds_to_string(timestamp() - started)
+            );
+  return(window_infos_v);
+}
+
 void print_all_window_items(FILE *rsp) {
   unsigned long started      = timestamp();
   CFArrayRef    window_list  = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements, kCGNullWindowID);
   int           window_count = CFArrayGetCount(window_list);
-
   size_t        qty = 0;
 
   for (int i = 0; i < window_count; ++i) {

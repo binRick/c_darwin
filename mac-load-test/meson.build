@@ -16,6 +16,8 @@ mac_load_test_deps = [
   
 ]
 mac_load_test_c_args = [
+  '-Wno-unused-parameter',
+  '-Wno-unused-function',
 ]
 mac_load_test_link_args = [
 ]

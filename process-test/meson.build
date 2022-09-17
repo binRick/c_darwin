@@ -7,6 +7,8 @@ process_include_dirs = [
   inc,
 ]
 process_include_cargs = [
+  '-Wno-unused-parameter',
+  '-Wno-unused-function',
   ]
 process_test_deps = [
   c_greatest_dep,
