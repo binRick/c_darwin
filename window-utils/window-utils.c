@@ -426,6 +426,33 @@ int get_window_level(struct window_t *w){
   return(level);
 }
 
+size_t get_first_window_id_by_app_name(char *app_name){
+  size_t window_id = 0;
+
+  if (WINDOW_UTILS_DEBUG_MODE == true) {
+    log_info("Searching for window with app name %s", app_name);
+  }
+  struct Vector   *windows_v = get_windows();
+  struct window_t *w;
+
+  for (size_t i = 0; i < vector_size(windows_v); i++) {
+    w = (struct window_t *)vector_get(windows_v, i);
+    if (window_id == 0) {
+      if (WINDOW_UTILS_DEBUG_MODE == true) {
+        log_info("Comparing Window #%lu> %s | %s", w->window_id, w->app_name, app_name);
+      }
+      if (strcmp(stringfn_to_lowercase(w->app_name), stringfn_to_lowercase(app_name)) == 0) {
+        if (WINDOW_UTILS_DEBUG_MODE == true) {
+          log_debug("Found Match!");
+        }
+        window_id = (size_t)w->window_id;
+      }
+    }
+    free(w);
+  }
+  return(window_id);
+}
+
 char *get_window_title(struct window_t *w){
   char      *title = NULL;
   CFTypeRef value  = NULL;
@@ -538,17 +565,21 @@ void get_window_tags(struct window_t *w){
   }
 }
 
+void focus_window_id(size_t WINDOW_ID){
+  return(focus_window(get_window_id(WINDOW_ID)));
+}
+
 void focus_window(struct window_t *w){
   if (w->space_id != get_space_id()) {
     if (WINDOW_UTILS_DEBUG_MODE == true) {
       log_info("changing space from %d to %d", get_space_id(), w->space_id);
     }
-    _SLPSSetFrontProcessWithOptions(&(w->psn), w->window_id, kCPSUserGenerated);
-    AXUIElementSetAttributeValue(w->app, kAXFrontmostAttribute, kCFBooleanTrue);
-    make_key_window(w);
-    AXUIElementPerformAction(w->window, kAXRaiseAction);
-    AXUIElementSetAttributeValue(w->window, kAXFrontmostAttribute, kCFBooleanTrue);
   }
+  _SLPSSetFrontProcessWithOptions(&(w->psn), w->window_id, kCPSUserGenerated);
+  AXUIElementSetAttributeValue(w->app, kAXFrontmostAttribute, kCFBooleanTrue);
+  make_key_window(w);
+  AXUIElementPerformAction(w->window, kAXRaiseAction);
+  AXUIElementSetAttributeValue(w->window, kAXFrontmostAttribute, kCFBooleanTrue);
 }
 
 void make_key_window(struct window_t *w){

@@ -1,6 +1,5 @@
 hotkey_utils_srcs = [
   'hotkey-utils.c',
-  'hotkey-utils-types.c',
 ]
 
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
@@ -19,7 +18,7 @@ hotkey_utils_deps = [
   timestamp_dep,
   log_dep,
   ms_dep,
-  bytes_dep,libcyaml_dep,path_module_dep,
+  bytes_dep,libcyaml_dep,path_module_dep,window_utils_dep,app_utils_dep,
 ]
 
 hotkey_utils_c_args = [

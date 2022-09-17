@@ -1,0 +1,22 @@
+name: abc
+keys:
+  - name: Activate Alacritty
+    key: ctrl-5
+    action: alacritty
+    action_type: ActivateApplication
+    enabled: yes
+  - name: Dectivate Alacritty
+    key: ctrl-6
+    action: alacritty
+    action_type: DeactivateApplication
+    enabled: yes
+  - name: Activate Kitty
+    key: ctrl-7
+    action: kitty
+    action_type: ActivateApplication
+    enabled: yes
+  - name: Deactivate Kitty
+    key: ctrl-8
+    action: kitty
+    action_type: DeactivateApplication
+    enabled: yes

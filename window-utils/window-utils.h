@@ -89,6 +89,8 @@ bool window_can_move(struct window_t *w);
 bool window_can_resize(struct window_t *w);
 bool window_can_minimize(struct window_t *w);
 bool window_is_topmost(struct window_t *w);
+size_t get_first_window_id_by_app_name(char *app_name);
+void focus_window_id(size_t WINDOW_ID);
 uint32_t getWindowId(AXUIElementRef window);
 
 char *windowTitle(char *appName, char *windowName);
