@@ -59,7 +59,7 @@ struct hotkeys_config_t {
   size_t       keys_count;
 };
 //////////////////////////////////////
-static const cyaml_strval_t               action_type_strings[] = {
+static const cyaml_strval_t action_type_strings[] = {
   { "None",                                       ACTION_TYPE_NONE                                            },
   { "ActivateApplication",                        ACTION_TYPE_ACTIVATE_APPLICATION                            },
   { "DeactivateApplication",                      ACTION_TYPE_DEACTIVATE_APPLICATION                          },
@@ -83,21 +83,25 @@ static const cyaml_strval_t               action_type_strings[] = {
   { "DecreaseFocusedApplicationHeightTenPercent", ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT },
   { "None",                                       ACTION_TYPES_QTY                                            },
 };
+#define GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(DIRECTION, FACTOR_TEXT, DIRECTION_LABEL, PERCENTAGE) \
+  [ACTION_TYPE_ ## DIRECTION ## _ ## FACTOR_TEXT ## _PERCENT_FOCUSED_APPLICATION] = "Resize Focused Application ##DIRECTION_LABEL## by ##PERCENTAGE##%%"
+
+////////////////////////////////////////////////////////////
 static const char __attribute__((unused)) * action_type_descriptions[ACTION_TYPES_QTY + 1] = {
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
-  [ACTION_TYPE_TOP_FIFTY_PERCENT_FOCUSED_APPLICATION]    = "Resize Focused Application to Top 50%%",
-  [ACTION_TYPE_BOTTOM_FIFTY_PERCENT_FOCUSED_APPLICATION] = "Resize Focused Application to Bottom 50%%",
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(TOP,                                                           FIFTY,        Top,    50),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(BOTTOM,                                                        FIFTY,        Bottom, 50),
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
-  [ACTION_TYPE_LEFT_TWENTY_FIVE_PERCENT_FOCUSED_APPLICATION]   = "Resize Focused Application to Left 25%%",
-  [ACTION_TYPE_RIGHT_TWENTY_FIVE_PERCENT_FOCUSED_APPLICATION]  = "Resize Focused Application to Right 25%%",
-  [ACTION_TYPE_LEFT_FIFTY_PERCENT_FOCUSED_APPLICATION]         = "Resize Focused Application to Left 50%%",
-  [ACTION_TYPE_RIGHT_FIFTY_PERCENT_FOCUSED_APPLICATION]        = "Resize Focused Application to Right 50%%",
-  [ACTION_TYPE_LEFT_FOURTY_PERCENT_FOCUSED_APPLICATION]        = "Resize Focused Application to Left 40%%",
-  [ACTION_TYPE_RIGHT_FOURTY_PERCENT_FOCUSED_APPLICATION]       = "Resize Focused Application to Right 40%%",
-  [ACTION_TYPE_LEFT_SIXTY_PERCENT_FOCUSED_APPLICATION]         = "Resize Focused Application to Left 60%%",
-  [ACTION_TYPE_RIGHT_SIXTY_PERCENT_FOCUSED_APPLICATION]        = "Resize Focused Application to Right 60%%",
-  [ACTION_TYPE_LEFT_SEVENTY_FIVE_PERCENT_FOCUSED_APPLICATION]  = "Resize Focused Application to Left 75%%",
-  [ACTION_TYPE_RIGHT_SEVENTY_FIVE_PERCENT_FOCUSED_APPLICATION] = "Resize Focused Application to Right 75%%",
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(LEFT,                                                          TWENTY_FIVE,  Left,   25),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(RIGHT,                                                         TWENTY_FIVE,  Right,  25),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(LEFT,                                                          FOURTY,       Left,   40),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(RIGHT,                                                         FOURTY,       Right,  40),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(LEFT,                                                          FIFTY,        Left,   50),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(RIGHT,                                                         FIFTY,        Right,  50),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(LEFT,                                                          SIXTY,        Left,   60),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(RIGHT,                                                         SIXTY,        Right,  60),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(LEFT,                                                          SEVENTY_FIVE, Left,   75),
+  GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(RIGHT,                                                         SEVENTY_FIVE, Right,  75),
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
   [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_WIDTH_TEN_PERCENT] = "Increase Focused Application Width by 10%%",
   [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_WIDTH_TEN_PERCENT] = "Decrease Focused Application Width by 10%%",
@@ -106,6 +110,8 @@ static const char __attribute__((unused)) * action_type_descriptions[ACTION_TYPE
   [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT] = "Decrease Focused Application Height by 10%%",
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
+#undef GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION
+////////////////////////////////////////////////////////////
 //////////////////////////////////////
 char *get_yaml_config_file_path(char **argv);
 char *get_homedir_yaml_config_file_path(void);
@@ -115,10 +121,15 @@ int activate_application(void *APPLICATION_NAME);
 int fullscreen_application(void *APPLICATION_NAME);
 int deactivate_application(void *APPLICATION_NAME);
 ////////////////////////////////////////////////////////////
-int increase_focused_application_width_ten_percent(void);
-int decrease_focused_application_width_ten_percent(void);
-int increase_focused_application_height_ten_percent(void);
-int decrease_focused_application_height_ten_percent(void);
+#define GENERATE_RESIZE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(DIRECTION, TYPE, FACTOR_TEXT) \
+  int DIRECTION ## _focused_application_ ## TYPE ## _ ## FACTOR_TEXT ## _percent(void);
+////////////////////////////////////////////////////////////
+GENERATE_RESIZE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(increase, width, ten);
+GENERATE_RESIZE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(decrease, width, ten);
+GENERATE_RESIZE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(increase, height, ten);
+GENERATE_RESIZE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(decrease, height, ten);
+////////////////////////////////////////////////////////////
+#undef GENERATE_RESIZE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE
 ////////////////////////////////////////////////////////////
 int right_percent_focused_application(float right_factor);
 int left_percent_focused_application(float left_factor);
