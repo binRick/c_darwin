@@ -1,16 +1,12 @@
 <!doctype html>
 <html lang="en">
-
 	<head>
 		<meta charset="utf-8">
-
-		<title>reveal.js - Multiple Presentations</title>
-
+		<title>Darwin Manager</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-		<link rel="stylesheet" href="../dist/reveal.css">
-		<link rel="stylesheet" href="../dist/theme/white.css" id="theme">
-		<link rel="stylesheet" href="../plugin/highlight/monokai.css">
+		<link rel="stylesheet" href="/dist/reveal.css">
+		<link rel="stylesheet" href="/dist/theme/white.css" id="theme">
+		<link rel="stylesheet" href="/plugin/highlight/monokai.css">
 	</head>
 
 	<body style="background: #ddd;">
@@ -18,7 +14,11 @@
 		<div style="display: flex; flex-direction: row;">
 			<div class="reveal deck1" style="width: 100%; height: 50vh; margin: 10px;">
 				<div class="slides">
-					<section>Dock 0, Slide 1</section>
+					<section>
+						<p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
+						<img src="/capture/display" alt="Display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" class="demo-logo">
+
+					</section>
 					<section>Deck 0, Slide 2</section>
 					<section>
 						<pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
@@ -66,15 +66,15 @@
 			}
 		</style>
 
-		<script src="../dist/reveal.js"></script>
-		<script src="../plugin/highlight/highlight.js"></script>
-		<script src="../plugin/markdown/markdown.js"></script>
-		<script src="../plugin/math/math.js"></script>
+		<script src="/dist/reveal.js"></script>
+		<script src="/plugin/highlight/highlight.js"></script>
+		<script src="/plugin/markdown/markdown.js"></script>
+		<script src="/plugin/math/math.js"></script>
 		<script>
 
 			let deck1 = new Reveal( document.querySelector( '.deck1' ), {
 				embedded: true,
-				progress: false,
+				progress: true,
 				keyboardCondition: 'focused',
 				plugins: [ RevealHighlight ]
 			} );
@@ -85,7 +85,7 @@
 
 			let deck2 = new Reveal( document.querySelector( '.deck2' ), {
 				embedded: true,
-				progress: false,
+				progress: true,
 				keyboardCondition: 'focused',
 				plugins: [ RevealMarkdown, RevealMath ]
 			} );
