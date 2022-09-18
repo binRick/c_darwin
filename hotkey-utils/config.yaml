@@ -1,4 +1,6 @@
-name: abc
+name: Dev Config5
+todo_width: 2000
+todo_app: kitty
 keys:
   - name: Activate Alacritty
     key: alt+shift+5
@@ -10,6 +12,7 @@ keys:
     action: alacritty
     action_type: DeactivateApplication
     enabled: yes
+
   - name: Activate Kitty
     key: alt+shift+7
     action: kitty
@@ -20,8 +23,111 @@ keys:
     action: kitty
     action_type: ActivateApplication
     enabled: yes
+
   - name: Activate Richard
     key: alt+shift+9
     action: richard
     action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Chrome
+    key: alt+shift+[del]
+    action: google chrome
+    action_type: ActivateApplication
+    enabled: yes
+  - name: Activate Chrome
+    key: alt+shift+\
+    action: google chrome
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate iTerm2
+    key: alt+shift+[
+    action: iTerm2
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Richard
+    key: alt+shift+]
+    action: richard
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Alacritty
+    key: alt+shift+p
+    action: alacritty
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Kitty
+    key: alt+shift+[return]
+    action: kitty
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Increase Focused Application Width 5%
+    key: alt+shift+=
+    action: null
+    action_type: IncreaseFocusedApplicationWidthFivePercent
+    enabled: yes
+  - name: Decrease Focused Application Width 5%
+    key: alt+shift+-
+    action: null
+    action_type: DecreaseFocusedApplicationWidthFivePercent
+    enabled: yes
+  - name: Increase Focused Application Height 5%
+    key: alt+shift+'
+    action: null
+    action_type: IncreaseFocusedApplicationHeightFivePercent
+    enabled: yes
+  - name: Decrease Focused Application Height 5%
+    key: alt+shift+;
+    action: null
+    action_type: DecreaseFocusedApplicationHeightFivePercent
+    enabled: yes
+
+  - name: Focused Application Left 50%
+    key: alt+shift+.
+    action: null
+    action_type: LeftFiftyPercentFocusedApplication
+    enabled: yes
+  - name: Focused Application Right 50%
+    key: alt+shift+/
+    action: null
+    action_type: RightFiftyPercentFocusedApplication
+    enabled: yes
+
+  - name: Focused Application Left 25%
+    key: alt+shift+m
+    action: null
+    action_type: LeftTwentyFivePercentFocusedApplication
+    enabled: yes
+  - name: Focused Application Right 25%
+    key: alt+shift+,
+    action: null
+    action_type: RightTwentyFivePercentFocusedApplication
+    enabled: yes
+    
+  - name: Focused Application Left 75%
+    key: alt+shift+k
+    action: null
+    action_type: LeftSeventyFivePercentFocusedApplication
+    enabled: yes
+  - name: Focused Application Right 75%
+    key: alt+shift+l
+    action: null
+    action_type: RightSeventyFivePercentFocusedApplication
+    enabled: yes
+
+
+  - name: Focused Application Top 50%
+    key: alt+shift+n
+    action: null
+    action_type: TopFiftyPercentFocusedApplication
+    enabled: yes
+
+  - name: Focused Application Bottom 50%
+    key: alt+shift+b
+    action: null
+    action_type: BottomFiftyPercentFocusedApplication
     enabled: yes

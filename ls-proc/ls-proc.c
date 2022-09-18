@@ -47,7 +47,7 @@ int ls_procs(){
       pid_match = match_item_v(ctx.cmd_lines, pid_cmdline);
     }
     if (pid_match == false) {
-      pid_match = match_item_v(ctx.cwds, get_process_cwd(pid));
+      pid_match = match_item_v(ctx.cwds, get_pid_cwd(pid));
     }
     if (pid_match == false) {
       struct Vector *ppids_v = get_process_ppids(pid);

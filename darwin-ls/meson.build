@@ -7,6 +7,7 @@ inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
   '.',
   inc,
+  '/usr/local/include/tesseract',
 ]
 darwin_ls_deps = [
   memory_leak_detector_dep,kitty_dep,alacritty_dep,
@@ -34,6 +35,8 @@ darwin_ls_deps = [
   url_h_dep,
   querystring_c_dep,
   b64_dep,screen_utils_dep,incbin_dep,
+  leptonica_dep,
+  tesseract_dep,
 ]
 darwin_ls_c_args = [
   '-Wno-missing-field-initializers',

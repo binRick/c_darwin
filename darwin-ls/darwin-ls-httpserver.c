@@ -1,6 +1,7 @@
 #pragma once
 #ifndef LS_WIN_HTTPSERVER_C
 #define LS_WIN_HTTPSERVER_C
+#include "allheaders.h"
 #define HTTPSERVER_IMPL
 #include "httpserver.h/httpserver.h"
 #undef HTTP_MAX_TOTAL_EST_MEM_USAGE
@@ -12,6 +13,7 @@
 ///////////////////////////////////////////////
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
+#include "capi.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "httpserver.h/httpserver.h"
 #include "log/log.h"
@@ -45,9 +47,13 @@ INCBIN(reveal_markdown_js, INCLUDE_REVEAL_DIST_MARKDOWN_JS);
 INCBIN(reveal_math_js, INCLUDE_REVEAL_DIST_MATH_JS);
 INCBIN(reveal_multiple_presentations_html, INCLUDE_REVEAL_MULTIPLE_PRESENTATIONS_HTML);
 ///////////////////////////////////////////////
+#define GRAYSCALE_RESIZE_FACTOR    400
+static const char *tess_lang = "eng";
 static int request_target_is(volatile const struct http_request_s *request, volatile const char *target);
+static char* convert_png_to_grayscale(char *png_file);
 static struct parsed_data_t *parse_request(volatile const struct http_request_s *request);
 static struct http_server_s *server;
+static char* get_extracted_image_text(char *image_file);
 static const int            DARWIN_LS_HTTPSERVER_PORT       = 49225;
 static const char           *DARWIN_LS_HTTPSERVER_HOST      = "127.0.0.1";
 static bool                 DARWIN_LS_HTTPSERVER_DEBUG_MODE = false;
@@ -140,9 +146,67 @@ void parser(void *data, char *fst, char *snd) {
     parsed_data->screen_id = string_size_to_size_t(snd);
   }else if (strcmp(fst, "display_id") == 0) {
     parsed_data->display_id = string_size_to_size_t(snd);
+  }else if (strcmp(fst, "grayscale") == 0) {
+    parsed_data->grayscale_conversion = (snd && strlen(snd) > 0 && strcmp(snd, "1") == 0) ? true : false;
   }else if (strcmp(fst, "space_id") == 0) {
     parsed_data->space_id = string_size_to_size_t(snd);
   }
+}
+
+static char* convert_png_to_grayscale(char *png_file){
+        char *grayscale_file;
+        asprintf(&grayscale_file, "%s-grayscale-%lld-grayscale.tif", gettempdir(), timestamp());
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Converting %s to %s resized by %d%%", png_file, grayscale_file, GRAYSCALE_RESIZE_FACTOR);
+        FILE *input_png_file = fopen(png_file, "rb");
+        CGImageRef png_gs          = png_file_to_grayscale_cgimage_ref_resized(input_png_file, GRAYSCALE_RESIZE_FACTOR);
+        assert(write_cgimage_ref_to_tif_file_path(png_gs, grayscale_file) == true);
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Converted to %s grayscale from %s PNG", bytes_to_string(fsio_file_size(grayscale_file)), bytes_to_string(fsio_file_size(png_file)));
+        fsio_remove(png_file);
+        return(grayscale_file);
+}
+
+static char* get_extracted_image_text(char *image_file){
+      unsigned long extract_started = timestamp();
+      char *tess_ver = TessVersion();
+      if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+        log_debug("Initializing Tesseract Version %s", tess_ver);
+
+      TessBaseAPI *api = TessBaseAPICreate();
+      assert(api != NULL);
+      assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
+      unsigned long started = timestamp();
+      if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+        log_debug("Reading file %s", image_file);
+      struct Pix    *img = pixRead(image_file);
+      assert(img != NULL);
+      if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+        log_info("Read %s Image %s in %s",
+               bytes_to_string(fsio_file_size(image_file)), image_file, milliseconds_to_string(timestamp() - started)
+               );
+      started = timestamp();
+      TessBaseAPISetImage2(api, img);
+      struct Pix *loaded_img = TessBaseAPIGetInputImage(api);
+      assert(loaded_img != NULL);
+      if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+        log_info("Read %s Image %s in %s",
+               bytes_to_string(fsio_file_size(image_file)), image_file, milliseconds_to_string(timestamp() - started)
+               );
+      pixDestroy(&img);
+      started = timestamp();
+      assert(TessBaseAPIRecognize(api, NULL) == EXIT_SUCCESS);
+      if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+        log_debug("API Recognized in %s", milliseconds_to_string(timestamp() - started));
+      char *extracted_text = TessBaseAPIGetUTF8Text(api);
+      fsio_remove(image_file);
+      if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+        log_debug("Extracted %s in %s",
+                bytes_to_string(strlen(extracted_text)),
+                milliseconds_to_string(timestamp() - extract_started)
+                );
+      assert(extracted_text != NULL);
+      return(extracted_text);
 }
 
 static struct parsed_data_t *parse_request(volatile const struct http_request_s *request){
@@ -159,11 +223,12 @@ static struct parsed_data_t *parse_request(volatile const struct http_request_s 
   char                 *query  = strdup(parsed->query);
   struct parsed_data_t *data   = calloc(1, sizeof(struct parsed_data_t));
 
-  data->window_id  = 0;
-  data->space_id   = 0;
-  data->display_id = 0;
-  data->screen_id  = 0;
-  data->pid        = 0;
+  data->grayscale_conversion = false;
+  data->window_id            = 0;
+  data->space_id             = 0;
+  data->display_id           = 0;
+  data->screen_id            = 0;
+  data->pid                  = 0;
   parse_querystring(query, (void *)data, parser);
   return(data);
 }
@@ -287,6 +352,84 @@ void handle_request(struct http_request_s *request) {
       http_response_body(response, png_data, png_len);
     }else{
       RETURN_ERROR_PNG("Space", space_id);
+    }
+  } else if (request_target_is(request, "/extract/display")) {
+    struct parsed_data_t *data     = parse_request(request);
+    size_t               display_id = (data->display_id > 0) ? (size_t)(data->display_id) : (size_t)(get_main_display_id());
+    char                 *output_file;
+    asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
+    CGImageRef           img_ref = capture_display_id(display_id);
+    if (save_window_cgref_to_png(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
+      if (data->grayscale_conversion == true) {
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Converting to grayscale");
+        output_file = convert_png_to_grayscale(output_file);
+      }else{
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Not converting to grayscale");
+      }
+      char *extracted_text = get_extracted_image_text(output_file);
+      fsio_remove(output_file);
+      http_response_status(response, 200);
+      http_response_header(response, "Content-Type", CONTENT_TYPE_TEXT);
+      http_response_body(response, extracted_text, strlen(extracted_text));
+      http_respond(request, response);
+      TessDeleteText(extracted_text);
+      return;
+    }else{
+      RETURN_ERROR_PNG("Display", display_id);
+    }
+  } else if (request_target_is(request, "/extract/space")) {
+    struct parsed_data_t *data     = parse_request(request);
+    size_t               space_id = (data && data->space_id && data->space_id > 0) ? (size_t)(data->space_id) : (size_t)(get_space_id());
+    char                 *output_file;
+    asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
+    CGImageRef           img_ref = space_capture((uint32_t)space_id);
+    if (save_window_cgref_to_png(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
+      if (data->grayscale_conversion == true) {
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Converting to grayscale");
+        output_file = convert_png_to_grayscale(output_file);
+      }else{
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Not converting to grayscale");
+      }
+      char *extracted_text = get_extracted_image_text(output_file);
+      fsio_remove(output_file);
+      http_response_status(response, 200);
+      http_response_header(response, "Content-Type", CONTENT_TYPE_TEXT);
+      http_response_body(response, extracted_text, strlen(extracted_text));
+      http_respond(request, response);
+      TessDeleteText(extracted_text);
+      return;
+    }else{
+      RETURN_ERROR_PNG("Space", space_id);
+    }
+  } else if (request_target_is(request, "/extract/window")) {
+    struct parsed_data_t *data     = parse_request(request);
+    size_t               window_id = (data->window_id > 0) ? (size_t)(data->window_id) : (size_t)(get_focused_window_id());
+    char                 *output_file;
+    asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
+    CGImageRef           img_ref = window_capture(get_window_id(window_id));
+    if (save_window_cgref_to_png(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
+      if (data->grayscale_conversion == true) {
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Converting to grayscale");
+        output_file = convert_png_to_grayscale(output_file);
+      }else{
+        if(DARWIN_LS_HTTPSERVER_DEBUG_MODE)
+          log_info("Not converting to grayscale");
+      }
+      char *extracted_text = get_extracted_image_text(output_file);
+      fsio_remove(output_file);
+      http_response_status(response, 200);
+      http_response_header(response, "Content-Type", CONTENT_TYPE_TEXT);
+      http_response_body(response, extracted_text, strlen(extracted_text));
+      http_respond(request, response);
+      TessDeleteText(extracted_text);
+      return;
+    }else{
+      RETURN_ERROR_PNG("Window", window_id);
     }
   } else if (request_target_is(request, "/capture/window")) {
     struct parsed_data_t *data     = parse_request(request);

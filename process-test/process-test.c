@@ -22,7 +22,7 @@
 
 TEST t_pid_cwd(void){
   ct_start(NULL);
-  char *cwd = get_process_cwd((int)getpid());
+  char *cwd = get_pid_cwd((int)getpid());
 
   ASSERT_NEQ(cwd, NULL);
   ASSERT_GTE(strlen(cwd), 0);
@@ -246,7 +246,7 @@ TEST t_pids_iterate(void){
     if (pid <= 1) {
       continue;
     }
-    char *cwd = get_process_cwd(pid);
+    char *cwd = get_pid_cwd(pid);
     if (cwd == NULL) {
       continue;
     }

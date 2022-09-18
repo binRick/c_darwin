@@ -35,8 +35,8 @@ if get_option('enable-binaries')
      c_args: hotkey_utils_test_c_args,
      install: false,
   )
-  test('hotkey-utils-test', 
-    hotkey_utils_test_exec, args: ['-v','-a'],
-    workdir: hotkey_utils_test_test_dir,
-  )
+  #test('hotkey-utils-test', 
+  #  hotkey_utils_test_exec, args: ['-v','-a'],
+  #  workdir: hotkey_utils_test_test_dir,
+  #)
 endif

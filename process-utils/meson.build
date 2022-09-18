@@ -17,6 +17,7 @@ process_utils_deps = [
   fort_dep,
   bytes_dep,
   ms_dep,
+  process_dep,
   string_utils_dep,
   timestamp_dep,
 ]

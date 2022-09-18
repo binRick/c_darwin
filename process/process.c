@@ -1,7 +1,9 @@
 #pragma once
 #include "log.h/log.h"
 #include "process.h"
-
+#include <CoreFoundation/CoreFoundation.h>
+#include <dlfcn.h>
+#include <pthread.h>
 ////////////////////////
 #include <assert.h>
 #include <ctype.h>
@@ -17,8 +19,6 @@
 #include <stdio.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/sysctl.h>
@@ -42,6 +42,17 @@ static void __attribute__((constructor)) __constructor__process(void){
       goto ERROR;        \
     }                    \
   } while (0)
+
+char *get_pid_cwd(pid_t pid){
+  char                      *cwd = NULL;
+  struct proc_vnodepathinfo vpi;
+
+  proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
+  if (strlen(vpi.pvi_cdir.vip_path) > 0) {
+    cwd = strdup(vpi.pvi_cdir.vip_path);
+  }
+  return(cwd);
+}
 
 char *pid_path(pid_t pid){
   char *pathbuf = malloc(PATH_MAX);
@@ -179,19 +190,6 @@ struct Vector *get_process_cmdline(int process){
   return(cmdline_v);
 } /* get_process_cmdline */
 
-char *get_process_cwd(int process){
-  if (process < 0) {
-    return(NULL);
-  }
-  struct proc_vnodepathinfo vpi;
-  int                       ret = proc_pidinfo(process, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
-  if (ret < 0) {
-    return(NULL);
-  }
-  char *cwd = strdup(vpi.pvi_cdir.vip_path);
-  return(cwd);
-}
-
 struct Vector *get_all_processes(){
   struct Vector *processes_v      = vector_new();
   pid_t         num               = proc_listallpids(NULL, 0);
@@ -303,36 +301,7 @@ struct Vector *get_process_env(int process){
 } /* get_process_env */
 
 char *get_my_cwd(){
-  struct stat   Odir;
-  struct dirent *d_stat;
-
-  long int      inode = -1, pinode;
-  DIR           *cur_dir;
-  char          nameofdir[225];
-
-  while (inode > 2 || inode == -1) {
-    lstat(".", &Odir);
-    inode = Odir.st_ino;
-    chdir("..");
-    cur_dir = opendir(".");
-    printf("get_my_cwd> DIR\n");
-
-    while ((d_stat = readdir(cur_dir)) != NULL) {
-      pinode = d_stat->d_ino;
-      if (pinode == inode) {
-        strcpy(nameofdir, d_stat->d_name);
-        if (!strcmp(nameofdir, ".")) {
-          printf("home\n");
-        }else if (!strcmp(nameofdir, "..")) {
-          printf("root\n");
-        }else{
-          printf("%s\n", nameofdir);
-        }
-      }
-    }
-    closedir(cur_dir);
-  }
-  return(0);
+  return(get_pid_cwd(getpid()));
 }
 
 struct Vector *get_child_pids(int PID){
@@ -344,14 +313,164 @@ struct Vector *get_child_pids(int PID){
     if (pid < 2) {
       continue;
     }
-
     int ppid   = (int)(long)get_process_ppid(pid);
     int pppid  = (int)(long)get_process_ppid(ppid);
     int ppppid = (int)(long)get_process_ppid(pppid);
-
     if (ppid == PID || pppid == PID || ppppid == PID) {
       vector_push(v, (void *)(long)pid);
     }
   }
   return(v);
+}
+
+static bool darwin_pthread_setname_np(const char *name) {
+  char namebuf[64];
+
+  strncpy(namebuf, name, sizeof(namebuf) - 1);
+  namebuf[sizeof(namebuf) - 1] = '\0';
+  return(pthread_setname_np(namebuf) != 0);
+}
+
+typedef enum {
+  kLSDefaultSessionID = -2,
+} LSSessionID;
+CFTypeRef LSGetCurrentApplicationASN(void);
+OSStatus LSSetApplicationInformationItem(LSSessionID, CFTypeRef, CFStringRef, CFStringRef, CFDictionaryRef *);
+CFDictionaryRef LSApplicationCheckIn(LSSessionID, CFDictionaryRef);
+void LSSetApplicationLaunchServicesServerConnectionStatus(uint64_t, void *);
+
+typedef struct {
+  void        *application_services_handle;
+
+  CFBundleRef launch_services_bundle;
+  typeof(LSGetCurrentApplicationASN) * pLSGetCurrentApplicationASN;
+  typeof(LSSetApplicationInformationItem) * pLSSetApplicationInformationItem;
+  typeof(LSApplicationCheckIn) * pLSApplicationCheckIn;
+  typeof(LSSetApplicationLaunchServicesServerConnectionStatus) * pLSSetApplicationLaunchServicesServerConnectionStatus;
+
+  CFStringRef *display_name_key_ptr;
+} launch_services_t;
+
+static bool launch_services_init(launch_services_t *it) {
+  enum {
+    has_nothing,
+    has_application_services_handle
+  }    state = has_nothing;
+  bool ret   = false;
+
+  it->application_services_handle = dlopen("/System/Library/Frameworks/"
+                                           "ApplicationServices.framework/"
+                                           "Versions/Current/ApplicationServices",
+                                           RTLD_LAZY | RTLD_LOCAL);
+  if (!it->application_services_handle) {
+    goto done;
+  }
+  ++state;
+
+  it->launch_services_bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.LaunchServices"));
+  if (!it->launch_services_bundle) {
+    goto done;
+  }
+
+#define LOAD_METHOD(name)                                                            \
+  *(void **)(&it->p ## name) =                                                       \
+    CFBundleGetFunctionPointerForName(it->launch_services_bundle, CFSTR("_" #name)); \
+  if (!it->p ## name) goto done;
+
+  LOAD_METHOD(LSGetCurrentApplicationASN)
+  LOAD_METHOD(LSSetApplicationInformationItem)
+  LOAD_METHOD(LSApplicationCheckIn)
+  LOAD_METHOD(LSSetApplicationLaunchServicesServerConnectionStatus)
+
+#undef LOAD_METHOD
+
+  it->display_name_key_ptr =
+    CFBundleGetDataPointerForName(it->launch_services_bundle, CFSTR("_kLSDisplayNameKey"));
+  if (!it->display_name_key_ptr || !*it->display_name_key_ptr) {
+    goto done;
+  }
+
+  ret = true;
+
+done:
+  switch (state) {
+  case has_application_services_handle: if (!ret) {
+      dlclose(it->application_services_handle);
+  }
+  case has_nothing:;
+  }
+  return(ret);
+} /* launch_services_init */
+
+static inline void launch_services_destroy(launch_services_t *it) {
+  dlclose(it->application_services_handle);
+}
+
+static bool launch_services_set_process_title(const launch_services_t *it, const char *title) {
+  enum {
+    has_nothing,
+    has_cf_title
+  }           state = has_nothing;
+  bool        ret   = false;
+
+  static bool checked_in = false;
+
+  CFTypeRef   asn;
+  CFStringRef cf_title;
+
+  if (!checked_in) {
+    it->pLSSetApplicationLaunchServicesServerConnectionStatus(0, NULL);
+    it->pLSApplicationCheckIn(kLSDefaultSessionID, CFBundleGetInfoDictionary(CFBundleGetMainBundle()));
+    checked_in = true;
+  }
+
+  asn = it->pLSGetCurrentApplicationASN();
+  if (!asn) {
+    goto done;
+  }
+
+  cf_title = CFStringCreateWithCString(NULL, title, kCFStringEncodingUTF8);
+  if (!cf_title) {
+    goto done;
+  }
+  ++state;
+  if (it->pLSSetApplicationInformationItem(kLSDefaultSessionID,
+                                           asn,
+                                           *it->display_name_key_ptr,
+                                           cf_title,
+                                           NULL) != noErr) {
+    goto done;
+  }
+  ret = true;
+done:
+  switch (state) {
+  case has_cf_title: CFRelease(cf_title);
+  case has_nothing:;
+  }
+
+  return(ret);
+} /* launch_services_set_process_title */
+
+bool darwin_set_process_title(const char *title) {
+  enum {
+    has_nothing,
+    has_launch_services
+  }                 state = has_nothing;
+  bool              ret   = false;
+  launch_services_t launch_services;
+  if (!launch_services_init(&launch_services)) {
+    goto done;
+  }
+  ++state;
+  if (!launch_services_set_process_title(&launch_services, title)) {
+    goto done;
+  }
+  (void)darwin_pthread_setname_np(title);
+  ret = true;
+done:
+  switch (state) {
+  case has_launch_services: launch_services_destroy(&launch_services);
+  case has_nothing:;
+  }
+  return(ret);
 }

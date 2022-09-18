@@ -120,7 +120,6 @@ struct Vector *connect_kitty_processes(struct Vector *KittyProcesses_v);
 char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG);
 char *kitty_cmd_data(const char *CMD_OUTPUT);
 bool kitty_clear_screen(void);
-char *get_process_cwd(int PID);
 void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG);
 char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT);
 struct Vector *kitty_get_color_types(const char *HOST, const int PORT);

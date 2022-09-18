@@ -25,6 +25,7 @@ tesseract_test_deps = [
   display_utils_dep,
   window_utils_dep,
   app_utils_dep,image_utils_dep,
+  c_img_dep,
 ]
 tesseract_test_c_args = [
   tesseract_cflags,
@@ -49,6 +50,7 @@ if get_option('enable-binaries')
   test('tesseract-test', 
     tesseract_test_exec, args: ['-v','-a'],
     workdir: tesseract_test_test_dir,
+    timeout: 180,
   )
 endif
 

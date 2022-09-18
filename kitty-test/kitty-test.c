@@ -56,7 +56,7 @@ TEST t_kitty_module_pids_cwd(void){
 
   for (size_t i = 0; i < KU->pids_qty; i++) {
     int  pid  = (int)(size_t)vector_get(KU->pids_v, i);
-    char *cwd = get_process_cwd(pid);
+    char *cwd = get_pid_cwd(pid);
     cwds_qty++;
     stringbuffer_append_string(sb, "\n\t");
     stringbuffer_append_int(sb, pid);

@@ -15,6 +15,7 @@ struct incbin_response_t {
 };
 struct parsed_data_t {
   size_t window_id, space_id, display_id, screen_id, pid;
+  bool   grayscale_conversion;
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 #define CONTENT_TYPE_PNG                              "image/png"

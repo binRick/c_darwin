@@ -11,11 +11,11 @@
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
 #include "process/process.h"
-#include "process/process.h"
 #include "space-utils/space-utils.h"
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
+#include <libproc.h>
 static bool PROCESS_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_PROCESS_UTILS") != NULL) {

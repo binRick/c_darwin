@@ -3,7 +3,6 @@
 #define PROCESS_UTILS_H
 #include <Carbon/Carbon.h>
 #include <fnmatch.h>
-#include <libproc.h>
 #include <mach/mach_time.h>
 #include <stdbool.h>
 #include <stdio.h>
