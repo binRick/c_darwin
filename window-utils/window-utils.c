@@ -1259,15 +1259,17 @@ CGImageRef window_capture(struct window_t *window) {
   SLSGetScreenRectForWindow(g_connection, wid, &bounds);
   bounds.size.width = (uint32_t)(bounds.size.width + 0.5);
   window->rect.size = bounds.size;
-  log_info("captured image of window %lu :: %dx%d",
-           window->window_id,
-           (int)bounds.size.width, (int)bounds.size.height
-           );
+  if (WINDOW_UTILS_DEBUG_MODE) {
+    log_info("Captured image of window %lu :: %dx%d",
+             window->window_id,
+             (int)bounds.size.width, (int)bounds.size.height
+             );
+  }
 
   return(image_ref);
 }
 
-bool save_window_cgref_to_png(const CGImageRef image, const char *filename) {
+bool save_cgref_to_png(const CGImageRef image, const char *filename) {
   bool success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
   {
     path        = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);

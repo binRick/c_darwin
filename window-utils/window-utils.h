@@ -124,7 +124,7 @@ int get_window_level(struct window_t *w);
 char *get_window_title(struct window_t *w);
 void set_window_tags(struct window_t *w);
 CGImageRef window_capture(struct window_t *window);
-bool save_window_cgref_to_png(const CGImageRef image, const char *filename);
+bool save_cgref_to_png(const CGImageRef image, const char *filename);
 char *get_window_title(struct window_t *w);
 void set_window_tags(struct window_t *w);
 void fade_window(struct window_t *w);

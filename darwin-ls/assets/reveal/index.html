@@ -1,102 +1,76 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>Darwin Manager</title>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-		<link rel="stylesheet" href="/dist/reveal.css">
-		<link rel="stylesheet" href="/dist/theme/white.css" id="theme">
-		<link rel="stylesheet" href="/plugin/highlight/monokai.css">
-	</head>
+<head>
+<meta name="generator" content=
+"HTML Tidy for HTML5 for Apple macOS version 5.8.0">
+<meta charset="utf-8">
+<title>Darwin Manager</title>
+<meta name="viewport" content=
+"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="/dist/reveal.css">
+<link rel="stylesheet" href="/dist/theme/white.css" id="theme">
+<link rel="stylesheet" href="/plugin/highlight/monokai.css">
+<style>
+                        .reveal {
+                                border: 4px solid #ccc;
+                        }
+                        .reveal.focused {
+                                border-color: #94b5ff;
+                        }
+</style>
+</head>
+<body style="background: #ddd;">
+<div style="display: flex; flex-direction: row;">
+  <div class="reveal deck1" style="width: 100%; height: 50vh; margin: 5px;">
+    <div class="slides">
+<section>
+      <section>
+        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
+        <img class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      </section>
+      <section>
+        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
+        <img class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      </section>
+</section>
+<section>
+      <section>
+        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
+        <img class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      </section>
+      <section>
+        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
+        <img class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      </section>
+</section>
 
-	<body style="background: #ddd;">
+    </div>
+  </div>
+</div>
+<script src="/dist/jquery.min.js"></script> 
+<script src="/dist/reveal.js"></script> 
+<script src="/plugin/highlight/highlight.js"></script> 
+<script src="/main.js"></script> 
+<script>
+                        let deck1 = new Reveal( document.querySelector( '.deck1' ), {
+                                embedded: true,
+                                progress: true,
+                                keyboardCondition: 'focused',
+                                plugins: [ RevealHighlight ]
+                        } );
+                        deck1.on( 'slidechanged', (event) => {
+                          console.log( 'Deck 1 slide changed' );
+                          $(event.currentSlide).find('img').each(function() {
+                              console.log("Reloading", $( this ).attr('src') );
+                              var url = $(this).attr("src");
+                              $(this).removeAttr("src").attr("src", url);
+                          });
+                        } );
+                        deck1.initialize({ slideNumber: 'c/t' });
 
-		<div style="display: flex; flex-direction: row;">
-			<div class="reveal deck1" style="width: 100%; height: 50vh; margin: 10px;">
-				<div class="slides">
-					<section>
-						<p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
-						<img src="/capture/display" alt="Display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" class="demo-logo">
+ //                       Reveal.toggleOverview( true );
 
-					</section>
-					<section>Deck 0, Slide 2</section>
-					<section>
-						<pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
-							import React, { useState } from 'react';
-							function Example() {
-							  const [count, setCount] = useState(0);
-							}
-						</code></pre>
-					</section>
-				</div>
-			</div>
 
-			<div class="reveal deck2" style="width: 100%; height: 50vh; margin: 10px;">
-				<div class="slides">
-					<section>Deck 2, Slide 1</section>
-					<section>Deck 2, Slide 2</section>
-					<section data-markdown>
-						<script type="text/template">
-							## Markdown plugin
-
-							- 1
-							- 2
-							- 3
-						</script>
-					</section>
-					<section>
-						<h3>The Lorenz Equations</h3>
-
-						\[\begin{aligned}
-						\dot{x} &amp; = \sigma(y-x) \\
-						\dot{y} &amp; = \rho x - y - xz \\
-						\dot{z} &amp; = -\beta z + xy
-						\end{aligned} \]
-					</section>
-				</div>
-			</div>
-		</div>
-
-		<style>
-			.reveal {
-				border: 4px solid #ccc;
-			}
-			.reveal.focused {
-				border-color: #94b5ff;
-			}
-		</style>
-
-		<script src="/dist/reveal.js"></script>
-		<script src="/plugin/highlight/highlight.js"></script>
-		<script src="/plugin/markdown/markdown.js"></script>
-		<script src="/plugin/math/math.js"></script>
-		<script>
-
-			let deck1 = new Reveal( document.querySelector( '.deck1' ), {
-				embedded: true,
-				progress: true,
-				keyboardCondition: 'focused',
-				plugins: [ RevealHighlight ]
-			} );
-			deck1.on( 'slidechanged', () => {
-				console.log( 'Deck 1 slide changed' );
-			} );
-			deck1.initialize();
-
-			let deck2 = new Reveal( document.querySelector( '.deck2' ), {
-				embedded: true,
-				progress: true,
-				keyboardCondition: 'focused',
-				plugins: [ RevealMarkdown, RevealMath ]
-			} );
-			deck2.initialize().then( () => {
-				deck2.slide(1);
-			} );
-			deck2.on( 'slidechanged', () => {
-				console.log( 'Deck 2 slide changed' );
-			} );
-
-		</script>
-
-	</body>
+</script>
+</body>
 </html>

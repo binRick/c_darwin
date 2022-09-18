@@ -2,6 +2,7 @@
 #include <unistd.h>
 ////////////////////////////////////////////////////
 #define MSF_GIF_IMPL
+#include "log/log.h"
 #include "msf_gif/msf_gif.h"
 #include "stb/stb_image.h"
 #include "wrec-animation/wrec-animation.h"
@@ -17,6 +18,8 @@ static void __attribute__((constructor)) __constructor__wrec_animation(void){
 
 int load_pngs_create_animated_gif(struct animated_png_render_request_t *req){
   char *ANIMATED_GIF_FILE, *ANIMATED_PNGS_DIR;
+
+  log_debug("ANIMATED_GIF_FILE:%s|ANIMATED_PNGS_DIR:%s", ANIMATED_GIF_FILE, ANIMATED_PNGS_DIR);
 
   if (req != NULL && req->png_dir != NULL) {
     ANIMATED_PNGS_DIR = strdup(req->png_dir);

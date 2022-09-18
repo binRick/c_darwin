@@ -183,7 +183,7 @@ static void setup_cfg(){
     log_info(AC_YELLOW "Adjusting Y to minimum value " AC_MAGENTA "%d" AC_RESETALL, MIN_Y_VALUE);
     cfg->Y = MIN_Y_VALUE;
   }
-  log_info("Using Window ID %d | move %dx%d | resize %dx%d | Space ID %d",
+  log_info("Using Window ID %lu | move %dx%d | resize %dx%d | Space ID %d",
            cfg->WINDOWID, cfg->X, cfg->Y, cfg->WIDTH, cfg->HEIGHT,
            cfg->SPACEID
            );

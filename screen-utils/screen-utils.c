@@ -103,9 +103,11 @@ CGImageRef capture_display_id(size_t display_id){
     log_error("Cannot find display #%lu", display_id);
     return(NULL);
   }
-  log_debug("Capturing Display #%lu |uuid:%s|",
-            display_id, display_uuid
-            );
+  if (SCREEN_UTILS_DEBUG_MODE) {
+    log_debug("Capturing Display #%lu |uuid:%s|",
+              display_id, display_uuid
+              );
+  }
   CGImageRef img_ref = CGDisplayCreateImage(display_id);
 
   return(img_ref);

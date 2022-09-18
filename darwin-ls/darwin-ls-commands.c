@@ -998,7 +998,7 @@ static void _command_capture_window(){
              );
     img_ref = resize_cgimage(img_ref, new_width, new_height);
   }
-  assert(save_window_cgref_to_png(img_ref, args->output_file) == true);
+  assert(save_cgref_to_png(img_ref, args->output_file) == true);
   exit(EXIT_SUCCESS);
 }
 
