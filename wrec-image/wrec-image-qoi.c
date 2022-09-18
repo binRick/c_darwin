@@ -1,5 +1,5 @@
 #pragma once
-#define QOI_IMPLEMENTATION
+#include "image-utils/image-utils.h"
 #include "qoi/qoi.h"
 #include "wrec-common/wrec-common.h"
 #include "wrec-image/wrec-image.h"

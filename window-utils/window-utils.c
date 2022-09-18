@@ -1,5 +1,4 @@
 #pragma once
-#include "window-utils/window-utils.h"
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
@@ -16,6 +15,7 @@
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__window_utils(void){
@@ -1244,18 +1244,20 @@ void print_all_window_items(FILE *rsp) {
 } /* print_all_menu_items */
 
 CGImageRef capture_window_id(size_t window_id){
-  unsigned long started = timestamp();
-  CGImageRef image_ref = NULL;
-  uint64_t   wid       = (uint64_t)(window_id);
-  SLSCaptureWindowsContentsToRectWithOptions(g_connection,&wid,true,CGRectNull,1 << 8,&image_ref);
+  unsigned long started   = timestamp();
+  CGImageRef    image_ref = NULL;
+  uint64_t      wid       = (uint64_t)(window_id);
+
+  SLSCaptureWindowsContentsToRectWithOptions(g_connection, &wid, true, CGRectNull, 1 << 8, &image_ref);
   CGRect bounds;
+
   SLSGetScreenRectForWindow(g_connection, wid, &bounds);
   bounds.size.width = (uint32_t)(bounds.size.width + 0.5);
   if (WINDOW_UTILS_DEBUG_MODE) {
     log_info("Captured image of Window #%lu of size %dx%d in %s",
              window_id,
              (int)bounds.size.width, (int)bounds.size.height,
-             milliseconds_to_string(timestamp()-started)
+             milliseconds_to_string(timestamp() - started)
              );
   }
   return(image_ref);
@@ -1269,13 +1271,13 @@ void window_move(struct window_t *window, CGPoint point) {
   window->position = point;
   SLSMoveWindow(g_connection, window->window_id, &point);
   CFNumberRef number = CFNumberCreate(NULL,
-                                        kCFNumberSInt32Type,
-                                        &window->window_id);
-    const void *values[1] = { number };
-    CFArrayRef array      = CFArrayCreate(NULL, values, 1, &kCFTypeArrayCallBacks);
-    SLSReassociateWindowsSpacesByGeometry(g_connection, array);
-    CFRelease(array);
-    CFRelease(number);
+                                      kCFNumberSInt32Type,
+                                      &window->window_id);
+  const void *values[1] = { number };
+  CFArrayRef array      = CFArrayCreate(NULL, values, 1, &kCFTypeArrayCallBacks);
+  SLSReassociateWindowsSpacesByGeometry(g_connection, array);
+  CFRelease(array);
+  CFRelease(number);
 }
 
 CFStringRef display_active_display_uuid(void) {

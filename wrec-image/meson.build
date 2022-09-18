@@ -5,6 +5,7 @@ wrec_image_srcs = [
 wrec_image_link_flags = []
 wrec_image_c_args = []
 wrec_image_deps = [
+  image_utils_dep,
   ansi_codes_dep,
   c_stringfn_dep,
   c_vector_dep,

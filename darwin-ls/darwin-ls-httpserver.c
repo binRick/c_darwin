@@ -1,20 +1,24 @@
 #pragma once
 #ifndef LS_WIN_HTTPSERVER_C
 #define LS_WIN_HTTPSERVER_C
+#define HTTPSERVER_IMPL
 #include "allheaders.h"
+#include "httpserver.h/httpserver.h"
 #include <sys/types.h>
 #include <sys/utsname.h>
-#define HTTPSERVER_IMPL
-#include "httpserver.h/httpserver.h"
 ///////////////////////////////////////////////
 #include "c_fsio/include/fsio.h"
 #include "c_img/src/img.h"
 #include "c_stringfn/include/stringfn.h"
 #include "capi.h"
 #include "httpserver.h/httpserver.h"
+#include "image-utils/image-utils.h"
 #include "log/log.h"
 #include "parson/parson.h"
 #include "querystring.c/querystring.h"
+#include "stb/stb_image.h"
+#include "stb/stb_image_resize.h"
+#include "stb/stb_image_write.h"
 #include "submodules/b64.c/b64.h"
 #include "timestamp/timestamp.h"
 #include "url.h/url.h"
@@ -285,28 +289,106 @@ void handle_request(struct http_request_s *request) {
     asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
     CGImageRef           img_ref = capture_display_id(display_id);
 
+    size_t               rgb_len     = 0;
+    unsigned char        *rgb_pixels = cgimage_ref_to_rgb_pixels(img_ref, &rgb_len);
+    log_debug("Got %lu rgb pixels", rgb_len);
+    fsio_write_binary_file("/tmp/a.rgb", rgb_pixels, rgb_len);
+
+    save_cgref_to_qoi_file(img_ref, "/tmp/a.qoi");
+
+    size_t        qoi_len     = 0;
+    unsigned char *qoi_pixels = cgref_to_qoi_memory(img_ref, &qoi_len);
+    log_debug("Got %lu qoi pixels", qoi_len);
+
+    int qoi_width = 0, qoi_height = 0;
+    image_types[IMAGE_TYPE_QOI].get_dimensions(qoi_pixels, qoi_len, &qoi_width, &qoi_height);
+    log_debug("Got qoi %dx%d", qoi_width, qoi_height);
+
     size_t len = 0; int width = 0, height = 0; bool ok = false; unsigned char *pixels = NULL; unsigned char *header = NULL; char *file = NULL;
+    int    compression = 0;
 
-    file = "/tmp/a.png";
-    pixels = save_cgref_to_png_memory(img_ref, &len);
-    fsio_write_binary_file(file,pixels,len);
-    ok = image_types[IMAGE_TYPE_PNG].validator(pixels);
-    log_debug("PNG OK: %s", ok?"Yes":"No");
-    header = image_types[IMAGE_TYPE_PNG].read_file_header(file);
-    image_types[IMAGE_TYPE_PNG].get_dimensions(header, &width, &height);
-    log_debug("PNG Dimensions: %dx%d", width,height);
+    {
+      if (pixels) {
+        free(pixels);
+      }
+      if (header) {
+        free(header);
+      }
+      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+      file   = "/tmp/a.png";
+      pixels = save_cgref_to_png_memory(img_ref, &len);
+      fsio_write_binary_file(file, pixels, len);
+      ok = image_types[IMAGE_TYPE_PNG].validator(pixels);
+      log_debug("PNG OK: %s %s %s", ok?"Yes":"No", file, bytes_to_string(fsio_file_size(file)));
+      header = image_types[IMAGE_TYPE_PNG].read_file_header(file);
+      image_types[IMAGE_TYPE_PNG].get_dimensions_from_header(header, &width, &height);
+      log_debug("PNG Dimensions: %dx%d", width, height);
+    }
 
-    if(pixels) free(pixels);
-    if(header) free(header);
-    len = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
-    file = "/tmp/a.gif";
-    pixels = save_cgref_to_gif_memory(img_ref, &len);
-    fsio_write_binary_file(file,pixels,len);
-    ok = image_types[IMAGE_TYPE_GIF].validator(pixels);
-    log_debug("GIF OK: %s", ok?"Yes":"No");
-    header = image_types[IMAGE_TYPE_GIF].read_file_header(file);
-    image_types[IMAGE_TYPE_GIF].get_dimensions(header, &width, &height);
-    log_debug("GIF Dimensions: %dx%d", width,height);
+    {
+      if (pixels) {
+        free(pixels);
+      }
+      if (header) {
+        free(header);
+      }
+      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+      file   = "/tmp/a.gif";
+      pixels = save_cgref_to_gif_memory(img_ref, &len);
+      fsio_write_binary_file(file, pixels, len);
+      ok = image_types[IMAGE_TYPE_GIF].validator(pixels);
+      log_debug("GIF OK: %s %s %s", ok?"Yes":"No", file, bytes_to_string(fsio_file_size(file)));
+      header = image_types[IMAGE_TYPE_GIF].read_file_header(file);
+      image_types[IMAGE_TYPE_GIF].get_dimensions_from_header(header, &width, &height);
+      log_debug("GIF Dimensions: %dx%d", width, height);
+    }
+
+    {
+      if (pixels) {
+        free(pixels);
+      }
+      if (header) {
+        free(header);
+      }
+      len  = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+      file = "/tmp/a.tiff";
+      save_cgref_to_tiff_file(img_ref, "/tmp/a1.tiff");
+      pixels = save_cgref_to_tiff_memory(img_ref, &len);
+      fsio_write_binary_file(file, pixels, len);
+      image_types[IMAGE_TYPE_TIFF].get_dimensions(pixels, len, &width, &height);
+      log_debug("TIFF Dimensions: %dx%d", width, height);
+      stbi_load_from_memory(pixels, len, &width, &height, &compression, 0);
+      log_debug("%d,%d,%d", width, height, compression);
+    }
+    {
+      if (pixels) {
+        free(pixels);
+      }
+      if (header) {
+        free(header);
+      }
+      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+      file   = "/tmp/a.bmp";
+      pixels = save_cgref_to_bmp_memory(img_ref, &len);
+      fsio_write_binary_file(file, pixels, len);
+      image_types[IMAGE_TYPE_BMP].get_dimensions(pixels, len, &width, &height);
+      log_debug("BMP Dimensions: %dx%d", width, height);
+    }
+
+    {
+      if (pixels) {
+        free(pixels);
+      }
+      if (header) {
+        free(header);
+      }
+      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+      file   = "/tmp/a.jpeg";
+      pixels = save_cgref_to_jpeg_memory(img_ref, &len);
+      fsio_write_binary_file(file, pixels, len);
+      image_types[IMAGE_TYPE_JPEG].get_dimensions(pixels, len, &width, &height);
+      log_debug("JPEG Dimensions: %dx%d", width, height);
+    }
 
     if (save_cgref_to_png_file(img_ref, output_file) == true) {
       size_t        png_len   = fsio_file_size(output_file);

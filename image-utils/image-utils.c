@@ -2,6 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define QOI_IMPLEMENTATION
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
@@ -15,6 +16,7 @@
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
 #include "process/process.h"
+#include "qoi/qoi.h"
 #include "space-utils/space-utils.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
@@ -30,81 +32,215 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
     IMAGE_UTILS_DEBUG_MODE = true;
   }
 }
+
 bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file){
-    unsigned long started = timestamp();
-    bool success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
-    path        = CFStringCreateWithCString(NULL, image_file, kCFStringEncodingUTF8);
-    url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
-    destination = CGImageDestinationCreateWithURL(url, image_types[image_type].format(), 1, NULL);
-    CGImageDestinationAddImage(destination, image, nil);
-    success = CGImageDestinationFinalize(destination);
-    CFRelease(url); CFRelease(path); CFRelease(destination);
-    if(IMAGE_UTILS_DEBUG_MODE)
-      log_debug("Saved %s to %s file %s in %s",
-        bytes_to_string(fsio_file_size(image_file)), image_types[image_type].name, image_file, milliseconds_to_string(timestamp()-started)
-        );
-    return((success == true) && fsio_file_exists(image_file));
+  unsigned long started = timestamp();
+  bool          success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
+
+  path        = CFStringCreateWithCString(NULL, image_file, kCFStringEncodingUTF8);
+  url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
+  destination = CGImageDestinationCreateWithURL(url, image_types[image_type].format(), 1, NULL);
+  CGImageDestinationAddImage(destination, image, nil);
+  success = CGImageDestinationFinalize(destination);
+  CFRelease(url); CFRelease(path); CFRelease(destination);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("Saved %s to %s file %s in %s",
+              bytes_to_string(fsio_file_size(image_file)), image_types[image_type].name, image_file, milliseconds_to_string(timestamp() - started)
+              );
+  }
+  return((success == true) && fsio_file_exists(image_file));
 }
 
-unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len){
-    unsigned long started = timestamp();
-    CFMutableDataRef image_data = CFDataCreateMutable (kCFAllocatorDefault, 0);
-    CGImageDestinationRef dataDest = CGImageDestinationCreateWithData (image_data, image_types[image_type].format(), 1, NULL);
-    CGImageDestinationAddImage (dataDest, image, NULL);
-    CGImageDestinationFinalize (dataDest);
-    *len = CFDataGetLength(image_data);
-    if(*len<0){
-      log_error("Failed to save %s data to memory", image_types[image_type].name);
-      return(NULL);
-    }
-    unsigned char* buf = calloc(1, *len);
-    CFDataGetBytes (image_data, CFRangeMake(0,*len), buf);
-    if(IMAGE_UTILS_DEBUG_MODE)
-      log_debug("Saved %s to %s memory in %s",
-        bytes_to_string(*len),
-        image_types[image_type].name,
-        milliseconds_to_string(timestamp()-started)
-        );
-    return(buf);
+static int read_32bytes_big_endian_image_buffer(uint8_t *buf) {
+  return(buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3]);
+}
+
+static int read_16bytes_little_endian_image_buffer(uint8_t *buf) {
+  return(buf[1] << 8 | buf[0]);
+}
+
+static void read_image_format_file(const char *path, unsigned char *buf, int len, int offset) {
+  int fd = open(path, O_RDONLY); assert(fd >= 0);   assert(pread(fd, buf, len, offset) >= 0); close(fd);
+}
+struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
+  [IMAGE_TYPE_PNG] =  {
+    .extension                  = "png",                         .name = "PNG",
+    .format                     = ^ CFStringRef (void){ return(kUTTypePNG);                                         },
+    .validator                  = ^ bool (unsigned char *image_buf){ return(('P' == image_buf[1] && 'N' == image_buf[2] && 'G' == image_buf[3]) ? true : false); },
+    .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(8, sizeof(unsigned char)); read_image_format_file(image_path, buf, 8, 16); return(buf); },
+    .get_dimensions_from_header = ^ bool (unsigned char *header, int *width, int *height){
+      *width  = read_32bytes_big_endian_image_buffer(header);
+      *height = read_32bytes_big_endian_image_buffer(header + 4);
+      return((*width > 0 && *height > 0) ? true : false);
+    },
+  },
+  [IMAGE_TYPE_GIF] =  {
+    .extension                  = "gif",
+    .name                       = "GIF",
+    .format                     = ^ CFStringRef (void){ return(kUTTypeGIF);                                         },
+    .validator                  = ^ bool (unsigned char *image_buf){ return(('G' == image_buf[0] && 'I' == image_buf[1] && 'F' == image_buf[2]) ? true : false); },
+    .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(4, sizeof(unsigned char)); read_image_format_file(image_path, buf, 4, 6); return(buf); },
+    .get_dimensions_from_header = ^ bool (unsigned char *buf,int *width,                                                            int *height){
+      *width  = read_16bytes_little_endian_image_buffer(buf);
+      *height = read_16bytes_little_endian_image_buffer(buf + 2);
+      return((*width > 0 && *height > 0) ? true : false);
+    },
+  },
+  [IMAGE_TYPE_TIFF] = {
+    .extension      = "tiff",
+    .name           = "TIFF",
+    .format         = ^ CFStringRef (void){ return(kUTTypeTIFF);                                                    },
+    .validator      = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);                },
+    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
+      int compression = 0;
+      stbi_load_from_memory(buf, len, width, height, &compression, 4);
+      return(true);
+    },
+  },
+  [IMAGE_TYPE_JPEG] = {
+    .extension      = "jpeg",
+    .name           = "JPEG",
+    .format         = ^ CFStringRef (void){ return(kUTTypeJPEG);                                                    },
+    .validator      = ^ bool (unsigned char *image_buf){ return((0xff == image_buf[0] && 0xd8 == image_buf[1]) ? true : false); },
+    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
+      int compression = 0;
+      stbi_load_from_memory(buf, len, width, height, &compression, 4);
+      return(true);
+    },
+  },
+  [IMAGE_TYPE_BMP] =  {
+    .extension      = "bmp",
+    .name           = "BMP",
+    .format         = ^ CFStringRef (void){ return(kUTTypeBMP);                                                     },
+    .validator      = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);                },
+    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
+      int compression = 0;
+      stbi_load_from_memory(buf, len, width, height, &compression, 4);
+      return(true);
+    },
+  },
+  [IMAGE_TYPE_QOI] =  {
+    .extension      = "qoi",
+    .name           = "QOI",
+    .format         = ^ CFStringRef (void){ return(NULL);                                                           },
+    .validator      = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);                },
+    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
+      qoi_desc desc;
+      unsigned char *pixels = qoi_decode(buf,            len,         &desc,      4);
+      *width  = desc.width;
+      *height = desc.height;
+      if (pixels)     {
+        free(pixels);
+      }
+      return(true);
+    },
+  },
 };
 
+unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len){
+  unsigned long         started    = timestamp();
+  CFMutableDataRef      image_data = CFDataCreateMutable(kCFAllocatorDefault, 0);
+  CGImageDestinationRef dataDest   = CGImageDestinationCreateWithData(image_data, image_types[image_type].format(), 1, NULL);
 
+  CGImageDestinationAddImage(dataDest, image, NULL);
+  CGImageDestinationFinalize(dataDest);
+  *len = CFDataGetLength(image_data);
+  if (*len < 0) {
+    log_error("Failed to save %s data to memory", image_types[image_type].name);
+    return(NULL);
+  }
+  unsigned char *buf = calloc(1, *len);
 
-  unsigned char *save_cgref_to_tiff_memory(CGImageRef image, size_t *len){
-    return(save_cgref_to_image_type_memory(IMAGE_TYPE_TIFF, image, len));
+  CFDataGetBytes(image_data, CFRangeMake(0, *len), buf);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("Saved %s to %s memory in %s",
+              bytes_to_string(*len),
+              image_types[image_type].name,
+              milliseconds_to_string(timestamp() - started)
+              );
   }
+  return(buf);
+}
 
-  unsigned char *save_cgref_to_bmp_memory(CGImageRef image, size_t *len){
-    return(save_cgref_to_image_type_memory(IMAGE_TYPE_BMP, image, len));
-  }
+unsigned char *save_cgref_to_tiff_memory(CGImageRef image, size_t *len){
+  return(save_cgref_to_image_type_memory(IMAGE_TYPE_TIFF, image, len));
+}
 
-  unsigned char *save_cgref_to_gif_memory(CGImageRef image, size_t *len){
-    return(save_cgref_to_image_type_memory(IMAGE_TYPE_GIF, image, len));
-  }
+unsigned char *save_cgref_to_bmp_memory(CGImageRef image, size_t *len){
+  return(save_cgref_to_image_type_memory(IMAGE_TYPE_BMP, image, len));
+}
 
-  unsigned char *save_cgref_to_jpeg_memory(CGImageRef image, size_t *len){
-    return(save_cgref_to_image_type_memory(IMAGE_TYPE_JPEG, image, len));
-  }
+unsigned char *save_cgref_to_gif_memory(CGImageRef image, size_t *len){
+  return(save_cgref_to_image_type_memory(IMAGE_TYPE_GIF, image, len));
+}
 
-  unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len){
-    return(save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, image, len));
-  }
+unsigned char *save_cgref_to_jpeg_memory(CGImageRef image, size_t *len){
+  return(save_cgref_to_image_type_memory(IMAGE_TYPE_JPEG, image, len));
+}
 
-  bool save_cgref_to_png_file(CGImageRef image, char *image_file) {
-    return(save_cgref_to_image_type_file(IMAGE_TYPE_PNG, image, image_file));
+unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len){
+  return(save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, image, len));
+}
+
+bool save_cgref_to_png_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_PNG, image, image_file));
+}
+
+bool save_cgref_to_bmp_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_BMP, image, image_file));
+}
+
+bool save_cgref_to_gif_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_GIF, image, image_file));
+}
+
+bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_JPEG, image, image_file));
+}
+
+bool save_cgref_to_tiff_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_TIFF, image, image_file));
+}
+
+bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
+  size_t        qoi_len     = 0;
+  unsigned char *qoi_pixels = cgref_to_qoi_memory(image, &qoi_len);
+
+  if (qoi_len < 1 || !qoi_pixels) {
+    return(false);
   }
-  bool save_cgref_to_bmp_file(CGImageRef image, char *image_file) {
-    return(save_cgref_to_image_type_file(IMAGE_TYPE_BMP, image, image_file));
+  bool ok = fsio_write_binary_file(image_file, qoi_pixels, qoi_len);
+
+  free(qoi_pixels);
+  return((ok && (size_t)fsio_file_size(image_file) == (size_t)qoi_len) ? true : false);
+}
+
+unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
+  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
+  size_t        rgb_len     = 0;
+  unsigned char *rgb_pixels = cgimage_ref_to_rgb_pixels(image_ref, &rgb_len);
+
+  if (rgb_len < 1 || !rgb_pixels) {
+    return(NULL);
   }
-  bool save_cgref_to_gif_file(CGImageRef image, char *image_file) {
-    return(save_cgref_to_image_type_file(IMAGE_TYPE_GIF, image, image_file));
+  void *qoi_pixels = qoi_encode(rgb_pixels, &(qoi_desc){
+    .width      = w,
+    .height     = h,
+    .channels   = 4,
+    .colorspace = QOI_SRGB
+  }, qoi_len);
+
+  log_info("encoded %dx%d %s RGB to qoi %s",
+           w, h,
+           bytes_to_string(rgb_len),
+           bytes_to_string(*qoi_len)
+
+           );
+  if (rgb_pixels) {
+    free(rgb_pixels);
   }
-  bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file) {
-    return(save_cgref_to_image_type_file(IMAGE_TYPE_JPEG, image, image_file));
-  }
-  bool save_cgref_to_tiff_file(CGImageRef image, char *image_file) {
-    return(save_cgref_to_image_type_file(IMAGE_TYPE_TIFF, image, image_file));
-  }
+  return(qoi_pixels);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 CGImageRef resize_cgimage_factor(CGImageRef imageRef, double resize_factor){
@@ -175,6 +311,16 @@ void * CompressToPNG(int width, int height, const void *rgb, const void *mask, l
   CFRelease(dest);
   CFRelease(data);
 
+  return(buf);
+}
+
+unsigned char *cgimage_ref_to_rgb_pixels(CGImageRef image_ref, size_t *len){
+  CFDataRef data_ref = CGDataProviderCopyData(CGImageGetDataProvider(image_ref));
+
+  *len = CFDataGetLength(data_ref);
+  unsigned char *buf = calloc(1, *len);
+
+  CFDataGetBytes(data_ref, CFRangeMake(0, *len), buf);
   return(buf);
 }
 

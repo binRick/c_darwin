@@ -178,8 +178,7 @@ TEST t_info(){
 }
 
 TEST t_capture_to_memory(){
-    
-    PASS();
+  PASS();
 }
 SUITE(s_capture_to_memory){
   RUN_TEST(t_capture_to_memory);

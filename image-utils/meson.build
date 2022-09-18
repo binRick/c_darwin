@@ -21,6 +21,7 @@ image_utils_deps = [
   string_utils_dep,
   timestamp_dep,
   stb_dep,
+  qoi_dep,
 ]
 image_utils_link_flags = [
   osx_link_args,
