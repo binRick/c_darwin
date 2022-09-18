@@ -183,7 +183,7 @@ uint32_t *get_space_minimized_window_list(uint64_t sid, int *count){
   return(minimized_window_list);
 }
 
-CGImageRef space_capture(uint32_t sid) {
+CGImageRef capture_space_id(uint32_t sid) {
   CGImageRef image  = NULL;
   CFArrayRef result = SLSHWCaptureSpace(g_connection, sid, 0);
   uint32_t   count  = CFArrayGetCount(result);

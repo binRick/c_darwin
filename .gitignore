@@ -56,3 +56,5 @@ tmp
 *.txt
 *.bmp
 .DS_Store
+*.qoi
+*.gif.[0-9]*

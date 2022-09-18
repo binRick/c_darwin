@@ -16,7 +16,7 @@
 #include "systemprofiler/systemprofiler.h"
 #include "timestamp/timestamp.h"
 #define FONT_UTILS_SYSTEM_PROFILER_MODE    "SPFontsDataType"
-#define FONT_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8)
+#define FONT_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8) * 1000
 static bool FONT_UTILS_DEBUG_MODE = false;
 typedef void (^font_parser_b)(struct font_t *font, JSON_Object *font_object);
 const char  *font_file_type_extensions[FONT_FILE_TYPES_QTY + 1] = {

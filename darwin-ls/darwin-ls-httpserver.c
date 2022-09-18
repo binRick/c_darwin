@@ -23,6 +23,9 @@
 #include "timestamp/timestamp.h"
 #include "url.h/url.h"
 ///////////////////////////////////////////////
+#include "app-utils/app-utils.h"
+#include "capture-utils/capture-utils.h"
+#include "font-utils/font-utils.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "monitor-utils/monitor-utils.h"
 #include "screen-utils/screen-utils.h"
@@ -284,11 +287,10 @@ void handle_request(struct http_request_s *request) {
     http_response_body(response, response_body, strlen(response_body));
   } else if (request_target_is(request, "/capture/display")) {
     struct parsed_data_t *data      = parse_request(request);
-    size_t               display_id = (data->display_id > 0) ? (size_t)(data->display_id) : (size_t)(get_main_display_id());
+    size_t               display_id = validate_id_or_get_default_capture_id(CAPTURE_TYPE_DISPLAY, data->display_id);
     char                 *output_file;
     asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
-    CGImageRef           img_ref = capture_display_id(display_id);
-
+    CGImageRef           img_ref     = capture(CAPTURE_TYPE_DISPLAY, display_id);
     size_t               rgb_len     = 0;
     unsigned char        *rgb_pixels = cgimage_ref_to_rgb_pixels(img_ref, &rgb_len);
     log_debug("Got %lu rgb pixels", rgb_len);
@@ -402,10 +404,10 @@ void handle_request(struct http_request_s *request) {
     }
   } else if (request_target_is(request, "/capture/space")) {
     struct parsed_data_t *data    = parse_request(request);
-    size_t               space_id = (data && data->space_id && data->space_id > 0) ? (size_t)(data->space_id) : (size_t)(get_space_id());
+    size_t               space_id = validate_id_or_get_default_capture_id(CAPTURE_TYPE_SPACE, data->space_id);
     char                 *output_file;
     asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
-    CGImageRef           img_ref = space_capture((uint32_t)space_id);
+    CGImageRef           img_ref = capture(CAPTURE_TYPE_SPACE, space_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true) {
       size_t        png_len   = fsio_file_size(output_file);
       unsigned char *png_data = fsio_read_binary_file(output_file);
@@ -448,7 +450,7 @@ void handle_request(struct http_request_s *request) {
     size_t               space_id = (data && data->space_id && data->space_id > 0) ? (size_t)(data->space_id) : (size_t)(get_space_id());
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
-    CGImageRef           img_ref = space_capture((uint32_t)space_id);
+    CGImageRef           img_ref = capture_space_id((uint32_t)space_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (data->grayscale_conversion == true) {
         output_file = convert_png_to_grayscale(output_file, data->resize_factor);
@@ -466,10 +468,10 @@ void handle_request(struct http_request_s *request) {
     }
   } else if (request_target_is(request, "/extract/window")) {
     struct parsed_data_t *data = parse_request(request);
-    size_t               window_id = (data->window_id > 0) ? (size_t)(data->window_id) : (size_t)(get_focused_window_id());
+    size_t               window_id = validate_id_or_get_default_capture_id(CAPTURE_TYPE_WINDOW, data->window_id);
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = capture_window_id(window_id);
+    CGImageRef           img_ref = capture(CAPTURE_TYPE_WINDOW, window_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (data->grayscale_conversion == true) {
         if (DARWIN_LS_HTTPSERVER_DEBUG_MODE) {
@@ -494,12 +496,12 @@ void handle_request(struct http_request_s *request) {
     }
   } else if (request_target_is(request, "/capture/window")) {
     struct parsed_data_t *data        = parse_request(request);
-    size_t               window_id    = (data->window_id > 0) ? (size_t)(data->window_id) : (size_t)(get_focused_window_id());
+    size_t               window_id    = validate_id_or_get_default_capture_id(CAPTURE_TYPE_WINDOW, data->window_id);
     char                 *output_file = NULL;
     unsigned char        *png_data    = NULL;
     size_t               png_len      = 0;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = capture_window_id(window_id);
+    CGImageRef           img_ref = capture(CAPTURE_TYPE_WINDOW, window_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true) {
       png_len  = fsio_file_size(output_file);
       png_data = fsio_read_binary_file(output_file);
@@ -556,11 +558,13 @@ void handle_request(struct http_request_s *request) {
     struct Vector           *_space_minimized_window_ids_v = get_space_minimized_window_ids_v(cur_space_id);
     struct Vector           *_space_non_minimized_window_ids_v = get_space_non_minimized_window_ids_v(cur_space_id);
     struct Vector           *_space_owners_v = get_space_owners(cur_space_id), *_process_infos_v = get_all_process_infos_v();
-    unsigned long           left      = (info.f_bavail * info.f_frsize) / 1024 / 1024;
-    unsigned long           total     = (info.f_blocks * info.f_frsize) / 1024 / 1024;
-    unsigned long           used      = total - left;
-    int                     used_perc = ((int)((float)used * 100 / (float)total * 100)) / 100;
-    int                     free_perc = 100 - used_perc;
+//    struct Vector *_installed_apps_v = get_installed_apps_v();
+//    struct Vector *_installed_fonts_v = get_installed_fonts_v();
+    unsigned long left      = (info.f_bavail * info.f_frsize) / 1024 / 1024;
+    unsigned long total     = (info.f_blocks * info.f_frsize) / 1024 / 1024;
+    unsigned long used      = total - left;
+    int           used_perc = ((int)((float)used * 100 / (float)total * 100)) / 100;
+    int           free_perc = 100 - used_perc;
     assert(uname(&buffer) == EXIT_SUCCESS);
     assert(statvfs("/", &info) == EXIT_SUCCESS);
     {

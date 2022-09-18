@@ -51,14 +51,6 @@ bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef i
   return((success == true) && fsio_file_exists(image_file));
 }
 
-static int read_32bytes_big_endian_image_buffer(uint8_t *buf) {
-  return(buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3]);
-}
-
-static int read_16bytes_little_endian_image_buffer(uint8_t *buf) {
-  return(buf[1] << 8 | buf[0]);
-}
-
 static void read_image_format_file(const char *path, unsigned char *buf, int len, int offset) {
   int fd = open(path, O_RDONLY); assert(fd >= 0);   assert(pread(fd, buf, len, offset) >= 0); close(fd);
 }
@@ -230,12 +222,14 @@ unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
     .colorspace = QOI_SRGB
   }, qoi_len);
 
-  log_info("encoded %dx%d %s RGB to qoi %s",
-           w, h,
-           bytes_to_string(rgb_len),
-           bytes_to_string(*qoi_len)
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_info("encoded %dx%d %s RGB to qoi %s",
+             w, h,
+             bytes_to_string(rgb_len),
+             bytes_to_string(*qoi_len)
 
-           );
+             );
+  }
   if (rgb_pixels) {
     free(rgb_pixels);
   }
@@ -279,7 +273,7 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   return(newImageRef);
 }
 
-void * CompressToPNG(int width, int height, const void *rgb, const void *mask, long *outsize){
+unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, const void *mask, long *outsize){
   CFMutableDataRef      data     = CFDataCreateMutable(kCFAllocatorDefault, 0);
   CGImageDestinationRef dest     = CGImageDestinationCreateWithData(data, kUTTypePNG, 1, NULL);
   CGColorSpaceRef       space    = CGColorSpaceCreateDeviceRGB();
@@ -299,8 +293,8 @@ void * CompressToPNG(int width, int height, const void *rgb, const void *mask, l
   CGImageDestinationAddImage(dest, image, NULL);
   CGImageDestinationFinalize(dest);
 
-  long size = CFDataGetLength(data);
-  void *buf = malloc(size);
+  long          size = CFDataGetLength(data);
+  unsigned char *buf = calloc(size, sizeof(unsigned char));
 
   CFDataGetBytes(data, CFRangeMake(0, size), buf);
   *outsize = size;

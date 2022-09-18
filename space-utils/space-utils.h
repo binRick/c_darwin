@@ -34,7 +34,7 @@ uint32_t *get_space_window_list_for_connection(uint64_t *space_list, int space_c
 int get_space_type(uint64_t sid);
 char *get_space_uuid(uint64_t sid);
 void set_space_by_index(int space);
-CGImageRef space_capture(uint32_t sid);
+CGImageRef capture_space_id(uint32_t sid);
 uint32_t *get_space_minimized_window_list(uint64_t sid, int *count);
 struct Vector *get_space_minimized_window_ids_v(size_t space_id);
 struct Vector *get_space_non_minimized_window_ids_v(size_t space_id);

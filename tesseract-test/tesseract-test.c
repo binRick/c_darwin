@@ -149,7 +149,7 @@ TEST t_tesseract_capture_spaces(){
     unsigned long started  = timestamp();
     size_t        space_id = (size_t)vector_get(space_ids_v, i);
     char          *image_filename;
-    CGImageRef    image_ref = space_capture(space_id);
+    CGImageRef    image_ref = capture_space_id(space_id);
     asprintf(&image_filename, "/tmp/space-%lu.png", space_id);
     log_info("capturing space %lu to %s", space_id, image_filename);
     save_cgref_to_png_file(image_ref, image_filename);

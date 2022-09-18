@@ -47,7 +47,7 @@ struct image_type_t {
 };
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1];
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height);
-void * CompressToPNG(int width, int height, const void *rgb, const void *mask, long *outsize);
+unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, const void *mask, long *outsize);
 bool write_cgimage_ref_to_tif_file_path(CGImageRef im, char *tif_file_path);
 CGImageRef cgimageref_to_grayscale(CGImageRef im);
 CGImageRef resize_cgimage_factor(CGImageRef imageRef, double resize_factor);

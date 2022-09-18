@@ -76,6 +76,7 @@ subdir('wrec-common')
 subdir('wrec-utils')
 subdir('wrec-capture')
 subdir('screen-utils')
+subdir('capture-utils')
 subdir('focused')
 subdir('audit')
 #//////////////////////////////////////////////////////////////////////

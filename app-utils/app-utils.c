@@ -7,7 +7,7 @@
 #include "systemprofiler/systemprofiler.h"
 #include "timelib/timelib.h"
 #define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
-#define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60)
+#define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8) * 1000
 static struct app_parser_t app_parsers[APP_PARSER_TYPES_QTY] = {
   [APP_PARSER_TYPE_NAME] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
                                                                                    app->name                                                  = (json_object_has_value_of_type(app_object, "_name", JSONString))
