@@ -970,7 +970,7 @@ static void _command_capture_window(){
         : common_option_width_or_height_name(args->width_or_height),
            args->width_or_height_group
            );
-  CGImageRef img_ref     = window_capture(get_window_id(args->window_id));
+  CGImageRef img_ref     = capture_window_id(args->window_id);
   int        orig_width  = CGImageGetWidth(img_ref);
   int        orig_height = CGImageGetHeight(img_ref);
   if (args->width_or_height_group > 0) {
@@ -998,7 +998,7 @@ static void _command_capture_window(){
              );
     img_ref = resize_cgimage(img_ref, new_width, new_height);
   }
-  assert(save_cgref_to_png(img_ref, args->output_file) == true);
+  assert(save_cgref_to_png_file(img_ref, args->output_file) == true);
   exit(EXIT_SUCCESS);
 }
 

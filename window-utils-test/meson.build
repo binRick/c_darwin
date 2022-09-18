@@ -29,7 +29,7 @@ if get_option('enable-binaries')
      dependencies: window_utils_test_deps,
      include_directories: window_utils_test_include_dirs,
   )
-  #if get_option('enable-binary-tests')
-    #    test('window-utils-test', window_utils_test_exec, args:['-v','-a'])
-  #endif
+  if get_option('enable-binary-tests')
+      test('window-utils-test', window_utils_test_exec, args:['-v','-a'])
+  endif
 endif

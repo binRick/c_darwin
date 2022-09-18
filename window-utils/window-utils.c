@@ -1,4 +1,5 @@
 #pragma once
+#include "window-utils/window-utils.h"
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
@@ -15,7 +16,6 @@
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
-#include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__window_utils(void){
@@ -1243,62 +1243,39 @@ void print_all_window_items(FILE *rsp) {
             );
 } /* print_all_menu_items */
 
-CGImageRef window_capture(struct window_t *window) {
+CGImageRef capture_window_id(size_t window_id){
+  unsigned long started = timestamp();
   CGImageRef image_ref = NULL;
-  uint64_t   wid       = (uint64_t)(window->window_id);
-
-  SLSCaptureWindowsContentsToRectWithOptions(g_connection,
-                                             &wid,
-                                             true,
-                                             CGRectNull,
-                                             1 << 8,
-                                             &image_ref);
-
+  uint64_t   wid       = (uint64_t)(window_id);
+  SLSCaptureWindowsContentsToRectWithOptions(g_connection,&wid,true,CGRectNull,1 << 8,&image_ref);
   CGRect bounds;
-
   SLSGetScreenRectForWindow(g_connection, wid, &bounds);
   bounds.size.width = (uint32_t)(bounds.size.width + 0.5);
-  window->rect.size = bounds.size;
   if (WINDOW_UTILS_DEBUG_MODE) {
-    log_info("Captured image of window %lu :: %dx%d",
-             window->window_id,
-             (int)bounds.size.width, (int)bounds.size.height
+    log_info("Captured image of Window #%lu of size %dx%d in %s",
+             window_id,
+             (int)bounds.size.width, (int)bounds.size.height,
+             milliseconds_to_string(timestamp()-started)
              );
   }
-
   return(image_ref);
 }
 
-bool save_cgref_to_png(const CGImageRef image, const char *filename) {
-  bool success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
-  {
-    path        = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);
-    url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
-    destination = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
-    CGImageDestinationAddImage(destination, image, nil);
-    success = CGImageDestinationFinalize(destination);
-  }
-
-  CFRelease(url); CFRelease(path); CFRelease(destination);
-  return((success == true) && fsio_file_exists(filename));
+CGImageRef capture_window(struct window_t *window) {
+  return(capture_window_id((size_t)window->window_id));
 }
 
 void window_move(struct window_t *window, CGPoint point) {
   window->position = point;
   SLSMoveWindow(g_connection, window->window_id, &point);
-
-  if (__builtin_available(macOS 12.0, *)) {
-  } else {
-    CFNumberRef number = CFNumberCreate(NULL,
+  CFNumberRef number = CFNumberCreate(NULL,
                                         kCFNumberSInt32Type,
                                         &window->window_id);
-
     const void *values[1] = { number };
     CFArrayRef array      = CFArrayCreate(NULL, values, 1, &kCFTypeArrayCallBacks);
     SLSReassociateWindowsSpacesByGeometry(g_connection, array);
     CFRelease(array);
     CFRelease(number);
-  }
 }
 
 CFStringRef display_active_display_uuid(void) {

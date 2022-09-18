@@ -99,9 +99,9 @@ TEST t_tesseract_capture_windows(){
     struct window_t *window = (struct window_t *)vector_get(windows_v, i);
     unsigned long   started = timestamp();
     log_info("capturing window %lu", window->window_id);
-    CGImageRef      image_ref = window_capture(window);
+    CGImageRef      image_ref = capture_window_id(window->window_id);
     asprintf(&image_filename, "/tmp/window-%lu.png", window->window_id);
-    save_cgref_to_png(image_ref, image_filename);
+    save_cgref_to_png_file(image_ref, image_filename);
     if (fsio_file_size(image_filename) < MIN_PNG_SIZE) {
       if (TESSERACT_TEST_DEBUG_MODE) {
         log_info("Skipping %s png file %s (size too small)",
@@ -152,7 +152,7 @@ TEST t_tesseract_capture_spaces(){
     CGImageRef    image_ref = space_capture(space_id);
     asprintf(&image_filename, "/tmp/space-%lu.png", space_id);
     log_info("capturing space %lu to %s", space_id, image_filename);
-    save_cgref_to_png(image_ref, image_filename);
+    save_cgref_to_png_file(image_ref, image_filename);
     if (fsio_file_size(image_filename) < MIN_PNG_SIZE) {
       if (TESSERACT_TEST_DEBUG_MODE) {
         log_info("Skipping %s png file %s (size too small)",

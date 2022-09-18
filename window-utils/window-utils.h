@@ -39,7 +39,6 @@ typedef struct {
   int numFound;
   int jsonMode;
 } LsWinCtx;
-
 typedef struct {
   int     id;
   int     fromRight;
@@ -123,8 +122,6 @@ struct window_t *get_pid_window(const int PID);
 int get_window_level(struct window_t *w);
 char *get_window_title(struct window_t *w);
 void set_window_tags(struct window_t *w);
-CGImageRef window_capture(struct window_t *window);
-bool save_cgref_to_png(const CGImageRef image, const char *filename);
 char *get_window_title(struct window_t *w);
 void set_window_tags(struct window_t *w);
 void fade_window(struct window_t *w);
@@ -213,5 +210,10 @@ CGRect get_resized_window_info_rect_by_factor_left_side(struct window_info_t *w,
 CGRect get_resized_window_info_rect_by_factor_right_side(struct window_info_t *w, float width_factor, float height_factor);
 CGRect get_resized_window_info_rect_by_factor_bottom_side(struct window_info_t *w, float width_factor, float height_factor);
 CGRect get_resized_window_info_rect_by_factor_top_side(struct window_info_t *w, float width_factor, float height_factor);
+CGImageRef capture_window_id(size_t window_id);
+CGImageRef capture_window(struct window_t *window);
+///////////////////////////////////////////////////
+unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
+bool save_cgref_to_png_file(CGImageRef image, char *filename);
 ///////////////////////////////////////////////////
 #endif

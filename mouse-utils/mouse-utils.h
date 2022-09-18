@@ -14,20 +14,15 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-void processCommand(const char *cmd);
-void print_msg(const char *msg);
-CGPoint mouseLoc();
-CGEventType getMouseButton(int btn, int btnState);
-void mouseEvent(int btn, int btnState, int clickType);
-void mouseMove(int posX, int posY);
-void mouseMoveTo(int posX, int posY, float speed);
-void mousePress(int btn, int clickType);
-void mouseRelease(int btn, int clickType);
-void mouseClick(int btn, int clickType);
-void mouseDrag(int btn, int posX, int posY);
-void typeString(char *str);
-void keyHit(CGKeyCode kc, CGEventFlags flags);
-void keyPress(CGKeyCode kc, CGEventFlags flags);
-void keyRelease(CGKeyCode kc, CGEventFlags flags);
+CGPoint *get_mouse_location(void);
+void move_mouse(int posX, int posY);
+void move_mouse_to_point(CGPoint loc);
+void right_up_mouse();
+void right_down_mouse();
+void left_up_mouse();
+void left_down_mouse();
+void left_click_mouse();
+void right_click_mouse();
+//////////////////////////////////////
 
 #endif

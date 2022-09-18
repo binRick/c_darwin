@@ -284,7 +284,31 @@ void handle_request(struct http_request_s *request) {
     char                 *output_file;
     asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
     CGImageRef           img_ref = capture_display_id(display_id);
-    if (save_cgref_to_png(img_ref, output_file) == true) {
+
+    size_t len = 0; int width = 0, height = 0; bool ok = false; unsigned char *pixels = NULL; unsigned char *header = NULL; char *file = NULL;
+
+    file = "/tmp/a.png";
+    pixels = save_cgref_to_png_memory(img_ref, &len);
+    fsio_write_binary_file(file,pixels,len);
+    ok = image_types[IMAGE_TYPE_PNG].validator(pixels);
+    log_debug("PNG OK: %s", ok?"Yes":"No");
+    header = image_types[IMAGE_TYPE_PNG].read_file_header(file);
+    image_types[IMAGE_TYPE_PNG].get_dimensions(header, &width, &height);
+    log_debug("PNG Dimensions: %dx%d", width,height);
+
+    if(pixels) free(pixels);
+    if(header) free(header);
+    len = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+    file = "/tmp/a.gif";
+    pixels = save_cgref_to_gif_memory(img_ref, &len);
+    fsio_write_binary_file(file,pixels,len);
+    ok = image_types[IMAGE_TYPE_GIF].validator(pixels);
+    log_debug("GIF OK: %s", ok?"Yes":"No");
+    header = image_types[IMAGE_TYPE_GIF].read_file_header(file);
+    image_types[IMAGE_TYPE_GIF].get_dimensions(header, &width, &height);
+    log_debug("GIF Dimensions: %dx%d", width,height);
+
+    if (save_cgref_to_png_file(img_ref, output_file) == true) {
       size_t        png_len   = fsio_file_size(output_file);
       unsigned char *png_data = fsio_read_binary_file(output_file);
       fsio_remove(output_file);
@@ -300,7 +324,7 @@ void handle_request(struct http_request_s *request) {
     char                 *output_file;
     asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
     CGImageRef           img_ref = space_capture((uint32_t)space_id);
-    if (save_cgref_to_png(img_ref, output_file) == true) {
+    if (save_cgref_to_png_file(img_ref, output_file) == true) {
       size_t        png_len   = fsio_file_size(output_file);
       unsigned char *png_data = fsio_read_binary_file(output_file);
       fsio_remove(output_file);
@@ -316,7 +340,7 @@ void handle_request(struct http_request_s *request) {
     char                 *output_file;
     asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
     CGImageRef           img_ref = capture_display_id(display_id);
-    if (save_cgref_to_png(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
+    if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (data->grayscale_conversion == true) {
         if (DARWIN_LS_HTTPSERVER_DEBUG_MODE) {
           log_info("Converting to grayscale");
@@ -343,7 +367,7 @@ void handle_request(struct http_request_s *request) {
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
     CGImageRef           img_ref = space_capture((uint32_t)space_id);
-    if (save_cgref_to_png(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
+    if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (data->grayscale_conversion == true) {
         output_file = convert_png_to_grayscale(output_file, data->resize_factor);
       }
@@ -363,8 +387,8 @@ void handle_request(struct http_request_s *request) {
     size_t               window_id = (data->window_id > 0) ? (size_t)(data->window_id) : (size_t)(get_focused_window_id());
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = window_capture(get_window_id(window_id));
-    if (save_cgref_to_png(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
+    CGImageRef           img_ref = capture_window_id(window_id);
+    if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (data->grayscale_conversion == true) {
         if (DARWIN_LS_HTTPSERVER_DEBUG_MODE) {
           log_info("Converting to grayscale");
@@ -393,8 +417,8 @@ void handle_request(struct http_request_s *request) {
     unsigned char        *png_data    = NULL;
     size_t               png_len      = 0;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = window_capture(get_window_id(window_id));
-    if (save_cgref_to_png(img_ref, output_file) == true) {
+    CGImageRef           img_ref = capture_window_id(window_id);
+    if (save_cgref_to_png_file(img_ref, output_file) == true) {
       png_len  = fsio_file_size(output_file);
       png_data = fsio_read_binary_file(output_file);
       fsio_remove(output_file);
@@ -619,6 +643,7 @@ void handle_request(struct http_request_s *request) {
         }
         JSON_Value *w_v = json_value_init_object();
         json_object_set_number(json_object(w_v), "pid", w->pid);
+        json_object_set_number(json_object(w_v), "window_id", w->window_id);
         json_object_set_number(json_object(w_v), "memory_usage", w->memory_usage);
         json_object_set_string(json_object(w_v), "name", w->name);
         json_object_set_string(json_object(w_v), "title", w->title);

@@ -419,7 +419,7 @@ void do_capture(void *CAPTURE_CONFIG){
   chan_send(done_chan, (void *)NULL);
 } /* do_capture */
 
-int capture_window(void *ARGS) {
+int record_window(void *ARGS) {
   execution_args = *(struct args_t *)ARGS;
   done_chan      = chan_init(0);
 

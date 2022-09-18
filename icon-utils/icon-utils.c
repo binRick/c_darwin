@@ -1,7 +1,7 @@
 #pragma once
 #ifndef ICON_UTILS_C
 #define ICON_UTILS_C
-#include "/usr/local/Cellar/libpng/1.6.37/include/libpng16/png.h"
+//#include "/usr/local/Cellar/libpng/1.6.37/include/libpng16/png.h"
 #include "icns/src/icns.h"
 #if PNG_LIBPNG_VER >= 10209
 #define PNG2ICNS_EXPAND_GRAY    1
@@ -28,6 +28,7 @@
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
 #include "which/src/which.h"
+#include <png.h>
 #define CLEAR_ICONS_CMDS_QTY    4
 ///////////////////////////////////////////////
 struct icns_t {
@@ -658,11 +659,7 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
 
   switch (color_type) {
   case PNG_COLOR_TYPE_GRAY:
-#ifdef PNG2ICNS_EXPAND_GRAY
     png_set_expand_gray_1_2_4_to_8(png_ptr);
-#else
-    png_set_gray_1_2_4_to_8(png_ptr);
-#endif
 
     if (bit_depth == 16) {
       png_set_strip_16(png_ptr);
@@ -674,11 +671,7 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
     break;
 
   case PNG_COLOR_TYPE_GRAY_ALPHA:
-#ifdef PNG2ICNS_EXPAND_GRAY
     png_set_expand_gray_1_2_4_to_8(png_ptr);
-#else
-    png_set_gray_1_2_4_to_8(png_ptr);
-#endif
 
     if (bit_depth == 16) {
       png_set_strip_16(png_ptr);
