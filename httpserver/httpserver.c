@@ -15,7 +15,8 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
-
+#include "websocket-server/websocket-server.h"
+#include <pthread.h>
 ////////////////////////////////////////////
 static bool HTTPSERVER_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////
@@ -28,6 +29,10 @@ static void __attribute__((constructor)) __constructor__httpserver(void){
 
 ////////////////////////////////////////////
 int httpserver_main() {
+  pthread_t th;
+
+  pthread_create(&th, NULL, websocket_server, (void *)(DARWIN_LS_HTTPSERVER_PORT + 1));
+
   signal(SIGTERM, handle_sigterm);
   server = http_server_init(DARWIN_LS_HTTPSERVER_PORT, handle_request);
   http_server_listen_addr(server, DARWIN_LS_HTTPSERVER_HOST);

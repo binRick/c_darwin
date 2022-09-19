@@ -39,7 +39,7 @@ struct parsed_data_t {
 #define CONTENT_TYPE_TTF                "application/octet-stream"
 #define CONTENT_TYPE_WOFF               "application/x-font-woff"
 #define CONTENT_TYPE_HTML               "text/html; charset=UTF-8"
-#define CONTENT_TYPE_WOFF2               "font/woff2"
+#define CONTENT_TYPE_WOFF2              "font/woff2"
 static const char *tess_lang = "eng";
 struct http_request_s;
 void handle_sigterm(int signum);

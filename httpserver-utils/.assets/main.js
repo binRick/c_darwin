@@ -1,6 +1,22 @@
 $(document).ready(function() {
     console.log("main.js");
 
+
+const socket = new WebSocket('ws://localhost:49226');
+
+// Connection opened
+socket.addEventListener('open', (event) => {
+  setInterval(function(){
+    socket.send('Hello Server!');
+  }, 5000);
+});
+
+// Listen for messages
+socket.addEventListener('message', (event) => {
+    console.log('Message from server ', event.data);
+});
+
+
     $.contextMenu.types.myType = function(item, opt, root) {
         $('<span>' + item.customName + '</span>').appendTo(this);
         this.on('contextmenu:focus', function(e) {

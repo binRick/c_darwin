@@ -20,6 +20,8 @@ httpserver_deps = [
   ms_dep,
   bytes_dep,
   httpserver_h_deps,
+  wslay_dep,
+  websocket_server_dep,
 ]
 
 httpserver_c_args = [
