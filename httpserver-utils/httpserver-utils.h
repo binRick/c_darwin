@@ -19,9 +19,6 @@ struct parsed_data_t {
   size_t resize_factor;
   bool   grayscale_conversion;
 };
-#define DARWIN_LS_HTTPSERVER_PORT          49225
-#define DARWIN_LS_HTTPSERVER_HOST          "127.0.0.1"
-#define DARWIN_LS_HTTPSERVER_PROTOCOL      "http"
 #define UNHANDLED_REQUEST_RESPONSE_CODE    500
 #define HANDLED_REQUEST_RESPONSE_CODE      200
 #define DEFAULT_TEXT_RESPONSE              "404 Not Found"

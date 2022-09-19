@@ -9,7 +9,6 @@ inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 httpserver_utils_include_dirs = [
   '.',
   inc,
-  '/usr/local/include/tesseract',
 ]
 
 httpserver_utils_deps = [

@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#define DARWIN_LS_HTTPSERVER_PORT        49225
+#define DARWIN_LS_HTTPSERVER_HOST        "127.0.0.1"
+#define DARWIN_LS_HTTPSERVER_PROTOCOL    "http"
 //////////////////////////////////////
 struct http_server_s *server;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

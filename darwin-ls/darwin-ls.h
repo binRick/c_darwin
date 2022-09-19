@@ -2,6 +2,7 @@
 #ifndef LS_WIN_H
 #define LS_WIN_H
 #include "ansi-codes/ansi-codes.h"
+#include "optparse99/optparse99.h"
 //////////////////////////////////////
 #include "alacritty/alacritty.h"
 #include "app-utils/app-utils.h"
@@ -21,7 +22,6 @@
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "monitor-utils/monitor-utils.h"
 #include "ms/ms.h"
-#include "optparse99/optparse99.h"
 #include "process-utils/process-utils.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"

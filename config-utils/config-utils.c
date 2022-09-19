@@ -3,6 +3,7 @@
 #define CONFIG_UTILS_C
 #include "config-utils/config-utils.h"
 #include "httpserver-utils/httpserver-utils.h"
+#include "httpserver/httpserver.h"
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -39,6 +40,32 @@
 static bool CONFIG_UTILS_DEBUG_MODE = false;
 
 ///////////////////////////////////////////////////////////////////////
+char *get_config_json_string_pretty(){
+  return(json_serialize_to_string_pretty(get_json_config()));
+}
+
+char *get_config_json_string(){
+  return(json_serialize_to_string(get_json_config()));
+}
+
+char *get_config_response_body(){
+  unsigned long long config_started = timestamp();
+  char               *cfg_data_s = get_config_json_string(), *response_body;
+
+  asprintf(&response_body,
+           "{\"response_code\":%d,\"response_data\":\"%s\",\"ts\":%lu"
+           ",\"config\":%s,\"dur\":%lu,\"size\":%lu"
+           "}%s",
+           HANDLED_REQUEST_RESPONSE_CODE, "config", (size_t)timestamp(),
+           cfg_data_s, (size_t)((size_t)timestamp() - (size_t)config_started), strlen(cfg_data_s),
+           ""
+           );
+  if (cfg_data_s) {
+    free(cfg_data_s);
+  }
+  return(response_body);
+}
+
 JSON_Value *get_json_config(){
   unsigned long long config_started = timestamp();
   char               *cfg_path      = get_homedir_yaml_config_file_path();
@@ -61,8 +88,8 @@ JSON_Value *get_json_config(){
   struct Vector  *_space_minimized_window_ids_v = get_space_minimized_window_ids_v(cur_space_id);
   struct Vector  *_space_non_minimized_window_ids_v = get_space_non_minimized_window_ids_v(cur_space_id);
   struct Vector  *_space_owners_v = get_space_owners(cur_space_id), *_process_infos_v = get_all_process_infos_v();
-//    struct Vector *_installed_apps_v = get_installed_apps_v();
-//    struct Vector *_installed_fonts_v = get_installed_fonts_v();
+  //   struct Vector *_installed_apps_v = get_installed_apps_v();
+  //struct Vector *_installed_fonts_v = get_installed_fonts_v();
   unsigned long left      = (info.f_bavail * info.f_frsize) / 1024 / 1024;
   unsigned long total     = (info.f_blocks * info.f_frsize) / 1024 / 1024;
   unsigned long used      = total - left;
@@ -274,32 +301,6 @@ JSON_Value *get_json_config(){
   json_object_set_number(json_object(cfg_data), "dur", timestamp() - config_started);
   return(cfg_data);
 } /* get_json_config */
-
-char *get_config_json_string_pretty(){
-  return(json_serialize_to_string_pretty(get_json_config()));
-}
-
-char *get_config_json_string(){
-  return(json_serialize_to_string(get_json_config()));
-}
-
-char *get_config_response_body(){
-  unsigned long long config_started = timestamp();
-  char               *cfg_data_s = get_config_json_string(), *response_body;
-
-  asprintf(&response_body,
-           "{\"response_code\":%d,\"response_data\":\"%s\",\"ts\":%lu"
-           ",\"config\":%s,\"dur\":%lu,\"size\":%lu"
-           "}%s",
-           HANDLED_REQUEST_RESPONSE_CODE, "config", (size_t)timestamp(),
-           cfg_data_s, (size_t)((size_t)timestamp() - (size_t)config_started), strlen(cfg_data_s),
-           ""
-           );
-  if (cfg_data_s) {
-    free(cfg_data_s);
-  }
-  return(response_body);
-}
 
 static void __attribute__((constructor)) __constructor__config_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_config_utils") != NULL) {

@@ -19,14 +19,8 @@
 #include "ansi-codes/ansi-codes.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "tesseract/capi.h"
 ///////////////////////////////////////////////////
-typedef CFStringRef (^image_format_b)(void);
-typedef bool (^image_format_validator_b)(unsigned char *image_buf);
-typedef unsigned char *(^image_format_read_buffer_header_b)(unsigned char *image_buf);
-typedef unsigned char *(^image_format_read_file_header_b)(char *image_path);
-typedef bool (^image_format_file_get_dimensions)(char *image_path);
-typedef bool (^image_format_buffer_get_dimensions)(unsigned char *image_buf, size_t len, int *width, int *height);
-typedef bool (^image_format_get_dimensions_from_header)(unsigned char *header, int *width, int *height);
 enum image_type_id_t {
   IMAGE_TYPE_PNG,
   IMAGE_TYPE_GIF,
@@ -37,13 +31,23 @@ enum image_type_id_t {
   IMAGE_TYPES_QTY,
 };
 struct image_type_t {
-  const char                              *name, *extension;
-  image_format_b                          format;
-  image_format_validator_b                validator;
-  image_format_read_file_header_b         read_file_header;
-  image_format_read_buffer_header_b       read_buffer_header;
-  image_format_get_dimensions_from_header get_dimensions_from_header;
-  image_format_buffer_get_dimensions      get_dimensions;
+  const char    *name, *file_extension;
+  CFStringRef   (^get_format)(void);
+  bool          (^load_buffer_to_tesseract_api)(unsigned char *image_buf, size_t len, TessBaseAPI *api);
+  bool          (^validate_header)(unsigned char *header_buf);
+  bool          (^validate_buffer)(unsigned char *image_buf, size_t len);
+  bool          (^validate_file)(char *image_path);
+  unsigned char *(^decode_buffer_to_rgb_buffer)(char *image_buf, size_t image_buf_len, size_t *len);
+  unsigned char *(^decode_file_to_rgb_buffer)(char *image_path, size_t *len);
+  unsigned char *(^encode_rgb_buffer_to_buffer)(unsigned char *image_buf, size_t image_buf_len, size_t *len);
+  bool          *(^encode_rgb_buffer_to_file)(unsigned char *image_buf, size_t image_buf_len, char *image_path);
+  bool          *(^encode_buffer_to_image_type_file)(unsigned char *image_buf, size_t image_buf_len, enum image_type_id_t image_type_id, char *image_path);
+  unsigned char *(^encode_buffer_to_image_type_buffer)(unsigned char *image_buf, size_t image_buf_len, enum image_type_id_t image_type_id, size_t *len);
+  unsigned char *(^read_file_header)(char *image_buf);
+  unsigned char *(^read_buffer_header)(unsigned char *image_buf);
+  bool          (^get_dimensions_from_header)(unsigned char *header, int *width, int *height);
+  bool          (^get_dimensions_from_buffer)(unsigned char *header, size_t len, int *width, int *height);
+  bool          (^get_dimensions_from_file)(char *image_path, int *with, int *height);
 };
 char * convert_png_to_grayscale(char *png_file, size_t resize_factor);
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1];

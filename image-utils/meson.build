@@ -1,15 +1,14 @@
 image_utils_srcs = [
   'image-utils.c',
 ]
-image_utils_c_args = [
-  '-Wno-address',
-  ]
 image_utils_dirs = [
     '.',
     inc,
   ]
 image_utils_deps = [
-  c_stringfn_dep,
+  leptonica_dep,
+  stb_dep,
+  c_stringfn_dep,tesseract_dep,
   parson_dep,
   log_dep,
   ansi_codes_dep,
@@ -25,6 +24,13 @@ image_utils_deps = [
 ]
 image_utils_link_flags = [
   osx_link_args,
+  tesseract_libs,
+  leptonica_libs,
+]
+image_utils_c_args = [
+  '-Wno-address',
+  tesseract_cflags,
+  leptonica_cflags,
 ]
 
 

@@ -1,13 +1,11 @@
 darwin_ls_srcs = [
   'darwin-ls.c',
   'darwin-ls-commands.c',
-  'darwin-ls-httpserver.c',
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
   '.',
   inc,
-  '/usr/local/include/tesseract',
 ]
 darwin_ls_deps = [
   font_utils_dep,

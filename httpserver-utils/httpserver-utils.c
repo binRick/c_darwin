@@ -8,7 +8,6 @@
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "allheaders.h"
 #include "bytes/bytes.h"
-#include "capi.h"
 #include "capture-utils/capture-utils.h"
 #include "config-utils/config-utils.h"
 #include "display-utils/display-utils.h"
@@ -21,6 +20,7 @@
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
 #include "tempdir.c/tempdir.h"
+#include "tesseract/capi.h"
 #include "timestamp/timestamp.h"
 #include "url.h/url.h"
 /////////////////////////////////////////////////////////
@@ -259,10 +259,10 @@ void handle_request(struct http_request_s *request) {
     http_response_body(response, response_body, strlen(response_body));
   } else if (request_target_is(request, "/capture/display")) {
     struct parsed_data_t *data      = parse_request(request);
-    size_t               display_id = validate_id_or_get_default_capture_id(CAPTURE_TYPE_DISPLAY, data->display_id);
+    size_t               display_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_DISPLAY, data->display_id);
     char                 *output_file;
     asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
-    CGImageRef           img_ref     = capture(CAPTURE_TYPE_DISPLAY, display_id);
+    CGImageRef           img_ref     = capture_type_capture(CAPTURE_TYPE_DISPLAY, display_id);
     size_t               rgb_len     = 0;
     unsigned char        *rgb_pixels = cgimage_ref_to_rgb_pixels(img_ref, &rgb_len);
     log_debug("Got %lu rgb pixels", rgb_len);
@@ -275,7 +275,7 @@ void handle_request(struct http_request_s *request) {
     log_debug("Got %lu qoi pixels", qoi_len);
 
     int qoi_width = 0, qoi_height = 0;
-    image_types[IMAGE_TYPE_QOI].get_dimensions(qoi_pixels, qoi_len, &qoi_width, &qoi_height);
+    image_types[IMAGE_TYPE_QOI].get_dimensions_from_buffer(qoi_pixels, qoi_len, &qoi_width, &qoi_height);
     log_debug("Got qoi %dx%d", qoi_width, qoi_height);
 
     size_t len = 0; int width = 0, height = 0; bool ok = false; unsigned char *pixels = NULL; unsigned char *header = NULL; char *file = NULL;
@@ -292,8 +292,7 @@ void handle_request(struct http_request_s *request) {
       file   = "/tmp/a.png";
       pixels = save_cgref_to_png_memory(img_ref, &len);
       fsio_write_binary_file(file, pixels, len);
-      ok = image_types[IMAGE_TYPE_PNG].validator(pixels);
-      log_debug("PNG OK: %s %s %s", ok?"Yes":"No", file, bytes_to_string(fsio_file_size(file)));
+      log_debug("PNG OK: %s %s", file, bytes_to_string(fsio_file_size(file)));
       header = image_types[IMAGE_TYPE_PNG].read_file_header(file);
       image_types[IMAGE_TYPE_PNG].get_dimensions_from_header(header, &width, &height);
       log_debug("PNG Dimensions: %dx%d", width, height);
@@ -310,8 +309,7 @@ void handle_request(struct http_request_s *request) {
       file   = "/tmp/a.gif";
       pixels = save_cgref_to_gif_memory(img_ref, &len);
       fsio_write_binary_file(file, pixels, len);
-      ok = image_types[IMAGE_TYPE_GIF].validator(pixels);
-      log_debug("GIF OK: %s %s %s", ok?"Yes":"No", file, bytes_to_string(fsio_file_size(file)));
+      log_debug("GIF OK: %s %s", file, bytes_to_string(fsio_file_size(file)));
       header = image_types[IMAGE_TYPE_GIF].read_file_header(file);
       image_types[IMAGE_TYPE_GIF].get_dimensions_from_header(header, &width, &height);
       log_debug("GIF Dimensions: %dx%d", width, height);
@@ -329,7 +327,7 @@ void handle_request(struct http_request_s *request) {
       save_cgref_to_tiff_file(img_ref, "/tmp/a1.tiff");
       pixels = save_cgref_to_tiff_memory(img_ref, &len);
       fsio_write_binary_file(file, pixels, len);
-      image_types[IMAGE_TYPE_TIFF].get_dimensions(pixels, len, &width, &height);
+      image_types[IMAGE_TYPE_TIFF].get_dimensions_from_buffer(pixels, len, &width, &height);
       log_debug("TIFF Dimensions: %dx%d", width, height);
       stbi_load_from_memory(pixels, len, &width, &height, &compression, 0);
       log_debug("%d,%d,%d", width, height, compression);
@@ -345,7 +343,7 @@ void handle_request(struct http_request_s *request) {
       file   = "/tmp/a.bmp";
       pixels = save_cgref_to_bmp_memory(img_ref, &len);
       fsio_write_binary_file(file, pixels, len);
-      image_types[IMAGE_TYPE_BMP].get_dimensions(pixels, len, &width, &height);
+      image_types[IMAGE_TYPE_BMP].get_dimensions_from_buffer(pixels, len, &width, &height);
       log_debug("BMP Dimensions: %dx%d", width, height);
     }
 
@@ -360,7 +358,7 @@ void handle_request(struct http_request_s *request) {
       file   = "/tmp/a.jpeg";
       pixels = save_cgref_to_jpeg_memory(img_ref, &len);
       fsio_write_binary_file(file, pixels, len);
-      image_types[IMAGE_TYPE_JPEG].get_dimensions(pixels, len, &width, &height);
+      image_types[IMAGE_TYPE_JPEG].get_dimensions_from_buffer(pixels, len, &width, &height);
       log_debug("JPEG Dimensions: %dx%d", width, height);
     }
 
@@ -376,10 +374,10 @@ void handle_request(struct http_request_s *request) {
     }
   } else if (request_target_is(request, "/capture/space")) {
     struct parsed_data_t *data    = parse_request(request);
-    size_t               space_id = validate_id_or_get_default_capture_id(CAPTURE_TYPE_SPACE, data->space_id);
+    size_t               space_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_SPACE, data->space_id);
     char                 *output_file;
     asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
-    CGImageRef           img_ref = capture(CAPTURE_TYPE_SPACE, space_id);
+    CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_SPACE, space_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true) {
       size_t        png_len   = fsio_file_size(output_file);
       unsigned char *png_data = fsio_read_binary_file(output_file);
@@ -440,10 +438,10 @@ void handle_request(struct http_request_s *request) {
     }
   } else if (request_target_is(request, "/extract/window")) {
     struct parsed_data_t *data = parse_request(request);
-    size_t               window_id = validate_id_or_get_default_capture_id(CAPTURE_TYPE_WINDOW, data->window_id);
+    size_t               window_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, data->window_id);
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = capture(CAPTURE_TYPE_WINDOW, window_id);
+    CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (data->grayscale_conversion == true) {
         if (HTTPSERVER_UTILS_DEBUG_MODE) {
@@ -468,12 +466,12 @@ void handle_request(struct http_request_s *request) {
     }
   } else if (request_target_is(request, "/capture/window")) {
     struct parsed_data_t *data        = parse_request(request);
-    size_t               window_id    = validate_id_or_get_default_capture_id(CAPTURE_TYPE_WINDOW, data->window_id);
+    size_t               window_id    = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, data->window_id);
     char                 *output_file = NULL;
     unsigned char        *png_data    = NULL;
     size_t               png_len      = 0;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = capture(CAPTURE_TYPE_WINDOW, window_id);
+    CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true) {
       png_len  = fsio_file_size(output_file);
       png_data = fsio_read_binary_file(output_file);

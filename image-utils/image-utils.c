@@ -57,7 +57,7 @@ bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef i
 
   path        = CFStringCreateWithCString(NULL, image_file, kCFStringEncodingUTF8);
   url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
-  destination = CGImageDestinationCreateWithURL(url, image_types[image_type].format(), 1, NULL);
+  destination = CGImageDestinationCreateWithURL(url, image_types[image_type].get_format(), 1, NULL);
   CGImageDestinationAddImage(destination, image, nil);
   success = CGImageDestinationFinalize(destination);
   CFRelease(url); CFRelease(path); CFRelease(destination);
@@ -74,9 +74,9 @@ static void read_image_format_file(const char *path, unsigned char *buf, int len
 }
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   [IMAGE_TYPE_PNG] =  {
-    .extension                  = "png",                         .name = "PNG",
-    .format                     = ^ CFStringRef (void){ return(kUTTypePNG);                                         },
-    .validator                  = ^ bool (unsigned char *image_buf){ return(('P' == image_buf[1] && 'N' == image_buf[2] && 'G' == image_buf[3]) ? true : false); },
+    .file_extension             = "png",                         .name = "PNG",
+    .get_format                 = ^ CFStringRef (void){ return(kUTTypePNG);                                         },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return(('P' == image_buf[1] && 'N' == image_buf[2] && 'G' == image_buf[3]) ? true : false); },
     .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(8, sizeof(unsigned char)); read_image_format_file(image_path, buf, 8, 16); return(buf); },
     .get_dimensions_from_header = ^ bool (unsigned char *header, int *width, int *height){
       *width  = read_32bytes_big_endian_image_buffer(header);
@@ -85,10 +85,10 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
     },
   },
   [IMAGE_TYPE_GIF] =  {
-    .extension                  = "gif",
+    .file_extension             = "gif",
     .name                       = "GIF",
-    .format                     = ^ CFStringRef (void){ return(kUTTypeGIF);                                         },
-    .validator                  = ^ bool (unsigned char *image_buf){ return(('G' == image_buf[0] && 'I' == image_buf[1] && 'F' == image_buf[2]) ? true : false); },
+    .get_format                 = ^ CFStringRef (void){ return(kUTTypeGIF);                                         },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return(('G' == image_buf[0] && 'I' == image_buf[1] && 'F' == image_buf[2]) ? true : false); },
     .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(4, sizeof(unsigned char)); read_image_format_file(image_path, buf, 4, 6); return(buf); },
     .get_dimensions_from_header = ^ bool (unsigned char *buf,int *width,                                                            int *height){
       *width  = read_16bytes_little_endian_image_buffer(buf);
@@ -97,46 +97,46 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
     },
   },
   [IMAGE_TYPE_TIFF] = {
-    .extension      = "tiff",
-    .name           = "TIFF",
-    .format         = ^ CFStringRef (void){ return(kUTTypeTIFF);                                                    },
-    .validator      = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);                },
-    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
-      int compression = 0;
+    .file_extension             = "tiff",
+    .name                       = "TIFF",
+    .get_format                 = ^ CFStringRef (void){ return(kUTTypeTIFF);                                        },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
+      int compression           = 0;
       stbi_load_from_memory(buf, len, width, height, &compression, 4);
       return(true);
     },
   },
   [IMAGE_TYPE_JPEG] = {
-    .extension      = "jpeg",
-    .name           = "JPEG",
-    .format         = ^ CFStringRef (void){ return(kUTTypeJPEG);                                                    },
-    .validator      = ^ bool (unsigned char *image_buf){ return((0xff == image_buf[0] && 0xd8 == image_buf[1]) ? true : false); },
-    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
-      int compression = 0;
+    .file_extension             = "jpeg",
+    .name                       = "JPEG",
+    .get_format                 = ^ CFStringRef (void){ return(kUTTypeJPEG);                                        },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((0xff == image_buf[0] && 0xd8 == image_buf[1]) ? true : false); },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
+      int compression           = 0;
       stbi_load_from_memory(buf, len, width, height, &compression, 4);
       return(true);
     },
   },
   [IMAGE_TYPE_BMP] =  {
-    .extension      = "bmp",
-    .name           = "BMP",
-    .format         = ^ CFStringRef (void){ return(kUTTypeBMP);                                                     },
-    .validator      = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);                },
-    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
-      int compression = 0;
+    .file_extension             = "bmp",
+    .name                       = "BMP",
+    .get_format                 = ^ CFStringRef (void){ return(kUTTypeBMP);                                         },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
+      int compression           = 0;
       stbi_load_from_memory(buf, len, width, height, &compression, 4);
       return(true);
     },
   },
   [IMAGE_TYPE_QOI] =  {
-    .extension      = "qoi",
-    .name           = "QOI",
-    .format         = ^ CFStringRef (void){ return(NULL);                                                           },
-    .validator      = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);                },
-    .get_dimensions = ^ bool (unsigned char *buf, size_t len, int *width, int *height){
+    .file_extension             = "qoi",
+    .name                       = "QOI",
+    .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
       qoi_desc desc;
-      unsigned char *pixels = qoi_decode(buf,            len,         &desc,      4);
+      unsigned char *pixels     = qoi_decode(buf,            len,         &desc,      4);
       *width  = desc.width;
       *height = desc.height;
       if (pixels)     {
@@ -150,7 +150,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
 unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len){
   unsigned long         started    = timestamp();
   CFMutableDataRef      image_data = CFDataCreateMutable(kCFAllocatorDefault, 0);
-  CGImageDestinationRef dataDest   = CGImageDestinationCreateWithData(image_data, image_types[image_type].format(), 1, NULL);
+  CGImageDestinationRef dataDest   = CGImageDestinationCreateWithData(image_data, image_types[image_type].get_format(), 1, NULL);
 
   CGImageDestinationAddImage(dataDest, image, NULL);
   CGImageDestinationFinalize(dataDest);

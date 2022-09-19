@@ -7,7 +7,6 @@ inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 tesseract_utils_include_dirs = [
   '.',
   inc,
-  '/usr/local/include/tesseract',
 ]
 
 tesseract_utils_deps = [

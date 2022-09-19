@@ -12,8 +12,8 @@
 #include "c_vector/vector/vector.h"
 #include "log/log.h"
 #include "ms/ms.h"
+#include "tesseract/capi.h"
 #include "timestamp/timestamp.h"
-
 ////////////////////////////////////////////
 static bool TESSERACT_UTILS_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////

@@ -19,6 +19,10 @@ config_utils_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
+  capture_utils_dep,
+  display_utils_dep,
+  space_utils_dep,
+  window_utils_dep,
 ]
 
 config_utils_c_args = [
