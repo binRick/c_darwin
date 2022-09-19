@@ -2,6 +2,7 @@
 #include "darwin-ls/darwin-ls.h"
 #include "memory_leak_detector/leak.h"
 ////////////////////////////////////////////
+
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
 struct args_t                 *args               = &(struct args_t){
   .verbose            = false,

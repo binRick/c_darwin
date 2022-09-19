@@ -49,6 +49,11 @@ static bool HTTPSERVER_UTILS_DEBUG_MODE = false;
 #define INCLUDE_FAVICON_FILE                           "./.assets/images/favicon.ico"
 #define INCLUDE_ERROR_IMAGE                            "./.assets/images/error.png"
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+#define INCLUDE_CONTEXT_CSS      "./.assets/context/jquery.contextMenu.min.css"
+#define INCLUDE_CONTEXT_CSS_MAP      "./.assets/context/jquery.contextMenu.min.css.map"
+#define INCLUDE_CONTEXT_JS      "./.assets/context/jquery.contextMenu.min.js"
+#define INCLUDE_CONTEXT_JS_MAP      "./.assets/context/jquery.contextMenu.min.js.map"
+#define INCLUDE_CONTEXT_FONT_ICONS                                "./.assets/context/font/context-menu-icons.woff2"
 #define INCLUDE_REVEAL_MULTIPLE_PRESENTATIONS_HTML     "./.assets/reveal/index.html"
 #define INCLUDE_REVEAL_SOURCE_SANS_PRO_CSS             "./.assets/reveal/fonts/source-sans-pro/source-sans-pro.css"
 #define INCLUDE_REVEAL_SOURCE_SANS_PRO_REGULAR_TTF     "./.assets/reveal/fonts/source-sans-pro/source-sans-pro-regular.ttf"
@@ -61,6 +66,7 @@ static bool HTTPSERVER_UTILS_DEBUG_MODE = false;
 #define INCLUDE_REVEAL_DIST_RESET_CSS                  "./.assets/reveal/dist/reset.css"
 #define INCLUDE_REVEAL_DIST_REVEAL_CSS                 "./.assets/reveal/dist/reveal.css"
 #define INCLUDE_REVEAL_DIST_THEME_WHITE_CSS            "./.assets/reveal/dist/theme/white.css"
+#define INCLUDE_REVEAL_DIST_THEME_SOLARIZED_CSS            "./.assets/reveal/dist/theme/solarized.css"
 #define INCLUDE_REVEAL_DIST_MONOKAI_CSS                "./.assets/reveal/plugin/highlight/monokai.css"
 #define INCLUDE_REVEAL_DIST_HIGHLIGHT_JS               "./.assets/reveal/plugin/highlight/highlight.js"
 #define INCLUDE_REVEAL_DIST_MARKDOWN_JS                "./.assets/reveal/plugin/markdown/markdown.js"
@@ -100,10 +106,21 @@ INCBIN(reveal_reveal_source_space_pro_regular_ttf, INCLUDE_REVEAL_SOURCE_SANS_PR
 INCBIN(reveal_reveal_source_space_pro_regular_woff, INCLUDE_REVEAL_SOURCE_SANS_PRO_REGULAR_WOFF);
 INCBIN(reveal_reveal_source_space_pro_italic_ttf, INCLUDE_REVEAL_SOURCE_SANS_PRO_ITALIC_TTF);
 INCBIN(reveal_reveal_source_space_pro_italic_woff, INCLUDE_REVEAL_SOURCE_SANS_PRO_ITALIC_WOFF);
+INCBIN(context_js_map, INCLUDE_CONTEXT_JS_MAP);
+INCBIN(context_js, INCLUDE_CONTEXT_JS);
+INCBIN(context_css, INCLUDE_CONTEXT_CSS);
+INCBIN(context_css_map, INCLUDE_CONTEXT_CSS_MAP);
+INCBIN(context_font_icons, INCLUDE_CONTEXT_FONT_ICONS);
 /////////////////////////////////////////////////////////
+
 
 //    http_response_header(response, "Cache-Control", "max-age:3600, immutable");
 static int iterate_incbin_responses(struct http_request_s *request, struct http_response_s *response){
+  ADD_REQUEST_HANDLER("/dist/font/context-menu-icons.woff2", WOFF, context_font_icons)
+  ADD_REQUEST_HANDLER("/dist/jquery.contextMenu.min.js", JS_MAP, context_js)
+  ADD_REQUEST_HANDLER("/dist/jquery.contextMenu.min.js.map", JS_MAP, context_js_map)
+  ADD_REQUEST_HANDLER("/dist/jquery.contextMenu.min.css", CSS, context_css)
+  ADD_REQUEST_HANDLER("/dist/jquery.contextMenu.min.css.map", JS_MAP, context_css_map)
   ADD_REQUEST_HANDLER("/dist/reveal.js", JS, reveal_js)
   ADD_REQUEST_HANDLER("/dist/reveal.js.map", JS_MAP, reveal_js_map)
   ADD_REQUEST_HANDLER("/reveal.html", HTML, reveal_multiple_presentations_html)

@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="generator" content=
-"HTML Tidy for HTML5 for Apple macOS version 5.8.0">
+<meta name="generator" content="HTML Tidy for HTML5 for Apple macOS version 5.8.0">
 <meta charset="utf-8">
 <title>Darwin Manager</title>
-<meta name="viewport" content=
-"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="stylesheet" href="/dist/reveal.css">
-<link rel="stylesheet" href="/dist/theme/white.css" id="theme">
+<link rel="stylesheet" href="dist/theme/white.css">
 <link rel="stylesheet" href="/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="/dist/jquery.contextMenu.min.css">
 <style>
                         .reveal {
                                 border: 4px solid #ccc;
@@ -21,26 +20,29 @@
 </head>
 <body style="background: #ddd;">
 <div style="display: flex; flex-direction: row;">
-  <div class="reveal deck1" style="width: 100%; height: 50vh; margin: 5px;">
+  <div class="reveal deck1" style="width: 100%; height: 70vh; margin: 5px;">
+
+
     <div class="slides">
 <section>
       <section>
-        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
-        <img class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window
+        </p>
+        <img alt="window" class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
       </section>
       <section>
         <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
-        <img class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+        <img alt="display" class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
       </section>
 </section>
 <section>
       <section>
         <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
-        <img class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+        <img alt="window" class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
       </section>
       <section>
         <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
-        <img class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+        <img alt="display" class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
       </section>
 </section>
 
@@ -48,15 +50,18 @@
   </div>
 </div>
 <script src="/dist/jquery.min.js"></script> 
+<script src="/dist/jquery.contextMenu.min.js"></script> 
 <script src="/dist/reveal.js"></script> 
 <script src="/plugin/highlight/highlight.js"></script> 
+<script src="/plugin/search/search.js"></script> 
+<script src="/plugin/zoom/zoom.js"></script> 
 <script src="/main.js"></script> 
 <script>
                         let deck1 = new Reveal( document.querySelector( '.deck1' ), {
                                 embedded: true,
                                 progress: true,
                                 keyboardCondition: 'focused',
-                                plugins: [ RevealHighlight ]
+                                plugins: [ RevealHighlight, ]
                         } );
                         deck1.on( 'slidechanged', (event) => {
                           console.log( 'Deck 1 slide changed' );
@@ -66,7 +71,13 @@
                               $(this).removeAttr("src").attr("src", url);
                           });
                         } );
-                        deck1.initialize({ slideNumber: 'c/t' });
+                        deck1.initialize({ 
+                          slideNumber: 'h/v',
+                          navigationMode: 'grid',
+                          preloadIframes: true,
+                          mouseWheel: true,
+
+                        });
 
  //                       Reveal.toggleOverview( true );
 
