@@ -12,6 +12,7 @@
 #include "process-utils/process-utils.h"
 #include "process/process.h"
 #include "timestamp/timestamp.h"
+#include "window-utils/window-utils.h"
 
 TEST t_process_utils_focused_pid(){
   pid_t pid = get_focused_pid();
@@ -109,6 +110,11 @@ TEST t_process_utils_pid_cmdline(){
   PASSm(msg);
 }
 
+TEST t_process_utils_run_osascript_system_prefs(){
+  run_osascript_system_prefs();
+  PASS();
+}
+
 TEST t_process_utils_pid_cwd(){
   char *my_cwd = get_pid_cwd(getpid());
   char *msg;
@@ -127,6 +133,7 @@ SUITE(s_process_utils_test) {
   RUN_TEST(t_process_utils_my_cwd);
   RUN_TEST(t_process_utils_pid_ppids);
   RUN_TEST(t_process_utils_pid_child_pids);
+  RUN_TEST(t_process_utils_run_osascript_system_prefs);
 //  RUN_TEST(t_process_utils_pid_env);
   RUN_TEST(t_process_utils_focused_pid);
 }

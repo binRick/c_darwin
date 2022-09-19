@@ -18,7 +18,7 @@ process_utils_test_deps = [
   ms_dep,
   bytes_dep,
   process_utils_dep,
-  process_dep,
+  process_dep,window_utils_dep
 ]
 process_utils_test_c_args = [
 ]

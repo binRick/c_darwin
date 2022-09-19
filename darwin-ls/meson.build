@@ -1,5 +1,3 @@
-assets_hash = run_command('./.assets/hash.sh', check:true).stdout().strip()
-
 darwin_ls_srcs = [
   'darwin-ls.c',
   'darwin-ls-commands.c',
@@ -38,14 +36,14 @@ darwin_ls_deps = [
   process_dep,keylogger_dep,hotkey_utils_dep,
   url_h_dep,
   querystring_c_dep,
-  b64_dep,screen_utils_dep,incbin_dep,
+  b64_dep,screen_utils_dep,
   leptonica_dep,
   tesseract_dep,
-  c_img_dep,image_utils_dep,
+  c_img_dep,image_utils_dep,config_utils_dep,
+  httpserver_utils_dep,httpserver_dep,
 ]
 darwin_ls_c_args = [
   '-Wno-missing-field-initializers',
-  '-DASSETS_HASH="'+assets_hash+'"',
 ]
 darwin_ls_link_args = [
 ]

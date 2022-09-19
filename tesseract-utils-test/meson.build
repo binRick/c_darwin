@@ -1,5 +1,5 @@
 tesseract_test_srcs = [
-  'tesseract-test.c',
+  'tesseract-utils-test.c',
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 tesseract_test_include_dirs = [
@@ -24,6 +24,7 @@ tesseract_test_deps = [
   space_utils_dep,
   display_utils_dep,
   window_utils_dep,
+  tesseract_utils_dep,
   app_utils_dep,image_utils_dep,
   c_img_dep,
 ]
@@ -39,7 +40,7 @@ tesseract_test_link_args = [
 tesseract_test_test_dir = join_paths(meson.current_source_dir(), '..')
 
 if get_option('enable-binaries')
-  tesseract_test_exec = executable('tesseract-test',
+  tesseract_test_exec = executable('tesseract-utils-test',
      tesseract_test_srcs,
      dependencies: tesseract_test_deps,
      include_directories: tesseract_test_include_dirs,
@@ -47,7 +48,7 @@ if get_option('enable-binaries')
      c_args: tesseract_test_c_args,
      install: false,
   )
-  test('tesseract-test', 
+  test('tesseract-utils-test', 
     tesseract_test_exec, args: ['-v','-a'],
     workdir: tesseract_test_test_dir,
     timeout: 180,

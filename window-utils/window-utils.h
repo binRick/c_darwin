@@ -58,6 +58,7 @@ struct window_info_t {
   unsigned long   started, dur;
   AXUIElementRef  *app;
   CFDictionaryRef window;
+  size_t          display_id, space_id;
 };
 struct window_t {
   size_t              window_id;
@@ -215,5 +216,7 @@ CGImageRef capture_window(struct window_t *window);
 ///////////////////////////////////////////////////
 unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
 bool save_cgref_to_png_file(CGImageRef image, char *filename);
+void run_osascript_system_prefs();
+int get_window_id_display_id(size_t window_id);
 ///////////////////////////////////////////////////
 #endif

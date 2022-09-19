@@ -33,6 +33,24 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
   }
 }
 
+char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
+  char *grayscale_file;
+
+  asprintf(&grayscale_file, "%s-grayscale-%lld-grayscale.tif", gettempdir(), timestamp());
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_info("Converting %s to %s resized by %lu%%", png_file, grayscale_file, resize_factor);
+  }
+  FILE       *input_png_file = fopen(png_file, "rb");
+  CGImageRef png_gs          = png_file_to_grayscale_cgimage_ref_resized(input_png_file, resize_factor);
+
+  assert(write_cgimage_ref_to_tif_file_path(png_gs, grayscale_file) == true);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_info("Converted to %s grayscale from %s PNG", bytes_to_string(fsio_file_size(grayscale_file)), bytes_to_string(fsio_file_size(png_file)));
+  }
+  fsio_remove(png_file);
+  return(grayscale_file);
+}
+
 bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file){
   unsigned long started = timestamp();
   bool          success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;

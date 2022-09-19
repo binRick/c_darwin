@@ -36,4 +36,5 @@ pid_t PSN2PID(ProcessSerialNumber psn);
 ProcessSerialNumber PID2PSN(pid_t pid);
 int get_focused_pid();
 struct Vector *get_all_process_infos_v();
+bool run_osascript(char *OSASCRIPT_CONTENTS);
 #endif

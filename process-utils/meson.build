@@ -20,6 +20,7 @@ process_utils_deps = [
   process_dep,
   string_utils_dep,
   timestamp_dep,
+  reproc_dep,which_dep,
 ]
 process_utils_link_flags = [
   osx_link_args,

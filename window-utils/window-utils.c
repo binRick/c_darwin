@@ -16,6 +16,24 @@
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window-utils/window-utils.h"
+#define CLOSE_SYSTEM_PREFERENCES                                         \
+  "if running of application \"System Preferences\" then\n"              \
+  "    try\n"                                                            \
+  "        tell application \"System Preferences\" to quit\n"            \
+  "    on error\n"                                                       \
+  "        do shell script \"killall 'System Preferences'\"\n"           \
+  "    end try\n"                                                        \
+  "    delay 0.1\n"                                                      \
+  "end if\n"                                                             \
+  "repeat while running of application \"System Preferences\" is true\n" \
+  "    delay 0.1\n"                                                      \
+  "end repeat\n"
+#define OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD \
+  "tell application \"System Preferences\"\n"                              \
+  "    set securityPane to pane id \"com.apple.preference.security\"\n"    \
+  "    tell securityPane to reveal anchor \"Privacy_Accessibility\"\n"     \
+  "    activate\n"                                                         \
+  "end tell\n"
 ///////////////////////////////////////////////////////////////////////////////
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__window_utils(void){
@@ -249,6 +267,17 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   free(pid_s);
 
   return(foundAppWindow);
+}
+
+int get_window_id_display_id(size_t window_id){
+  CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window_id);
+  CFUUIDRef   uuid  = CFUUIDCreateFromString(NULL, _uuid);
+
+  CFRelease(_uuid);
+  int id = CGDisplayGetDisplayIDFromUUID(uuid);
+
+  CFRelease(uuid);
+  return(id);
 }
 
 int get_window_display_id(struct window_t *window){
@@ -1054,21 +1083,34 @@ void move_current_window(int center, int x, int y, int w, int h){
 #define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS() \
   if (!name || strlen(name) < 1 || pid < 1 || !title) { free(i);  continue; }
 
-#define WINDOW_DICTIONARY_SET_WINDOW_INFO()                \
-  i->name          = (name != NULL) ? strdup(name) : "";   \
-  i->title         = (title != NULL) ? strdup(title) : ""; \
-  i->window_id     = (size_t)window_id;                    \
-  i->memory_usage  = (size_t)memory_usage;                 \
-  i->pid           = (pid_t)pid;                           \
-  i->app           = &app;                                 \
-  i->window        = window;                               \
-  i->layer         = (int)layer;                           \
-  i->sharing_state = (int)sharing_state;                   \
-  i->store_type    = (int)store_type;                      \
-  i->is_onscreen   = is_onscreen;                          \
-  i->is_focused    = is_focused;                           \
-  i->rect          = (CGRect)bounds;                       \
-  i->dur           = timestamp() - i->started;
+#define WINDOW_DICTIONARY_SET_WINDOW_INFO()                                                     \
+  i->name          = (name != NULL) ? strdup(name) : "";                                        \
+  i->title         = (title != NULL) ? strdup(title) : "";                                      \
+  i->window_id     = (size_t)window_id;                                                         \
+  i->memory_usage  = (size_t)memory_usage;                                                      \
+  i->pid           = (pid_t)pid;                                                                \
+  i->app           = &app;                                                                      \
+  i->window        = window;                                                                    \
+  i->layer         = (int)layer;                                                                \
+  i->sharing_state = (int)sharing_state;                                                        \
+  i->store_type    = (int)store_type;                                                           \
+  i->is_onscreen   = is_onscreen;                                                               \
+  i->is_focused    = is_focused;                                                                \
+  i->rect          = (CGRect)bounds;                                                            \
+  i->display_id    = (size_t)get_window_id_display_id(i->window_id);                            \
+  i->dur           = timestamp() - i->started;                                                  \
+  int        wid             = (int)(i->window_id);                                             \
+  CFArrayRef window_list_ref = cfarray_of_cfnumbers(&wid, sizeof(int), 1, kCFNumberSInt32Type); \
+  CFArrayRef space_list_ref  = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);     \
+  int        space_qty       = CFArrayGetCount(space_list_ref);                                 \
+  int        space_id        = 0;                                                               \
+  if (space_qty == 1) {                                                                         \
+    CFNumberRef id_ref = CFArrayGetValueAtIndex(space_list_ref, 0);                             \
+    CFNumberGetValue(id_ref, CFNumberGetType(id_ref), &space_id);                               \
+    i->space_id = (size_t)(space_id);                                                           \
+  }                                                                                             \
+  if (WINDOW_UTILS_DEBUG_MODE)                                                                  \
+  log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);
 
 #define WINDOW_DICTIONARY_APPEND_WINDOW_INFO() \
   vector_push(window_infos_v, (void *)i);
@@ -2050,3 +2092,30 @@ io_service_t IOFramebufferPortFromCGDisplayID(CGDirectDisplayID displayID, CFStr
     break;
   }
 } /* IOFramebufferPortFromCGDisplayID */
+
+void run_osascript_system_prefs(){
+  assert(run_osascript(CLOSE_SYSTEM_PREFERENCES) == true);
+  struct Vector *pre_window_infos_v = get_window_infos_v();
+  assert(run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD) == true);
+  struct Vector *post_window_infos_v = get_window_infos_v();
+  log_info("%lu pre windows|%lu post windows", vector_size(pre_window_infos_v), vector_size(post_window_infos_v));
+  struct Vector *new_window_infos = vector_new();
+  for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
+    bool found = false;
+    for (size_t ii = 0; ii < vector_size(pre_window_infos_v); ii++) {
+      if (found == false && ((struct window_info_t *)vector_get(pre_window_infos_v, ii))->window_id == ((struct window_info_t *)vector_get(post_window_infos_v, i))->window_id) {
+        vector_remove(post_window_infos_v, i);
+      }
+    }
+  }
+  log_info("%lu New Windows|Focused pid:%d|Focused window id:%d|", vector_size(post_window_infos_v), get_focused_pid(), get_focused_window_id());
+  for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
+    struct window_info_t *w = (struct window_info_t *)vector_get(post_window_infos_v, i);
+    if (get_focused_pid() == w->pid && (size_t)get_focused_window_id() == (size_t)w->window_id) {
+      log_info("New Window #%lu> %s|pid:%d|pos:%dx%d|size:%dx%d|displayid:%lu|space_id:%lu|",
+               w->window_id, w->name, w->pid, (int)w->rect.origin.x, (int)w->rect.origin.y, (int)w->rect.size.width, (int)w->rect.size.height,
+               w->display_id, w->space_id
+               );
+    }
+  }
+}

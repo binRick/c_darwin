@@ -11,10 +11,14 @@
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
 #include "process/process.h"
+#include "reproc/reproc/include/reproc/export.h"
+#include "reproc/reproc/include/reproc/reproc.h"
 #include "space-utils/space-utils.h"
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
+#include "which/src/which.h"
+#include "window-utils/window-utils.h"
 #include <libproc.h>
 static bool PROCESS_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void){
@@ -168,3 +172,39 @@ struct process_info_t *get_process_info(int pid){
   I->dur     = timestamp() - I->started;
   return(I);
 } /* get_process_info */
+
+bool run_osascript(char *OSASCRIPT_CONTENTS){
+  bool     ok       = false;
+  reproc_t *process = NULL;
+  int      r        = REPROC_ENOMEM;
+
+  process = reproc_new();
+  if (process == NULL) {
+    goto finish;
+  }
+  const char *cmd[] = { "/usr/bin/osascript", NULL };
+
+  r = reproc_start(process, cmd, (reproc_options){ .redirect.err.type = REPROC_REDIRECT_STDOUT, .deadline = 1000 });
+  if (r < 0) {
+    goto finish;
+  }
+  r = reproc_write(process, (uint8_t *)OSASCRIPT_CONTENTS, strlen(OSASCRIPT_CONTENTS));
+  r = reproc_close(process, REPROC_STREAM_IN);
+  assert(r == 0);
+  r = reproc_wait(process, REPROC_INFINITE);
+  if (r < 0) {
+    goto finish;
+  }
+  ok = true;
+
+finish:
+  reproc_destroy(process);
+
+  if (r < 0) {
+    fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
+  }
+
+  log_info("ran osascript with result %d", r);
+
+  return(ok);
+}

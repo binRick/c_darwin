@@ -45,6 +45,7 @@ struct image_type_t {
   image_format_get_dimensions_from_header get_dimensions_from_header;
   image_format_buffer_get_dimensions      get_dimensions;
 };
+char * convert_png_to_grayscale(char *png_file, size_t resize_factor);
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1];
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height);
 unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, const void *mask, long *outsize);
