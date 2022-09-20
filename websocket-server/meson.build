@@ -14,7 +14,7 @@ websocket_server_deps = [
   c_vector_dep,
   nettle_dep,uuid4_dep,
   c_fsio_dep,
-  c_stringfn_dep,
+  c_stringfn_dep,socket_protocol_dep,libforks_dep,
   c_string_buffer_dep,
   timestamp_dep,
   log_dep,

@@ -21,6 +21,9 @@
 #include "c_vector/vector/vector.h"
 #include "tesseract/capi.h"
 ///////////////////////////////////////////////////
+#define PREVIEW_FACTOR      2
+#define THUMBNAIL_FACTOR    5
+#define CAPTURE_FACTOR      1
 enum image_type_id_t {
   IMAGE_TYPE_PNG,
   IMAGE_TYPE_GIF,
@@ -79,4 +82,6 @@ unsigned char *cgimage_ref_to_rgb_pixels(CGImageRef image_ref, size_t *len);
 bool save_cgref_to_qoi_file(CGImageRef image_ref, char *image_file);
 unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality);
+unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgba_pixels, int width, int height, int min_quality, int max_quality, size_t *len);
 #endif

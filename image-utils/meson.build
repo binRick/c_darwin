@@ -6,6 +6,8 @@ image_utils_dirs = [
     inc,
   ]
 image_utils_deps = [
+  lodepng_dep,
+  imagequant_dep,
   leptonica_dep,
   stb_dep,
   c_stringfn_dep,tesseract_dep,

@@ -14,15 +14,10 @@ struct incbin_response_t {
   size_t size;
   char   *data; char *content_type; char *request_path;
 };
-struct parsed_data_t {
-  size_t window_id, space_id, display_id, screen_id, pid;
-  size_t resize_factor;
-  bool   grayscale_conversion;
-};
 #define UNHANDLED_REQUEST_RESPONSE_CODE    500
 #define HANDLED_REQUEST_RESPONSE_CODE      200
 #define DEFAULT_TEXT_RESPONSE              "404 Not Found"
-#define DEFAULT_RESIZE_FACTOR              400
+#define DEFAULT_RESIZE_FACTOR              0
 #undef HTTP_MAX_TOTAL_EST_MEM_USAGE
 #undef HTTP_MAX_REQUEST_BUF_SIZE
 #undef HTTP_REQUEST_TIMEOUT

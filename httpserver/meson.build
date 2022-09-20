@@ -22,6 +22,7 @@ httpserver_deps = [
   httpserver_h_deps,
   wslay_dep,
   websocket_server_dep,
+  libforks_dep,url_h_dep,
 ]
 
 httpserver_c_args = [

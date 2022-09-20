@@ -16,7 +16,7 @@ window_utils_deps = [
   log_dep,image_utils_dep,
   ansi_codes_dep,display_utils_dep,
   c_vector_dep,string_utils_dep,process_utils_dep,
-  process_dep,app_utils_dep,
+  process_dep,app_utils_dep,image_utils_dep,
 ]
 window_utils_link_flags = [
 '-Wl,-framework,CoreFoundation',

@@ -1,0 +1,56 @@
+#pragma once
+#ifndef ICON_{{ICON_HASH}}_C
+#define ICON_{{ICON_HASH}}_C
+#include "icons/icons.h"
+#ifndef INCBIN_SILENCE_BITCODE_WARNING
+  #define INCBIN_SILENCE_BITCODE_WARNING
+#endif
+#ifdef INCBIN_STYLE
+  #undef INCBIN_STYLE
+#endif
+#ifdef INCBIN_PREFIX
+  #undef INCBIN_PREFIX
+#endif
+#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#define INCBIN_PREFIX inc_icon_
+#include "incbin/incbin.h"
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+////////////////////////////////////////////
+INCBIN({{ICON_HASH|lower}},"{{path}}");
+{% for p in pngs %}
+INCBIN({{p.hash|lower}},"{{p.path}}");
+{%endfor%}
+static const struct icon_t {{icon_t}} = {
+  .name = "{{icon_name}}",
+  .categories = { {%if categories is defined-%}{%- for c in categories-%}"{{c}}",{%-endfor-%}{%-endif%} NULL, },
+  .files = { 
+    .icn = {
+      .path = "{{path}}",
+      .size = "{{size}}",
+      .hash = "{{hash}}",
+      .data = inc_icon_{{ICON_HASH|lower}}_data,
+    },
+    .pngs = NULL,
+    /*
+        {%- for p in pngs %}
+        { 
+          .path = "{{p.path}}",
+          .width = {{p.width}},
+          .height = {{p.height}},
+          .bits = {{p.bits}},
+          .size = inc_icon_{{p.hash|lower}}_size,
+          .data = inc_icon_{{p.hash|lower}}_data,
+        },
+        {%-endfor%} 
+        NULL, 
+      },
+      */
+  },
+};
+#undef INCBIN_STYLE
+#undef INCBIN_PREFIX
+#endif

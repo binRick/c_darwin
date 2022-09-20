@@ -12,6 +12,8 @@
 #include "frameworks/frameworks.h"
 #include "image-utils/image-utils.h"
 #include "libfort/lib/fort.h"
+#include "libimagequant/libimagequant.h"
+#include "lodepng.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
@@ -36,7 +38,7 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
 char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
   char *grayscale_file;
 
-  asprintf(&grayscale_file, "%s-grayscale-%lld-grayscale.tif", gettempdir(), timestamp());
+  asprintf(&grayscale_file, "%s-grayscale-resized-%lu-grayscale.tif", png_file, resize_factor);
   if (IMAGE_UTILS_DEBUG_MODE) {
     log_info("Converting %s to %s resized by %lu%%", png_file, grayscale_file, resize_factor);
   }
@@ -397,3 +399,103 @@ bool write_cgimage_ref_to_tif_file_path(CGImageRef im, char *tif_file_path){
   CFRelease(options);
   return(true);
 }
+
+unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgba_pixels, int width, int height, int min_quality, int max_quality, size_t *len){
+  liq_attr   *handle      = liq_attr_create();
+  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
+  liq_result *quantization_result;
+
+  liq_set_quality(handle, min_quality, max_quality);
+  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
+    fprintf(stderr, "Quantization failed\n");
+    goto fail;
+  }
+  *len = width * height;
+  unsigned char *raw_8bit_pixels = malloc(*len);
+
+  liq_set_dithering_level(quantization_result, 1.0);
+  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, *len);
+  const liq_palette *palette = liq_get_palette(quantization_result);
+
+  LodePNGState      state;
+
+  lodepng_state_init(&state);
+  state.info_raw.colortype       = LCT_PALETTE;
+  state.info_raw.bitdepth        = 8;
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth  = 8;
+
+  for (unsigned int i = 0; i < palette->count; i++) {
+    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+  }
+
+  unsigned char *output_file_data;
+  unsigned int  out_status = lodepng_encode(&output_file_data, len, raw_8bit_pixels, width, height, &state);
+
+  return(output_file_data);
+
+fail:
+  *len = 0;
+  return(NULL);
+}
+
+int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality){
+  size_t     len          = 0;
+  liq_attr   *handle      = liq_attr_create();
+  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
+  liq_result *quantization_result;
+
+  liq_set_quality(handle, min_quality, max_quality);
+  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
+    fprintf(stderr, "Quantization failed\n");
+    goto fail;
+  }
+  len = width * height;
+  unsigned char *raw_8bit_pixels = malloc(len);
+
+  liq_set_dithering_level(quantization_result, 1.0);
+  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, len);
+  const liq_palette *palette = liq_get_palette(quantization_result);
+
+  LodePNGState      state;
+
+  lodepng_state_init(&state);
+  state.info_raw.colortype       = LCT_PALETTE;
+  state.info_raw.bitdepth        = 8;
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth  = 8;
+
+  for (unsigned int i = 0; i < palette->count; i++) {
+    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+  }
+  unsigned char *output_file_data;
+  size_t        output_file_size;
+  unsigned int  out_status = lodepng_encode(&output_file_data, &output_file_size, raw_8bit_pixels, width, height, &state);
+
+  if (out_status) {
+    fprintf(stderr, "Can't encode image: %s\n", lodepng_error_text(out_status));
+    goto fail;
+  }
+
+  FILE *fp = fopen(png_file, "wb");
+
+  if (!fp) {
+    fprintf(stderr, "Unable to write to %s\n", png_file);
+    goto fail;
+  }
+  fwrite(output_file_data, 1, output_file_size, fp);
+  fclose(fp);
+
+  liq_result_destroy(quantization_result);
+  liq_image_destroy(input_image);
+  liq_attr_destroy(handle);
+
+  free(raw_8bit_pixels);
+  lodepng_state_cleanup(&state);
+  return(EXIT_SUCCESS);
+
+fail:
+  return(EXIT_FAILURE);
+} /* imagequant_encode_rgb_pixels_to_png_file */

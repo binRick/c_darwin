@@ -1,5 +1,6 @@
 #include "core-utils/core-utils.h"
 #include "display-utils/display-utils.h"
+#include "image-utils/image-utils.h"
 #include "log.h/log.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
@@ -181,6 +182,12 @@ uint32_t *get_space_minimized_window_list(uint64_t sid, int *count){
   }
 
   return(minimized_window_list);
+}
+
+CGImageRef preview_space_id(uint32_t space_id) {
+  CGImageRef img_ref = capture_space_id(space_id);
+
+  return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
 }
 
 CGImageRef capture_space_id(uint32_t sid) {

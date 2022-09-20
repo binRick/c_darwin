@@ -5,6 +5,7 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "frameworks/frameworks.h"
+#include "image-utils/image-utils.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
@@ -1284,6 +1285,12 @@ void print_all_window_items(FILE *rsp) {
             milliseconds_to_string(timestamp() - started)
             );
 } /* print_all_menu_items */
+
+CGImageRef preview_window_id(size_t window_id){
+  CGImageRef img_ref = capture_window_id(window_id);
+
+  return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
+}
 
 CGImageRef capture_window_id(size_t window_id){
   unsigned long started   = timestamp();

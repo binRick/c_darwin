@@ -1,6 +1,7 @@
 #pragma once
 #ifndef WEBSOCKET_SERVER_C
 #define WEBSOCKET_SERVER_C
+static void handle_sigterm(int signum);
 ////////////////////////////////////////////
 #include "websocket-server/websocket-server.h"
 ////////////////////////////////////////////
@@ -10,20 +11,30 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "libforks/libforks.h"
 #include "log/log.h"
 #include "ms/ms.h"
+#include "socket-protocol/socket-protocol.h"
 #include "timestamp/timestamp.h"
 #include "uuid4/src/uuid4.h"
-static size_t connections_qty = 0;
+static size_t              connections_qty = 0;
 ////////////////////////////////////////////
-static bool   WEBSOCKET_SERVER_DEBUG_MODE = false;
+static bool                WEBSOCKET_SERVER_DEBUG_MODE = false;
+static libforks_ServerConn conn_websocket_server;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__websocket_server(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_websocket_server") != NULL) {
     log_debug("Enabling websocket-server Debug Mode");
     WEBSOCKET_SERVER_DEBUG_MODE = true;
   }
+  assert(libforks_start(&conn_websocket_server) == libforks_OK);
+  pid_t fork_server_pid = libforks_get_server_pid(conn_websocket_server);
+
+  assert(fork_server_pid > 0);
+  log_info(AC_YELLOW "Websocket Server> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  signal(SIGTERM, handle_sigterm);
 }
+
 struct session_t {
   int                 fd;
   char                uuid[UUID4_LEN];
@@ -529,25 +540,88 @@ static void __attribute__((noreturn)) serve(int sfd) {
 
 int websocket_server(void *WEBSOCKET_SERVER_PORT) {
   uuid4_init();
+  size_t retries = 0;
+  bool   created = false;
+  int    sfd;
+  while (created == false) {
+    struct sigaction act;
+    memset(&act, 0, sizeof(struct sigaction));
+    act.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &act, NULL);
+    sigaction(SIGCHLD, &act, NULL);
+    char *WEBSOCKET_LISTEN_SOCKET;
+    asprintf(&WEBSOCKET_LISTEN_SOCKET, "%lu", (size_t)WEBSOCKET_SERVER_PORT);
+    log_info("%s", WEBSOCKET_LISTEN_SOCKET);
 
-  struct sigaction act;
-  int              sfd;
-  memset(&act, 0, sizeof(struct sigaction));
-  act.sa_handler = SIG_IGN;
-  sigaction(SIGPIPE, &act, NULL);
-  sigaction(SIGCHLD, &act, NULL);
-  char *WEBSOCKET_LISTEN_SOCKET;
-  asprintf(&WEBSOCKET_LISTEN_SOCKET, "%lu", (size_t)WEBSOCKET_SERVER_PORT);
-  log_debug("%s", WEBSOCKET_LISTEN_SOCKET);
-
-  sfd = create_listen_socket(WEBSOCKET_LISTEN_SOCKET);
-  if (sfd == -1) {
-    fprintf(stderr, "Failed to create server socket\n");
-    exit(EXIT_FAILURE);
+    log_info("Websocket server binding to %d", WEBSOCKET_SERVER_PORT);
+    sfd = create_listen_socket(WEBSOCKET_LISTEN_SOCKET);
+    if (sfd == -1) {
+      log_error("Failed to create server socket (%lu retries)", retries);
+      retries++;
+      sleep(1);
+      if (retries > 100) {
+        exit(EXIT_FAILURE);
+      }
+    }else{
+      created = true;
+    }
   }
-  printf("WebSocket echo server, listening on port %d\n", WEBSOCKET_SERVER_PORT);
+  log_info("WebSocket echo server, listening on port %lu", (size_t)WEBSOCKET_SERVER_PORT);
   serve(sfd);
   return(EXIT_SUCCESS);
+}
+
+static void handle_sigterm(int signum) {
+  (void)signum;
+  log_info("Websocket sigterm");
+  exit(EXIT_SUCCESS);
+}
+
+struct libforks_param_t {
+  int socket_fd;
+  int websocket_server_port;
+};
+
+static int _websocket_server(libforks_ServerConn conn, struct libforks_param_t *p){
+  libforks_free_conn(conn);
+
+  char *msg;
+  asprintf(&msg, "Starting Websocket server on port %d\n", p->websocket_server_port);
+  write(p->socket_fd, msg, strlen(msg));
+  return(websocket_server((void *)p->websocket_server_port));
+}
+
+int ___websocket_server(void *WEBSOCKET_SERVER_PORT) {
+  static int   socket_fd;
+  static int   exit_fd;
+  static pid_t pid;
+
+  sleep(5);
+  libforks_fork(
+    conn_websocket_server,
+    &pid,
+    &(struct libforks_param_t){
+    .socket_fd             = socket_fd,
+    .websocket_server_port = (int)(size_t)WEBSOCKET_SERVER_PORT,
+  },
+    &exit_fd,
+    _websocket_server
+    );
+  printf(AC_YELLOW "Parent> Created websocket server with pid %d\n"AC_RESETALL, pid);
+
+  char *msg = calloc(1, 1024);
+
+  while (true) {
+    int read_res = read(socket_fd, msg, 1024);
+    if (read_res == 0) {
+      break;
+    }
+    log_debug("read %s from socket_fd: "AC_RESETALL AC_GREEN "%s" AC_RESETALL,
+              bytes_to_string(read_res),
+              (char *)msg
+              );
+  }
+  return(EXIT_FAILURE);
 }
 
 #endif

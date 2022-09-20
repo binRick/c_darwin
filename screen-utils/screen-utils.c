@@ -5,6 +5,7 @@
 #include "core-utils/core-utils.h"
 #include "core-utils/core-utils.h"
 #include "image-utils/image-utils.h"
+#include "image-utils/image-utils.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
@@ -96,21 +97,14 @@ struct screen_t *init_display(size_t DISPLAY_ID){
   return(D);
 }
 
+CGImageRef preview_display_id(size_t display_id){
+  CGImageRef img_ref = capture_display_id(display_id);
+
+  return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / PREVIEW_FACTOR, CGImageGetHeight(img_ref) / PREVIEW_FACTOR));
+}
+
 CGImageRef capture_display_id(size_t display_id){
-  char *display_uuid = get_display_uuid(display_id);
-
-  if (!display_uuid) {
-    log_error("Cannot find display #%lu", display_id);
-    return(NULL);
-  }
-  if (SCREEN_UTILS_DEBUG_MODE) {
-    log_debug("Capturing Display #%lu |uuid:%s|",
-              display_id, display_uuid
-              );
-  }
-  CGImageRef img_ref = CGDisplayCreateImage(display_id);
-
-  return(img_ref);
+  return(CGDisplayCreateImage(display_id));
 }
 
 static bool capture_display(struct screen_t *D){

@@ -15,7 +15,6 @@
 #include "incbin/incbin.h"
 #include "ms/ms.h"
 #include "querystring.c/querystring.h"
-#include "querystring.c/querystring.h"
 #include "screen-utils/screen-utils.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
@@ -74,24 +73,22 @@ static bool HTTPSERVER_UTILS_DEBUG_MODE = false;
 #define INCLUDE_REVEAL_DIST_MARKDOWN_JS                "./.assets/reveal/plugin/markdown/markdown.js"
 #define INCLUDE_REVEAL_DIST_MATH_JS                    "./.assets/reveal/plugin/math/math.js"
 #define INCLUDE_MAIN_CSS                               "./.assets/main.css"
+#define INCLUDE_APP_CSS                                "./.assets/app.css"
 #define INCLUDE_MAIN_JS                                "./.assets/main.js"
+#define INCLUDE_APP_JS                                 "./.assets/app.js"
 #define RETURN_ERROR_PNG(CAPTURE_TYPE, CAPTURE_TYPE_ID)                          \
   http_response_status(response, UNHANDLED_REQUEST_RESPONSE_CODE);               \
   log_error("Failed to capture %s #%lu", CAPTURE_TYPE, (size_t)CAPTURE_TYPE_ID); \
   http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);              \
-  http_response_body(response, gerrorpngData, gerrorpngSize);
-#define ADD_REQUEST_HANDLER(URI, TYPE, INC)                                \
-  if (request_target_is(request, URI)) {                                   \
-    http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);         \
-    http_response_header(response, "Content-Type", CONTENT_TYPE_ ## TYPE); \
-    http_response_body(response, g ## INC ## Data, g ## INC ## Size);      \
-    http_respond(request, response);                                       \
-    return(EXIT_SUCCESS);                                                  \
-  }
+  http_response_body(response, gerrorpngData, gerrorpngSize);                    \
+  return;
+
 INCBIN(favicon, INCLUDE_FAVICON_FILE);
 INCBIN(errorpng, INCLUDE_ERROR_IMAGE);
 INCBIN(main_css, INCLUDE_MAIN_CSS);
+INCBIN(app_css, INCLUDE_APP_CSS);
 INCBIN(main_js, INCLUDE_MAIN_JS);
+INCBIN(app_js, INCLUDE_APP_JS);
 INCBIN(jquery_min_js, INCLUDE_JQUERY_MIN_JS);
 INCBIN(reveal_js, INCLUDE_REVEAL_DIST_REVEAL_JS);
 INCBIN(reveal_js_map, INCLUDE_REVEAL_DIST_REVEAL_JS_MAP);
@@ -116,8 +113,15 @@ INCBIN(context_font_icons, INCLUDE_CONTEXT_FONT_ICONS);
 INCBIN(socketio_js, INCLUDE_SOCKETIO_JS);
 INCBIN(socketio_js_map, INCLUDE_SOCKETIO_JS_MAP);
 /////////////////////////////////////////////////////////
+#define ADD_REQUEST_HANDLER(URI, TYPE, INC)                                \
+  if (request_target_is(request, URI)) {                                   \
+    http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);         \
+    http_response_header(response, "Content-Type", CONTENT_TYPE_ ## TYPE); \
+    http_response_body(response, g ## INC ## Data, g ## INC ## Size);      \
+    http_respond(request, response);                                       \
+    return(EXIT_SUCCESS);                                                  \
+  }
 
-//    http_response_header(response, "Cache-Control", "max-age:3600, immutable");
 static int iterate_incbin_responses(struct http_request_s *request, struct http_response_s *response){
   ADD_REQUEST_HANDLER("/dist/socket.io.js", JS, socketio_js)
   ADD_REQUEST_HANDLER("/dist/socket.io.js.map", JS_MAP, socketio_js_map)
@@ -130,8 +134,10 @@ static int iterate_incbin_responses(struct http_request_s *request, struct http_
   ADD_REQUEST_HANDLER("/dist/reveal.js.map", JS_MAP, reveal_js_map)
   ADD_REQUEST_HANDLER("/reveal.html", HTML, reveal_multiple_presentations_html)
   ADD_REQUEST_HANDLER("/main.js", JS, main_js)
+  ADD_REQUEST_HANDLER("/app.js", JS, app_js)
   ADD_REQUEST_HANDLER("/favicon.ico", FAVICON, favicon)
   ADD_REQUEST_HANDLER("/main.css", CSS, main_css)
+  ADD_REQUEST_HANDLER("/app.css", CSS, app_css)
   ADD_REQUEST_HANDLER("/dist/main.css", CSS, reset_css)
   ADD_REQUEST_HANDLER("/dist/reveal.css", CSS, reveal_css)
   ADD_REQUEST_HANDLER("/dist/jquery.min.js", JS, jquery_min_js)
@@ -151,81 +157,92 @@ static int iterate_incbin_responses(struct http_request_s *request, struct http_
 static void request_params_parser(void *data, char *fst, char *snd) {
   struct parsed_data_t *parsed_data = (struct parsed_data_t *)data;
 
-  if (strcmp(fst, "window_id") == 0) {
-    parsed_data->window_id = string_size_to_size_t(snd);
+  if (strcmp(fst, "type") == 0) {
+    parsed_data->type = snd;
+    if (strcmp(parsed_data->type, "display") == 0) {
+      parsed_data->type_id = CAPTURE_TYPE_DISPLAY;
+    }else if (strcmp(parsed_data->type, "window") == 0) {
+      parsed_data->type_id = CAPTURE_TYPE_WINDOW;
+    }else if (strcmp(parsed_data->type, "space") == 0) {
+      parsed_data->type_id = CAPTURE_TYPE_SPACE;
+    }else{
+      parsed_data->type_id = -1;
+    }
   }else if (strcmp(fst, "pid") == 0) {
     parsed_data->pid = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "screen_id") == 0) {
-    parsed_data->screen_id = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "display_id") == 0) {
-    parsed_data->display_id = string_size_to_size_t(snd);
   }else if (strcmp(fst, "resize_factor") == 0) {
     parsed_data->resize_factor = string_size_to_size_t(snd);
   }else if (strcmp(fst, "grayscale") == 0) {
     parsed_data->grayscale_conversion = (snd && strlen(snd) > 0 && strcmp(snd, "1") == 0) ? true : false;
+  }else if (strcmp(fst, "preview") == 0) {
+    parsed_data->preview_mode = string_size_to_size_t(snd);
+  }else if (strcmp(fst, "thumbnail") == 0) {
+    parsed_data->thumbnail_mode = string_size_to_size_t(snd);
+  }else if (strcmp(fst, "max_quant_qual") == 0) {
+    parsed_data->max_quant_qual = string_size_to_size_t(snd);
+  }else if (strcmp(fst, "min_quant_qual") == 0) {
+  }else if (strcmp(fst, "id") == 0) {
+    parsed_data->id = string_size_to_size_t(snd);
+  }else if (strcmp(fst, "quant") == 0) {
+    parsed_data->quant_mode = string_size_to_size_t(snd);
   }else if (strcmp(fst, "space_id") == 0) {
     parsed_data->space_id = string_size_to_size_t(snd);
   }
 }
+
 static struct parsed_data_t *parse_request(const struct http_request_s *request){
+  struct rq_t   *rq = ((struct rq_t *)http_request_userdata(request));
   http_string_t url = http_request_target(request);
   http_string_t _method = http_request_method(request);
   char          *method = stringfn_substring(_method.buf, 0, _method.len), *purl;
 
-  if (HTTPSERVER_UTILS_DEBUG_MODE) {
-    log_info("method:%s", method);
-  }
+  rq->method = method;
 
+  asprintf(&rq->parse_url, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, url.buf);
   asprintf(&purl, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, url.buf);
   url_data_t           *parsed = url_parse(purl);
-  char                 *query  = strdup(parsed->query);
-  struct parsed_data_t *data   = calloc(1, sizeof(struct parsed_data_t));
+
+  char                 *query = strdup(parsed->query);
+  struct parsed_data_t *data  = calloc(1, sizeof(struct parsed_data_t));
 
   data->resize_factor        = DEFAULT_RESIZE_FACTOR;
   data->grayscale_conversion = false;
   data->window_id            = 0;
+  data->min_quant_qual       = 50;
+  data->max_quant_qual       = 90;
+  data->quant_mode           = false;
+  data->preview_mode         = false;
+  data->thumbnail_mode       = false;
   data->space_id             = 0;
   data->display_id           = 0;
   data->screen_id            = 0;
   data->pid                  = 0;
+  data->id                   = 0;
+  data->type                 = NULL;
+  data->type_id              = -1;
+
   parse_querystring(query, (void *)data, request_params_parser);
   return(data);
 }
 
 static int request_target_is(const struct http_request_s *request, const char *target) {
+  log_info("ok");
+  struct rq_t   *rq = ((struct rq_t *)http_request_userdata(request));
   http_string_t url;
   int           res = EXIT_FAILURE;
-
   if (request && target) {
     url = http_request_target(request);
     if (url.buf && url.len > 0) {
-      char *purl = NULL, *url_buf = stringfn_substring(url.buf, 1, url.len - 1), *pathname;
-      if (url_buf) {
-        asprintf(&purl, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, url_buf);
-        if (purl) {
-          url_data_t *parsed = url_parse(purl);
-          pathname = strdup(parsed->pathname);
-          if (pathname) {
-            res = (url.buf && target && pathname && (memcmp(pathname, target, strlen(pathname))) == 0);
-            if (res == EXIT_SUCCESS && HTTPSERVER_UTILS_DEBUG_MODE) {
-              log_debug("%s", url_buf);
-              log_debug("%s", purl);
-              if (parsed) {
-                url_data_inspect(parsed);
-              }
-            }
-          }
-          if (parsed) {
-            url_free(parsed);
-          }
-          if (pathname) {
-            free(pathname);
-          }
-          if (purl) {
-            free(purl);
-          }
-          if (url_buf) {
-            free(url_buf);
+      rq->path = stringfn_substring(url.buf, 1, url.len - 1);
+      asprintf(&rq->url, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, rq->path);
+      rq->parsed = url_parse(rq->url);
+      if (rq->parsed->pathname) {
+        res = (url.buf && target && rq->parsed->pathname && (memcmp(rq->parsed->pathname, target, strlen(rq->parsed->pathname))) == 0);
+        if (res == EXIT_SUCCESS && HTTPSERVER_UTILS_DEBUG_MODE) {
+          log_debug("%s", rq->path);
+          log_debug("%s", rq->url);
+          if (rq->parsed) {
+            url_data_inspect(rq->parsed);
           }
         }
       }
@@ -234,15 +251,8 @@ static int request_target_is(const struct http_request_s *request, const char *t
   return(res);
 }   /* request_target_is */
 
-void handle_sigterm(int signum) {
-  (void)signum;
-  if (server) {
-    free(server);
-  }
-  exit(EXIT_SUCCESS);
-}
-
 void handle_request(struct http_request_s *request) {
+  log_info("ok");
   char *response_body;
 
   asprintf(&response_body, "{\"response_code\":%d,\"response_data\":null}", UNHANDLED_REQUEST_RESPONSE_CODE);
@@ -250,7 +260,10 @@ void handle_request(struct http_request_s *request) {
   http_request_connection(request, HTTP_AUTOMATIC);
   struct http_response_s *response = http_response_init();
 
-  http_response_status(response, UNHANDLED_REQUEST_RESPONSE_CODE);
+  struct rq_t            *rq = (struct rq_t *)http_request_userdata(request);
+  rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+  http_request_set_userdata(request, (void *)rq);
+  http_response_status(response, rq->response_status);
   if (iterate_incbin_responses(request, response) == EXIT_SUCCESS) {
     return;
   }else if (request_target_is(request, "/enable_configured_key")) {
@@ -276,208 +289,196 @@ void handle_request(struct http_request_s *request) {
                  );
       }
     }
-    http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
+
+    struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
+    rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+    http_request_set_userdata(request, (void *)rq);
+    http_response_status(response, rq->response_status);
+
     http_response_header(response, "Content-Type", CONTENT_TYPE_JSON);
     http_response_body(response, response_body, strlen(response_body));
-  } else if (request_target_is(request, "/capture/display")) {
-    struct parsed_data_t *data      = parse_request(request);
-    size_t               display_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_DISPLAY, data->display_id);
-    char                 *output_file;
-    asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
-    CGImageRef           img_ref     = capture_type_capture(CAPTURE_TYPE_DISPLAY, display_id);
-    size_t               rgb_len     = 0;
-    unsigned char        *rgb_pixels = cgimage_ref_to_rgb_pixels(img_ref, &rgb_len);
-    log_debug("Got %lu rgb pixels", rgb_len);
-    fsio_write_binary_file("/tmp/a.rgb", rgb_pixels, rgb_len);
+  } else if (request_target_is(request, "/capture")) {
+    log_info("ok");
+    rq->pd = parse_request(request);
+    log_info("ok1");
+    log_info("%d,%lu", rq->pd->type_id, rq->pd->id);
 
-    save_cgref_to_qoi_file(img_ref, "/tmp/a.qoi");
-
-    size_t        qoi_len     = 0;
-    unsigned char *qoi_pixels = cgref_to_qoi_memory(img_ref, &qoi_len);
-    log_debug("Got %lu qoi pixels", qoi_len);
-
-    int qoi_width = 0, qoi_height = 0;
-    image_types[IMAGE_TYPE_QOI].get_dimensions_from_buffer(qoi_pixels, qoi_len, &qoi_width, &qoi_height);
-    log_debug("Got qoi %dx%d", qoi_width, qoi_height);
-
-    size_t len = 0; int width = 0, height = 0; bool ok = false; unsigned char *pixels = NULL; unsigned char *header = NULL; char *file = NULL;
-    int    compression = 0;
-
-    {
-      if (pixels) {
-        free(pixels);
-      }
-      if (header) {
-        free(header);
-      }
-      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
-      file   = "/tmp/a.png";
-      pixels = save_cgref_to_png_memory(img_ref, &len);
-      fsio_write_binary_file(file, pixels, len);
-      log_debug("PNG OK: %s %s", file, bytes_to_string(fsio_file_size(file)));
-      header = image_types[IMAGE_TYPE_PNG].read_file_header(file);
-      image_types[IMAGE_TYPE_PNG].get_dimensions_from_header(header, &width, &height);
-      log_debug("PNG Dimensions: %dx%d", width, height);
+    size_t     id      = capture_type_validate_id_or_get_default_id(rq->pd->type_id, rq->pd->id);
+    CGImageRef img_ref = capture_type_capture(rq->pd->type_id, id);
+    log_info("ok2");
+    int        w = CGImageGetWidth(img_ref), h = CGImageGetHeight(img_ref);
+    if (rq->pd->preview_mode) {
+      img_ref = resize_cgimage(img_ref, w / PREVIEW_FACTOR, h / PREVIEW_FACTOR);
+    }else if (rq->pd->thumbnail_mode) {
+      img_ref = resize_cgimage(img_ref, w / THUMBNAIL_FACTOR, h / THUMBNAIL_FACTOR);
     }
-
-    {
-      if (pixels) {
-        free(pixels);
-      }
-      if (header) {
-        free(header);
-      }
-      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
-      file   = "/tmp/a.gif";
-      pixels = save_cgref_to_gif_memory(img_ref, &len);
-      fsio_write_binary_file(file, pixels, len);
-      log_debug("GIF OK: %s %s", file, bytes_to_string(fsio_file_size(file)));
-      header = image_types[IMAGE_TYPE_GIF].read_file_header(file);
-      image_types[IMAGE_TYPE_GIF].get_dimensions_from_header(header, &width, &height);
-      log_debug("GIF Dimensions: %dx%d", width, height);
+    if (rq->pd->resize_factor > 0) {
+      img_ref = resize_cgimage(img_ref, w / rq->pd->resize_factor, h / rq->pd->resize_factor);
     }
-
-    {
-      if (pixels) {
-        free(pixels);
-      }
-      if (header) {
-        free(header);
-      }
-      len  = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
-      file = "/tmp/a.tiff";
-      save_cgref_to_tiff_file(img_ref, "/tmp/a1.tiff");
-      pixels = save_cgref_to_tiff_memory(img_ref, &len);
-      fsio_write_binary_file(file, pixels, len);
-      image_types[IMAGE_TYPE_TIFF].get_dimensions_from_buffer(pixels, len, &width, &height);
-      log_debug("TIFF Dimensions: %dx%d", width, height);
-      stbi_load_from_memory(pixels, len, &width, &height, &compression, 0);
-      log_debug("%d,%d,%d", width, height, compression);
-    }
-    {
-      if (pixels) {
-        free(pixels);
-      }
-      if (header) {
-        free(header);
-      }
-      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
-      file   = "/tmp/a.bmp";
-      pixels = save_cgref_to_bmp_memory(img_ref, &len);
-      fsio_write_binary_file(file, pixels, len);
-      image_types[IMAGE_TYPE_BMP].get_dimensions_from_buffer(pixels, len, &width, &height);
-      log_debug("BMP Dimensions: %dx%d", width, height);
-    }
-
-    {
-      if (pixels) {
-        free(pixels);
-      }
-      if (header) {
-        free(header);
-      }
-      len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
-      file   = "/tmp/a.jpeg";
-      pixels = save_cgref_to_jpeg_memory(img_ref, &len);
-      fsio_write_binary_file(file, pixels, len);
-      image_types[IMAGE_TYPE_JPEG].get_dimensions_from_buffer(pixels, len, &width, &height);
-      log_debug("JPEG Dimensions: %dx%d", width, height);
-    }
-
-    if (save_cgref_to_png_file(img_ref, output_file) == true) {
-      size_t        png_len   = fsio_file_size(output_file);
-      unsigned char *png_data = fsio_read_binary_file(output_file);
-      fsio_remove(output_file);
-      http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
-      http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
-      http_response_body(response, png_data, png_len);
+    size_t        rgb_len = 0;
+    unsigned char *capture_pixels = NULL; size_t capture_len = 0;
+    if (rq->pd->quant_mode) {
+      unsigned char *rgb_pixels = cgimage_ref_to_rgb_pixels(img_ref, &rgb_len);
+      capture_pixels = imagequant_encode_rgb_pixels_to_png_buffer(rgb_pixels, w, h, rq->pd->min_quant_qual, rq->pd->max_quant_qual, &capture_len);
+      free(rgb_pixels);
     }else{
-      RETURN_ERROR_PNG("Display", display_id);
+      capture_pixels = save_cgref_to_png_memory(img_ref, &capture_len);
     }
-  } else if (request_target_is(request, "/capture/space")) {
-    struct parsed_data_t *data    = parse_request(request);
-    size_t               space_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_SPACE, data->space_id);
-    char                 *output_file;
-    asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
-    CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_SPACE, space_id);
-    if (save_cgref_to_png_file(img_ref, output_file) == true) {
-      size_t        png_len   = fsio_file_size(output_file);
-      unsigned char *png_data = fsio_read_binary_file(output_file);
-      fsio_remove(output_file);
-      http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
-      http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
-      http_response_body(response, png_data, png_len);
-    }else{
-      RETURN_ERROR_PNG("Space", space_id);
-    }
-  } else if (request_target_is(request, "/extract/display")) {
-    struct parsed_data_t *data      = parse_request(request);
-    size_t               display_id = (data->display_id > 0) ? (size_t)(data->display_id) : (size_t)(get_main_display_id());
-    char                 *output_file;
-    asprintf(&output_file, "%sdisplay-%lu-%lld.png", gettempdir(), display_id, timestamp());
-    CGImageRef           img_ref = capture_display_id(display_id);
-    if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
-      if (data->grayscale_conversion == true) {
-        if (HTTPSERVER_UTILS_DEBUG_MODE) {
-          log_info("Converting to grayscale");
-        }
-        output_file = convert_png_to_grayscale(output_file, data->resize_factor);
-      }else{
-        if (HTTPSERVER_UTILS_DEBUG_MODE) {
-          log_info("Not converting to grayscale");
-        }
-      }
-      char *extracted_text = get_extracted_image_text(output_file);
-      http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
-      http_response_header(response, "Content-Type", CONTENT_TYPE_TEXT);
-      http_response_body(response, extracted_text, strlen(extracted_text));
-      http_respond(request, response);
-      TessDeleteText(extracted_text);
-      return;
-    }else{
-      RETURN_ERROR_PNG("Display", display_id);
-    }
-  } else if (request_target_is(request, "/extract/space")) {
-    struct parsed_data_t *data = parse_request(request);
-    size_t               space_id = (data && data->space_id && data->space_id > 0) ? (size_t)(data->space_id) : (size_t)(get_space_id());
-    char                 *output_file = NULL, *extracted_text = NULL;
-    asprintf(&output_file, "%sspace-%lu-%lld.png", gettempdir(), space_id, timestamp());
-    CGImageRef           img_ref = capture_space_id((uint32_t)space_id);
-    if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
-      if (data->grayscale_conversion == true) {
-        output_file = convert_png_to_grayscale(output_file, data->resize_factor);
-      }
-      extracted_text = get_extracted_image_text(output_file);
-      fsio_remove(output_file);
-      http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
-      http_response_header(response, "Content-Type", CONTENT_TYPE_TEXT);
-      http_response_body(response, extracted_text, strlen(extracted_text));
-      http_respond(request, response);
-      TessDeleteText(extracted_text);
-      return;
-    }else{
-      RETURN_ERROR_PNG("Space", space_id);
-    }
+    http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
+    http_response_body(response, capture_pixels, capture_len);
+    http_respond(request, response);
+    CGImageRelease(img_ref);
+    free(capture_pixels);
+    struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
+    rq->size            = capture_len;
+    rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+    http_request_set_userdata(request, (void *)rq);
+    http_response_status(response, rq->response_status);
+    http_request_set_userdata(request, (void *)rq);
+    return;
+
+/*
+ *  fsio_write_binary_file("/tmp/a.rgb", rgb_pixels, rgb_len);
+ *
+ *  save_cgref_to_qoi_file(img_ref, "/tmp/a.qoi");
+ *
+ *  size_t        qoi_len     = 0;
+ *  unsigned char *qoi_pixels = cgref_to_qoi_memory(img_ref, &qoi_len);
+ *  log_debug("Got %lu qoi pixels", qoi_len);
+ *
+ *  int qoi_width = 0, qoi_height = 0;
+ *  image_types[IMAGE_TYPE_QOI].get_dimensions_from_buffer(qoi_pixels, qoi_len, &qoi_width, &qoi_height);
+ *  log_debug("Got qoi %dx%d", qoi_width, qoi_height);
+ *
+ *  size_t len = 0; int width = 0, height = 0; bool ok = false; unsigned char *pixels = NULL; unsigned char *header = NULL; char *file = NULL;
+ *  int    compression = 0;
+ *
+ *  {
+ *    if (pixels) {
+ *      free(pixels);
+ *    }
+ *    if (header) {
+ *      free(header);
+ *    }
+ *    len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+ *    file   = "/tmp/a.png";
+ *    pixels = save_cgref_to_png_memory(img_ref, &len);
+ *    fsio_write_binary_file(file, pixels, len);
+ *    log_debug("PNG OK: %s %s", file, bytes_to_string(fsio_file_size(file)));
+ *    header = image_types[IMAGE_TYPE_PNG].read_file_header(file);
+ *    image_types[IMAGE_TYPE_PNG].get_dimensions_from_header(header, &width, &height);
+ *    log_debug("PNG Dimensions: %dx%d", width, height);
+ *  }
+ *
+ *  {
+ *    if (pixels) {
+ *      free(pixels);
+ *    }
+ *    if (header) {
+ *      free(header);
+ *    }
+ *    len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+ *    file   = "/tmp/a.gif";
+ *    pixels = save_cgref_to_gif_memory(img_ref, &len);
+ *    fsio_write_binary_file(file, pixels, len);
+ *    log_debug("GIF OK: %s %s", file, bytes_to_string(fsio_file_size(file)));
+ *    header = image_types[IMAGE_TYPE_GIF].read_file_header(file);
+ *    image_types[IMAGE_TYPE_GIF].get_dimensions_from_header(header, &width, &height);
+ *    log_debug("GIF Dimensions: %dx%d", width, height);
+ *  }
+ *
+ *  convert_png_to_grayscale("/tmp/a.png", 400);
+ *
+ *  int           imagequant_min_quality = 20, imagequant_max_quality = 50;
+ *  char          *imagequant_png_file;
+ *  asprintf(&imagequant_png_file, "/tmp/imagequant-from-rgb-%s-buffer-min-qual-%d-max-qual-%d.png", bytes_to_string(rgb_len), imagequant_min_quality, imagequant_max_quality);
+ *  unsigned long started = timestamp();
+ *  imagequant_encode_rgb_pixels_to_png_file(rgb_pixels, width, height, imagequant_png_file, imagequant_min_quality, imagequant_max_quality);
+ *  log_info("Compressed %s RGB Pixels to %s in %s|min qual:%d|max qual:%d|",
+ *           bytes_to_string(rgb_len),
+ *           bytes_to_string(fsio_file_size(imagequant_png_file)),
+ *           milliseconds_to_string(timestamp() - started),
+ *           imagequant_min_quality, imagequant_max_quality
+ *           );
+ *
+ *  len = 0;
+ *
+ *  {
+ *    if (pixels) {
+ *      free(pixels);
+ *    }
+ *    if (header) {
+ *      free(header);
+ *    }
+ *    len  = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+ *    file = "/tmp/a.tiff";
+ *    save_cgref_to_tiff_file(img_ref, "/tmp/a1.tiff");
+ *    pixels = save_cgref_to_tiff_memory(img_ref, &len);
+ *    fsio_write_binary_file(file, pixels, len);
+ *    image_types[IMAGE_TYPE_TIFF].get_dimensions_from_buffer(pixels, len, &width, &height);
+ *    log_debug("TIFF Dimensions: %dx%d", width, height);
+ *    stbi_load_from_memory(pixels, len, &width, &height, &compression, 0);
+ *    log_debug("%d,%d,%d", width, height, compression);
+ *  }
+ *  {
+ *    if (pixels) {
+ *      free(pixels);
+ *    }
+ *    if (header) {
+ *      free(header);
+ *    }
+ *    len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+ *    file   = "/tmp/a.bmp";
+ *    pixels = save_cgref_to_bmp_memory(img_ref, &len);
+ *    fsio_write_binary_file(file, pixels, len);
+ *    image_types[IMAGE_TYPE_BMP].get_dimensions_from_buffer(pixels, len, &width, &height);
+ *    log_debug("BMP Dimensions: %dx%d", width, height);
+ *  }
+ *
+ *  {
+ *    if (pixels) {
+ *      free(pixels);
+ *    }
+ *    if (header) {
+ *      free(header);
+ *    }
+ *    len    = 0; width = 0; height = 0; ok = false; pixels = NULL; header = NULL;
+ *    file   = "/tmp/a.jpeg";
+ *    pixels = save_cgref_to_jpeg_memory(img_ref, &len);
+ *    fsio_write_binary_file(file, pixels, len);
+ *    image_types[IMAGE_TYPE_JPEG].get_dimensions_from_buffer(pixels, len, &width, &height);
+ *    log_debug("JPEG Dimensions: %dx%d", width, height);
+ *  }
+ *  if (save_cgref_to_png_file(img_ref, output_file) == true) {
+ *    size_t        png_len   = fsio_file_size(output_file);
+ *    unsigned char *png_data = fsio_read_binary_file(output_file);
+ *    fsio_remove(output_file);
+ *    http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
+ *    http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
+ *    http_response_body(response, png_data, png_len);
+ *  }else{
+ *    RETURN_ERROR_PNG("Display", display_id);
+ *  }
+ */
   } else if (request_target_is(request, "/extract/window")) {
     struct parsed_data_t *data = parse_request(request);
-    size_t               window_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, data->window_id);
+    size_t               window_id = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, rq->pd->window_id);
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
     CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
-      if (data->grayscale_conversion == true) {
+      if (rq->pd->grayscale_conversion == true) {
         if (HTTPSERVER_UTILS_DEBUG_MODE) {
           log_info("Converting to grayscale");
         }
-        output_file = convert_png_to_grayscale(output_file, data->resize_factor);
-      }else{
-        if (HTTPSERVER_UTILS_DEBUG_MODE) {
-          log_info("Not converting to grayscale");
-        }
+        output_file = convert_png_to_grayscale(output_file, rq->pd->resize_factor);
       }
       extracted_text = get_extracted_image_text(output_file);
       fsio_remove(output_file);
-      http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
+      struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
+      rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+      http_request_set_userdata(request, (void *)rq);
+      http_response_status(response, rq->response_status);
       http_response_header(response, "Content-Type", CONTENT_TYPE_TEXT);
       http_response_body(response, extracted_text, strlen(extracted_text));
       http_respond(request, response);
@@ -487,18 +488,21 @@ void handle_request(struct http_request_s *request) {
       RETURN_ERROR_PNG("Window", window_id);
     }
   } else if (request_target_is(request, "/capture/window")) {
-    struct parsed_data_t *data        = parse_request(request);
-    size_t               window_id    = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, data->window_id);
-    char                 *output_file = NULL;
-    unsigned char        *png_data    = NULL;
-    size_t               png_len      = 0;
+    rq->pd = parse_request(request);
+    size_t        window_id    = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, rq->pd->window_id);
+    char          *output_file = NULL;
+    unsigned char *png_data    = NULL;
+    size_t        png_len      = 0;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+    CGImageRef    img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
     if (save_cgref_to_png_file(img_ref, output_file) == true) {
       png_len  = fsio_file_size(output_file);
       png_data = fsio_read_binary_file(output_file);
       fsio_remove(output_file);
-      http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
+      struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
+      rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+      http_request_set_userdata(request, (void *)rq);
+      http_response_status(response, rq->response_status);
       http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
       http_response_body(response, png_data, png_len);
     }else{
@@ -528,12 +532,18 @@ void handle_request(struct http_request_s *request) {
                  );
       }
     }
-    http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
+    struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
+    rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+    http_request_set_userdata(request, (void *)rq);
+    http_response_status(response, rq->response_status);
     http_response_header(response, "Content-Type", CONTENT_TYPE_JSON);
     http_response_body(response, response_body, strlen(response_body));
   } else if (request_target_is(request, "/config")) {
-    char *response_body = get_config_response_body();
-    http_response_status(response, HANDLED_REQUEST_RESPONSE_CODE);
+    char        *response_body = get_config_response_body();
+    struct rq_t *rq            = (struct rq_t *)http_request_userdata(request);
+    rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+    http_request_set_userdata(request, (void *)rq);
+    http_response_status(response, rq->response_status);
     http_response_header(response, "Content-Type", CONTENT_TYPE_JSON);
     http_response_body(response, response_body, strlen(response_body));
     http_respond(request, response);
@@ -602,6 +612,7 @@ char * get_extracted_image_text(char *image_file){
   return(extracted_text);
 } /* get_extracted_image_text */
 static void __attribute__((constructor)) __constructor__darwin_ls_httpserver(void){
+  setenv("TMPDIR", "/tmp/", 1);
   if (getenv("DEBUG") != NULL || getenv("HTTPSERVER_UTILS_DEBUG_MODE") != NULL) {
     log_debug("Enabling httpserver utils Debug Mode");
     HTTPSERVER_UTILS_DEBUG_MODE = true;

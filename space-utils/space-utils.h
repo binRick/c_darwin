@@ -43,3 +43,4 @@ bool get_space_is_active(int space_id);
 bool get_space_can_create_tile(int space_id);
 CGRect get_space_rect(int space_id);
 struct Vector *get_space_owners(int space_id);
+CGImageRef preview_space_id(uint32_t sid);

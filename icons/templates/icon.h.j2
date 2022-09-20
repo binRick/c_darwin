@@ -1,0 +1,18 @@
+{%- set icon_t = 'icon_' + name|lower|replace(' ','_')|replace('-','_') -%}
+{%- set icon_name = path|lower|replace(' ','_')|replace('-','_') -%}
+{%- set icon_path = 'icons/'+path -%}
+{%- set ICON_HASH = hash|upper -%}
+
+#pragma once
+#ifndef ICON_{{ICON_HASH}}_H
+#define ICON_{{ICON_HASH}}_H
+//////////////////////////////////////
+#include <ctype.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+//////////////////////////////////////
+#endif

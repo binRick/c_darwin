@@ -13,6 +13,7 @@ space_utils_deps = [
   c_stringfn_dep,
   parson_dep,
   string_utils_dep,
+  image_utils_dep,
   log_dep,
   ansi_codes_dep,
   timestamp_dep,

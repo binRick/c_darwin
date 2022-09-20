@@ -20,32 +20,34 @@
 </head>
 <body style="background: #ddd;">
 <div style="display: flex; flex-direction: row;">
-  <div class="reveal deck1" style="width: 100%; height: 70vh; margin: 5px;">
-
-
+  <div id="deck1" class="reveal deck1" style="width: 100%; height: 70vh; margin: 5px;">
     <div class="slides">
-<section>
-      <section>
-        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window
-        </p>
-        <img alt="window" class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      <section class="spaces">
+            <section class="space">
+              <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Space</p>
+              <img alt="space" class="capture r-stretch" src="/capture?type=space" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+            </section>
       </section>
-      <section>
-        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
-        <img alt="display" class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      <section class="windows">
+            <section class="window">
+              <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
+              <img alt="window" class="capture r-stretch" src="/capture?type=window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+            </section>
+            <section>
+              <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
+              <img alt="window" class="capture r-stretch" src="/capture?type=window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+            </section>
       </section>
-</section>
-<section>
-      <section>
-        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Window</p>
-        <img alt="window" class="capture r-stretch" src="/capture/window" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+      <section class="displays">
+            <section class="display">
+              <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
+              <img alt="display" class="capture r-stretch" src="/capture?type=display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+            </section>
+            <section>
+              <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
+              <img alt="display" class="capture r-stretch" src="/capture?type=display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
+            </section>
       </section>
-      <section>
-        <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">Display</p>
-        <img alt="display" class="capture r-stretch" src="/capture/display" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >
-      </section>
-</section>
-
     </div>
   </div>
 </div>
@@ -53,33 +55,8 @@
 <script src="/dist/jquery.contextMenu.min.js"></script> 
 <script src="/dist/reveal.js"></script> 
 <script src="/plugin/highlight/highlight.js"></script> 
-<script src="/main.js"></script> 
-<script>
-                        let deck1 = new Reveal( document.querySelector( '.deck1' ), {
-                                embedded: true,
-                                progress: true,
-                                keyboardCondition: 'focused',
-                                plugins: [ RevealHighlight, ]
-                        } );
-                        deck1.on( 'slidechanged', (event) => {
-                          console.log( 'Deck 1 slide changed' );
-                          $(event.currentSlide).find('img').each(function() {
-                              console.log("Reloading", $( this ).attr('src') );
-                              var url = $(this).attr("src");
-                              $(this).removeAttr("src").attr("src", url);
-                          });
-                        } );
-                        deck1.initialize({ 
-                          slideNumber: 'h/v',
-                          navigationMode: 'grid',
-                          preloadIframes: true,
-                          mouseWheel: true,
-
-                        });
-
- //                       Reveal.toggleOverview( true );
-
-
-</script>
+<!-- <script src="/main.js"></script> -->
+<script src="http://localhost:8081/main.js"></script> 
+<script src="/app.js"></script> 
 </body>
 </html>

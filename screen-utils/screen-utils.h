@@ -97,3 +97,4 @@ struct screen_capture_t *init_screen_capture();
 struct screen_capture_t *screen_capture();
 bool save_captures(struct screen_capture_t *S);
 CGImageRef capture_display_id(size_t display_id);
+CGImageRef preview_display_id(size_t display_id);
