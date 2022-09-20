@@ -55,7 +55,7 @@ static bool HTTPSERVER_UTILS_DEBUG_MODE = false;
 #define INCLUDE_CONTEXT_JS                             "./.assets/context/jquery.contextMenu.min.js"
 #define INCLUDE_CONTEXT_JS_MAP                         "./.assets/context/jquery.contextMenu.min.js.map"
 #define INCLUDE_CONTEXT_FONT_ICONS                     "./.assets/context/font/context-menu-icons.woff2"
-#define INCLUDE_REVEAL_MULTIPLE_PRESENTATIONS_HTML     "./.assets/reveal/index.html"
+#define INCLUDE_REVEAL_MULTIPLE_PRESENTATIONS_HTML     "./.assets/index.html"
 #define INCLUDE_REVEAL_SOURCE_SANS_PRO_CSS             "./.assets/reveal/fonts/source-sans-pro/source-sans-pro.css"
 #define INCLUDE_REVEAL_SOURCE_SANS_PRO_REGULAR_TTF     "./.assets/reveal/fonts/source-sans-pro/source-sans-pro-regular.ttf"
 #define INCLUDE_REVEAL_SOURCE_SANS_PRO_REGULAR_WOFF    "./.assets/reveal/fonts/source-sans-pro/source-sans-pro-regular.woff"

@@ -12,7 +12,7 @@ httpserver_utils_include_dirs = [
 ]
 
 httpserver_utils_deps = [
-  timestamp_dep,
+  timestamp_dep,chan_dep,
   ansi_codes_dep,
   httpserver_h_dep,
   c_vector_dep,

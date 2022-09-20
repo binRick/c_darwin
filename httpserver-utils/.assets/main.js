@@ -1,75 +1,97 @@
-var l = console.log;
+var l = console.log,
+  websocket_enabled = false;
+
 var reveal_fxn = function() {
     $.getJSON("/config", function(cfg) {
+
+
+
+
+
         window.cfg = cfg;
         console.log("Config>", window.cfg);
-
-
-      console.log(window.cfg.config.spaces);
-      var section_items = [
-        { plural: 'windows', single: 'window', idref: 'window_id' },
-        { plural: 'spaces', single: 'space', idref: 'id', },
-        { plural: 'displays', single: 'display', idref: 'id', },
-      ];
-    $.each(section_items, function(iindex, i){
-     l(i, $("section."+i.plural));
-     $("section."+i.single).remove();
-     $.each(window.cfg.config[i.plural], function(index, item){
-       if(i.single != 'window' || (i.single=='window' && item.layer == 0)){
-      l(i.single, index, item);
-      var space_item = document.createElement("section");
-        var new_html = ''+
-         ' <section class="'+i.single+'">\n'+
-         '  <p data-id="text-props" style="background: #555; line-height: 1em; letter-spacing: 0em;">'+i.single+' #'+item[i.idref]+'</p>\n'+
-         '  <img alt="'+item.uuid+'" class="capture r-stretch" src="/capture?type='+i.single+'&id='+item[i.idref]+'" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >\n'+
-         ' </section>'+
-        '\n';
-        $(new_html).addClass(i.single);
-       l(new_html);
-      $('section.'+i.plural).append($(new_html));
-
-       }
-     });
-    });
-
-//        $("section.spaces").innterHTML = spaces_html;
-
-
-    let deck1 = new Reveal(document.querySelector('.deck1'), {
-        embedded: true,
-        progress: true,
-        keyboardCondition: 'focused',
-        plugins: [RevealHighlight, ]
-    });
-    deck1.on('slidechanged', (event) => {
-        console.log('Deck 1 slide changed');
-        $(event.currentSlide).find('img').each(function() {
-            console.log("Reloading", $(this).attr('src'));
-            var url = $(this).attr("src");
-            $(this).removeAttr("src").attr("src", url);
-            l($(this), 'complete:', $(this).length);
-
-
+        console.log(window.cfg.config.spaces);
+        var section_items = [{
+            plural: 'windows',
+            single: 'window',
+            idref: 'window_id'
+        }, {
+            plural: 'spaces',
+            single: 'space',
+            idref: 'id',
+        }, {
+            plural: 'displays',
+            single: 'display',
+            idref: 'id',
+        }, ];
+        $.each(section_items, function(iindex, i) {
+            l(i, $("section." + i.plural));
+            $("section." + i.single).remove();
+            $.each(window.cfg.config[i.plural], function(index, item) {
+              if(item.height > 200){
+                if (i.single != 'window' || (i.single == 'window' && item.layer == 0)) {
+                  l('Creating', i.single, index, item);
+                  l(item);
+                  var title =  i.single + ' #' + item[i.idref];
+                  var subtitle =  i.single + ' #' + item[i.idref];
+                  if(i.single=='window'){
+                    if(item.name.length>0)
+                      title = title.concat(' ', '|', item.name,'|');
+                    title = title.concat(' ', '|', item.width,'x',item.height,'|');
+                    title = title.concat(' ', '|PID:', item.pid,'|');
+                  }
+                  var space_item = document.createElement("section");
+                  var url = '/capture?type='+i.single+'&id='+item[i.idref];
+                  var preview=url+'&preview=1';
+                  var thumbnail=url+'&thumbnail=1';
+                  var full=url;
+                  var new_html = '' +
+                        ' <section class="' + i.single + '">\n' +
+                        '  <h3 class="r-fit-text">'+title+'</h3>'+
+                        '  <img data-full="'+full+'" data-thumbnail="'+thumbnail+'" data-preview="'+preview+'" alt="' + item.uuid + '" class="capture r-stretch" src="'+thumbnail+'" style="width: 100%; margin: 0 auto 4rem auto; background: transparent;" >\n' +
+                        ' </section>' +
+                        '\n';
+                    $(new_html).addClass(i.single);
+                    l(new_html);
+                    $('section.' + i.plural).append($(new_html));
+                }
+              }
+            });
         });
-    });
-    deck1.initialize({
-        slideNumber: 'h/v',
-        navigationMode: 'grid',
-        preloadIframes: true,
-        previewLinks: true,
-        mouseWheel: true,
-        fragmentInURL: true,
 
-    }).then( () => {
-           var fi = $('section').first().find('img').first();
-           var url = fi.attr("src");
-         l(url);
+        let deck1 = new Reveal(document.querySelector('.deck1'), {
+            embedded: true,
+            progress: true,
+            keyboardCondition: 'focused',
+            plugins: [RevealHighlight, ]
+        });
+        deck1.on('slidechanged', (event) => {
+            console.log('Deck 1 slide changed');
+            $(event.currentSlide).find('img').each(function() {
+              if($(this).data('full') != $(this).attr('src')){
+                console.log("Reloading", $(this).attr('src'));
+                $(this).removeAttr("src").attr("src", $(this).data('full'));
+                l($(this), 'Reload complete:', $(this).length);
+              }
+            });
+        });
+        deck1.initialize({
+          embedded: true,
+            slideNumber: 'h/v',
+            navigationMode: 'grid',
+            preloadIframes: true,
+            previewLinks: true,
+            mouseWheel: true,
+            fragmentInURL: true,
+
+        }).then(() => {
+            var fi = $('section').first().find('img').first();
+            var url = fi.attr("src");
+            l(url);
 
             fi.removeAttr("src").attr("src", url);
-     l( $(fi).length);
-      deck1.slide( 1 );
-
-    });
+            deck1.slide(1);
+        });
 
 
     });
@@ -77,6 +99,12 @@ var reveal_fxn = function() {
 
 $(document).ready(function() {
     console.log("main.js");
+    $("#layout").width($(window).width());
+    $("#layout").height($(window).height());
+
+
+
+  if(websocket_enabled){
     var socket_reconnect_interval,
         websocket_config = {
             uri: "ws://localhost:49226",
@@ -105,7 +133,9 @@ $(document).ready(function() {
     window.socket.addEventListener('message', (event) => {
         console.log('Message from server ', event.data);
     });
-
+  }else{
+        reveal_fxn();
+  }
 
 
 

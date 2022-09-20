@@ -2,6 +2,7 @@
 #ifndef __HTTPSERVER_H
 #define __HTTPSERVER_H
 //////////////////////////////////////
+#include "chan/src/chan.h"
 #include "httpserver.h/httpserver.h"
 #include "querystring.c/querystring.h"
 #include "url.h/url.h"
@@ -47,9 +48,26 @@ struct rq_t {
   struct http_string_s   *url;
   url_data_t             *parsed;
 };
+struct websocket_config_t {
+  int    port;
+  char   *socket;
+  chan_t *chan;
+};
 struct ud_t {
   pid_t  pid;
   size_t requests_qty;
+};
+
+enum httpserver_chan_type_id_t {
+  HTTPSERVER_CHAN_REQUEST,
+  HTTPSERVER_CHAN_RESPONSE,
+  HTTPSERVER_CHAN_CAPTURE,
+  HTTPSERVER_CHAN_OCR,
+  HTTPSERVER_CHANS_QTY,
+};
+struct httpserver_chan_t {
+  chan_t *chan;
+  size_t buffer_qty;
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int httpserver_main();
