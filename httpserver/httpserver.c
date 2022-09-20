@@ -45,8 +45,12 @@ void req_wrapper(struct http_request_s *request){
   struct rq_t *rq = &(struct rq_t){
     .started = timestamp(),
     .pid     = getpid(),
-    .ok      = true,
-    .parsed  = calloc(1, sizeof(url_data_t)),
+    .ok      = false,
+    .path    = NULL,
+    .method  = NULL,
+    .url     = NULL,
+    .uri     = NULL,
+    .parsed  = NULL,
     .pd      = calloc(1, sizeof(struct parsed_data_t)),
   };
 

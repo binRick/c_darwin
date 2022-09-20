@@ -23,7 +23,7 @@ struct parsed_data_t {
   size_t window_id, space_id, display_id, screen_id, pid;
   size_t resize_factor;
   bool   grayscale_conversion;
-  bool   preview_mode, thumbnail_mode, quant_mode;
+  bool   preview_mode, thumbnail_mode, quant_mode, ocr_mode;
   int    min_quant_qual, max_quant_qual;
   char   *type; int type_id;
   size_t id;
@@ -37,13 +37,14 @@ struct rq_t {
   char                   *query;
   char                   *method;
   char                   *parse_url;
-  char                   *url;
+  char                   *uri;
   char                   *path;
   int                    response_status;
   struct http_response_s *response;
   struct http_request_s  *request;
   char                   *response_body;
   struct   http_string_s *target;
+  struct http_string_s   *url;
   url_data_t             *parsed;
 };
 struct ud_t {

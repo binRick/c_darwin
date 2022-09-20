@@ -168,6 +168,8 @@ static void request_params_parser(void *data, char *fst, char *snd) {
     }else{
       parsed_data->type_id = -1;
     }
+  }else if (strcmp(fst, "ocr") == 0) {
+    parsed_data->ocr_mode = true;
   }else if (strcmp(fst, "pid") == 0) {
     parsed_data->pid = string_size_to_size_t(snd);
   }else if (strcmp(fst, "resize_factor") == 0) {
@@ -191,19 +193,22 @@ static void request_params_parser(void *data, char *fst, char *snd) {
 }
 
 static struct parsed_data_t *parse_request(const struct http_request_s *request){
-  struct rq_t   *rq = ((struct rq_t *)http_request_userdata(request));
-  http_string_t url = http_request_target(request);
-  http_string_t _method = http_request_method(request);
-  char          *method = stringfn_substring(_method.buf, 0, _method.len), *purl;
+  struct rq_t *rq = ((struct rq_t *)http_request_userdata(request));
 
-  rq->method = method;
+  if (!rq->url) {
+    http_string_t t = http_request_target(request);
+    rq->url = &t;
+  }
+  if (!rq->method) {
+    http_string_t _method = http_request_method(request);
+    rq->method = stringfn_substring(_method.buf, 0, _method.len);
+  }
+  if (!rq->parse_url) {
+    asprintf(&rq->parse_url, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, rq->url->buf);
+  }
+  rq->parsed = url_parse(rq->parse_url);
 
-  asprintf(&rq->parse_url, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, url.buf);
-  asprintf(&purl, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, url.buf);
-  url_data_t           *parsed = url_parse(purl);
-
-  char                 *query = strdup(parsed->query);
-  struct parsed_data_t *data  = calloc(1, sizeof(struct parsed_data_t));
+  struct parsed_data_t *data = calloc(1, sizeof(struct parsed_data_t));
 
   data->resize_factor        = DEFAULT_RESIZE_FACTOR;
   data->grayscale_conversion = false;
@@ -221,26 +226,30 @@ static struct parsed_data_t *parse_request(const struct http_request_s *request)
   data->type                 = NULL;
   data->type_id              = -1;
 
-  parse_querystring(query, (void *)data, request_params_parser);
+  parse_querystring(rq->parsed->query, (void *)data, request_params_parser);
   return(data);
 }
 
 static int request_target_is(const struct http_request_s *request, const char *target) {
-  log_info("ok");
   struct rq_t   *rq = ((struct rq_t *)http_request_userdata(request));
   http_string_t url;
   int           res = EXIT_FAILURE;
+
   if (request && target) {
     url = http_request_target(request);
     if (url.buf && url.len > 0) {
-      rq->path = stringfn_substring(url.buf, 1, url.len - 1);
-      asprintf(&rq->url, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, rq->path);
-      rq->parsed = url_parse(rq->url);
+      if (!rq->path) {
+        rq->path = stringfn_substring(url.buf, 1, url.len - 1);
+      }
+      if (!rq->uri) {
+        asprintf(&rq->uri, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, rq->path);
+      }
+      if (!rq->parsed) {
+        rq->parsed = url_parse(rq->uri);
+      }
       if (rq->parsed->pathname) {
         res = (url.buf && target && rq->parsed->pathname && (memcmp(rq->parsed->pathname, target, strlen(rq->parsed->pathname))) == 0);
         if (res == EXIT_SUCCESS && HTTPSERVER_UTILS_DEBUG_MODE) {
-          log_debug("%s", rq->path);
-          log_debug("%s", rq->url);
           if (rq->parsed) {
             url_data_inspect(rq->parsed);
           }
@@ -252,7 +261,6 @@ static int request_target_is(const struct http_request_s *request, const char *t
 }   /* request_target_is */
 
 void handle_request(struct http_request_s *request) {
-  log_info("ok");
   char *response_body;
 
   asprintf(&response_body, "{\"response_code\":%d,\"response_data\":null}", UNHANDLED_REQUEST_RESPONSE_CODE);
@@ -261,6 +269,7 @@ void handle_request(struct http_request_s *request) {
   struct http_response_s *response = http_response_init();
 
   struct rq_t            *rq = (struct rq_t *)http_request_userdata(request);
+
   rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
   http_request_set_userdata(request, (void *)rq);
   http_response_status(response, rq->response_status);
@@ -298,15 +307,16 @@ void handle_request(struct http_request_s *request) {
     http_response_header(response, "Content-Type", CONTENT_TYPE_JSON);
     http_response_body(response, response_body, strlen(response_body));
   } else if (request_target_is(request, "/capture")) {
-    log_info("ok");
     rq->pd = parse_request(request);
-    log_info("ok1");
-    log_info("%d,%lu", rq->pd->type_id, rq->pd->id);
-
     size_t     id      = capture_type_validate_id_or_get_default_id(rq->pd->type_id, rq->pd->id);
     CGImageRef img_ref = capture_type_capture(rq->pd->type_id, id);
-    log_info("ok2");
-    int        w = CGImageGetWidth(img_ref), h = CGImageGetHeight(img_ref);
+    if (rq->pd->grayscale_conversion == true) {
+      if (HTTPSERVER_UTILS_DEBUG_MODE) {
+        log_info("Converting to grayscale");
+      }
+      img_ref = cgimageref_to_grayscale(img_ref);
+    }
+    int w = CGImageGetWidth(img_ref), h = CGImageGetHeight(img_ref);
     if (rq->pd->preview_mode) {
       img_ref = resize_cgimage(img_ref, w / PREVIEW_FACTOR, h / PREVIEW_FACTOR);
     }else if (rq->pd->thumbnail_mode) {
@@ -324,16 +334,31 @@ void handle_request(struct http_request_s *request) {
     }else{
       capture_pixels = save_cgref_to_png_memory(img_ref, &capture_len);
     }
-    http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
-    http_response_body(response, capture_pixels, capture_len);
-    http_respond(request, response);
-    CGImageRelease(img_ref);
-    free(capture_pixels);
-    struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
-    rq->size            = capture_len;
-    rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
-    http_request_set_userdata(request, (void *)rq);
-    http_response_status(response, rq->response_status);
+
+    if (rq->pd->ocr_mode == true) {
+      char *pf;
+      asprintf(&pf, "/tmp/ocr-%lld.png", timestamp());
+      assert(true == save_cgref_to_image_type_file(IMAGE_TYPE_PNG, img_ref, pf));
+      char *extracted_text = get_extracted_image_text(pf);
+      log_info(AC_RED "%s" AC_RESETALL, extracted_text);
+      rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+      http_response_header(response, "Content-Type", "Text");
+      http_response_body(response, extracted_text, strlen(extracted_text));
+      http_response_status(response, rq->response_status);
+      rq->size = strlen(extracted_text);
+      http_respond(request, response);
+      free(pf); free(extracted_text);
+    }else{
+      http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
+      http_response_body(response, capture_pixels, capture_len);
+      http_respond(request, response);
+      CGImageRelease(img_ref);
+      free(capture_pixels);
+      struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
+      rq->size            = capture_len;
+      rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
+      http_response_status(response, rq->response_status);
+    }
     http_request_set_userdata(request, (void *)rq);
     return;
 
@@ -466,6 +491,7 @@ void handle_request(struct http_request_s *request) {
     char                 *output_file = NULL, *extracted_text = NULL;
     asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
     CGImageRef           img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+
     if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (rq->pd->grayscale_conversion == true) {
         if (HTTPSERVER_UTILS_DEBUG_MODE) {
@@ -484,27 +510,6 @@ void handle_request(struct http_request_s *request) {
       http_respond(request, response);
       TessDeleteText(extracted_text);
       return;
-    }else{
-      RETURN_ERROR_PNG("Window", window_id);
-    }
-  } else if (request_target_is(request, "/capture/window")) {
-    rq->pd = parse_request(request);
-    size_t        window_id    = capture_type_validate_id_or_get_default_id(CAPTURE_TYPE_WINDOW, rq->pd->window_id);
-    char          *output_file = NULL;
-    unsigned char *png_data    = NULL;
-    size_t        png_len      = 0;
-    asprintf(&output_file, "%swindow-%lu-%lld.png", gettempdir(), window_id, timestamp());
-    CGImageRef    img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
-    if (save_cgref_to_png_file(img_ref, output_file) == true) {
-      png_len  = fsio_file_size(output_file);
-      png_data = fsio_read_binary_file(output_file);
-      fsio_remove(output_file);
-      struct rq_t *rq = (struct rq_t *)http_request_userdata(request);
-      rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
-      http_request_set_userdata(request, (void *)rq);
-      http_response_status(response, rq->response_status);
-      http_response_header(response, "Content-Type", CONTENT_TYPE_PNG);
-      http_response_body(response, png_data, png_len);
     }else{
       RETURN_ERROR_PNG("Window", window_id);
     }
