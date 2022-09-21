@@ -51,4 +51,7 @@ struct Vector *tesseract_extract_text(size_t window_id);
 void tesseract_extract_symbols(size_t window_id);
 struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE);
 struct Vector *get_security_words_v();
+bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r);
+void report_tesseract_extraction_results(struct tesseract_extract_result_t *r);
+bool tesseract_security_preferences_logic();
 #endif
