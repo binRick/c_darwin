@@ -28,12 +28,11 @@ var reveal_fxn = function() {
             l(i, $("section." + i.plural));
             $("section." + i.single).remove();
             $.each(window.cfg.config[i.plural], function(index, item) {
-              if(item.height > 200){
                 if (i.single != 'window' || (i.single == 'window' && item.layer == 0)) {
-                  l('Creating', i.single, index, item);
-                  l(item);
                   var title =  i.single + ' #' + item[i.idref];
                   var subtitle =  i.single + ' #' + item[i.idref];
+                  l('Creating', i.single, index, item);
+                  l(item);
                   if(i.single=='window'){
                     if(item.name.length>0)
                       title = title.concat(' ', '|', item.name,'|');
@@ -55,7 +54,6 @@ var reveal_fxn = function() {
                     l(new_html);
                     $('section.' + i.plural).append($(new_html));
                 }
-              }
             });
         });
 
@@ -99,8 +97,9 @@ var reveal_fxn = function() {
 
 $(document).ready(function() {
     console.log("main.js");
-    $("#layout").width($(window).width());
-    $("#layout").height($(window).height());
+    $("#layout").width($(window).width()-5);
+    $("#layout").height($(window).height()-5);
+    $("#sidebar").width($("#left").width()-5);
 
 
 
@@ -158,9 +157,9 @@ $(document).ready(function() {
         selector: ".capture",
         autoHide: true,
         selectableSubMenu: true,
-        trigger: 'left',
+        trigger: 'right',
         zIndex: 100,
-        delay: 100,
+        delay: 10,
         command1: {
             name: "Foobar",
             type: "text",

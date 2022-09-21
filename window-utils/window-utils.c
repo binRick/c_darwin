@@ -17,24 +17,6 @@
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window-utils/window-utils.h"
-#define CLOSE_SYSTEM_PREFERENCES                                         \
-  "if running of application \"System Preferences\" then\n"              \
-  "    try\n"                                                            \
-  "        tell application \"System Preferences\" to quit\n"            \
-  "    on error\n"                                                       \
-  "        do shell script \"killall 'System Preferences'\"\n"           \
-  "    end try\n"                                                        \
-  "    delay 0.1\n"                                                      \
-  "end if\n"                                                             \
-  "repeat while running of application \"System Preferences\" is true\n" \
-  "    delay 0.1\n"                                                      \
-  "end repeat\n"
-#define OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD \
-  "tell application \"System Preferences\"\n"                              \
-  "    set securityPane to pane id \"com.apple.preference.security\"\n"    \
-  "    tell securityPane to reveal anchor \"Privacy_Accessibility\"\n"     \
-  "    activate\n"                                                         \
-  "end tell\n"
 ///////////////////////////////////////////////////////////////////////////////
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__window_utils(void){
@@ -74,6 +56,26 @@ static const char *EXCLUDED_WINDOW_APP_NAMES[] = {
 static char *get_axerror_name(AXError err);
 
 ///////////////////////////////////////////////////////////////////////////////
+
+bool minimize_window_id(size_t window_id){
+  assert(window_id>0);
+  struct window_info_t *W = get_window_id_info(window_id);
+  assert(W->window_id == window_id);
+  AXUIElementRef app = AXWindowFromCGWindow(W->window);
+  CFTypeRef       value;
+  if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &value) != kAXErrorSuccess) {
+    log_error("Failed to copy attrs");
+    return(false);
+  }
+  if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
+    if(WINDOW_UTILS_DEBUG_MODE)
+      log_info("Set minimized property");
+  }else{
+    log_error("Failed to set minimized property");
+    return(false);
+  }
+  return(true);
+}
 
 struct Vector *get_windows(){
   struct   Vector *WINDOWS = vector_new(); struct Vector *WINDOW_IDS = vector_new(); struct Vector *SPACE_IDS = vector_new();
@@ -291,23 +293,6 @@ int get_window_display_id(struct window_t *window){
   CFRelease(uuid);
 
   return(id);
-}
-
-int get_focused_window_id(){
-  int            focused_pid = get_focused_pid();
-  AXUIElementRef focused_app = AXUIElementCreateApplication(focused_pid);
-  CFTypeRef      window_ref  = NULL;
-
-  AXUIElementCopyAttributeValue(focused_app, kAXFocusedWindowAttribute, &window_ref);
-  if (!window_ref) {
-    return(0);
-  }
-
-  int window_id = (int)ax_window_id(window_ref);
-
-  CFRelease(window_ref);
-
-  return(window_id);
 }
 
 struct window_t *get_focused_window(){
@@ -642,9 +627,6 @@ void get_window_tags(struct window_t *w){
   }
 }
 
-void minimize_window_id(size_t WINDOW_ID){
-  return(minimize_window(get_window_id(WINDOW_ID)));
-}
 
 void focus_window_id(size_t WINDOW_ID){
   return(focus_window(get_window_id(WINDOW_ID)));
@@ -698,12 +680,12 @@ bool get_pid_is_minimized(int pid){
 void minimize_window(struct window_t *w){
   CFTypeRef value = NULL;
 
-  if (AXUIElementCopyAttributeValue(w->window, kAXMinimizedAttribute, &value) == kAXErrorSuccess) {
+  if (AXUIElementCopyAttributeValue(w->app, kAXMinimizedAttribute, &value) == kAXErrorSuccess) {
     CFRelease(value);
   }else{
     log_error("Failed to copy minimized attribute");
   }
-  if (AXUIElementSetAttributeValue(w->window, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
+  if (AXUIElementSetAttributeValue(w->app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
     log_info("Set minimized property");
   }else{
     log_error("Failed to set minimized property");
@@ -904,6 +886,15 @@ void window_id_send_to_space(size_t window_id, uint64_t dsid) {
   SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
 }
 
+bool set_window_id_to_space(size_t window_id, int space_id) {
+  uint32_t   wid         = (uint32_t)window_id;
+  uint64_t   sid         = (uint64_t)space_id;
+  log_info("%lu|%lld",window_id,sid);
+  CFArrayRef wids = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+  SLSMoveWindowsToManagedSpace(CGSMainConnectionID(), wids, (uint64_t)space_id);
+  log_info("%lu|%d",window_id,space_id);
+  return(true);
+}
 void window_send_to_space(struct window_t *window, uint64_t dsid) {
   uint32_t   wid         = (uint32_t)window->window_id;
   CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
@@ -1500,6 +1491,16 @@ CGRect get_resized_window_info_rect_by_factor(struct window_info_t *w, float wid
   return(new_rect);
 }
 
+bool move_window_id(size_t window_id, const int X, const int Y){
+  CGPoint newPosition;
+  newPosition.x = X;
+  newPosition.y = Y;
+  struct window_info_t *w = get_window_id_info(window_id);
+  assert(w->window_id==window_id);
+  AXUIElementRef app = AXWindowFromCGWindow(w->window);
+  AXWindowSetPosition(app, newPosition);
+  return(true);
+}
 bool move_window(struct window_t *w, const int X, const int Y){
   CGPoint newPosition;
 
@@ -1565,11 +1566,6 @@ char *get_window_id_title(const int WINDOW_ID){
   return(window_title);
 }
 
-void move_window_id(const int WINDOW_ID, const int X, const int Y){
-  CGPoint position = CGPointMake(X, Y);
-
-  fprintf(stderr, "moving window #%d to %fx%f\n", WINDOW_ID, position.x, position.y);
-}
 
 void MoveWindow(CFDictionaryRef window, void *ctxPtr) {
   MoveWinCtx     *ctx = (MoveWinCtx *)ctxPtr;
@@ -2100,29 +2096,3 @@ io_service_t IOFramebufferPortFromCGDisplayID(CGDirectDisplayID displayID, CFStr
   }
 } /* IOFramebufferPortFromCGDisplayID */
 
-void run_osascript_system_prefs(){
-  assert(run_osascript(CLOSE_SYSTEM_PREFERENCES) == true);
-  struct Vector *pre_window_infos_v = get_window_infos_v();
-  assert(run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD) == true);
-  struct Vector *post_window_infos_v = get_window_infos_v();
-  log_info("%lu pre windows|%lu post windows", vector_size(pre_window_infos_v), vector_size(post_window_infos_v));
-  struct Vector *new_window_infos = vector_new();
-  for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
-    bool found = false;
-    for (size_t ii = 0; ii < vector_size(pre_window_infos_v); ii++) {
-      if (found == false && ((struct window_info_t *)vector_get(pre_window_infos_v, ii))->window_id == ((struct window_info_t *)vector_get(post_window_infos_v, i))->window_id) {
-        vector_remove(post_window_infos_v, i);
-      }
-    }
-  }
-  log_info("%lu New Windows|Focused pid:%d|Focused window id:%d|", vector_size(post_window_infos_v), get_focused_pid(), get_focused_window_id());
-  for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
-    struct window_info_t *w = (struct window_info_t *)vector_get(post_window_infos_v, i);
-    if (get_focused_pid() == w->pid && (size_t)get_focused_window_id() == (size_t)w->window_id) {
-      log_info("New Window #%lu> %s|pid:%d|pos:%dx%d|size:%dx%d|displayid:%lu|space_id:%lu|",
-               w->window_id, w->name, w->pid, (int)w->rect.origin.x, (int)w->rect.origin.y, (int)w->rect.size.width, (int)w->rect.size.height,
-               w->display_id, w->space_id
-               );
-    }
-  }
-}

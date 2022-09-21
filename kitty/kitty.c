@@ -26,6 +26,7 @@ const char   *KITTY_ESC_CHECK_TERMINAL_CAPS          = "\x1b_Ga=q,s=1,v=1,i=1;YW
 const char   *KITTY_ESC_DELETE_ALL_VISIBLE_PLAYMENTS = "\x1b_Ga=d\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE                   = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE1                  = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
+const char   *KITTY_ESC_QUERY_BG_COLOR = "\033]11;?\033\\";
 static bool vector_contains_pid(struct Vector *pids_v, int pid);
 
 bool kitty_set_tab_color(char *MODE, char *COLOR){
@@ -136,6 +137,21 @@ char *kitty_get_ls(){
   return(r);
 }
 
+char *kitty_icat(char *file){
+  struct Vector *v = vector_new();
+
+  vector_push(v, "+kitten");
+  vector_push(v, "icat");
+  vector_push(v, file);
+  struct kitty_process_communication_result_t *cmd_result = kitty_process_communication(v);
+
+  printf("%s\n", cmd_result->stdout_buffer);
+  printf("%s\n", cmd_result->stderr_buffer);
+  char *r = strdup(cmd_result->stdout_buffer);
+
+  return(r);
+}
+
 char *kitty_get_colors(){
   struct Vector *v = vector_new();
 
@@ -229,7 +245,8 @@ struct kitty_process_communication_result_t *kitty_process_communication(struct 
   struct kitty_process_communication_result_t *r = malloc(sizeof(struct kitty_process_communication_result_t));
 
   r->subprocess      = malloc(sizeof(struct subprocess_s));
-  r->kitty_exec_path = (char *)which_path("kitty", getenv("PATH"));
+  r->kitty_exec_path = "/usr/local/bin/kitty";
+  //(char *)which_path("kitty", getenv("PATH"));
   struct Vector *v = vector_new();
 
   vector_push(v, r->kitty_exec_path);

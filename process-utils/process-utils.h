@@ -37,4 +37,6 @@ ProcessSerialNumber PID2PSN(pid_t pid);
 int get_focused_pid();
 struct Vector *get_all_process_infos_v();
 bool run_osascript(char *OSASCRIPT_CONTENTS);
+size_t run_osascript_system_prefs();
+int get_focused_window_id();
 #endif

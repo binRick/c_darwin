@@ -35,6 +35,7 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
+subdir('icons')
 subdir('frameworks')
 subdir('cache-utils')
 subdir('output-utils')
@@ -98,8 +99,8 @@ subdir('socket-protocol')
 subdir('websocket-server')
 subdir('httpserver-utils')
 subdir('httpserver')
-subdir('darwin-ls')
 subdir('tesseract-utils')
+subdir('darwin-ls')
 #//////////////////////////////////////////////////////////////////////
 subdir('app-utils-test')
 subdir('system-utils-test')
@@ -129,4 +130,4 @@ subdir('hotkey-utils-test')
 subdir('keylogger-test')
 subdir('process-utils-test')
 subdir('mouse-utils-test')
-subdir('icons')
+subdir('layout-test')

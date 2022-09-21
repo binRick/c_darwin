@@ -6,11 +6,12 @@ inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 
 tesseract_utils_include_dirs = [
   '.',
+  '/usr/local/include/tesseract',
   inc,
 ]
 
 tesseract_utils_deps = [
-  ansi_codes_dep,
+  ansi_codes_dep,capture_utils_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
@@ -19,8 +20,8 @@ tesseract_utils_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
-  leptonica_dep,
   tesseract_dep,
+  leptonica_dep,wildcardcmp_dep,
   stb_dep,
   space_utils_dep,
   display_utils_dep,

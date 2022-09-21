@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="generator" content="Darwin Manager">
+<meta charset="utf-8">
+<title>Darwin Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="http://localhost:8081/reveal/dist/reveal.css">
+<link rel="stylesheet" href="http://localhost:8081/w2ui/w2ui.min.css">
+<!--
+  <link rel="stylesheet" href="/dist/reveal.css">
+-->
+<link rel="stylesheet" href="/dist/theme/white.css">
+<link rel="stylesheet" href="/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="/dist/jquery.contextMenu.min.css">
+<style>
+                        .reveal {
+                                border: 4px solid #ccc;
+                        }
+                        .reveal.focused {
+                                border-color: #94b5ff;
+                        }
+</style>
+</head>
+<body style="background: #ddd;">
+
+
+<div style="display: flex; flex-direction: row;" id="deck_wrapper">
+  <div id="deck1" class="reveal deck1" style="width: 100%; height: 70vh; margin: 5px;">
+    <div class="slides">
+      <section class="spaces">
+      </section>
+      <section class="windows">
+      </section>
+      <section class="displays">
+      </section>
+    </div>
+  </div>
+</div>
+
+
+<div id="layout" style="width: 1200px; height: 800px;"></div>
+<div id="toolbar"></div>
+<div id="sidebar" style="height: 300px; width: 200px;"></div>
+
+
+<script type="module">
+let pstyle = 'border: 1px solid #efefef; padding: 5px';
+
+let sidebar = new w2sidebar({
+    box: '#sidebar',
+    name: 'sidebar',
+    topHTML: '<div style="background-color: #eee; padding: 10px 5px; border-bottom: 1px solid silver">Some HTML</div>',
+    bottomHTML: '<div style="background-color: #eee; padding: 10px 5px; border-top: 1px solid silver">Some HTML</div>',
+    nodes: [
+        { id: 'level-1', text: 'Level 1', img: 'icon-folder', expanded: true, group: true,
+            nodes: [
+                { id: 'level-1-1', text: 'Level 1.1', icon: 'fa fa-home' },
+                { id: 'level-1-2', text: 'Level 1.2', icon: 'fa fa-coffee' },
+                { id: 'level-1-3', text: 'Level 1.3', icon: 'fa fa-comment-o' }
+            ]
+        },
+        { id: 'level-2', text: 'Level 2', img: 'icon-folder', group: true,
+            nodes: [
+                { id: 'level-2-1', text: 'Level 2.1', icon: 'fa fa-star-o' },
+                { id: 'level-2-2', text: 'Level 2.2', icon: 'fa fa-star-o' },
+                { id: 'level-2-3', text: 'Level 2.3', icon: 'fa fa-star-o' }
+          ]
+        },
+        { id: 'level-3', text: 'Level 3', img: 'icon-folder', group: true,
+            nodes: [
+                { id: 'level-3-1', text: 'Level 3.1', icon: 'fa fa-star-o' },
+                { id: 'level-3-2', text: 'Level 3.2', icon: 'fa fa-star-o' },
+                { id: 'level-3-3', text: 'Level 3.3', icon: 'fa fa-star-o' }
+            ]
+        }
+    ]
+})
+
+
+window.w2toolbar = new w2toolbar({
+    box: '#toolbar',
+    name: 'toolbar',
+    items: [
+        { type: 'button', id: 'item1', text: 'Button', icon: 'w2ui-icon-colors' },
+        { type: 'break' },
+        { type: 'check', id: 'item2', text: 'Check 1', icon: 'w2ui-icon-check' },
+        { type: 'check', id: 'item3', text: 'Check 2', icon: 'w2ui-icon-check' },
+        { type: 'break' },
+        { type: 'radio', id: 'item4', group: '1', text: 'Radio 1', icon: 'w2ui-icon-info', checked: true },
+        { type: 'radio', id: 'item5', group: '1', text: 'Radio 2', icon: 'w2ui-icon-paste' },
+        { type: 'spacer' },
+        { type: 'button', id: 'item6', text: 'Button', icon: 'w2ui-icon-cross' }
+    ],
+    onClick(event) {
+        console.log('Target: '+ event.target, event)
+    }
+})
+
+window.w2layout = new w2layout({
+    box: '#layout',
+    name: 'layout',
+    panels: [
+        { type: 'top', size: 50, style: pstyle, html: '<div id="top"></div>' },
+        { type: 'left', size: 200, style: pstyle, html: '<div id="left"></div>' },
+        { type: 'main', style: pstyle, html: '<div id="dw"></div>' }
+    ]
+});
+
+
+
+
+$("#deck_wrapper").detach().appendTo('#dw');
+$("#toolbar").detach().appendTo('#top');
+$("#sidebar").detach().appendTo('#left');
+
+
+</script>
+
+
+<script src="/dist/jquery.min.js"></script> 
+<script src="/dist/jquery.contextMenu.min.js"></script> 
+<script src="/dist/reveal.js"></script> 
+<script src="/plugin/highlight/highlight.js"></script> 
+<!-- 
+<script src="/main.js"></script>
+<script src="/app.js"></script> 
+-->
+<script src="http://localhost:8081/w2ui/w2ui.min.js"></script> 
+<script src="http://localhost:8081/main.js"></script> 
+<script src="http://localhost:8081/app.js"></script> 
+</body>
+</html>

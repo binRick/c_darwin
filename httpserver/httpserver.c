@@ -70,7 +70,9 @@ static void __attribute__((constructor)) __constructor__httpserver(void){
   pid_t fork_server_pid = libforks_get_server_pid(conn);
 
   assert(fork_server_pid > 0);
-  log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  if (HTTPSERVER_DEBUG_MODE) {
+    log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  }
 }
 
 void req_wrapper(struct http_request_s *request){

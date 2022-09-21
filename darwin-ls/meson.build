@@ -36,14 +36,18 @@ darwin_ls_deps = [
   querystring_c_dep,
   b64_dep,screen_utils_dep,
   leptonica_dep,
-  tesseract_dep,
-  c_img_dep,image_utils_dep,config_utils_dep,
-  httpserver_utils_dep,httpserver_dep,
+  c_img_dep,image_utils_dep,config_utils_dep,tesseract_dep,tesseract_utils_dep,
+  httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,
 ]
+
 darwin_ls_c_args = [
   '-Wno-missing-field-initializers',
+  tesseract_cflags,
+  leptonica_cflags,
 ]
 darwin_ls_link_args = [
+  tesseract_libs,
+  leptonica_libs,
 ]
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')

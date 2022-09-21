@@ -11,7 +11,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "capi.h"
+#include "capture-utils/capture-utils.h"
 #include "display-utils/display-utils.h"
 #include "image-utils/image-utils.h"
 #include "log/log.h"
@@ -19,6 +19,7 @@
 #include "space-utils/space-utils.h"
 #include "tesseract-utils-test/tesseract-utils-test.h"
 #include "tesseract-utils/tesseract-utils.h"
+#include "tesseract/capi.h"
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////
@@ -100,10 +101,9 @@ TEST t_tesseract_capture_windows(){
     struct window_t *window = (struct window_t *)vector_get(windows_v, i);
     unsigned long   started = timestamp();
     log_info("capturing window %lu", window->window_id);
-    CGImageRef      image_ref = capture_window_id(window->window_id);
     asprintf(&image_filename, "/tmp/window-%lu.png", window->window_id);
-    save_cgref_to_png_file(image_ref, image_filename);
-    if (fsio_file_size(image_filename) < MIN_PNG_SIZE) {
+    bool ok = capture_type_capture_png_file(CAPTURE_TYPE_WINDOW, window->window_id, image_filename);
+    if (ok == false || fsio_file_size(image_filename) < MIN_PNG_SIZE) {
       if (TESSERACT_TEST_DEBUG_MODE) {
         log_info("Skipping %s png file %s (size too small)",
                  bytes_to_string(fsio_file_size(image_filename)),
@@ -150,11 +150,10 @@ TEST t_tesseract_capture_spaces(){
     unsigned long started  = timestamp();
     size_t        space_id = (size_t)vector_get(space_ids_v, i);
     char          *image_filename;
-    CGImageRef    image_ref = capture_space_id(space_id);
     asprintf(&image_filename, "/tmp/space-%lu.png", space_id);
+    bool          ok = capture_type_capture_png_file(CAPTURE_TYPE_SPACE, space_id, image_filename);
     log_info("capturing space %lu to %s", space_id, image_filename);
-    save_cgref_to_png_file(image_ref, image_filename);
-    if (fsio_file_size(image_filename) < MIN_PNG_SIZE) {
+    if (ok == false || fsio_file_size(image_filename) < MIN_PNG_SIZE) {
       if (TESSERACT_TEST_DEBUG_MODE) {
         log_info("Skipping %s png file %s (size too small)",
                  bytes_to_string(fsio_file_size(image_filename)),
@@ -229,49 +228,78 @@ TEST t_tesseract_api_get_text(void *RESULTS_FILE){
 TEST t_tesseract_api_iterator(void *ITERATOR_LEVEL, void *ITERATOR_RESULTS_FILE){
   unsigned long started = timestamp();
 
-  tess_iterator = TessBaseAPIGetIterator(api);
-  TessPageIteratorLevel level = (int)(size_t)ITERATOR_LEVEL;
-  size_t                i = 0;
-  char                  *TS_WORD_TYPE = NULL; size_t TS_WORD_LEN = 0; int TS_VALID_WORD = -1;
-  char                  *results_file = (char *)ITERATOR_RESULTS_FILE;
+  char          *results_file = (char *)ITERATOR_RESULTS_FILE;
 
   if (fsio_file_exists(results_file)) {
     fsio_remove(results_file);
   }
+  char        *m;
+  size_t      i      = 0;
+  struct Boxa *boxes = TessBaseAPIGetComponentImages(api, RIL_TEXTLINE, true, NULL, NULL);
 
-  do{
-    char  *ts_word = TessResultIteratorGetUTF8Text(tess_iterator, level);
-    float conf     = TessResultIteratorConfidence(tess_iterator, level);
-    TS_WORD_LEN   = strlen(ts_word);
-    TS_VALID_WORD = TessBaseAPIIsValidWord(api, ts_word);
-    if (conf < 0.1) {
-      goto next_word;
-    }
-    if (stringfn_is_ascii(ts_word) == false) {
-      if (TESSERACT_TEST_DEBUG_MODE == true) {
-        log_debug("Skipping non ascii '%s'", ts_word);
+  if (boxes != NULL) {
+    log_info("%d", boxes->n);
+    for (int i = 0; i < boxes->n; i++) {
+      BOX *box = boxaGetBox(boxes, i, L_CLONE);
+      TessBaseAPISetRectangle(api, box->x, box->y, box->w, box->h);
+
+      const char *c   = TessBaseAPIGetUTF8Text(api);
+      int        conf = TessBaseAPIMeanTextConf(api);
+      if ((c != NULL) && (c[0] != '\0')) {
+        asprintf(&m, "Box[%d]: x=%d, y=%d, w=%d, h=%d, confidence: %d, text: %s",
+                 i, box->x, box->y, box->w, box->h, conf, c);
+        log_info("%s", m);
+        fsio_append_text_file(results_file, m);
+        i++;
       }
-      goto next_word;
+      boxDestroy(&box);
     }
-    if (stringfn_is_digits(ts_word)) {
-      TS_WORD_TYPE = AC_BLUE "digits" AC_RESETALL;
-    }else{
-      TS_WORD_TYPE = AC_GREEN "characters" AC_RESETALL;
-    }
-    fsio_append_text_file(results_file, ts_word);
-//    fsio_append_text_file(results_file,"\n");
+  }
 
-    if (TESSERACT_TEST_DEBUG_MODE == true) {
-      log_debug("#%.4lu> [%.2f][%s][%d][" AC_CYAN "%.2lu" AC_RESETALL "] %s",
-                i,
-                conf, TS_WORD_TYPE, TS_VALID_WORD, TS_WORD_LEN,
-                ts_word
-                );
-    }
-next_word:
-    TessDeleteText(ts_word);
-    i++;
-  } while (TessPageIteratorNext((TessPageIterator *)tess_iterator, level));
+/*
+ * tess_iterator = TessBaseAPIGetIterator(api);
+ * TessPageIteratorLevel level = (int)(size_t)ITERATOR_LEVEL;
+ * char                  *TS_WORD_TYPE = NULL; size_t TS_WORD_LEN = 0; int TS_VALID_WORD = -1;
+ * do{
+ *  char  *ts_word = TessResultIteratorGetUTF8Text(tess_iterator, level);
+ *  float conf     = TessResultIteratorConfidence(tess_iterator, level);
+ *
+ *
+ *
+ *
+ *  TS_WORD_LEN   = strlen(ts_word);
+ *  TS_VALID_WORD = TessBaseAPIIsValidWord(api, ts_word);
+ *  if (conf < 0.1) {
+ *    goto next_word;
+ *  }
+ *  if (stringfn_is_ascii(ts_word) == false) {
+ *    if (TESSERACT_TEST_DEBUG_MODE == true) {
+ *      log_debug("Skipping non ascii '%s'", ts_word);
+ *    }
+ *    goto next_word;
+ *  }
+ *  if (stringfn_is_digits(ts_word)) {
+ *    TS_WORD_TYPE = AC_BLUE "digits" AC_RESETALL;
+ *  }else{
+ *    TS_WORD_TYPE = AC_GREEN "characters" AC_RESETALL;
+ *  }
+ *  fsio_append_text_file(results_file, ts_word);
+ * //    fsio_append_text_file(results_file,"\n");
+ *
+ *  if (TESSERACT_TEST_DEBUG_MODE == true) {
+ *    log_debug("#%.4lu> [%.2f][%s][%d][" AC_CYAN "%.2lu" AC_RESETALL "] %s",
+ *              i,
+ *              conf, TS_WORD_TYPE, TS_VALID_WORD, TS_WORD_LEN,
+ *              ts_word
+ *              );
+ *  }
+ * next_word:
+ *  TessDeleteText(ts_word);
+ *  i++;
+ * } while (TessPageIteratorNext((TessPageIterator *)tess_iterator, level));
+ *
+ *
+ */
 
   char *msg;
 

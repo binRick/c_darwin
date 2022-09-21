@@ -49,7 +49,6 @@ char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
   if (IMAGE_UTILS_DEBUG_MODE) {
     log_info("Converted to %s grayscale from %s PNG", bytes_to_string(fsio_file_size(grayscale_file)), bytes_to_string(fsio_file_size(png_file)));
   }
-  fsio_remove(png_file);
   return(grayscale_file);
 }
 
@@ -150,7 +149,6 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
 };
 
 unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len){
-  unsigned long         started    = timestamp();
   CFMutableDataRef      image_data = CFDataCreateMutable(kCFAllocatorDefault, 0);
   CGImageDestinationRef dataDest   = CGImageDestinationCreateWithData(image_data, image_types[image_type].get_format(), 1, NULL);
 
@@ -164,13 +162,6 @@ unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, 
   unsigned char *buf = calloc(1, *len);
 
   CFDataGetBytes(image_data, CFRangeMake(0, *len), buf);
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("Saved %s to %s memory in %s",
-              bytes_to_string(*len),
-              image_types[image_type].name,
-              milliseconds_to_string(timestamp() - started)
-              );
-  }
   return(buf);
 }
 
@@ -258,15 +249,16 @@ unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
 
 ///////////////////////////////////////////////////////////////////////////////
 CGImageRef resize_cgimage_factor(CGImageRef imageRef, double resize_factor){
-  int cur_width  = CGImageGetWidth(imageRef);
-  int cur_height = CGImageGetHeight(imageRef);
-  int new_width  = cur_width * resize_factor / 100;
-  int new_height = cur_height * resize_factor / 100;
+  return(resize_cgimage(imageRef, CGImageGetWidth(imageRef) * resize_factor / 100, CGImageGetHeight(imageRef) * resize_factor / 100));
+}
 
-  if (IMAGE_UTILS_DEBUG_MODE == true) {
-    log_info("|%dx%d| |%f| => |%dx%d|", cur_width, cur_height, resize_factor, new_width, new_height);
-  }
-  return(resize_cgimage(imageRef, new_width, new_height));
+CGImageRef png_fp_to_cgimage(FILE *fp){
+  int           width = 0, height = 0, format = 0, req_format = STBI_rgb_alpha;
+  unsigned char *pixels = stbi_load_from_file(fp, &width, &height, &format, req_format);
+  CGImageRef    img_ref = rgb_pixels_to_png_cgimage_ref(pixels, width, height);
+
+  free(pixels);
+  return(img_ref);
 }
 
 CGImageRef resize_png_file_factor(FILE *fp, double resize_factor){
@@ -378,21 +370,23 @@ CGImageRef cgimageref_to_grayscale(CGImageRef im){
 }
 
 bool write_cgimage_ref_to_tif_file_path(CGImageRef im, char *tif_file_path){
-  log_info("write_cgimage_ref_to_tif_file_path=> %s", tif_file_path);
   CFMutableDictionaryRef options     = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
   CFMutableDictionaryRef tiffOptions = CFDictionaryCreateMutable(kCFAllocatorDefault, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
   int                    fourInt     = 4;
   CFNumberRef            fourNumber  = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &fourInt);
+
   CFDictionarySetValue(tiffOptions, kCGImagePropertyTIFFCompression, fourNumber);
   CFRelease(fourNumber);
   CFDictionarySetValue(options, kCGImagePropertyTIFFDictionary, tiffOptions);
   CFRelease(tiffOptions);
   int         oneInt    = 1;
   CFNumberRef oneNumber = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &oneInt);
+
   CFDictionarySetValue(options, kCGImagePropertyDepth, oneNumber);
   CFRelease(oneNumber);
   CFURLRef              url  = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(tif_file_path), kCFURLPOSIXPathStyle, false);
   CGImageDestinationRef idst = CGImageDestinationCreateWithURL(url, kUTTypeTIFF, 1, NULL);
+
   CGImageDestinationAddImage(idst, im, options);
   CGImageDestinationFinalize(idst);
   CFRelease(idst);

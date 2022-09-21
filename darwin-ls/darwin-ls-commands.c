@@ -1,6 +1,11 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
+#include "stb/stb_image.h"
+#include "stb/stb_image_resize.h"
+#include "stb/stb_image_write.h"
+#include "c_vector/vector/vector.h"
+#include "capture-utils/capture-utils.h"
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls.h"
 #include "hotkey-utils/hotkey-utils.h"
@@ -8,13 +13,10 @@
 #include "httpserver/httpserver.h"
 #include "keylogger/keylogger.h"
 #include "table-utils/table-utils.h"
+#include "tesseract-utils/tesseract-utils.h"
+#include "wildcardcmp/wildcardcmp.h"
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
-static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
-    log_debug("Enabling Darwin Ls Debug Mode");
-    DARWIN_LS_COMMANDS_DEBUG_MODE = true;
-  }
-}
+static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_resize_window();
@@ -45,6 +47,7 @@ static void _command_fonts();
 static void _command_kittys();
 static void _command_alacrittys();
 static void _command_capture_window();
+static void _command_extract_window();
 static void _command_save_app_icon_to_png();
 static void _command_write_app_icon_from_png();
 static void _command_save_app_icon_to_icns();
@@ -62,6 +65,7 @@ static void _command_window_level();
 static void _command_window_infos();
 static void _command_window_pid_infos();
 static void _command_window_id_info();
+static void _command_open_security();
 static void _command_hotkeys();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
@@ -483,6 +487,10 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name = "spaces", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Spaces",
     .fxn  = (*_command_spaces)
   },
+  [COMMAND_SECURITY] =              {
+    .name = "security", .icon = "🐾", .color = COLOR_WINDOW, .description = "Open Security",
+    .fxn  = (*_command_open_security)
+  },
   [COMMAND_DISPLAYS] =              {
     .name = "displays", .icon = "🐾", .color = COLOR_WINDOW, .description = "List Displays",
     .fxn  = (*_command_displays)
@@ -555,6 +563,9 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   },
   [COMMAND_FOCUSED_SPACE] =         {
     .fxn = (*_command_focused_space)
+  },
+  [COMMAND_EXTRACT_WINDOW] =        {
+    .fxn = (*_command_extract_window)
   },
   [COMMAND_CAPTURE_WINDOW] =        {
     .fxn = (*_command_capture_window)
@@ -787,6 +798,109 @@ static void _command_clear_icons_cache(){
   exit((clear_icons_cache() == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
+static void report_tesseract_extraction_results(struct tesseract_extract_result_t*r){
+        fprintf(stdout,
+          "|file:" AC_YELLOW "%s" AC_RESETALL "|mode:%lu|box#:%d"
+          "|x:%d|y:%d|w:%d|h:%d|confidence:%d"
+          "\n\t|text:" AC_GREEN "%s" AC_RESETALL "|"
+          "\n\t|window pid:%d|w:%d|h:%d|name:%s|space:%lu|display:%lu|"
+          "\n\t|file:%s|w:%d|h:%d|"
+          "\n\t|"AC_GREEN "Determined Area:  max x:%d|"
+          "\n                      min x offset perc: %f|"
+          "\n                      max x offset perc: %f|"
+          "\n                      min y offset perc: %f|"
+          "\n                      max y offset perc: %f|"
+          "\n             window min x offset pixels: %d|"
+          "\n             window max x offset pixels: %d|"
+          "\n             window min y offset pixels: %d|"
+          "\n             window max y offset pixels: %d|"
+          "%s",
+          r->file, r->mode, r->box, r->x, r->y, r->width, r->height, r->confidence, r->text,
+          r->window.pid,
+          (int)(r->window.rect.size.width),
+          (int)(r->window.rect.size.height),r->window.name,r->window.space_id,r->window.display_id,
+          r->source_file.file,
+          r->source_file.width,
+          r->source_file.height,
+          r->determined_area.max_x,
+          r->determined_area.x_min_offset_perc,
+          r->determined_area.x_max_offset_perc,
+          r->determined_area.y_min_offset_perc,
+          r->determined_area.y_max_offset_perc,
+          r->determined_area.x_min_offset_window_pixels,
+          r->determined_area.x_max_offset_window_pixels,
+          r->determined_area.y_min_offset_window_pixels,
+          r->determined_area.y_max_offset_window_pixels,
+          ""
+          );
+        return;
+}
+
+static bool parse_tesseract_extraction_results(struct tesseract_extract_result_t*r){
+    r->determined_area.x_max_offset_perc = (float)((float)((float)(r->x)/((float)(r->source_file.width))));
+    r->determined_area.x_min_offset_perc =     (r->determined_area.x_max_offset_perc)/2;
+    r->determined_area.y_min_offset_perc = (float)((float)((float)(r->y)/((float)(r->source_file.height))));
+    r->determined_area.y_max_offset_perc =  1;
+    r->determined_area.x_max_offset_window_pixels = (int)((r->determined_area.x_max_offset_perc)*(float)(r->window.rect.size.width));
+    r->determined_area.x_min_offset_window_pixels =   (r->determined_area.x_max_offset_window_pixels)/2;
+    r->determined_area.y_min_offset_window_pixels = (int)((r->determined_area.y_min_offset_perc)*(float)(r->window.rect.size.height));
+    r->determined_area.y_max_offset_window_pixels = (int)((r->determined_area.y_min_offset_perc)*(float)(r->window.rect.size.height));
+    return(true);
+}
+
+static void _command_open_security(){
+  struct tesseract_extract_result_t *r, *words;
+  size_t focused_window_id = (size_t)get_focused_window_id(), window_id;
+  assert(focused_window_id>0);
+  {
+    window_id = run_osascript_system_prefs();
+    assert(window_id>0);
+    focus_window_id(focused_window_id);
+    assert((size_t)get_focused_window_id()==focused_window_id);
+  }
+  {
+    words = get_security_words_v();
+    assert(vector_size(words)>0);
+    r = tesseract_find_window_matching_word_locations(window_id,words);
+  }
+  {
+    assert(minimize_window_id(window_id)==true);
+    assert(stbi_info(r->source_file.file,  &(r->source_file.width), &(r->source_file.height),&(r->source_file.stbi_format))==1);
+  }
+  {
+    assert(parse_tesseract_extraction_results(r)==true);
+    report_tesseract_extraction_results(r);
+  }
+  //struct Vector *tesseract_extract_results = tesseract_extract_text(window_id);
+/*
+  , *matches = vector_new();
+  //struct Vector *words = vector_new(), *matches = vector_new();
+  log_info("%lu", vector_size(tesseract_extract_results));
+  for (size_t i = 0; i < vector_size(tesseract_extract_results); i++) {
+    struct tesseract_extract_result_t *r = (struct tesseract_extract_result_t *)vector_get(tesseract_extract_results, i);
+    for (size_t I = 0; I < vector_size(words); I++) {
+      char                   *s;
+      asprintf(&s, "*%s*", stringfn_to_lowercase((char *)vector_get(words, I)));
+      //struct StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
+      bool                   m     = (wildcardcmp(s, stringfn_to_lowercase(r->text)) == 1);
+      //&& lines.count == 1) ? true : false;
+      //log_debug("%d|%s|%d|%s", m, r->text, lines.count, s);
+      if (m == true) {
+        log_debug(
+          "|file:" AC_YELLOW "%s" AC_RESETALL "|mode:%lu|box#:%d"
+          "|x:%d|y:%d|w:%d|h:%d|confidence:%d"
+          "|text:" AC_GREEN "%s" AC_RESETALL "|",
+          r->file, r->mode, r->box, r->x, r->y, r->width, r->height, r->confidence, r->text
+          );
+        vector_push(matches, (void *)r);
+      }
+    }
+  }
+  log_info("%lu", vector_size(matches));
+  */
+  return(EXIT_SUCCESS);
+}
+
 static void _command_app_icns_path(){
   bool ok                   = false;
   char *app_plist_info_path = get_app_path_plist_info_path(args->application_path);
@@ -960,6 +1074,14 @@ static void _command_debug_args(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_extract_window(){
+  log_info("Extracting window #%d", args->window_id);
+//  tesseract_extract_text(args->window_id);
+  // tesseract_extract_symbols(args->window_id);
+
+  exit(EXIT_SUCCESS);
+}
+
 static void _command_capture_window(){
   log_info("Capturing window #%d to %s with %s %d",
            args->window_id,
@@ -969,7 +1091,7 @@ static void _command_capture_window(){
         : common_option_width_or_height_name(args->width_or_height),
            args->width_or_height_group
            );
-  CGImageRef img_ref     = capture_window_id(args->window_id);
+  CGImageRef img_ref     = capture_type_capture(CAPTURE_TYPE_WINDOW, args->window_id);
   int        orig_width  = CGImageGetWidth(img_ref);
   int        orig_height = CGImageGetHeight(img_ref);
   if (args->width_or_height_group > 0) {
@@ -1232,10 +1354,9 @@ static void _command_focused_server(){
 
 static void _command_move_window(){
   struct window_t *w = get_window_id(args->window_id);
-
-  log_debug("moving window %lu to %dx%d", w->window_id, args->x, args->y);
-  move_window(w, args->x, args->y);
-  exit(EXIT_SUCCESS);
+  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+    log_debug("moving window %lu to %dx%d", w->window_id, args->x, args->y);
+  exit( (move_window_id(args->window_id, args->x, args->y) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_resize_window(){
@@ -1396,32 +1517,27 @@ static void _command_pid_is_minimized(){
 }
 
 static void _command_minimize_window(){
-  struct window_t *w = get_window_id(args->window_id);
-
-  log_debug("minimizing window %lu on space %d", w->window_id, w->space_id);
-  minimize_window(w);
-  exit(EXIT_SUCCESS);
+  exit((minimize_window_id(args->window_id)==true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_focus_window(){
-  struct window_t *w = get_window_id(args->window_id);
-
-  log_debug("focusing window %lu on space %d", w->window_id, w->space_id);
-  focus_window(w);
+  focus_window_id(args->window_id);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_set_window_all_spaces(){
+/*
   struct window_t *w = get_window_id(args->window_id);
 
   log_debug("moving window %lu from space %d to all spaces", w->window_id, w->space_id);
   set_window_active_on_all_spaces(w);
   exit(EXIT_SUCCESS);
+*/
 }
-
 static void _command_set_window_space(){
-  struct window_t *w = get_window_id(args->window_id);
-
+  log_info("%d|%d",args->window_id,args->space_id);
+  exit(    ((set_window_id_to_space((size_t)(args->window_id),(int)(args->space_id)))==true) ? EXIT_SUCCESS : EXIT_FAILURE);
+/*
   log_debug("moving window %lu from space %d space %d", w->window_id, w->space_id, args->space_id);
   window_send_to_space(w, args->space_id);
   w = get_window_id(args->window_id);
@@ -1429,6 +1545,8 @@ static void _command_set_window_space(){
   log_debug("window %lu is now on space %d", w->window_id, w->space_id);
 
   exit(EXIT_SUCCESS);
+  */
+  //struct window_t *w = get_window_id(args->window_id);
 }
 
 static void _command_set_space(){
@@ -1556,4 +1674,10 @@ char *get_command_about(enum command_type_t COMMAND_ID){
   return(about);
 }
 
+static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
+    log_debug("Enabling Darwin Ls Debug Mode");
+    DARWIN_LS_COMMANDS_DEBUG_MODE = true;
+  }
+}
 #endif

@@ -20,6 +20,25 @@
 #include "which/src/which.h"
 #include "window-utils/window-utils.h"
 #include <libproc.h>
+#define CLOSE_SYSTEM_PREFERENCES                                           \
+    "if running of application \"System Preferences\" then\n"              \
+    "    try\n"                                                            \
+    "        tell application \"System Preferences\" to quit\n"            \
+    "    on error\n"                                                       \
+    "        do shell script \"killall 'System Preferences'\"\n"           \
+    "    end try\n"                                                        \
+    "    delay 0.1\n"                                                      \
+    "end if\n"                                                             \
+    "repeat while running of application \"System Preferences\" is true\n" \
+    "    delay 0.1\n"                                                      \
+    "end repeat\n"  
+#define OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD \
+    "tell application \"System Preferences\"\n"                              \
+    "    set securityPane to pane id \"com.apple.preference.security\"\n"    \
+    "    tell securityPane to reveal anchor \"Privacy_Accessibility\"\n"     \
+    "    activate\n"                                                         \
+    "end tell\n"
+
 static bool PROCESS_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_PROCESS_UTILS") != NULL) {
@@ -173,17 +192,72 @@ struct process_info_t *get_process_info(int pid){
   return(I);
 } /* get_process_info */
 
+int get_focused_window_id(){
+    int            focused_pid = get_focused_pid();
+    AXUIElementRef focused_app = AXUIElementCreateApplication(focused_pid);
+    CFTypeRef      window_ref  = NULL;
+
+    AXUIElementCopyAttributeValue(focused_app, kAXFocusedWindowAttribute, &window_ref);
+    if (!window_ref) {
+      return(0);
+    }
+
+    int window_id = (int)ax_window_id(window_ref);
+
+    CFRelease(window_ref);
+
+    return(window_id);
+}
+
+
+  size_t run_osascript_system_prefs(){
+    size_t wid = 0;
+    bool found = false;
+    assert(run_osascript(CLOSE_SYSTEM_PREFERENCES) == true);
+    struct Vector *pre_window_infos_v = get_window_infos_v();
+    assert(run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD) == true);
+    struct Vector *post_window_infos_v = get_window_infos_v();
+    assert(vector_size(post_window_infos_v)>vector_size(pre_window_infos_v));
+    if (PROCESS_UTILS_DEBUG_MODE) {
+      log_info("%lu pre windows|%lu post windows", vector_size(pre_window_infos_v), vector_size(post_window_infos_v));
+    }
+    for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
+      for (size_t ii = 0; ii < vector_size(pre_window_infos_v); ii++) {
+        if (found == false && ((struct window_info_t *)vector_get(pre_window_infos_v, ii))->window_id == ((struct window_info_t *)vector_get(post_window_infos_v, i))->window_id) {
+          vector_remove(post_window_infos_v, i);
+        }
+      }
+    }
+    for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
+      struct window_info_t *w = (struct window_info_t *)vector_get(post_window_infos_v, i);
+      if (get_focused_pid() == w->pid && (size_t)get_focused_window_id() == (size_t)w->window_id) {
+        if (PROCESS_UTILS_DEBUG_MODE) {
+          log_info("New Window #%lu> %s|pid:%d|pos:%dx%d|size:%dx%d|displayid:%lu|space_id:%lu|",
+                   w->window_id, w->name, w->pid, (int)w->rect.origin.x, (int)w->rect.origin.y, (int)w->rect.size.width, (int)w->rect.size.height  ,
+                   w->display_id, w->space_id
+                   );
+        }
+        if (strcmp(w->name, "System Preferences") != 0 || strcmp(w->title, "Security & Privacy") != 0) {
+          continue;
+        }
+        if (w->window_id > wid) {
+          wid = w->window_id;
+        }
+      }
+    }
+    return(wid);
+  }
+
 bool run_osascript(char *OSASCRIPT_CONTENTS){
   bool     ok       = false;
   reproc_t *process = NULL;
   int      r        = REPROC_ENOMEM;
+  const char *cmd[] = { which("osascript"), NULL };
 
   process = reproc_new();
   if (process == NULL) {
     goto finish;
   }
-  const char *cmd[] = { "/usr/bin/osascript", NULL };
-
   r = reproc_start(process, cmd, (reproc_options){ .redirect.err.type = REPROC_REDIRECT_STDOUT, .deadline = 1000 });
   if (r < 0) {
     goto finish;
@@ -203,8 +277,7 @@ finish:
   if (r < 0) {
     fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
   }
-
-  log_info("ran osascript with result %d", r);
-
+  if(PROCESS_UTILS_DEBUG_MODE)
+    log_info("ran osascript with result %d", r);
   return(ok);
 }

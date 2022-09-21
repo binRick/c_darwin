@@ -11,7 +11,7 @@ capture_utils_include_dirs = [
 
 capture_utils_deps = [
   space_utils_dep,window_utils_dep,display_utils_dep,screen_utils_dep,
-  ansi_codes_dep,
+  ansi_codes_dep,cache_utils_dep,b64_dep,image_utils_dep,fs_c_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,

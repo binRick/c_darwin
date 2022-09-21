@@ -145,8 +145,6 @@ void set_window_flags(struct window_t *w, enum window_flag_t flags);
 void get_window_tags(struct window_t *w);
 void focus_window_id(size_t WINDOW_ID);
 void focus_window(struct window_t *w);
-void minimize_window_id(size_t WINDOW_ID);
-void minimize_window(struct window_t *w);
 void make_key_window(struct window_t *w);
 
 bool get_window_is_focused(struct window_t *w);
@@ -187,7 +185,9 @@ void MoveWindow(CFDictionaryRef window, void *ctxPtr);
 int get_windows_qty(void);
 struct Vector *get_window_ids(void);
 struct Vector *get_windows();
-void move_window_id(const int WINDOW_ID, const int X, const int Y);
+bool move_window_id(size_t window_id, const int X, const int Y);
+bool minimize_window_id(size_t window_id);
+bool set_window_id_to_space(size_t window_id, int space_id);
 char *get_window_id_title(const int WINDOW_ID);
 CFDictionaryRef window_id_to_window(const int WINDOW_ID);
 struct window_t *get_pid_window(const int PID);
@@ -195,7 +195,6 @@ bool resize_window(struct window_t *w, const int WIDTH, const int HEIGHT);
 bool move_window(struct window_t *w, const int X, const int Y);
 struct window_t *get_focused_window();
 uint32_t display_active_display_id(void);
-int get_focused_window_id();
 ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);
 int get_window_id_pid(int window_id);
 int get_window_id_level(size_t window_id);
@@ -216,7 +215,6 @@ CGImageRef capture_window(struct window_t *window);
 ///////////////////////////////////////////////////
 unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
 bool save_cgref_to_png_file(CGImageRef image, char *filename);
-void run_osascript_system_prefs();
 int get_window_id_display_id(size_t window_id);
 CGImageRef preview_window_id(size_t window_id);
 ///////////////////////////////////////////////////

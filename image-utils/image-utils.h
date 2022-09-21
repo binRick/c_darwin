@@ -83,5 +83,6 @@ bool save_cgref_to_qoi_file(CGImageRef image_ref, char *image_file);
 unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality);
+CGImageRef png_fp_to_cgimage(FILE *fp);
 unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgba_pixels, int width, int height, int min_quality, int max_quality, size_t *len);
 #endif

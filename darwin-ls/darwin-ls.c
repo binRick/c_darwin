@@ -1,5 +1,6 @@
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls.h"
+#include "icons/icons.h"
 #include "memory_leak_detector/leak.h"
 ////////////////////////////////////////////
 
@@ -51,6 +52,16 @@ int main(int argc, char **argv) {
         .function    = optparse_print_help_subcmd,
       },
       {
+        .name        = "extract-window",
+        .description = "Extract Window",
+        .function    = cmds[COMMAND_EXTRACT_WINDOW].fxn,
+        .about       = "🙀" "\t" COLOR_CAPTURE "Extract Window Screenshot" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "capture-window",
         .description = "Capture Window",
         .function    = cmds[COMMAND_CAPTURE_WINDOW].fxn,
@@ -94,6 +105,12 @@ int main(int argc, char **argv) {
         .description = cmds[COMMAND_KITTYS].description,
         .function    = cmds[COMMAND_KITTYS].fxn,
         .about       = get_command_about(COMMAND_KITTYS),
+      },
+      {
+        .name        = cmds[COMMAND_SECURITY].name,
+        .description = cmds[COMMAND_SECURITY].description,
+        .function    = cmds[COMMAND_SECURITY].fxn,
+        .about       = get_command_about(COMMAND_SECURITY),
       },
       {
         .name        = "processes",

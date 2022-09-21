@@ -123,3 +123,4 @@ bool kitty_clear_screen(void);
 void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG);
 char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT);
 struct Vector *kitty_get_color_types(const char *HOST, const int PORT);
+char *kitty_icat(char *file);

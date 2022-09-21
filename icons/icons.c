@@ -3,6 +3,7 @@
 #define ICONS_C
 ////////////////////////////////////////////
 #include "icons/icons.h"
+#include "icons/inc.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
@@ -10,6 +11,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "icons/inc.h"
 #include "incbin/incbin.h"
 #include "log/log.h"
 #include "ms/ms.h"
@@ -24,8 +26,8 @@ static void __attribute__((constructor)) __constructor__icons(void){
     ICONS_DEBUG_MODE = true;
   }
   if (ICONS_DEBUG_MODE) {
-    // log_info("Loaded %lu Icons", icons_qty);
   }
+  log_info("Loaded %lu Icons", sizeof(icon_names) / sizeof(icon_names[0]));
 }
 ////////////////////////////////////////////
 #endif

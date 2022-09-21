@@ -28,8 +28,16 @@ struct capture_type_t {
   CGImageRef    (^preview)(size_t id);
   struct Vector *(^get_items)(void);
 };
+struct cached_capture_item_t {
+  unsigned char *pixels;
+  size_t        size;
+};
 //////////////////////////////////////
+char *capture_type_capture_png_random_file(enum capture_type_id_t capture_type_id, size_t capture_id);
+bool capture_type_capture_png_file(enum capture_type_id_t capture_type_id, size_t capture_id, char *file);
 struct capture_type_t capture_types[];
+char *capture_type_hash_key(enum capture_type_id_t capture_type_id, size_t capture_id);
+size_t capture_type_hash(enum capture_type_id_t capture_type_id, size_t capture_id);
 bool capture_type_validate_id(enum capture_type_id_t capture_type_id, size_t capture_id);
 size_t capture_type_get_default_id(enum capture_type_id_t capture_type_id);
 size_t capture_type_validate_id_or_get_default_id(enum capture_type_id_t capture_type_id, size_t capture_id);

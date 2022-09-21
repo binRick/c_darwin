@@ -38,13 +38,17 @@ static void __attribute__((constructor)) __constructor__websocket_server(void){
   assert(libforks_start(&conn_websocket_mon) == libforks_OK);
   pid_t fork_mon_pid = libforks_get_server_pid(conn_websocket_mon);
   assert(fork_mon_pid > 0);
-  log_info(AC_YELLOW "Mon Server> Fork server with pid %d created"AC_RESETALL, fork_mon_pid);
+  if (WEBSOCKET_SERVER_DEBUG_MODE) {
+    log_info(AC_YELLOW "Mon Server> Fork server with pid %d created"AC_RESETALL, fork_mon_pid);
+  }
 
   assert(libforks_start(&conn_websocket_server) == libforks_OK);
   pid_t fork_server_pid = libforks_get_server_pid(conn_websocket_server);
 
   assert(fork_server_pid > 0);
-  log_info(AC_YELLOW "Websocket Server> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  if (WEBSOCKET_SERVER_DEBUG_MODE) {
+    log_info(AC_YELLOW "Websocket Server> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  }
   signal(SIGTERM, handle_sigterm);
 }
 
@@ -55,41 +59,45 @@ struct session_t {
   pid_t                     pid;
   size_t                    bytes_read, bytes_written, sent_msgs, recvd_msgs;
   struct websocket_config_t *c;
-  int mypipe;
+  int                       mypipe;
 };
-void write_to_pipe(int file,char *msg)     {
+
+void write_to_pipe(int file, char *msg) {
   FILE *stream;
+
   stream = fdopen(file, "w");
-  fprintf(stream, "%s\n",msg);
+  fprintf(stream, "%s\n", msg);
   fclose(stream);
 }
-int _read_from_pipe(void *f){
-  int file = (int)(size_t)f;
-  FILE *stream;
-  int  c;
-  char *m;
-    struct StringBuffer *sb;
 
-    stream = fdopen(file, "r");
-    sb = stringbuffer_new();
-    while ((c = fgetc(stream)) != EOF){
-        stringbuffer_append(sb, c);
-    }
-    if(strlen(stringbuffer_to_string(sb))>0){
-      m = stringbuffer_to_string(sb);
-      log_info("READ> %s",m);
-    }
-    fclose(stream);
-    stringbuffer_release(sb);
+int _read_from_pipe(void *f){
+  int                 file = (int)(size_t)f;
+  FILE                *stream;
+  int                 c;
+  char                *m;
+  struct StringBuffer *sb;
+
+  stream = fdopen(file, "r");
+  sb     = stringbuffer_new();
+  while ((c = fgetc(stream)) != EOF) {
+    stringbuffer_append(sb, c);
+  }
+  if (strlen(stringbuffer_to_string(sb)) > 0) {
+    m = stringbuffer_to_string(sb);
+    log_info("READ> %s", m);
+  }
+  fclose(stream);
+  stringbuffer_release(sb);
   return(0);
 }
-char *read_from_pipe(int file)   {
+
+char *read_from_pipe(int file) {
   pthread_t th;
-  pthread_create(&th, NULL, _read_from_pipe, (void*)file);
-  pthread_join(&th,NULL);
+
+  pthread_create(&th, NULL, _read_from_pipe, (void *)file);
+  pthread_join(&th, NULL);
   return(NULL);
 }
-
 
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
@@ -452,7 +460,7 @@ static void on_msg_recv_callback(wslay_event_context_ptr                  ctx,
       log_error("Failed to queue msg: %d", ok);
     }
     log_debug("%lu queued msgs", wslay_event_get_queued_msg_length(ctx));
-    asprintf(&m,"<%d>  recv|%s|%lu|%d|%d|", getpid(), arg->msg, arg->msg_length, arg->opcode, arg->status_code);
+    asprintf(&m, "<%d>  recv|%s|%lu|%d|%d|", getpid(), arg->msg, arg->msg_length, arg->opcode, arg->status_code);
     //write_to_pipe(session->mypipe,m);
     struct wslay_event_msg msgarg = { arg->opcode, arg->msg, arg->msg_length };
     wslay_event_queue_msg(ctx, &msgarg);
@@ -460,14 +468,13 @@ static void on_msg_recv_callback(wslay_event_context_ptr                  ctx,
   }
 }
 
-
 /*
  * Communicate with the client. This function performs HTTP handshake
  * and WebSocket data transfer until close handshake is done or an
  * error occurs. *fd* is the file descriptor of the connection to the
  * client. This function returns 0 if it succeeds, or returns 0.
  */
-static int communicate(int fd, void *C,int mypipe){
+static int communicate(int fd, void *C, int mypipe){
   struct websocket_config_t *c = (struct websocket_config_t *)C;
   char                      *msg;
 
@@ -488,7 +495,7 @@ static int communicate(int fd, void *C,int mypipe){
     .bytes_read    = 0,
     .bytes_written = 0,
     .c             = c,
-    .mypipe = mypipe,
+    .mypipe        = mypipe,
   };
 
   uuid4_generate(session.uuid);
@@ -570,9 +577,11 @@ static int communicate(int fd, void *C,int mypipe){
  */
 static void __attribute__((noreturn)) serve(int sfd, void *C){
   struct websocket_config_t *c = (struct websocket_config_t *)C;
+
   while (1) {
     int fd;
-    while ((fd = accept(sfd, NULL, NULL)) == -1 && errno == EINTR) {}
+    while ((fd = accept(sfd, NULL, NULL)) == -1 && errno == EINTR) {
+    }
     int mypipe[2];
     if (pipe(mypipe)) {
       fprintf(stderr, "Pipe failed.\n");
@@ -587,7 +596,7 @@ static void __attribute__((noreturn)) serve(int sfd, void *C){
         close(fd);
       } else if (r == 0) {
         close(mypipe[0]);
-        r = communicate(fd, c,mypipe[1]);
+        r = communicate(fd, c, mypipe[1]);
         shutdown(fd, SHUT_WR);
         close(fd);
         if (r == 0) {
@@ -598,7 +607,7 @@ static void __attribute__((noreturn)) serve(int sfd, void *C){
       }else{
         log_info("child pid %d", r);
         close(mypipe[1]);
-          //read_from_pipe(mypipe[0]);
+        //read_from_pipe(mypipe[0]);
       }
     }
   }

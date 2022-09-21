@@ -128,6 +128,10 @@ TEST t_kitty_module_iterate_pids(void){
   PASSm(msg);
 }
 
+TEST t_kitty_module_icat(void){
+  kitty_icat("/tmp/a.png");
+}
+
 TEST t_kitty_module_parse_listen_ons(void){
   struct StringBuffer *sb = stringbuffer_new();
 
@@ -162,6 +166,7 @@ TEST t_kitty_module_listen_ons(void){
 }
 
 SUITE(s_kitty_pid_tests){
+  RUN_TEST(t_kitty_module_icat);
   RUN_TEST(t_kitty_module_pids);
   RUN_TEST(t_kitty_module_pids_env);
   RUN_TEST(t_kitty_module_pids_cmdline);

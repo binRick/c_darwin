@@ -18,7 +18,7 @@ tesseract_test_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
-  leptonica_dep,
+  leptonica_dep,capture_utils_dep,
   tesseract_dep,
   stb_dep,
   space_utils_dep,
