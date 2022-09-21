@@ -26,7 +26,7 @@ const char   *KITTY_ESC_CHECK_TERMINAL_CAPS          = "\x1b_Ga=q,s=1,v=1,i=1;YW
 const char   *KITTY_ESC_DELETE_ALL_VISIBLE_PLAYMENTS = "\x1b_Ga=d\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE                   = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
 const char   *KITTY_ESC_DRAW_IMAGE1                  = "\x1b_Ga=T,f=100,s=192,v=192,X=4,t=f;L1VzZXJzL3JpY2svdGlnci90aWdyLnBuZw==\x1b\\";
-const char   *KITTY_ESC_QUERY_BG_COLOR = "\033]11;?\033\\";
+const char   *KITTY_ESC_QUERY_BG_COLOR               = "\033]11;?\033\\";
 static bool vector_contains_pid(struct Vector *pids_v, int pid);
 
 bool kitty_set_tab_color(char *MODE, char *COLOR){

@@ -58,18 +58,19 @@ static char *get_axerror_name(AXError err);
 ///////////////////////////////////////////////////////////////////////////////
 
 bool minimize_window_id(size_t window_id){
-  assert(window_id>0);
+  assert(window_id > 0);
   struct window_info_t *W = get_window_id_info(window_id);
   assert(W->window_id == window_id);
-  AXUIElementRef app = AXWindowFromCGWindow(W->window);
-  CFTypeRef       value;
+  AXUIElementRef       app = AXWindowFromCGWindow(W->window);
+  CFTypeRef            value;
   if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &value) != kAXErrorSuccess) {
     log_error("Failed to copy attrs");
     return(false);
   }
   if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
-    if(WINDOW_UTILS_DEBUG_MODE)
+    if (WINDOW_UTILS_DEBUG_MODE) {
       log_info("Set minimized property");
+    }
   }else{
     log_error("Failed to set minimized property");
     return(false);
@@ -270,17 +271,6 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   free(pid_s);
 
   return(foundAppWindow);
-}
-
-int get_window_id_display_id(size_t window_id){
-  CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window_id);
-  CFUUIDRef   uuid  = CFUUIDCreateFromString(NULL, _uuid);
-
-  CFRelease(_uuid);
-  int id = CGDisplayGetDisplayIDFromUUID(uuid);
-
-  CFRelease(uuid);
-  return(id);
 }
 
 int get_window_display_id(struct window_t *window){
@@ -627,7 +617,6 @@ void get_window_tags(struct window_t *w){
   }
 }
 
-
 void focus_window_id(size_t WINDOW_ID){
   return(focus_window(get_window_id(WINDOW_ID)));
 }
@@ -887,14 +876,17 @@ void window_id_send_to_space(size_t window_id, uint64_t dsid) {
 }
 
 bool set_window_id_to_space(size_t window_id, int space_id) {
-  uint32_t   wid         = (uint32_t)window_id;
-  uint64_t   sid         = (uint64_t)space_id;
-  log_info("%lu|%lld",window_id,sid);
+  uint32_t wid = (uint32_t)window_id;
+  uint64_t sid = (uint64_t)space_id;
+
+  log_info("%lu|%lld", window_id, sid);
   CFArrayRef wids = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+
   SLSMoveWindowsToManagedSpace(CGSMainConnectionID(), wids, (uint64_t)space_id);
-  log_info("%lu|%d",window_id,space_id);
+  log_info("%lu|%d", window_id, space_id);
   return(true);
 }
+
 void window_send_to_space(struct window_t *window, uint64_t dsid) {
   uint32_t   wid         = (uint32_t)window->window_id;
   CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
@@ -975,17 +967,6 @@ bool get_window_is_popover(struct window_t *w){
   return(result);
 }
 
-pid_t ax_window_pid(AXUIElementRef ref){
-  return(*(pid_t *)((void *)ref + 0x10));
-}
-
-uint32_t ax_window_id(AXUIElementRef ref){
-  uint32_t wid = 0;
-
-  _AXUIElementGetWindow(ref, &wid);
-  return(wid);
-}
-
 void move_current_window(int center, int x, int y, int w, int h){
   AXValueRef     temp;
   AXUIElementRef current_app = get_frontmost_app();
@@ -1024,127 +1005,6 @@ void move_current_window(int center, int x, int y, int w, int h){
   CFRelease(temp);
 }
 
-#define WINDOW_DICTIONARY_INIT_WINDOW_LIST()                                                                                                   \
-  unsigned long started = timestamp();                                                                                                         \
-  int           focused_pid       = get_focused_pid();                                                                                         \
-  int           focused_window_id = get_focused_window_id();                                                                                   \
-  CFArrayRef    windows_list      = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements | kCGWindowListOptionAll, kCGNullWindowID); \
-  size_t        windows_count     = (size_t)CFArrayGetCount(windows_list);                                                                     \
-  struct Vector *window_infos_v   = vector_new();
-
-#define WINDOW_DICTIONARY_INFO_REFS(DICT)                                                \
-  CFStringRef name_ref = CFDictionaryGetValue(DICT, kCGWindowOwnerName);                 \
-  CFNumberRef     pid_ref           = CFDictionaryGetValue(DICT, kCGWindowOwnerPID);     \
-  CFStringRef     title_ref         = CFDictionaryGetValue(DICT, kCGWindowName);         \
-  CFNumberRef     layer_ref         = CFDictionaryGetValue(DICT, kCGWindowLayer);        \
-  CFNumberRef     window_id_ref     = CFDictionaryGetValue(DICT, kCGWindowNumber);       \
-  CFDictionaryRef window_bounds     = CFDictionaryGetValue(DICT, kCGWindowBounds);       \
-  CFNumberRef     memory_usage_ref  = CFDictionaryGetValue(DICT, kCGWindowMemoryUsage);  \
-  CFNumberRef     sharing_state_ref = CFDictionaryGetValue(DICT, kCGWindowSharingState); \
-  CFNumberRef     store_type_ref    = CFDictionaryGetValue(DICT, kCGWindowStoreType);    \
-  CFBooleanRef    is_onscreen_ref   = CFDictionaryGetValue(DICT, kCGWindowIsOnscreen);   \
-  CFDictionaryRef window            = CFDictionaryCreateCopy(NULL, DICT);                \
-  AXUIElementRef  *app;
-
-#define WINDOW_DICTIONARY_VALIDATE_INFO_REFS() \
-  if (!name_ref || !title_ref || !pid_ref || !layer_ref || !window_id_ref) continue;
-
-#define WINDOW_DICTIONARY_INIT_ITEMS()                               \
-  uint64_t window_id = 0, sharing_state = 0, store_type = 0;         \
-  long long int        layer = 0, memory_usage = 0, pid = 0;         \
-  bool                 is_onscreen = false, is_focused;              \
-  char                 *name = NULL, *title = NULL;                  \
-  struct window_info_t *i = calloc(1, sizeof(struct window_info_t)); \
-  i->started = timestamp();
-
-#define WINDOW_DICTIONARY_SET_ITEMS()                                                                                           \
-  CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);                                                              \
-  CFNumberGetValue(memory_usage_ref, CFNumberGetType(memory_usage_ref), &memory_usage);                                         \
-  CGRect bounds;                                                                                                                \
-  CFNumberGetValue(store_type_ref, CFNumberGetType(store_type_ref), &store_type);                                               \
-  CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state);                                      \
-  CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);                                                  \
-  CFNumberGetValue(pid_ref, CFNumberGetType(pid_ref), &pid);                                                                    \
-  app                              = AXUIElementCreateApplication(pid);                                                         \
-  if (is_onscreen_ref) is_onscreen = CFBooleanGetValue(is_onscreen_ref);                                                        \
-  CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);                                                               \
-  name                 = cfstring_copy(name_ref);                                                                               \
-  is_focused           = ((size_t)focused_pid == (size_t)pid && (size_t)focused_window_id == (size_t)window_id) ? true : false; \
-  if (title_ref) title = cfstring_copy(title_ref);
-
-#define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS() \
-  if (!name || strlen(name) < 1 || pid < 1 || !title) { free(i);  continue; }
-
-#define WINDOW_DICTIONARY_SET_WINDOW_INFO()                                                     \
-  i->name          = (name != NULL) ? strdup(name) : "";                                        \
-  i->title         = (title != NULL) ? strdup(title) : "";                                      \
-  i->window_id     = (size_t)window_id;                                                         \
-  i->memory_usage  = (size_t)memory_usage;                                                      \
-  i->pid           = (pid_t)pid;                                                                \
-  i->app           = &app;                                                                      \
-  i->window        = window;                                                                    \
-  i->layer         = (int)layer;                                                                \
-  i->sharing_state = (int)sharing_state;                                                        \
-  i->store_type    = (int)store_type;                                                           \
-  i->is_onscreen   = is_onscreen;                                                               \
-  i->is_focused    = is_focused;                                                                \
-  i->rect          = (CGRect)bounds;                                                            \
-  i->display_id    = (size_t)get_window_id_display_id(i->window_id);                            \
-  i->dur           = timestamp() - i->started;                                                  \
-  int        wid             = (int)(i->window_id);                                             \
-  CFArrayRef window_list_ref = cfarray_of_cfnumbers(&wid, sizeof(int), 1, kCFNumberSInt32Type); \
-  CFArrayRef space_list_ref  = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);     \
-  int        space_qty       = CFArrayGetCount(space_list_ref);                                 \
-  int        space_id        = 0;                                                               \
-  if (space_qty == 1) {                                                                         \
-    CFNumberRef id_ref = CFArrayGetValueAtIndex(space_list_ref, 0);                             \
-    CFNumberGetValue(id_ref, CFNumberGetType(id_ref), &space_id);                               \
-    i->space_id = (size_t)(space_id);                                                           \
-  }                                                                                             \
-  if (WINDOW_UTILS_DEBUG_MODE)                                                                  \
-  log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);
-
-#define WINDOW_DICTIONARY_APPEND_WINDOW_INFO() \
-  vector_push(window_infos_v, (void *)i);
-
-#define WINDOW_DICTIONARY_PRINT_ITEMS(FILE_DESCRIPTOR)                        \
-  fprintf(FILE_DESCRIPTOR,                                                    \
-          " name:%s,window id:%lld,pid:%lld,title:%s,layer:%lld,"             \
-          "  size:%dx%d,pos:%dx%d,mem:%lld,sharingstate:%lld,storetype:%lld," \
-          "  onscreen:%s,"                                                    \
-          "\n",                                                               \
-          name,                                                               \
-          window_id,                                                          \
-          pid,                                                                \
-          title,                                                              \
-          layer,                                                              \
-          (int)bounds.size.height, (int)bounds.size.width,                    \
-          (int)bounds.origin.x, (int)bounds.origin.y,                         \
-          memory_usage,                                                       \
-          sharing_state,                                                      \
-          store_type,                                                         \
-          is_onscreen?"Yes":"No"                                              \
-          );
-
-#define WINDOW_DICTIONARY_FREE_ITEMS() \
-  if (name) free(name);                \
-  if (title) free(title);
-
-struct Vector *get_window_pid_infos(pid_t pid){
-  struct Vector *window_infos_v     = get_window_infos_v();
-  struct Vector *pid_window_infos_v = vector_new();
-
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    struct window_info_t *wi = (struct window_info_t *)vector_get(window_infos_v, i);
-    if (wi->pid == pid) {
-      vector_push(pid_window_infos_v, (void *)wi);
-    }else{
-      free(wi);
-    }
-  }
-  return(pid_window_infos_v);
-}
-
 struct window_info_t *get_focused_window_info(){
   struct Vector        *window_infos_v = get_window_infos_v();
   struct window_info_t *window_info    = NULL;
@@ -1172,32 +1032,6 @@ struct window_info_t *get_window_id_info(size_t window_id){
     }
   }
   return(window_info);
-}
-
-struct Vector *get_window_infos_v(){
-  WINDOW_DICTIONARY_INIT_WINDOW_LIST()
-  for (size_t i = 0; i < windows_count; ++i) {
-    CFDictionaryRef dictionary = CFArrayGetValueAtIndex(windows_list, i);
-    if (!dictionary) {
-      continue;
-    }
-    WINDOW_DICTIONARY_INIT_ITEMS()
-    WINDOW_DICTIONARY_INFO_REFS(dictionary)
-    WINDOW_DICTIONARY_VALIDATE_INFO_REFS()
-    WINDOW_DICTIONARY_SET_ITEMS()
-    WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS()
-    WINDOW_DICTIONARY_SET_WINDOW_INFO()
-    WINDOW_DICTIONARY_APPEND_WINDOW_INFO()
-    WINDOW_DICTIONARY_FREE_ITEMS()
-  }
-  CFRelease(windows_list);
-  if (WINDOW_UTILS_VERBOSE_DEBUG_MODE) {
-    log_debug("Collected %lu Window Infos in %s",
-              vector_size(window_infos_v),
-              milliseconds_to_string(timestamp() - started)
-              );
-  }
-  return(window_infos_v);
 }
 
 void print_all_window_items(FILE *rsp) {
@@ -1493,14 +1327,18 @@ CGRect get_resized_window_info_rect_by_factor(struct window_info_t *w, float wid
 
 bool move_window_id(size_t window_id, const int X, const int Y){
   CGPoint newPosition;
+
   newPosition.x = X;
   newPosition.y = Y;
   struct window_info_t *w = get_window_id_info(window_id);
-  assert(w->window_id==window_id);
+
+  assert(w->window_id == window_id);
   AXUIElementRef app = AXWindowFromCGWindow(w->window);
+
   AXWindowSetPosition(app, newPosition);
   return(true);
 }
+
 bool move_window(struct window_t *w, const int X, const int Y){
   CGPoint newPosition;
 
@@ -1565,7 +1403,6 @@ char *get_window_id_title(const int WINDOW_ID){
   sprintf(window_title, "Window #%d", WINDOW_ID);
   return(window_title);
 }
-
 
 void MoveWindow(CFDictionaryRef window, void *ctxPtr) {
   MoveWinCtx     *ctx = (MoveWinCtx *)ctxPtr;
@@ -2095,4 +1932,3 @@ io_service_t IOFramebufferPortFromCGDisplayID(CGDirectDisplayID displayID, CFStr
     break;
   }
 } /* IOFramebufferPortFromCGDisplayID */
-

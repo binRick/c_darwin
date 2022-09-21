@@ -39,4 +39,9 @@ struct Vector *get_all_process_infos_v();
 bool run_osascript(char *OSASCRIPT_CONTENTS);
 size_t run_osascript_system_prefs();
 int get_focused_window_id();
+uint32_t ax_window_id(AXUIElementRef ref);
+pid_t ax_window_pid(AXUIElementRef ref);
+struct Vector *get_window_infos_v();
+struct Vector *get_window_pid_infos(pid_t pid);
+int get_window_id_display_id(size_t window_id);
 #endif

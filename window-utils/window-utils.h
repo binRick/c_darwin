@@ -161,8 +161,6 @@ int get_window_layer(struct window_t *w);
 CFStringRef get_window_role_ref(struct window_t *w);
 bool get_window_is_popover(struct window_t *w);
 int get_window_connection_id(struct window_t *w);
-pid_t ax_window_pid(AXUIElementRef ref);
-uint32_t ax_window_id(AXUIElementRef ref);
 CFStringRef get_active_display_uuid(void);
 bool window_is_excluded(struct window_t *w);
 bool get_window_is_focused(struct window_t *w);
@@ -199,9 +197,7 @@ ProcessSerialNumber get_window_ProcessSerialNumber(struct window_t *w);
 int get_window_id_pid(int window_id);
 int get_window_id_level(size_t window_id);
 void print_all_window_items(FILE *rsp);
-struct Vector *get_window_infos_v(void);
 struct window_info_t *get_window_id_info(size_t window_id);
-struct Vector *get_window_pid_infos(pid_t pid);
 struct window_info_t *get_focused_window_info();
 bool resize_window_info(struct window_info_t *w, const int WIDTH, const int HEIGHT);
 bool move_window_info(struct window_info_t *w, const int X, const int Y);
@@ -215,7 +211,6 @@ CGImageRef capture_window(struct window_t *window);
 ///////////////////////////////////////////////////
 unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
 bool save_cgref_to_png_file(CGImageRef image, char *filename);
-int get_window_id_display_id(size_t window_id);
 CGImageRef preview_window_id(size_t window_id);
 ///////////////////////////////////////////////////
 #endif

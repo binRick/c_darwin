@@ -18,14 +18,43 @@ process_utils_deps = [
   bytes_dep,
   ms_dep,
   process_dep,
-  string_utils_dep,
+  string_utils_dep,string_utils_dep,frameworks_dep,
   timestamp_dep,
   reproc_dep,which_dep,
 ]
 process_utils_link_flags = [
   osx_link_args,
+  '-F/System/Library/PrivateFrameworks',
+'-Wl,-framework,CoreFoundation',
+'-Wl,-framework,Carbon',
+'-Wl,-framework,ScriptingBridge',
+'-Wl,-framework,Foundation',
+'-Wl,-framework,CoreGraphics',
+'-Wl,-framework,Cocoa',
+'-Wl,-framework,Carbon',
+'-Wl,-framework,CoreServices',
+'-Wl,-framework,AppKit'
 ]
 
+
+
+process_utils_link_flags +=  ['-Wl,-framework,Foundation']
+process_utils_link_flags +=  ['-Wl,-framework,Security']
+process_utils_link_flags +=  ['-Wl,-framework,SkyLight']
+process_utils_link_flags +=  ['-Wl,-framework,ApplicationServices']
+process_utils_link_flags +=  ['-Wl,-framework,ScriptingBridge']
+process_utils_link_flags +=  ['-Wl,-framework,CoreFoundation']
+
+process_utils_link_flags +=  ['-Wl,-framework,SystemExtensions']
+process_utils_link_flags +=  ['-Wl,-framework,DeviceCheck']
+process_utils_link_flags +=  ['-Wl,-framework,Carbon']
+process_utils_link_flags +=  ['-Wl,-framework,Metal']
+process_utils_link_flags +=  ['-Wl,-framework,MetalKit']
+process_utils_link_flags +=  ['-Wl,-framework,QuartzCore']
+process_utils_link_flags +=  ['-Wl,-framework,ICADevices']
+process_utils_link_flags +=  ['-Wl,-framework,DeviceCheck']
+process_utils_link_flags +=  ['-Wl,-framework,AppKit']
+process_utils_link_flags +=  ['-Wl,-framework,IOKit']
 
 process_utils_lib = static_library('process-utils',
   process_utils_srcs,
