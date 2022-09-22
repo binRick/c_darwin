@@ -316,18 +316,12 @@ int get_focused_window_id(){
   i->name                                            = (name != NULL) ? strdup(name) : "";                           \
   i->title                                           = (title != NULL) ? strdup(title) : "";                         \
   i->memory_usage                                    = (size_t)memory_usage;                                         \
-  i->is_minimized                                    = false;                                                        \
+  i->is_minimized  =false;\
   i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].started = timestamp();                                                  \
   errno                                              = 0;                                                            \
-  if (                                                                                                               \
-    AXUIElementCopyAttributeValue(                                                                                   \
-      (i->window), kAXMinimizedAttribute, &is_minimized_ref                                                          \
-      ) == kAXErrorSuccess                                                                                           \
-    ) {                                                                                                              \
-    i->is_minimized = CFBooleanGetValue(is_minimized_ref);                                                           \
-  }else{                                                                                                             \
-    /*log_error("error checking minimized state");*/                                                                 \
-  }                                                                                                                  \
+  AXError         err = AXUIElementCopyAttributeValue( (i->window), kAXMinimizedAttribute, &is_minimized_ref );\
+    if (err == kAXErrorSuccess)\
+      i->is_minimized = CFBooleanGetValue(is_minimized_ref);\
   i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].dur = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].started; \
   i->layer                                       = (int)layer;                                                       \
   i->sharing_state                               = (int)sharing_state;                                               \

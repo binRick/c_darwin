@@ -121,7 +121,6 @@ static const char *window_levels[] = { "Base", "Minimum", "Desktop", "Backstop",
 int get_window_id_space_id(size_t window_id);
 bool get_pid_is_minimized(int pid);
 bool get_window_id_is_minimized(size_t window_id);
-bool get_window_is_minimized(struct window_t *w);
 struct Vector *get_window_ids_above_window(struct window_t *w);
 struct Vector *get_window_ids_below_window(struct window_t *w);
 struct Vector *get_window_space_ids_v(struct Vector *windows_v);
@@ -172,7 +171,6 @@ int window_layer(struct window_t *window);
 void window_set_layer(struct window_t *window, uint32_t layer);
 void window_id_send_to_space(size_t window_id, uint64_t dsid);
 void window_send_to_space(struct window_t *window, uint64_t dsid);
-bool get_window_is_minimized(struct window_t *w);
 int get_window_layer(struct window_t *w);
 CFStringRef get_window_role_ref(struct window_t *w);
 bool get_window_is_popover(struct window_t *w);

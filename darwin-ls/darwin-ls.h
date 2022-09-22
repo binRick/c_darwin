@@ -61,8 +61,10 @@ struct args_t {
   size_t                               icon_size;
   double                               resize_factor;
   char                                 *xml_file_path;
-  bool                                 clear_icons_cache;
-  int                                  pid;
+  bool                                 clear_icons_cache, minimized_only, non_minimized_only;
+  int                                  pid, display_id;
+  char *sort_direction, *application_name;
+  char *sort_key;
 };
 extern struct args_t *args;
 #endif

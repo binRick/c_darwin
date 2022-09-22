@@ -80,12 +80,60 @@ static void _check_input_png_file(char *input_png_file);
 static void _check_output_icns_file(char *output_icns_file);
 static void _check_input_icns_file(char *input_icns_file);
 static void _check_application_path(char *application_path);
+static void _check_application_name(char *application_name);
 static void _check_resize_factor(double resize_factor);
 static void _check_xml_file(char *xml_file_path);
 static void _check_icon_size(size_t icon_size);
 static void _check_pid(int pid);
+static void _check_sort_direction(char *sort_direction);
+static void _check_display_id(int display_id);
+static void _check_sort_key(char *sort_key);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
+  [COMMON_OPTION_SORT_KEY] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                             {
+      .short_name = 's',
+      .long_name = "sort-by",
+      .description = "Sort By Key Name",
+      .arg_name = "SORT-KEY-NAME",
+      .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
+      .arg_dest = &(args->sort_key),
+    });
+  },
+  [COMMON_OPTION_SORT_DIRECTION] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'd',
+      .long_name = "sort-direction",
+      .description = "Sort Direction (asc or desc)",
+      .arg_name = "SORT-DIRECTION",
+      .arg_data_type = check_cmds[CHECK_COMMAND_SORT_DIRECTION].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_SORT_DIRECTION].fxn,
+      .arg_dest = &(args->sort_direction),
+    });
+  },
+  [COMMON_OPTION_NON_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'm',
+      .long_name = "non-minimized",
+      .description = "Show Non Minimized Only",
+      .arg_data_type = check_cmds[CHECK_COMMAND_PID].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_PID].fxn,
+      .arg_dest = &(args->non_minimized_only),
+      .flag_type = FLAG_TYPE_SET_TRUE,
+    });
+  },
+  [COMMON_OPTION_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'm',
+      .long_name = "minimized",
+      .description = "Show Minimized Only",
+      .arg_data_type = check_cmds[CHECK_COMMAND_PID].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_PID].fxn,
+      .arg_dest = &(args->minimized_only),
+      .flag_type = FLAG_TYPE_SET_TRUE,
+    });
+  },
   [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args)                          {
     return((struct optparse_opt)                                                             {
       .short_name = 'p',
@@ -125,12 +173,23 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->icon_size),
     });
   },
-  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)             {
+  [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args)             {
     return((struct optparse_opt)                                                             {
       .short_name = 'a',
-      .long_name = "application",
-      .description = "Application",
-      .arg_name = "APPLICATION",
+      .long_name = "application-name",
+      .description = "Application Name",
+      .arg_name = "APPLICATION-NAME",
+      .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_PATH].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_APPLICATION_PATH].fxn,
+      .arg_dest = &(args->application_name),
+    });
+  },
+  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)             {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'P',
+      .long_name = "application-path",
+      .description = "Application Path",
+      .arg_name = "APPLICATION-PATH",
       .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_PATH].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_APPLICATION_PATH].fxn,
       .arg_dest = &(args->application_path),
@@ -330,6 +389,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width_or_height_group),
     });
   },
+  [COMMON_OPTION_DISPLAY_ID] = ^ struct optparse_opt (struct args_t *args)                     {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'd',
+      .long_name = "display-id",
+      .description = "Display ID",
+      .arg_name = "DISPLAY-ID",
+      .arg_data_type = DATA_TYPE_UINT16,
+      .arg_dest = &(args->display_id),
+    });
+  },
   [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)                     {
     return((struct optparse_opt)                                                             {
       .short_name = 's',
@@ -354,6 +423,10 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   [CHECK_COMMAND_ICON_SIZE] =        {
     .fxn           = (void (*)(void))(*_check_icon_size),
     .arg_data_type = DATA_TYPE_UINT64,
+  },
+  [CHECK_COMMAND_APPLICATION_NAME] = {
+    .fxn           = (void (*)(void))(*_check_application_name),
+    .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_APPLICATION_PATH] = {
     .fxn           = (void (*)(void))(*_check_application_path),
@@ -615,6 +688,23 @@ static void _check_resize_factor(double resize_factor){
   return(EXIT_SUCCESS);
 }
 
+static void _check_non_minimized_only(bool minimized_only){
+  return(EXIT_SUCCESS);
+}
+static void _check_minimized_only(bool minimized_only){
+  return(EXIT_SUCCESS);
+}
+static void _check_sort_direction(char *sort_direction){
+  if(strcmp(sort_direction,"desc")!=0 && strcmp(sort_direction,"asc") != 0){
+    errno = 0;
+    log_error("Invalid Sort Direction (must be asc or desc)");
+  }
+  return(EXIT_SUCCESS);
+}
+static void _check_sort_key(char *sort_key){
+  errno = 0;
+  return(EXIT_SUCCESS);
+}
 static void _check_pid(int pid){
   errno = 0;
   if (pid < 2) {
@@ -633,6 +723,9 @@ static void _check_icon_size(size_t icon_size){
   return(EXIT_SUCCESS);
 }
 
+static void _check_application_name(char *application_name){
+  return(EXIT_SUCCESS);
+}
 static void _check_application_path(char *application_path){
   if (fsio_dir_exists(application_path) == false) {
     log_error("Invalid Application Path '%s'", application_path);
@@ -1411,8 +1504,7 @@ static void _command_window_layer(){
 
 static void _command_window_is_minimized(){
   bool is_minimized = get_window_id_is_minimized((size_t)args->window_id);
-
-  log_debug("Window #%d is Minimized? %s", args->window_id, is_minimized ? "Yes" : "No");
+  log_debug("Window #%d is Minimized? %s", args->window_id, (is_minimized==true) ? "Yes" : "No");
   exit(EXIT_SUCCESS);
 }
 

@@ -8,17 +8,14 @@
 #include "ansi-codes/ansi-codes.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
-#include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
-#include "c_vector/vector/vector.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
 #include "log/log.h"
-#include "ms/ms.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process-utils/process-utils.h"
@@ -28,7 +25,6 @@
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "table-utils/table-utils.h"
-#include "timestamp/timestamp.h"
 #include "timestamp/timestamp.h"
 #include "window-info/window-info.h"
 ////////////////////////////////////////////
@@ -78,7 +74,6 @@ struct window_info_sort_t window_info_sorts[] = {
 };
 
 window_info_sort_function get_window_info_sort_function_from_key(const char *name, const char *direction){
-  log_info("%s", name);
   for (size_t i = 0; i < WINDOW_INFO_SORT_TYPES_QTY; i++) {
     if (strcmp(name, window_info_sorts[i].key) == 0 && strcmp(direction, window_info_sorts[i].direction) == 0) {
       return((window_info_sort_function)(window_info_sorts[i].function));

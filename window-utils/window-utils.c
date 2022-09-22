@@ -214,7 +214,7 @@ struct window_t *get_window_id(size_t WINDOW_ID){
   w->window_ids_above = get_window_ids_above_window(w);
   w->window_ids_below = get_window_ids_below_window(w);
   w->is_visible       = get_window_is_visible(w);
-  w->is_minimized     = get_window_is_minimized(w);
+  w->is_minimized     = get_window_id_is_minimized(w->window_id);
   w->is_focused       = get_window_is_focused(w);
   w->dur              = timestamp() - w->started;
   if (WINDOW_UTILS_VERBOSE_DEBUG_MODE == true) {
@@ -694,6 +694,9 @@ void minimize_window(struct window_t *w){
 }
 
 void focus_window(struct window_t *w){
+  if(w->is_minimized){
+    log_info("minimized window.....");
+  }
   if (w->space_id != get_space_id()) {
     if (WINDOW_UTILS_DEBUG_MODE == true) {
       log_info("changing space from %d to %d", get_space_id(), w->space_id);
@@ -819,7 +822,7 @@ bool get_window_is_visible(struct window_t *w){
   }
 
   if (result == true) {
-    if (get_window_is_minimized(w) == true) {
+    if (get_window_id_is_minimized(w->window_id) == true) {
       result = false;
     }
   }
@@ -914,42 +917,29 @@ static char *get_axerror_name(AXError err){
 }
 
 bool get_window_id_is_minimized(size_t window_id){
+  bool ret = false;
   bool            is_min = false;
   CFTypeRef       value;
-  struct window_t *w  = get_window_id(window_id);
-  AXError         err = AXUIElementCopyAttributeValue(w->app, kAXMinimizedAttribute, &value);
-
+  struct window_info_t *w  = get_window_id_info(window_id);
+  if(w->window_id != window_id)
+    return(false);
+  errno = 0;
+  AXUIElementRef app = AXWindowFromCGWindow(w->window);
+  AXError         err = AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &value);
   if (err == kAXErrorSuccess) {
     is_min = CFBooleanGetValue(value);
     CFRelease(value);
+    return(is_min);
   }else{
     log_error("Failed to copy minimized attribute for window ID #%lu. Error: %s",
               window_id,
               get_axerror_name(err)
               );
+  errno = 0;
   }
-  return(is_min);
+  return(ret);
 }
 
-bool get_window_is_minimized(struct window_t *w){
-  bool is_min = false;
-  int  space_minimized_window_qty;
-  int  spaces_qty = get_total_spaces();
-
-  for (int s = 1; s < spaces_qty && is_min == false; s++) {
-    uint32_t *minimized_window_list = get_space_minimized_window_list(s, &space_minimized_window_qty);
-    for (int i = 0; i < space_minimized_window_qty && is_min == false; i++) {
-      if (minimized_window_list[i] == (uint32_t)w->window_id) {
-        is_min = true;
-      }
-    }
-    if (minimized_window_list) {
-      free(minimized_window_list);
-    }
-  }
-
-  return(is_min);
-}
 
 CFStringRef get_window_role_ref(struct window_t *w){
   const void *role = NULL;
