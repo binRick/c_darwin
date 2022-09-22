@@ -15,7 +15,7 @@ window_utils_deps = [
   space_utils_dep,
   log_dep,image_utils_dep,
   ansi_codes_dep,display_utils_dep,
-  c_vector_dep,string_utils_dep,process_utils_dep,
+  c_vector_dep,string_utils_dep,window_info_dep,
   process_dep,app_utils_dep,image_utils_dep,
 ]
 window_utils_link_flags = [

@@ -510,3 +510,4 @@ static void __attribute__((constructor)) __constructor__process_utils(void){
     PROCESS_UTILS_DEBUG_MODE = true;
   }
 }
+#include "window-info/window-info.h"

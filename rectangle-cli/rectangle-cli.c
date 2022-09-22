@@ -206,3 +206,4 @@ static int parse_args(int argc, char *argv[]){
   }
   return(EXIT_SUCCESS);
 } /* parse_args */
+#include "window-info/window-info.h"

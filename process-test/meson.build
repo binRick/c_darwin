@@ -18,7 +18,7 @@ process_test_deps = [
   c_timer_dep,
   ansi_codes_dep,
   tiny_regex_c_dep,
-  socket99_dep,process_utils_dep,app_utils_dep,
+  socket99_dep,process_utils_dep,window_info_dep,app_utils_dep,
   c_string_buffer_dep,
   window_utils_dep,app_utils_dep,core_utils_dep,window_utils_dep,
   c_stringfn_dep,

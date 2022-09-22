@@ -27,7 +27,7 @@ darwin_ls_deps = [
   space_utils_dep,
   display_utils_dep,
   dock_utils_dep,output_utils_dep,
-  menu_bar_utils_dep, table_utils_dep,string_utils_dep,process_utils_dep,app_utils_dep,
+  menu_bar_utils_dep, table_utils_dep,string_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,
   wrec_common_dep,httpserver_h_dep,usbdevs_utils_dep,monitor_utils_dep,
   wrec_capture_dep,icon_utils_dep,
   capture_utils_dep,

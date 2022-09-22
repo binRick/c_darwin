@@ -145,3 +145,4 @@ int main(int argc, char **argv) {
   RUN_SUITE(s_process_utils_test);
   GREATEST_MAIN_END();
 }
+#include "window-info/window-info.h"

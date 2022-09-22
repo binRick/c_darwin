@@ -16,6 +16,7 @@
 #include "system-utils/system-utils.h"
 #include "table-utils/table-utils.h"
 #include "timestamp/timestamp.h"
+#include "window-info/window-info.h"
 ///////////////////////////////////////////////////////////////////////////////
 static bool TABLE_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__table_utils(void){
@@ -47,69 +48,207 @@ static const char *table_dur_type_names[] = {
   [TABLE_DUR_TYPE_TOTAL]             = "total",
   [TABLE_DUR_TYPE_FORT]              = "fort",
 };
-enum window_info_sort_type_t {
-  WINDOW_INFO_SORT_WINDOW_ID_ASC,
-  WINDOW_INFO_SORT_WINDOW_ID_DESC,
-  WINDOW_INFO_SORT_PID_ASC,
-  WINDOW_INFO_SORT_PID_DESC,
-  WINDOW_INFO_SORT_TYPES_QTY,
-};
-typedef int (*window_info_sort_function)(const struct window_info_t *w0, const struct window_info_t *w1);
-typedef int (^window_info_sort_block)(const struct window_info_t *w0, const struct window_info_t *w1);
-struct window_info_sort_t {
-  const char *key, *name;
-  window_info_sort_block sort;
-  window_info_sort_function function;
-};
-struct window_info_sort_t window_info_sorts[];
-#define WINDOW_INFO_SORT_FUNCTION(KEY,DIRECTION,TYPE)\
-  int window_info_sort_##KEY##_##DIRECTION(const struct window_info_t *w0, const struct window_info_t  *w1){\
-    log_info("%d",TYPE);\
-  return(window_info_sorts[TYPE].sort(w0,w1));\
-}
-WINDOW_INFO_SORT_FUNCTION(pid,asc,WINDOW_INFO_SORT_PID_ASC);
-WINDOW_INFO_SORT_FUNCTION(pid,desc,WINDOW_INFO_SORT_PID_DESC);
-WINDOW_INFO_SORT_FUNCTION(window_id,asc,WINDOW_INFO_SORT_WINDOW_ID_ASC);
-WINDOW_INFO_SORT_FUNCTION(window_id,desc,WINDOW_INFO_SORT_WINDOW_ID_DESC);
-struct window_info_sort_t window_info_sorts[] = {
-  [WINDOW_INFO_SORT_PID_ASC] = { .key = "pid-asc", .name = "PID Ascending", 
-    .function = window_info_sort_pid_asc,
-    .sort = ^int(const struct window_info_t *w0, const struct window_info_t *w1){ 
-      return((w0->pid > w1->pid) ? 1 : (w0->pid < w1->pid) ? -1 : 0); 
-    }, 
-  },
-  [WINDOW_INFO_SORT_PID_DESC] = { .key = "pid-desc", .name = "PID Descending", 
-    .function = window_info_sort_pid_desc,
-    .sort = ^int(const struct window_info_t *w0, const struct window_info_t *w1){ 
-      return((w0->pid < w1->pid) ? 1 : (w0->pid > w1->pid) ? -1 : 0); 
-    }, 
-  },
-  [WINDOW_INFO_SORT_WINDOW_ID_ASC] = { .key = "window-id-asc", .name = "Window ID Ascending", 
-    .function = window_info_sort_window_id_asc,
-    .sort = ^int(const struct window_info_t *w0, const struct window_info_t *w1){ 
-      return((w0->window_id > w1->window_id) ? 1 : (w0->window_id < w1->window_id) ? -1 : 0); 
-    }, 
-  },
-  [WINDOW_INFO_SORT_WINDOW_ID_DESC] = { .key = "window-id-desc", .name = "Window ID Descending", 
-    .function = window_info_sort_window_id_desc,
-    .sort = ^int(const struct window_info_t *w0, const struct window_info_t *w1){ 
-      return((w0->window_id < w1->window_id) ? 1 : (w0->window_id > w1->window_id) ? -1 : 0); 
-    }, 
-  },
-};
 
-static window_info_sort_function get_window_info_sort_function_from_key(const char *name){
-  log_info("%s",name);
-    for(size_t i=0;i<WINDOW_INFO_SORT_TYPES_QTY;i++)
-      if(strcmp(name,window_info_sorts[i].key)==0)
-        return((window_info_sort_function)(window_info_sorts[i].function));
-    return((window_info_sort_function)(window_info_sorts[0].function));
-}
+int list_window_infos_table(void *ARGS) {
+  const char *sort_key = "pid", *sort_direction = "desc";
+
+  sort_direction = "asc";
+  sort_key       = "pid";
+  sort_key       = "window-id";
+  sort_direction = "desc";
+  int                term_width = get_terminal_width();
+  size_t             cur_display_id;
+  size_t             cur_space_id;
+  ft_table_t         *table;
+  struct table_dur_t durs[TABLE_DUR_TYPES_QTY];
+
+  durs[TABLE_DUR_TYPE_TOTAL].started = timestamp();
+  for (int o = 0; o < TABLE_DUR_TYPES_QTY; o++) {
+    durs[o].dur = 0;
+  }
+
+  struct list_table_t __attribute__((unused)) * args;
+
+  if (ARGS != 0) {
+    args = (struct list_table_t *)ARGS;
+  }
+  struct Vector        *window_infos_v;
+  struct window_info_t *w;
+
+  {
+    unsigned long started = timestamp();
+    unsigned long s0;
+    s0                                          = timestamp();
+    window_infos_v                              = get_window_infos_v();
+    durs[TABLE_DUR_TYPE_QUERY_WINDOWS].dur     += (timestamp() - s0);
+    s0                                          = timestamp();
+    cur_space_id                                = get_space_id();
+    durs[TABLE_DUR_TYPE_QUERY_SPACES].dur      += (timestamp() - s0);
+    s0                                          = timestamp();
+    cur_display_id                              = get_display_id_for_space(cur_space_id);
+    s0                                          = timestamp();
+    durs[TABLE_DUR_TYPE_QUERY_CUR_DISPLAY].dur += (timestamp() - s0);
+    durs[TABLE_DUR_TYPE_QUERIES].dur           += (timestamp() - started);
+  }
+  {
+    struct window_info_t *sorted_window_infos  = calloc((vector_size(window_infos_v) + 1), sizeof(struct window_info_t));
+    struct window_info_t *_sorted_window_infos = vector_new();
+    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+      sorted_window_infos[i] = *((struct window_info_t *)vector_get(window_infos_v, i));
+    }
+    qsort(sorted_window_infos, vector_size(window_infos_v), sizeof(struct window_info_t), get_window_info_sort_function_from_key(sort_key, sort_direction));
+    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+      vector_push(_sorted_window_infos, (void *)&(sorted_window_infos[i]));
+    }
+    window_infos_v = _sorted_window_infos;
+  }
+
+  {
+    unsigned long started = timestamp();
+    table = ft_create_table();
+    ft_set_border_style(table, FT_FRAME_STYLE);
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_RIGHT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
+    durs[TABLE_DUR_TYPE_FORT].dur += (timestamp() - started);
+  }
+
+  ft_write_ln(table,
+              "ID",
+              "PID",
+              "Application",
+              "Size",
+              "Position",
+              "Space",
+              "Disp",
+              "Min",
+              "Dur"
+              );
+  int max_name_len = 0;
+
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    w            = (struct window_info_t *)vector_get(window_infos_v, i);
+    max_name_len = (strlen(w->name) > (size_t)max_name_len) ? (int)strlen(w->name) : max_name_len;
+  }
+  while (term_width > 0 && max_name_len > (term_width / 4)) {
+    max_name_len--;
+  }
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    if (TABLE_UTILS_DEBUG_MODE) {
+      for (int o = 0; o < WINDOW_INFO_DUR_TYPES_QTY; o++) {
+        log_debug("Window Duration> %s %s: %s",
+                  w->name,
+                  window_info_dur_type_names[o],
+                  milliseconds_to_string(w->durs[o].dur)
+                  );
+      }
+    }
+    w = (struct window_info_t *)vector_get(window_infos_v, i);
+    ft_printf_ln(table,
+                 "%lu|%d|%.*s|%dx%d|%dx%d|%lu|%lu|%s|%s"
+                 "%s",
+                 w->window_id,
+                 w->pid,
+                 max_name_len, w->name,
+                 (int)w->rect.size.width, (int)w->rect.size.height,
+                 (int)w->rect.origin.x, (int)w->rect.origin.y,
+                 w->space_id,
+                 w->display_id,
+                 (w->is_minimized == true) ? "Yes" : "No",
+                 milliseconds_to_string(w->dur),
+                 ""
+                 );
+
+    unsigned long colors_started = timestamp();
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+
+    if (w->rect.size.width < 2 || w->rect.size.height < 2) {
+      ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+    }else if (w->rect.size.width == 0 && w->rect.size.height == 0) {
+      ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
+    }else{
+      ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+    }
+
+    if ((int)w->rect.origin.x < 0 || (int)w->rect.origin.y < 0) {
+      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+    }else{
+      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
+    }
+    if (w->space_id == cur_space_id) {
+      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+    }else{
+      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_RED);
+    }
+    if (w->display_id == cur_display_id) {
+      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    }else{
+      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+    }
+    if (w->is_minimized == true) {
+      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    }else{
+      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    }
+    if (w->dur == 0) {
+      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    }else if (w->dur > 20) {
+      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+    }else if (w->dur > 10) {
+      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+    }else {
+      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_MAGENTA);
+    }
+    durs[TABLE_DUR_TYPE_COLORS].dur += (timestamp() - colors_started);
+  }
+  char *table_s = ft_to_string(table);
+
+  printf("%s\n", table_s);
+
+  durs[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - durs[TABLE_DUR_TYPE_TOTAL].started;
+  if (TABLE_UTILS_DEBUG_MODE == true) {
+    log_info("Rendered %s %lu row, %lu column table from %lu windows in %s",
+             bytes_to_string(strlen(table_s)),
+             ft_row_count(table),
+             ft_col_count(table),
+             vector_size(window_infos_v),
+             milliseconds_to_string(durs[TABLE_DUR_TYPE_TOTAL].dur)
+             );
+    for (int o = 0; o < TABLE_DUR_TYPES_QTY; o++) {
+      log_debug("Table Duration> %s %s: %s",
+                w->name,
+                table_dur_type_names[o],
+                milliseconds_to_string(durs[o].dur)
+                );
+    }
+  }
+  ft_destroy_table(table);
+} /* list_window_infos_table */
+
 int list_displays_table(__attribute__((unused)) void *ARGS) {
   unsigned long list_displays_table_started = timestamp();
   struct Vector *displays_v                 = get_displays_v();
   ft_table_t    *table                      = ft_create_table();
-
   {
     ft_set_border_style(table, FT_FRAME_STYLE);
     ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
@@ -259,212 +398,6 @@ int list_spaces_table(__attribute__((unused)) void *ARGS) {
   return(0);
 } /* list_spaces_table */
 
-int list_window_infos_table(void *ARGS) {
-  int                term_width = get_terminal_width();
-  size_t             cur_display_id;
-  size_t             cur_space_id;
-  ft_table_t         *table;
-  struct table_dur_t durs[TABLE_DUR_TYPES_QTY];
-
-  durs[TABLE_DUR_TYPE_TOTAL].started = timestamp();
-  for (int o = 0; o < TABLE_DUR_TYPES_QTY; o++) {
-    durs[o].dur = 0;
-  }
-
-  struct list_table_t __attribute__((unused)) * args;
-
-  if (ARGS != 0) {
-    args = (struct list_table_t *)ARGS;
-  }
-  struct Vector        *window_infos_v;
-  struct window_info_t *w;
-
-  {
-    unsigned long started = timestamp();
-    unsigned long s0;
-    s0                                          = timestamp();
-    window_infos_v                              = get_window_infos_v();
-    durs[TABLE_DUR_TYPE_QUERY_WINDOWS].dur     += (timestamp() - s0);
-    s0                                          = timestamp();
-    cur_space_id                                = get_space_id();
-    durs[TABLE_DUR_TYPE_QUERY_SPACES].dur      += (timestamp() - s0);
-    s0                                          = timestamp();
-    cur_display_id                              = get_display_id_for_space(cur_space_id);
-    s0                                          = timestamp();
-    durs[TABLE_DUR_TYPE_QUERY_CUR_DISPLAY].dur += (timestamp() - s0);
-    durs[TABLE_DUR_TYPE_QUERIES].dur           += (timestamp() - started);
-  }
-  {
-
-  struct window_info_t *sorted_window_infos = calloc((vector_size(window_infos_v) + 1), sizeof(struct window_info_t));
-  struct window_info_t *_sorted_window_infos = vector_new();
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-      sorted_window_infos[i] = *((struct window_info_t *)vector_get(window_infos_v, i));
-  }
-    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-      struct window_info_t *W = vector_get(window_infos_v,i);
-      log_debug("Window #%lu|PID:%d",W->window_id,W->pid);
-      struct window_info_t *S = &(sorted_window_infos[i]);
-      log_info("Window #%lu|PID:%d",S->window_id,S->pid);
-    }
-    qsort(sorted_window_infos, vector_size(window_infos_v), sizeof(struct window_info_t), get_window_info_sort_function_from_key("pid-desc"));
-    log_debug("%lu",vector_size(window_infos_v));
-
-    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-      struct window_info_t *W = vector_get(window_infos_v,i);
-      log_debug("Window #%lu|PID:%d",W->window_id,W->pid);
-      struct window_info_t *S = &(sorted_window_infos[i]);
-      log_info("Window #%lu|PID:%d",S->window_id,S->pid);
-      vector_push(_sorted_window_infos,(void*)&(sorted_window_infos[i]));
-    }
-    for (size_t i = 0; i < vector_size(_sorted_window_infos); i++) {
-      struct window_info_t *S = (struct window_info_t*)vector_get(_sorted_window_infos,i);
-      log_debug("Window #%lu|PID:%d",S->window_id,S->pid);
-    }
-    window_infos_v = _sorted_window_infos;
-  }
-
-  {
-    unsigned long started = timestamp();
-    table = ft_create_table();
-    ft_set_border_style(table, FT_FRAME_STYLE);
-    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
-    ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
-    ft_set_tbl_prop(table, FT_TPROP_RIGHT_MARGIN, 0);
-    ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
-    ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
-    durs[TABLE_DUR_TYPE_FORT].dur += (timestamp() - started);
-  }
-
-  ft_write_ln(table,
-              "ID",
-              "PID",
-              "Application",
-              "Size",
-              "Position",
-              "Space",
-              "Disp",
-              "Min",
-              "Dur"
-              );
-  int max_name_len = 0;
-
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    w            = (struct window_info_t *)vector_get(window_infos_v, i);
-    max_name_len = (strlen(w->name) > (size_t)max_name_len) ? (int)strlen(w->name) : max_name_len;
-  }
-  while (term_width > 0 && max_name_len > (term_width / 4)) {
-    max_name_len--;
-  }
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    if (TABLE_UTILS_DEBUG_MODE) {
-      for (int o = 0; o < WINDOW_INFO_DUR_TYPES_QTY; o++) {
-        log_debug("Window Duration> %s %s: %s",
-                  w->name,
-                  window_info_dur_type_names[o],
-                  milliseconds_to_string(w->durs[o].dur)
-                  );
-      }
-    }
-    w = (struct window_info_t *)vector_get(window_infos_v, i);
-    ft_printf_ln(table,
-                 "%lu|%d|%.*s|%dx%d|%dx%d|%lu|%lu|%s|%s"
-                 "%s",
-                 w->window_id,
-                 w->pid,
-                 max_name_len, w->name,
-                 (int)w->rect.size.width, (int)w->rect.size.height,
-                 (int)w->rect.origin.x, (int)w->rect.origin.y,
-                 w->space_id,
-                 w->display_id,
-                 (w->is_minimized == true) ? "Yes" : "No",
-                 milliseconds_to_string(w->dur),
-                 ""
-                 );
-
-    unsigned long colors_started = timestamp();
-    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-
-    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-
-    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
-    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-
-    if (w->rect.size.width < 2 || w->rect.size.height < 2) {
-      ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
-    }else if (w->rect.size.width == 0 && w->rect.size.height == 0) {
-      ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
-    }else{
-      ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-    }
-
-    if ((int)w->rect.origin.x < 0 || (int)w->rect.origin.y < 0) {
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-    }else{
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
-    }
-    if (w->space_id == cur_space_id) {
-      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-    }else{
-      ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_RED);
-    }
-    if (w->display_id == cur_display_id) {
-      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
-      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-    }else{
-      ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
-    }
-    if (w->is_minimized == true) {
-      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-    }else{
-      ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }
-    if (w->dur == 0) {
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else if (w->dur > 20) {
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }else if (w->dur > 10) {
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-    }else {
-      ft_set_cell_prop(table, i + 1, 8, FT_CPROP_CONT_FG_COLOR, FT_COLOR_MAGENTA);
-    }
-    durs[TABLE_DUR_TYPE_COLORS].dur += (timestamp() - colors_started);
-  }
-  char *table_s = ft_to_string(table);
-
-  printf("%s\n", table_s);
-
-  durs[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - durs[TABLE_DUR_TYPE_TOTAL].started;
-  if (TABLE_UTILS_DEBUG_MODE == true) {
-    log_info("Rendered %s %lu row, %lu column table from %lu windows in %s",
-             bytes_to_string(strlen(table_s)),
-             ft_row_count(table),
-             ft_col_count(table),
-             vector_size(window_infos_v),
-             milliseconds_to_string(durs[TABLE_DUR_TYPE_TOTAL].dur)
-             );
-    for (int o = 0; o < TABLE_DUR_TYPES_QTY; o++) {
-      log_debug("Table Duration> %s %s: %s",
-                w->name,
-                table_dur_type_names[o],
-                milliseconds_to_string(durs[o].dur)
-                );
-    }
-  }
-  ft_destroy_table(table);
-} /* list_window_infos_table */
 ///////////////////////////////////
 
 int list_windows_table(void *ARGS) {

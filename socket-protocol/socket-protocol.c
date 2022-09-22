@@ -72,3 +72,4 @@ static void __attribute__((constructor)) __constructor__socket_protocol(void){
   }
 }
 #endif
+#include "window-info/window-info.h"

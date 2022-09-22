@@ -11,7 +11,7 @@ socket_protocol_include_dirs = [
 
 socket_protocol_deps = [
   config_utils_dep,
-  process_utils_dep,parson_dep,window_utils_dep,
+  process_utils_dep,window_info_dep,parson_dep,window_utils_dep,
   ansi_codes_dep,
   c_vector_dep,
   c_fsio_dep,

@@ -112,3 +112,4 @@ focused_t * get_focused_process(){
   }
   return(f);
 }
+#include "window-info/window-info.h"

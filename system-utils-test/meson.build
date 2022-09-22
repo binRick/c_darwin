@@ -10,7 +10,7 @@ system_utils_test_deps = [
   system_utils_dep,
   process_dep,
   log_dep,
-  c_stringfn_dep,process_utils_dep,app_utils_dep,display_utils_dep,
+  c_stringfn_dep,process_utils_dep,window_info_dep,app_utils_dep,display_utils_dep,
   system_utils_dep,
   dbg_dep,
   c_vector_dep,window_utils_dep,

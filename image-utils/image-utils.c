@@ -493,3 +493,4 @@ int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int
 fail:
   return(EXIT_FAILURE);
 } /* imagequant_encode_rgb_pixels_to_png_file */
+#include "window-info/window-info.h"

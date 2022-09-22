@@ -104,3 +104,4 @@ int main(const int argc, const char **argv) {
   // RUN_SUITE(s_space_utils_test);
   GREATEST_MAIN_END();
 }
+#include "window-info/window-info.h"

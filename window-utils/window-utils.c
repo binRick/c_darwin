@@ -16,6 +16,7 @@
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "window-info/window-info.h"
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
@@ -484,7 +485,7 @@ int get_window_id_level(size_t window_id){
   int level = 0;
 
   //CGSGetWindowLevel(w->connection_id, (CGWindowID)(w->window_id), &level);
- // CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(window_id), &level);
+  // CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(window_id), &level);
   SLSGetWindowLevel(g_connection, (uint32_t)(window_id), &level);
   return(level);
 }

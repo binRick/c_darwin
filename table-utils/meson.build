@@ -20,6 +20,7 @@ table_utils_deps = [
   ms_dep,
   string_utils_dep,
   timestamp_dep,
+  window_info_dep,
 ]
 table_utils_link_flags = [
   osx_link_args,

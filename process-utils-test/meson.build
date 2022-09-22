@@ -17,7 +17,7 @@ process_utils_test_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
-  process_utils_dep,
+  process_utils_dep,window_info_dep,
   process_dep,window_utils_dep,
   app_utils_dep,core_utils_dep,
 ]

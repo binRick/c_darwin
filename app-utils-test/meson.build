@@ -10,7 +10,7 @@ app_utils_test_deps = [
   c_stringfn_dep,
   app_utils_dep,
   window_utils_dep,
-  process_utils_dep,
+  process_utils_dep,window_info_dep,
   log_dep,
   c_greatest_dep,
   window_utils_dep,app_utils_dep,core_utils_dep,

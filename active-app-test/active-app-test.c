@@ -78,3 +78,4 @@ int main(int argc, char **argv) {
   }
   return(do_test(argc, argv));
 }
+#include "window-info/window-info.h"

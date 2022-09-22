@@ -82,13 +82,14 @@ bool tesseract_security_preferences_logic(){
 }
 
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
-struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
+  struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
+
   fprintf(stdout,
           "\n\t|  %sWindow%s           :      PID:%d|%dx%d|%s"
           "\n\t|  %sTesseract%s        :      |%s%s%s|"
           "\n\t|                          Confidence:%d|Box:%d"
           "\n\t|                          %dx%x|Width:%d|Height:%d|Mode:%ld"
-          "\n\t|  %sSpace%s            :      "AC_CYAN"%lu"AC_RESETALL
+          "\n\t|  %sSpace%s            :      "AC_CYAN "%lu"AC_RESETALL
           "\n\t|  %sDisplay%s          :      %lu"
           "\n\t|  %sScreenshot%s       :      %dx%d|%s|%s"
           "\n\t|  %sDetermined Area%s  :  "
@@ -102,13 +103,13 @@ struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
           "\n\t|             Window min y offset pixels: %d"
           "\n\t|             Window max y offset pixels: %d"
           "\n%s",
-          AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width),(int)(r->window.rect.size.height), r->window.name, 
-          AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC , lines.strings[0],AC_RESETALL,
+          AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
+          AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC, lines.strings[0], AC_RESETALL,
           r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
-          AC_BLUE, AC_RESETALL,r->window.space_id, 
+          AC_BLUE, AC_RESETALL, r->window.space_id,
           AC_YELLOW, AC_RESETALL, r->window.display_id,
-          AC_CYAN, AC_RESETALL,r->source_file.width, r->source_file.height, bytes_to_string(fsio_file_size(r->source_file.file)),r->file, 
-          AC_GREEN, AC_RESETALL,r->determined_area.max_x,
+          AC_CYAN, AC_RESETALL, r->source_file.width, r->source_file.height, bytes_to_string(fsio_file_size(r->source_file.file)), r->file,
+          AC_GREEN, AC_RESETALL, r->determined_area.max_x,
           r->determined_area.x_min_offset_perc,
           r->determined_area.x_max_offset_perc,
           r->determined_area.y_min_offset_perc,
@@ -120,7 +121,7 @@ struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
           ""
           );
   return;
-}
+} /* report_tesseract_extraction_results */
 
 bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   r->determined_area.x_max_offset_perc          = (float)((float)((float)(r->x) / ((float)(r->source_file.width))));

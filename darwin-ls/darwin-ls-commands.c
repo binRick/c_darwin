@@ -799,7 +799,7 @@ static void _command_clear_icons_cache(){
 }
 
 static void _command_open_security(){
-  exit( (tesseract_security_preferences_logic() == true)? EXIT_SUCCESS: EXIT_FAILURE);
+  exit((tesseract_security_preferences_logic() == true)? EXIT_SUCCESS: EXIT_FAILURE);
 }
 
 static void _command_app_icns_path(){
@@ -1379,6 +1379,7 @@ static void _command_window_pid_infos(){
 
 static void _command_window_infos(){
   unsigned long started = timestamp();
+
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
     list_window_infos_table(&(struct list_table_t){});

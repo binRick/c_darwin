@@ -8,7 +8,7 @@ active_app_include_dirs = [
 active_app_test_deps = [
   active_app_dep,
   c_stringfn_dep,
-  app_utils_dep,process_utils_dep,app_utils_dep,
+  app_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,
   window_utils_dep,
   log_dep,
   c_greatest_dep,
