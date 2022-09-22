@@ -43,6 +43,9 @@ struct capture_type_t capture_types[] = {
     .name           = "display",
     .get_default_id = ^ size_t (void){ return(get_main_display_id());                                     },
     .validate_id    = ^ bool (size_t display_id){ return((display_id > 0 && display_id < 999999999) ? true : false); },
+    .capture_rect   = ^ CGImageRef (size_t display_id, CGRect rect){
+      return(capture_display_id_rect((uint32_t)display_id, rect));
+    },
     .capture        = ^ CGImageRef (size_t display_id){
       return(capture_display_id((uint32_t)display_id));
     },
@@ -55,6 +58,9 @@ struct capture_type_t capture_types[] = {
     .validate_id    = ^ bool (size_t window_id){ return((window_id > 0 && window_id < 99999) ? true : false); },
     .capture        = ^ CGImageRef (size_t window_id){
       return(capture_window_id((uint32_t)window_id));
+    },
+    .capture_rect   = ^ CGImageRef (size_t window_id,CGRect rect){
+      return(capture_window_id_rect((uint32_t)window_id, rect));
     },
     .preview   = ^ CGImageRef (size_t window_id){ return(preview_window_id((uint32_t)window_id)); },
     .get_items = ^ struct Vector *(void){ return(get_spaces_v());                               },
@@ -151,6 +157,14 @@ unsigned char *capture_type_capture_png(enum capture_type_id_t capture_type_id, 
             : pixels
         : NULL
     );
+}
+
+CGImageRef capture_type_capture_rect(enum capture_type_id_t capture_type_id, size_t capture_id, CGRect rect){
+  if (capture_types[capture_type_id].capture_rect == NULL) {
+    log_error("Capture Type #%d has no capture rect handler", capture_type_id);
+    return(NULL);
+  }
+  return(capture_types[capture_type_id].capture_rect(capture_id, rect));
 }
 
 CGImageRef capture_type_capture(enum capture_type_id_t capture_type_id, size_t capture_id){

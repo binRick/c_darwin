@@ -66,12 +66,14 @@ static void __attribute__((constructor)) __constructor__httpserver(void){
  *  //log_debug("#%lu> recv:%lu\n",i, (size_t)msg);
  * }
  */
-  assert(libforks_start(&conn) == libforks_OK);
-  pid_t fork_server_pid = libforks_get_server_pid(conn);
+  if (false) {
+    assert(libforks_start(&conn) == libforks_OK);
+    pid_t fork_server_pid = libforks_get_server_pid(conn);
 
-  assert(fork_server_pid > 0);
-  if (HTTPSERVER_DEBUG_MODE) {
-    log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+    assert(fork_server_pid > 0);
+    if (HTTPSERVER_DEBUG_MODE) {
+      log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+    }
   }
 }
 

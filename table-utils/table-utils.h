@@ -26,6 +26,7 @@ struct list_table_t {
   bool          current_space_only;
   int           space_id;
 };
+int list_window_infos_table(void *ARGS);
 int list_windows_table(void *ARGS);
 int list_spaces_table(void *ARGS);
 int list_displays_table(void *ARGS);

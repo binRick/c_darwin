@@ -34,22 +34,23 @@ static void __attribute__((constructor)) __constructor__websocket_server(void){
     log_debug("Enabling websocket-server Debug Mode");
     WEBSOCKET_SERVER_DEBUG_MODE = true;
   }
+  if (false) {
+    assert(libforks_start(&conn_websocket_mon) == libforks_OK);
+    pid_t fork_mon_pid = libforks_get_server_pid(conn_websocket_mon);
+    assert(fork_mon_pid > 0);
+    if (WEBSOCKET_SERVER_DEBUG_MODE) {
+      log_info(AC_YELLOW "Mon Server> Fork server with pid %d created"AC_RESETALL, fork_mon_pid);
+    }
 
-  assert(libforks_start(&conn_websocket_mon) == libforks_OK);
-  pid_t fork_mon_pid = libforks_get_server_pid(conn_websocket_mon);
-  assert(fork_mon_pid > 0);
-  if (WEBSOCKET_SERVER_DEBUG_MODE) {
-    log_info(AC_YELLOW "Mon Server> Fork server with pid %d created"AC_RESETALL, fork_mon_pid);
+    assert(libforks_start(&conn_websocket_server) == libforks_OK);
+    pid_t fork_server_pid = libforks_get_server_pid(conn_websocket_server);
+
+    assert(fork_server_pid > 0);
+    if (WEBSOCKET_SERVER_DEBUG_MODE) {
+      log_info(AC_YELLOW "Websocket Server> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+    }
+    signal(SIGTERM, handle_sigterm);
   }
-
-  assert(libforks_start(&conn_websocket_server) == libforks_OK);
-  pid_t fork_server_pid = libforks_get_server_pid(conn_websocket_server);
-
-  assert(fork_server_pid > 0);
-  if (WEBSOCKET_SERVER_DEBUG_MODE) {
-    log_info(AC_YELLOW "Websocket Server> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
-  }
-  signal(SIGTERM, handle_sigterm);
 }
 
 struct session_t {

@@ -58,21 +58,32 @@ static char *get_axerror_name(AXError err);
 ///////////////////////////////////////////////////////////////////////////////
 
 bool minimize_window_id(size_t window_id){
-  assert(window_id > 0);
+  if (window_id < 0) {
+    errno = 0;
+    log_error("Invalid Window ID %lu", window_id);
+    return(false);
+  }
   struct window_info_t *W = get_window_id_info(window_id);
   assert(W->window_id == window_id);
   AXUIElementRef       app = AXWindowFromCGWindow(W->window);
-  CFTypeRef            value;
-  if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &value) != kAXErrorSuccess) {
+  CFBooleanRef         is_min_ref;
+  errno = 0;
+  if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &is_min_ref) != kAXErrorSuccess) {
     log_error("Failed to copy attrs");
     return(false);
   }
+  bool is_min = CFBooleanGetValue(is_min_ref);
+  if (is_min == true) {
+    return(true);
+  }
+  errno = 0;
   if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
     if (WINDOW_UTILS_DEBUG_MODE) {
       log_info("Set minimized property");
     }
   }else{
     log_error("Failed to set minimized property");
+    errno = 0;
     return(false);
   }
   return(true);
@@ -473,7 +484,7 @@ int get_window_id_level(size_t window_id){
   int level = 0;
 
   //CGSGetWindowLevel(w->connection_id, (CGWindowID)(w->window_id), &level);
-  //CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(w->window_id), &level);
+ // CGSGetWindowLevel(CGSMainConnectionID(), (CGWindowID)(window_id), &level);
   SLSGetWindowLevel(g_connection, (uint32_t)(window_id), &level);
   return(level);
 }
@@ -1117,23 +1128,19 @@ CGImageRef preview_window_id(size_t window_id){
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
 }
 
+CGImageRef capture_window_id_rect(size_t window_id, CGRect rect){
+  uint64_t   wid       = (uint64_t)(window_id);
+  CGImageRef image_ref = NULL;
+
+  SLSCaptureWindowsContentsToRectWithOptions(g_connection, &wid, true, rect, 1 << 8, &image_ref);
+  return(image_ref);
+}
+
 CGImageRef capture_window_id(size_t window_id){
-  unsigned long started   = timestamp();
-  CGImageRef    image_ref = NULL;
-  uint64_t      wid       = (uint64_t)(window_id);
+  CGImageRef image_ref = NULL;
+  uint64_t   wid       = (uint64_t)(window_id);
 
   SLSCaptureWindowsContentsToRectWithOptions(g_connection, &wid, true, CGRectNull, 1 << 8, &image_ref);
-  CGRect bounds;
-
-  SLSGetScreenRectForWindow(g_connection, wid, &bounds);
-  bounds.size.width = (uint32_t)(bounds.size.width + 0.5);
-  if (WINDOW_UTILS_DEBUG_MODE) {
-    log_info("Captured image of Window #%lu of size %dx%d in %s",
-             window_id,
-             (int)bounds.size.width, (int)bounds.size.height,
-             milliseconds_to_string(timestamp() - started)
-             );
-  }
   return(image_ref);
 }
 

@@ -33,5 +33,5 @@ kitty_lib =static_library('kitty',
 kitty_dep = declare_dependency(
   include_directories: kitty_dirs,
   link_with: kitty_lib,
-  link_args: kitty_link_flags,
+  link_args: osx_ldflags,
 )

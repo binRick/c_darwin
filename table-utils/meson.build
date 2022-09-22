@@ -23,7 +23,34 @@ table_utils_deps = [
 ]
 table_utils_link_flags = [
   osx_link_args,
+  '-Wl,-framework,CoreFoundation',
+  '-Wl,-framework,Carbon',
+  '-Wl,-framework,ScriptingBridge',
+  '-Wl,-framework,Foundation',
+  '-Wl,-framework,CoreGraphics',
+  '-Wl,-framework,Cocoa',
+  '-Wl,-framework,Carbon',
+  '-Wl,-framework,CoreServices',
+  '-Wl,-framework,AppKit'
 ]
+table_utils_link_flags +=  ['-Wl,-framework,Foundation']
+table_utils_link_flags +=  ['-Wl,-framework,Security']
+table_utils_link_flags +=  ['-Wl,-framework,SkyLight']
+table_utils_link_flags +=  ['-Wl,-framework,ApplicationServices']
+table_utils_link_flags +=  ['-Wl,-framework,ScriptingBridge']
+table_utils_link_flags +=  ['-Wl,-framework,CoreFoundation']
+
+table_utils_link_flags +=  ['-Wl,-framework,SystemExtensions']
+table_utils_link_flags +=  ['-Wl,-framework,DeviceCheck']
+table_utils_link_flags +=  ['-Wl,-framework,Carbon']
+table_utils_link_flags +=  ['-Wl,-framework,Metal']
+table_utils_link_flags +=  ['-Wl,-framework,MetalKit']
+table_utils_link_flags +=  ['-Wl,-framework,QuartzCore']
+table_utils_link_flags +=  ['-Wl,-framework,ICADevices']
+table_utils_link_flags +=  ['-Wl,-framework,DeviceCheck']
+table_utils_link_flags +=  ['-Wl,-framework,AppKit']
+table_utils_link_flags +=  ['-Wl,-framework,IOKit']
+table_utils_link_flags +=  ['-F/System/Library/PrivateFrameworks']
 
 
 table_utils_lib = static_library('table-utils',

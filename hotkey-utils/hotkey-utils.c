@@ -72,7 +72,7 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
 
 #define DEBUG_WINDOW_RESIZE(RESIZE_MODE) { do { \
     int cur_display_width = get_display_width(), cur_display_height = get_display_height();\
-    log_info("%s focused app width %f%% & height %f%%|pid:%d|name:%s|windowid:%lu|\n"\
+    log_debug("%s focused app width %f%% & height %f%%|pid:%d|name:%s|windowid:%lu|\n"\
            "                                 |cur size:%dx%d|cur pos:%dx%d|\n"\
            "                                 |new size:%dx%d,new pos:%dx%d|\n"\
            "                                 |cur dis size:%dx%d|\n"\
@@ -297,7 +297,8 @@ struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path){
   static size_t loaded_config_hash = 0;
   static unsigned long loaded_config_ts = 0;
   if((hotkeys_config == NULL) || (loaded_config_hash != config_hash) || ((timestamp()-loaded_config_ts) > RELOAD_CONFIG_MS)){
-    log_info("Loading %s Config with hash %lu", bytes_to_string(strlen(config_contents)), config_hash);
+    if(HOTKEY_UTILS_DEBUG_MODE)
+      log_info("Loading %s Config with hash %lu", bytes_to_string(strlen(config_contents)), config_hash);
     cyaml_err_t             err = cyaml_load_file(config_file_path, &config, &top_schema, (cyaml_data_t **)&hotkeys_config, NULL);
     if (err != CYAML_OK) {
       log_error("%s", cyaml_strerror(err));
@@ -305,7 +306,8 @@ struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path){
     }
     loaded_config_hash = config_hash;
     loaded_config_ts = timestamp();
-    log_info("todo app: %s | width: %d",hotkeys_config->todo_app, hotkeys_config->todo_width);
+    if(HOTKEY_UTILS_DEBUG_MODE)
+      log_info("todo app: %s | width: %d",hotkeys_config->todo_app, hotkeys_config->todo_width);
   }else{
     if(HOTKEY_UTILS_VERBOSE_DEBUG_MODE)
       log_info("Config loaded %s ago", milliseconds_to_string(timestamp()-loaded_config_ts));
@@ -325,11 +327,11 @@ char *get_yaml_config_file_path(char **argv){
 }
 
 bool disable_hotkey_config_key(struct key_t *key){
-  log_info("disabling key %s", key);
+  log_info("disabling key %s:%s=>%s", key->name,key->key,key->action);
   return(true);
 }
 bool enable_hotkey_config_key(struct key_t *key){
-  log_info("enabling key %s", key);
+  log_info("enabling key %s:%s=>%s", key->name,key->key,key->action);
   return(true);
 }
 ////////////////////////////////////////////

@@ -14,6 +14,7 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "capture-utils/capture-utils.h"
+#include "frameworks/frameworks.h"
 #include "image-utils/image-utils.h"
 #include "log/log.h"
 #include "ms/ms.h"
@@ -41,6 +42,7 @@ static const long text_modes[] = {
 };
 struct Vector *get_security_words_v(){
   struct Vector *words = vector_new();
+
   vector_push(words, (void *)"click");
   vector_push(words, (void *)"lock");
   vector_push(words, (void *)"make");
@@ -75,33 +77,38 @@ bool tesseract_security_preferences_logic(){
     assert(parse_tesseract_extraction_results(r) == true);
     report_tesseract_extraction_results(r);
   }
+
   return(true);
 }
+
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
+struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
   fprintf(stdout,
-          "|file:" AC_YELLOW "%s" AC_RESETALL "|mode:%lu|box#:%d"
-          "|x:%d|y:%d|w:%d|h:%d|confidence:%d"
-          "\n\t|text:" AC_GREEN "%s" AC_RESETALL "|"
-          "\n\t|window pid:%d|w:%d|h:%d|name:%s|space:%lu|display:%lu|"
-          "\n\t|file:%s|w:%d|h:%d|"
-          "\n\t|"AC_GREEN "Determined Area:  max x:%d|"
-          "\n                      min x offset perc: %f|"
-          "\n                      max x offset perc: %f|"
-          "\n                      min y offset perc: %f|"
-          "\n                      max y offset perc: %f|"
-          "\n             window min x offset pixels: %d|"
-          "\n             window max x offset pixels: %d|"
-          "\n             window min y offset pixels: %d|"
-          "\n             window max y offset pixels: %d|"
-          "%s",
-          r->file, r->mode, r->box, r->x, r->y, r->width, r->height, r->confidence, r->text,
-          r->window.pid,
-          (int)(r->window.rect.size.width),
-          (int)(r->window.rect.size.height), r->window.name, r->window.space_id, r->window.display_id,
-          r->source_file.file,
-          r->source_file.width,
-          r->source_file.height,
-          r->determined_area.max_x,
+          "\n\t|  %sWindow%s           :      PID:%d|%dx%d|%s"
+          "\n\t|  %sTesseract%s        :      |%s%s%s|"
+          "\n\t|                          Confidence:%d|Box:%d"
+          "\n\t|                          %dx%x|Width:%d|Height:%d|Mode:%ld"
+          "\n\t|  %sSpace%s            :      "AC_CYAN"%lu"AC_RESETALL
+          "\n\t|  %sDisplay%s          :      %lu"
+          "\n\t|  %sScreenshot%s       :      %dx%d|%s|%s"
+          "\n\t|  %sDetermined Area%s  :  "
+          "\n\t|             Max x             %d  |"
+          "\n\t|             Min x offset      %f  |"
+          "\n\t|             Max x offset      %f  |"
+          "\n\t|             Min y offset      %f  |"
+          "\n\t|             Max y offset      %f  |"
+          "\n\t|             Window min x offset pixels: %d"
+          "\n\t|             Window max x offset pixels: %d"
+          "\n\t|             Window min y offset pixels: %d"
+          "\n\t|             Window max y offset pixels: %d"
+          "\n%s",
+          AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width),(int)(r->window.rect.size.height), r->window.name, 
+          AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC , lines.strings[0],AC_RESETALL,
+          r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
+          AC_BLUE, AC_RESETALL,r->window.space_id, 
+          AC_YELLOW, AC_RESETALL, r->window.display_id,
+          AC_CYAN, AC_RESETALL,r->source_file.width, r->source_file.height, bytes_to_string(fsio_file_size(r->source_file.file)),r->file, 
+          AC_GREEN, AC_RESETALL,r->determined_area.max_x,
           r->determined_area.x_min_offset_perc,
           r->determined_area.x_max_offset_perc,
           r->determined_area.y_min_offset_perc,
@@ -114,6 +121,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
           );
   return;
 }
+
 bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   r->determined_area.x_max_offset_perc          = (float)((float)((float)(r->x) / ((float)(r->source_file.width))));
   r->determined_area.x_min_offset_perc          = (r->determined_area.x_max_offset_perc) / 2;
@@ -125,12 +133,19 @@ bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   r->determined_area.y_max_offset_window_pixels = (int)((r->determined_area.y_min_offset_perc) * (float)(r->window.rect.size.height));
   return(true);
 }
+#define CAPTURE_SCREEN_RECT    true
 struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations(size_t window_id, struct Vector *words){
   struct Vector                     *extractions;
   struct tesseract_extract_result_t *r;
+  struct window_info_t              *window_info;
+  CGRect                            rect, orig_rect;
   char                              *s, *extract_file, *files[2];
   int                               w, h, f;
   CGImageRef                        image_refs[2];
+  {
+    window_info = get_window_id_info(window_id);
+    assert(window_id == window_info->window_id);
+  }
   {
     asprintf(&files[0], "%s/window-%lu.png", "/tmp", window_id);
     extract_file = files[0];
@@ -139,7 +154,34 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
     }
   }
   {
-    image_refs[0] = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+    if (CAPTURE_SCREEN_RECT == true) {
+      SLSGetScreenRectForWindow(CGSMainConnectionID(), (uint32_t)window_id, &orig_rect);
+      rect.size   = orig_rect.size;
+      rect.origin = orig_rect.origin;
+      float offsets[2];
+      offsets[0] = 0;
+      offsets[1] = (rect.size.height * .70);
+      {
+        rect.origin.x    += offsets[0];
+        rect.size.width  -= (offsets[0]);
+        rect.origin.y    += offsets[1];
+        rect.size.height -= offsets[1];
+
+        rect.origin.x    = (int)rect.origin.x;
+        rect.origin.y    = (int)rect.origin.y;
+        rect.size.width  = (int)rect.size.width;
+        rect.size.height = (int)rect.size.height;
+      }
+      if (TESSERACT_UTILS_DEBUG_MODE) {
+        log_info("X:       %d => %d", (int)orig_rect.origin.x, (int)rect.origin.x);
+        log_info("Y:       %d => %d", (int)orig_rect.origin.y, (int)rect.origin.y);
+        log_info("Width:   %d => %d", (int)orig_rect.size.width, (int)rect.size.width);
+        log_info("Height:  %d => %d", (int)orig_rect.size.height, (int)rect.size.height);
+      }
+      image_refs[0] = capture_type_capture_rect(CAPTURE_TYPE_WINDOW, window_id, rect);
+    }else{
+      image_refs[0] = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+    }
     assert(save_cgref_to_png_file(image_refs[0], extract_file) == true);
     assert(fsio_file_size(extract_file) > 1024);
     assert(stbi_info(extract_file, &w, &h, &f) == 1);
@@ -162,7 +204,7 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
       }
     }
   }
-}
+} /* tesseract_find_window_matching_word_locations */
 struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE){
   struct Vector *words = vector_new();
   struct Boxa   *boxes;
@@ -191,10 +233,11 @@ struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE)
       conf = TessBaseAPIMeanTextConf(api);
       if ((c != NULL) && (c[0] != '\0')) {
         asprintf(&m,
-                 "|file:" AC_YELLOW "%s" AC_RESETALL "|mode:%lu|box#:%d/%d"
+                 "|file:" AC_YELLOW "%s" AC_RESETALL "|size:%s|mode:%lu|box#:%d/%d"
                  "|x:%d|y:%d|w:%d|h:%d|confidence:%d"
                  "|text:" AC_GREEN "%s" AC_RESETALL "|",
-                 image_file, MODE, box->refcount, boxes->n, box->x, box->y, box->w, box->h, conf, c
+                 image_file, bytes_to_string(fsio_file_size(image_file)), MODE, box->refcount, boxes->n,
+                 box->x, box->y, box->w, box->h, conf, c
                  );
         if (TESSERACT_UTILS_DEBUG_MODE) {
           log_info("%s", m);
@@ -216,6 +259,9 @@ struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE)
   pixDestroy(&img);
   TessBaseAPIEnd(api);
   TessBaseAPIDelete(api);
+  if (TESSERACT_UTILS_DEBUG_MODE) {
+    log_info("Returning %lu words", vector_size(words));
+  }
   return(words);
 } /* tesseract_extract_file_mode */
 

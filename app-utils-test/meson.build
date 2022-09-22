@@ -13,6 +13,7 @@ app_utils_test_deps = [
   process_utils_dep,
   log_dep,
   c_greatest_dep,
+  window_utils_dep,app_utils_dep,core_utils_dep,
 ]
 
 if get_option('enable-binaries')

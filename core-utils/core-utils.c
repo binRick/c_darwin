@@ -48,3 +48,15 @@ static void __attribute__((constructor)) __constructor__core_utils(void){
     CORE_UTILS_DEBUG_MODE = true;
   }
 }
+
+bool window_id_is_minimized(size_t window_id){
+  return(false);
+
+  struct window_info_t *W = get_window_id_info(window_id);
+  AXUIElementRef       app = AXWindowFromCGWindow(W->window);    CFBooleanRef boolRef;
+  if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &boolRef) != kAXErrorSuccess) {
+    log_error("Failed to copy attrs");
+    return(false);
+  }
+  return(CFBooleanGetValue(boolRef));
+}

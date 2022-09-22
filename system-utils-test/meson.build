@@ -13,7 +13,8 @@ system_utils_test_deps = [
   c_stringfn_dep,process_utils_dep,app_utils_dep,display_utils_dep,
   system_utils_dep,
   dbg_dep,
-  c_vector_dep,
+  c_vector_dep,window_utils_dep,
+  frameworks_dep,
 ]
 
 if get_option('enable-binaries')
@@ -21,6 +22,7 @@ if get_option('enable-binaries')
      system_utils_test_srcs,
      dependencies: system_utils_test_deps,
      include_directories: system_utils_include_dirs,
+     link_args: osx_ldflags,
   )
   if get_option('enable-binary-tests')
     test('system-utils-test', passh_program, args:[system_utils_test_exec,'-v'])

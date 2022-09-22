@@ -799,7 +799,7 @@ static void _command_clear_icons_cache(){
 }
 
 static void _command_open_security(){
-  return((tesseract_security_preferences_logic()==true)? EXIT_SUCCESS: EXIT_FAILURE);
+  exit( (tesseract_security_preferences_logic() == true)? EXIT_SUCCESS: EXIT_FAILURE);
 }
 
 static void _command_app_icns_path(){
@@ -1378,15 +1378,18 @@ static void _command_window_pid_infos(){
 }
 
 static void _command_window_infos(){
-  unsigned long started         = timestamp();
-  struct Vector *window_infos_v = get_window_infos_v();
-
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    struct window_info_t *window_info = (struct window_info_t *)vector_get(window_infos_v, i);
-    PRINT_WINDOW_INFO(window_info);
+  unsigned long started = timestamp();
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+    list_window_infos_table(&(struct list_table_t){});
+    break;
+  case OUTPUT_MODE_JSON:
+    break;
+  case OUTPUT_MODE_TEXT:
+    break;
   }
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-    log_debug("%lu Window Infos in %s", vector_size(window_infos_v), milliseconds_to_string(timestamp() - started));
+    log_debug("Window Infos in %s", milliseconds_to_string(timestamp() - started));
   }
   exit(EXIT_SUCCESS);
 }

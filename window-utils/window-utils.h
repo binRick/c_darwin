@@ -48,17 +48,33 @@ typedef struct {
   int     hasSize;
   int     movedWindow;
 } MoveWinCtx;
+struct window_info_dur_t {
+  unsigned long started;
+  unsigned long dur;
+};
 struct window_info_t {
-  const char      *name, *title;
-  size_t          window_id, memory_usage;
-  pid_t           pid;
-  int             layer, sharing_state, store_type;
-  bool            is_onscreen, is_focused;
-  CGRect          rect;
-  unsigned long   started, dur;
-  AXUIElementRef  *app;
-  CFDictionaryRef window;
-  size_t          display_id, space_id;
+  const char               *name, *title;
+  size_t                   window_id, memory_usage;
+  pid_t                    pid;
+  int                      layer, sharing_state, store_type;
+  bool                     is_onscreen, is_focused, is_minimized;
+  CGRect                   rect;
+  unsigned long            started, dur;
+  AXUIElementRef           *app;
+  CFDictionaryRef          window;
+  size_t                   display_id, space_id;
+  struct window_info_dur_t durs[32];
+};
+enum window_info_dur_type_t {
+  WINDOW_INFO_DUR_TYPE_SPACE_ID,
+  WINDOW_INFO_DUR_TYPE_IS_MINIMIZED,
+  WINDOW_INFO_DUR_TYPE_TOTAL,
+  WINDOW_INFO_DUR_TYPES_QTY,
+};
+static const char *window_info_dur_type_names[] = {
+  [WINDOW_INFO_DUR_TYPE_SPACE_ID]     = "space_id",
+  [WINDOW_INFO_DUR_TYPE_IS_MINIMIZED] = "minimized",
+  [WINDOW_INFO_DUR_TYPE_TOTAL]        = "total",
 };
 struct window_t {
   size_t              window_id;
@@ -212,5 +228,6 @@ CGImageRef capture_window(struct window_t *window);
 unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
 bool save_cgref_to_png_file(CGImageRef image, char *filename);
 CGImageRef preview_window_id(size_t window_id);
+CGImageRef capture_window_id_rect(size_t window_id, CGRect rect);
 ///////////////////////////////////////////////////
 #endif

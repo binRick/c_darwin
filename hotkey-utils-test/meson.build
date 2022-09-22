@@ -18,6 +18,7 @@ hotkey_utils_test_deps = [
   ms_dep,
   bytes_dep,
   hotkey_utils_dep,
+  core_utils_dep,
 ]
 hotkey_utils_test_c_args = [
 ]

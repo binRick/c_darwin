@@ -20,6 +20,7 @@ process_test_deps = [
   tiny_regex_c_dep,
   socket99_dep,process_utils_dep,app_utils_dep,
   c_string_buffer_dep,
+  window_utils_dep,app_utils_dep,core_utils_dep,window_utils_dep,
   c_stringfn_dep,
   c_fsio_dep,
   
@@ -30,6 +31,7 @@ if get_option('enable-binaries')
      dependencies: process_test_deps,
      include_directories: process_include_dirs,
      c_args: process_include_cargs,
+     link_args: osx_ldflags,
   )
   test('process-test', passh_program, args: [process_test_exec])
 endif

@@ -103,6 +103,10 @@ CGImageRef preview_display_id(size_t display_id){
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / PREVIEW_FACTOR, CGImageGetHeight(img_ref) / PREVIEW_FACTOR));
 }
 
+CGImageRef capture_display_id_rect(size_t display_id, CGRect rect){
+  return(CGDisplayCreateImageForRect(display_id, rect));
+}
+
 CGImageRef capture_display_id(size_t display_id){
   return(CGDisplayCreateImage(display_id));
 }

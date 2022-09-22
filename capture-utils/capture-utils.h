@@ -25,6 +25,7 @@ struct capture_type_t {
   size_t        (^get_default_id)(void);
   bool          (^validate_id)(size_t id);
   CGImageRef    (^capture)(size_t id);
+  CGImageRef    (^capture_rect)(size_t id, CGRect rect);
   CGImageRef    (^preview)(size_t id);
   struct Vector *(^get_items)(void);
 };
@@ -45,5 +46,6 @@ struct Vector *capture_type_get_items(enum capture_type_id_t capture_type_id);
 CGImageRef capture_type_id_or_default_capture_type_id(enum capture_type_id_t capture_type_id, size_t capture_id);
 CGImageRef capture_type_capture(enum capture_type_id_t capture_type_id, size_t capture_id);
 CGImageRef capture_type_preview(enum capture_type_id_t capture_type_id, size_t capture_id);
+CGImageRef capture_type_capture_rect(enum capture_type_id_t capture_type_id, size_t capture_id, CGRect rect);
 //////////////////////////////////////
 #endif

@@ -27,3 +27,4 @@
 struct offset_t {
   int left_offset, right_offset, top_offset, bottom_offset;
 };
+bool window_id_is_minimized(size_t window_id);
