@@ -28,7 +28,7 @@ monitor_utils_c_args = [
 monitor_utils_link_args = [
 ]
 
-monitor_utils_lib = static_library('monitor-utils',
+monitor_utils_lib = library('monitor-utils',
   monitor_utils_srcs,
   install: false,
   dependencies: monitor_utils_deps,

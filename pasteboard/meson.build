@@ -16,7 +16,7 @@ pasteboard_link_args = [
   '-Wl,-framework,IOKit',
 ]
 
-pasteboard_lib = static_library('pasteboard',
+pasteboard_lib = library('pasteboard',
   pasteboard_srcs,
   install: false,
   dependencies: pasteboard_deps,

@@ -17,7 +17,7 @@ websocket_server_deps = [
   c_stringfn_dep,socket_protocol_dep,libforks_dep,
   c_string_buffer_dep,chan_dep,
   timestamp_dep,flingfd_dep,
-  log_dep,
+  log_dep,wslay_dep,tempdir_dep,parson_dep,c_img_dep,
   ms_dep,
   bytes_dep,
 ]
@@ -28,7 +28,7 @@ websocket_server_c_args = [
 websocket_server_link_args = [
 ]
 
-websocket_server_lib = static_library('websocket-server',
+websocket_server_lib = library('websocket-server',
   websocket_server_srcs,
   install: false,
   dependencies: websocket_server_deps,

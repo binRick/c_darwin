@@ -23,14 +23,14 @@ process_utils_deps = [
   wildcardcmp_dep,
   reproc_dep,which_dep,
 ]
-process_utils_link_flags = [
-  osx_link_args,
-]
+
+
+process_utils_link_flags = osx_ldflags
 
 
 
 
-process_utils_lib = static_library('process-utils',
+process_utils_lib = library('process-utils',
   process_utils_srcs,
   install: false,
   dependencies: process_utils_deps,

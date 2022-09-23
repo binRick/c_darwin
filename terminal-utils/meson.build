@@ -27,7 +27,7 @@ terminal_utils_c_args = [
 terminal_utils_link_args = [
 ]
 
-terminal_utils_lib = static_library('terminal-utils',
+terminal_utils_lib = library('terminal-utils',
   terminal_utils_srcs,
   install: false,
   dependencies: terminal_utils_deps,

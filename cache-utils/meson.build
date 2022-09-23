@@ -28,7 +28,7 @@ cache_utils_c_args = [
 cache_utils_link_args = [
 ]
 
-cache_utils_lib = static_library('cache-utils',
+cache_utils_lib = library('cache-utils',
   cache_utils_srcs,
   install: false,
   dependencies: cache_utils_deps,

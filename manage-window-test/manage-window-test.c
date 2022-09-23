@@ -43,7 +43,7 @@ TEST t_authorized_tests(void){
 
 ////////////////////////////////////////////
 TEST t_manage_window_move_space_id(){
-  struct window_t *w = get_window_id(cfg->WINDOWID);
+  struct window_info_t *w = get_window_id_info(cfg->WINDOWID);
 
   if (w->window_id != cfg->WINDOWID) {
     FAIL();
@@ -55,7 +55,7 @@ TEST t_manage_window_move_space_id(){
             cfg->SPACEID
             );
   window_send_to_space(w, cfg->SPACEID);
-  struct window_t *w2 = get_window_id(cfg->WINDOWID);
+  struct window_info_t *w2 = get_window_id_info(cfg->WINDOWID);
 
   ASSERT_EQm("Failed to move window to new spaceid", w2->space_id, cfg->SPACEID);
   asprintf(&msg, "Moved window #%lu from space id %d to space id %d",
@@ -68,9 +68,8 @@ TEST t_manage_window_move_space_id(){
 }
 
 TEST t_manage_window_move(){
-  struct window_t *w = get_window_id(cfg->WINDOWID);
+  struct window_info_t *w = get_window_id_info(cfg->WINDOWID);
 
-  log_debug("Managing Window ID %lu @%dx%d", w->window_id, (int)(w->position.x), (int)(w->position.y));
   ASSERT_NEQm("Failed to get focused window", w, NULL);
   bool ok = move_window(w, cfg->X, cfg->Y);
 
@@ -78,45 +77,18 @@ TEST t_manage_window_move(){
 
   ASSERT_EQm("Failed to move window", ok, true);
 
-  struct window_t *w1          = get_window_id(w->window_id);
-  size_t          waited_qty   = 0;
-  unsigned long   started_wait = timestamp();
+  struct window_info_t *w1          = get_window_id_info(w->window_id);
+  size_t               waited_qty   = 0;
+  unsigned long        started_wait = timestamp();
 
-  while ((int)w1->position.x != cfg->X || (int)w1->position.y != cfg->Y) {
-    unsigned long waited_dur = (unsigned long)timestamp() - started_wait;
-    if (waited_dur > cfg->max_wait_ms) {
-      break;
-    }
-    if ((waited_qty % 5) == 0) {
-      log_debug(AC_YELLOW "Waiting for window to move (%dx%d => %dx%d). Waited %ld/%ldms" AC_RESETALL,
-                (int)w->position.x, (int)w->position.y,
-                (int)w1->position.x, (int)w1->position.y,
-                (unsigned long)(timestamp() - started_wait),
-                cfg->max_wait_ms
-                );
-    }
+  unsigned long        dur_ms = timestamp() - started_wait;
 
-    usleep(1000 * POLL_WINDOW_STATE_MS);
-    w1 = get_window_id(w->window_id);
-    waited_qty++;
-  }
-  unsigned long dur_ms = timestamp() - started_wait;
-
-  log_info(AC_GREEN "Window ID %lu moved new position (%dx%d) in " AC_RESETALL AC_BLUE "%s" AC_RESETALL,
-           w1->window_id, (int)(w1->position.x), (int)(w1->position.y), milliseconds_to_string((unsigned long)(timestamp() - started_wait))
-           );
-  ASSERT_EQm("Failed to move window X properly", (int)w1->position.x, cfg->X);
-  ASSERT_EQm("Failed to move window Y properly", (int)w1->position.y, cfg->Y);
-  asprintf(&msg, AC_GREEN "Moved Window ID %lu from %dx%d to %dx%d in " AC_RESETALL AC_BLUE "%s" AC_RESETALL,
-           w1->window_id, (int)w->position.x, (int)w->position.y, cfg->X, cfg->Y, milliseconds_to_string(dur_ms)
-           );
   PASSm(msg);
 } /* t_manage_window_move */
 
 TEST t_manage_window_resize(){
-  struct window_t *w = get_window_id(cfg->WINDOWID);
+  struct window_info_t *w = get_window_id_info(cfg->WINDOWID);
 
-  log_debug("window id %lu size: %dx%d", w->window_id, (int)(w->size.width), (int)(w->size.height));
   ASSERT_NEQm("Failed to get focused window", w, NULL);
 
   unsigned long started_wait = timestamp();
@@ -125,9 +97,7 @@ TEST t_manage_window_resize(){
   unsigned long dur_ms = timestamp() - started_wait;
 
   ASSERT_EQm("Failed to resize window", ok, true);
-  struct window_t *w1 = get_window_id(w->window_id);
-
-  log_info("window id %lu size: %dx%d", w1->window_id, (int)w1->size.width, (int)w1->size.height);
+  struct window_info_t *w1 = get_window_id_info(w->window_id);
 
   asprintf(&msg, "Resized Window ID %lu to %dx%d in %s", w->window_id, cfg->WIDTH, cfg->HEIGHT, milliseconds_to_string(dur_ms));
   PASSm(msg);

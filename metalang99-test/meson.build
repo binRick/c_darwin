@@ -20,8 +20,8 @@ metalang99_test_deps = [
   app_utils_dep,
   window_utils_dep,
   c_stringfn_dep,
-  wrec_utils_dep,
-  wrec_common_dep,
+  
+  
   c_vector_dep,
   c_string_buffer_dep,
   c_stringfn_dep,

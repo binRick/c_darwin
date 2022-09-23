@@ -1,8 +1,19 @@
 #include "display-utils/display-utils.h"
 #include "frameworks/frameworks.h"
+#include "frameworks/frameworks.h"
 #include "log/log.h"
+#include "process-utils/process-utils.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
+#include "window-info/window-info.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
+#include <Carbon/Carbon.h>
+#include <CoreServices/CoreServices.h>
+#include <CoreServices/CoreServices.h>
+#include <IOKit/ps/IOPowerSources.h>
+#include <IOKit/ps/IOPSKeys.h>
 static void print_display(struct display_t *d);
 static bool DISPLAY_UTILS_DEBUG_MODE = false;
 typedef void (^display_parser_b)(struct display_t *d, size_t display_id);
@@ -13,6 +24,7 @@ enum display_parser_type_t {
   DISPLAY_PARSER_TYPE_HEIGHT,
   DISPLAY_PARSER_TYPE_MAIN,
   DISPLAY_PARSER_TYPE_SPACE_IDS,
+  DISPLAY_PARSER_TYPE_WINDOW_IDS,
   DISPLAY_PARSER_TYPES_QTY,
 };
 struct display_parser_t {
@@ -44,6 +56,10 @@ static struct display_parser_t display_parsers[DISPLAY_PARSER_TYPES_QTY + 1] = {
                                        .parser  = ^ void (struct display_t *d, size_t display_id){
                                          d->space_ids_v = get_display_id_space_ids_v((uint32_t)display_id);
                                        }, },
+  [DISPLAY_PARSER_TYPE_WINDOW_IDS] = { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         d->window_ids_v = get_display_id_window_ids_v((uint32_t)display_id);
+                                       }, },
   [DISPLAY_PARSER_TYPES_QTY] =       { 0 },
 };
 
@@ -63,6 +79,7 @@ static void print_display(struct display_t *d){
           "  Width        :       %d"  "\n"
           "  Height       :       %d"  "\n"
           "  # Spaces     :       %lu"  "\n"
+          "  # Windows     :       %lu"  "\n"
           "%s",
           d->display_id,
           d->is_main ? "Yes" : "No",
@@ -70,6 +87,7 @@ static void print_display(struct display_t *d){
           d->width,
           d->height,
           vector_size(d->space_ids_v),
+          vector_size(d->window_ids_v),
           "\n"
           );
 }
@@ -88,6 +106,7 @@ struct Vector *get_displays_v(){
   for (size_t i = 0; i < vector_size(_display_ids_v); i++) {
     struct display_t *d         = calloc(1, sizeof(struct display_t));
     size_t           display_id = (size_t)vector_get(_display_ids_v, i);
+    d->index = i;
     parse_display(d, display_id);
     vector_push(a, (void *)d);
   }
@@ -140,6 +159,25 @@ void get_display_bounds(int *x, int *y, int *w, int *h){
   *y = bounds.origin.y;
   *w = bounds.size.width;
   *h = bounds.size.height;
+}
+
+int get_display_id_index(size_t display_id){
+  int               index               = -1;
+  size_t            displays_qty        = 0;
+  CGDirectDisplayID *display_ids        = calloc(MAX_DISPLAYS, sizeof(CGDirectDisplayID));
+  CGError           get_displays_result = CGGetActiveDisplayList(UCHAR_MAX, display_ids, &displays_qty);
+
+  if (get_displays_result == kCGErrorSuccess) {
+    for (size_t i = 0; i < displays_qty && i < MAX_DISPLAYS; i++) {
+      if (display_id == (size_t)display_ids[i]) {
+        index = i;
+      }
+    }
+  }
+  if (display_ids) {
+    free(display_ids);
+  }
+  return(index);
 }
 
 struct Vector *get_display_ids_v(){
@@ -248,4 +286,43 @@ static void __attribute__((constructor)) __constructor__display_utils(void){
 
 CGSize get_display_id_size(int display_id){
   return(CGDisplayScreenSize(display_id));
+}
+
+struct Vector *get_display_id_space_ids_v(uint32_t did){
+  struct Vector *display_space_ids_v = vector_new();
+  CFStringRef   uuid                 = get_display_uuid_ref(did);
+
+  if (!uuid) {
+    log_error("Unable to determine uuid of display id %d", did);
+    return(display_space_ids_v);
+  }
+  CFArrayRef display_spaces_ref = SLSCopyManagedDisplaySpaces(g_connection);
+
+  if (!display_spaces_ref) {
+    log_error("Unable to determine spaces ref of display id %d", did);
+    return(display_space_ids_v);
+  }
+
+  int display_spaces_count = CFArrayGetCount(display_spaces_ref);
+
+  for (int i = 0; i < display_spaces_count; i++) {
+    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);
+    CFStringRef     identifier  = CFDictionaryGetValue(display_ref, CFSTR("Display Identifier"));
+    if (!CFEqual(uuid, identifier)) {
+      continue;
+    }
+
+    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
+    int        qty        = CFArrayGetCount(spaces_ref);
+    for (int j = 0; j < qty; ++j) {
+      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
+      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
+      size_t          space_id  = 0;
+      CFNumberGetValue(sid_ref, CFNumberGetType(CFDictionaryGetValue(space_ref, CFSTR("id64"))), &space_id);
+      vector_push(display_space_ids_v, (void *)(size_t)space_id);
+    }
+  }
+  CFRelease(display_spaces_ref);
+  CFRelease(uuid);
+  return(display_space_ids_v);
 }

@@ -10,7 +10,7 @@ font_utils_include_dirs = [
 ]
 
 font_utils_deps = [
-  ansi_codes_dep,systemprofiler_dep,
+  ansi_codes_dep,systemprofiler_dep,parson_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,

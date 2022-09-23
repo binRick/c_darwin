@@ -10,6 +10,7 @@ keylogger_inc = [
 ]
 
 keylogger_deps = [
+  app_utils_dep,
  c_string_buffer_dep,
  string_utils_dep,
  core_utils_dep,
@@ -19,7 +20,7 @@ keylogger_deps = [
 ]
 
 
-keylogger_lib = static_library('keylogger',
+keylogger_lib = library('keylogger',
   keylogger_srcs,
   dependencies: keylogger_deps,
   c_args: keylogger_cargs,

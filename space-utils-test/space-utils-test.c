@@ -45,12 +45,8 @@ TEST t_space_utils_test(){
               display_id, vector_size(space_ids_v));
     size_t on_space_index = 0;
     for (size_t i = 0; i <= vector_size(space_ids_v) + 1; i++) {
-      int      space_id = (int)(size_t)vector_get(space_ids_v, i);
-      int      minimized_window_count, window_count;
-      uint32_t *window_list = get_space_window_list(i, &window_count, true);
-      if (window_count == 0) {
-        continue;
-      }
+      int space_id = (int)(size_t)vector_get(space_ids_v, i);
+      int minimized_window_count, window_count;
       on_space_index++;
       get_space_minimized_window_list(i, &minimized_window_count);
       log_debug("    Space " AC_GREEN "#%lu/%lu " AC_RESETALL " :: |"
@@ -59,32 +55,6 @@ TEST t_space_utils_test(){
                 on_space_index, vector_size(space_ids_v),
                 window_count, minimized_window_count
                 );
-      for (int w = 0; w < window_count && w < 99; w++) {
-        struct window_t *W = get_window_id(window_list[w]);
-        if (!W) {
-          continue;
-        }
-        log_debug("       Window " AC_RESETALL AC_MAGENTA "#%d/%d" AC_RESETALL
-                  "  [window ID " AC_RESETALL AC_RED "%" PRIu32 AC_RESETALL "]\n"
-                  "               |app:" AC_RESETALL AC_GREEN AC_UNDERLINE AC_BOLD "%s" AC_RESETALL "\n"
-                  "               |pid:%d|ismin:%s|layer:%d|spaceid:%d|size:%dx%d|display:%d|\n"
-                  "               |psn:%d|ppid:%d|rtime:%d|focused:%s|visible:%s|childpids:%lu|",
-                  w + 1, window_count,
-                  (window_list[w]),
-                  W->app_name,
-                  W->pid,
-                  W->is_minimized?"Yes":"No",
-                  W->layer,
-                  W->space_id,
-                  W->width, W->height,
-                  W->display_id,
-                  W->psn.highLongOfPSN + W->psn.lowLongOfPSN,
-                  W->pid_info.kp_eproc.e_ppid, W->pid_info.kp_proc.p_rtime.tv_usec,
-                  W->is_focused?"Yes":"No",
-                  W->is_visible?"Yes":"No",
-                  vector_size(W->child_pids_v)
-                  );
-      }
     }
   }
   PASS();

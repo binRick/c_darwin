@@ -3,6 +3,7 @@
 #define TESSERACT_UTILS_H
 //////////////////////////////////////
 #include "c_vector/vector/vector.h"
+#include "tesseract/capi.h"
 #include "window-utils/window-utils.h"
 #include <assert.h>
 #include <ctype.h>
@@ -14,6 +15,14 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
+struct component_image_t {
+  int        mode;
+  int        x, y;
+  int        width, height;
+  int        confidence;
+  const char *text;
+  char       *file;
+};
 struct tesseract_extract_result_source_file_t {
   char *file;
   int  width, height;
@@ -46,6 +55,7 @@ enum extract_mode_type_t {
   EXTRACT_MODE_TYPE_TEXT = 1,
   EXTRACT_MODE_TYPE_SYMBOLS,
 };
+struct Vector *tesseract_extract_windows(struct Vector *window_ids_v, size_t concurrency);
 struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations(size_t window_id, struct Vector *words);
 struct Vector *tesseract_extract_text(size_t window_id);
 void tesseract_extract_symbols(size_t window_id);

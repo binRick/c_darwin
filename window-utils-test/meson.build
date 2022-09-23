@@ -14,11 +14,11 @@ window_utils_test_deps = [
   window_utils_dep,
   ms_dep,
   bytes_dep,
-  log_dep,
+  log_dep,display_utils_dep,process_utils_dep,
   c_greatest_dep,
   dbg_dep,
   c_timer_dep,
- wrec_capture_dep,
+ 
   c_fsio_dep,
   fort_dep,
 ]

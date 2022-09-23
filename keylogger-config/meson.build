@@ -38,7 +38,7 @@ keylogger_c_args = [
 ]
 keylogger_config_args = [
 ]
-keylogger_config_lib = static_library('keylogger-config',
+keylogger_config_lib = library('keylogger-config',
   keylogger_config_srcs,
   install: false,
   dependencies: keylogger_config_deps,

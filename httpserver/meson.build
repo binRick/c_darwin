@@ -12,6 +12,7 @@ httpserver_include_dirs = [
 httpserver_deps = [
   ansi_codes_dep,
   c_vector_dep,
+  httpserver_utils_dep,
   c_fsio_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
@@ -31,7 +32,7 @@ httpserver_c_args = [
 httpserver_link_args = [
 ]
 
-httpserver_lib = static_library('httpserver',
+httpserver_lib = library('httpserver',
   httpserver_srcs,
   install: false,
   dependencies: httpserver_deps,

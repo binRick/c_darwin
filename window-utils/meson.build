@@ -15,7 +15,7 @@ window_utils_deps = [
   space_utils_dep,
   log_dep,image_utils_dep,
   ansi_codes_dep,display_utils_dep,
-  c_vector_dep,string_utils_dep,window_info_dep,
+  c_vector_dep,string_utils_dep,window_info_dep,process_utils_dep,
   process_dep,app_utils_dep,image_utils_dep,
 ]
 window_utils_link_flags = [
@@ -49,7 +49,7 @@ window_utils_link_flags +=  ['-Wl,-framework,AppKit']
 window_utils_link_flags +=  ['-Wl,-framework,IOKit']
 window_utils_link_flags +=  ['-F/System/Library/PrivateFrameworks']
 
-window_utils_lib = static_library('window-utils',
+window_utils_lib = library('window-utils',
   window_utils_srcs,
   install: false,
   dependencies: window_utils_deps,

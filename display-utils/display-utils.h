@@ -21,13 +21,14 @@
 #include <stdlib.h>
 #include <string.h>
 struct display_t {
-  size_t        display_id;
-  char          *uuid;
-  int           index;
+  size_t        display_id, index;
   int           width, height;
+  char          *uuid;
   bool          is_main;
-  struct Vector *space_ids_v;
+  struct Vector *space_ids_v, *window_ids_v;
 };
+int get_display_id_index(size_t display_id);
+struct Vector *get_display_id_window_ids_v(uint32_t display_id);
 struct Vector *get_displays_v();
 int get_display_id_width(int display_id);
 int get_display_id_height(int display_id);
@@ -54,5 +55,5 @@ void get_display_bounds(int *x, int *y, int *w, int *h);
 CGPoint get_display_center(uint32_t did);
 CGRect get_display_rect(uint32_t did);
 //////////////////////////////////////
-
+struct Vector *get_display_id_space_ids_v(uint32_t did);
 #endif

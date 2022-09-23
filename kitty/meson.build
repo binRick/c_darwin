@@ -23,7 +23,7 @@ kitty_dirs = [
   '.',
   inc,
 ]
-kitty_lib =static_library('kitty',
+kitty_lib = library('kitty',
   kitty_srcs,
   install: false,
   dependencies: kitty_deps,

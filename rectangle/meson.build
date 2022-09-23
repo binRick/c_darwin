@@ -27,7 +27,7 @@ rectangle_c_args = [
 
 rectangle_dir = join_paths(meson.current_source_dir(), '..')
 
-rectangle_lib = static_library('rectangle',
+rectangle_lib = library('rectangle',
   rectangle_srcs,
   dependencies: rectangle_deps,
   c_args: rectangle_c_args,

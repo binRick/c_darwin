@@ -48,7 +48,7 @@ enum common_option_width_or_height_t {
 };
 char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height);
 struct args_t {
-  bool                                 verbose, current_space_only;
+  bool                                 verbose, current_space_only, current_display_only;
   int                                  space_id, window_id;
   int                                  x, y;
   int                                  width, height;
@@ -57,14 +57,17 @@ struct args_t {
   char                                 *application_path, *output_icns_file, *input_icns_file;
   char                                 *output_png_file, *input_png_file, *input_file, *output_file;
   enum common_option_width_or_height_t width_or_height;
-  struct window_t                      *window;
+  struct window_info_t                 *window;
   size_t                               icon_size;
+  int                                  concurrency;
   double                               resize_factor;
   char                                 *xml_file_path;
   bool                                 clear_icons_cache, minimized_only, non_minimized_only;
-  int                                  pid, display_id;
-  char *sort_direction, *application_name;
-  char *sort_key;
+  bool                                 display_output_file, all_windows;
+  bool                                 random_window_id, clear_screen;
+  int                                  pid, display_id, width_greater, width_less, height_greater, height_less;
+  char                                 *sort_direction, *application_name;
+  char                                 *sort_key;
 };
 extern struct args_t *args;
 #endif

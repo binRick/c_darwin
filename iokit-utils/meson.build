@@ -25,7 +25,7 @@ iokit_utils_link_flags = [
 ]
 
 
-iokit_utils_lib = static_library('iokit-utils',
+iokit_utils_lib = library('iokit-utils',
   iokit_utils_srcs,
   install: false,
   dependencies: iokit_utils_deps,

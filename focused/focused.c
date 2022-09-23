@@ -390,7 +390,7 @@ static void on_space_id_changed(void *event_data, void *VOID){
     }
     log_debug("moving window %lu space %lu", window_id, space_id);
     window_id_send_to_space(window_id, (int)space_id);
-    struct window_t *w = get_window_id(window_id);
+    struct window_info_t *w = get_window_id_info(window_id);
     focus_window(w);
   }
   log_info("on_space_id_changed end");
@@ -421,7 +421,7 @@ static CGEventRef focused_event_handler(CGEventTapProxy proxy, CGEventType type,
   char *keys = stringbuffer_to_string(sb);
 
   stringbuffer_release(sb);
-  size_t space_id = (size_t)get_space_id();
+  size_t space_id = (size_t)get_current_space_id();
 
   log_info("key: %s|%ld|%lu:%lu", keys, c->started, space_id, c->cur_space_id);
   unsigned long started = timestamp();
@@ -469,7 +469,7 @@ struct focused_config_t *init_focused_config(void){
   c->focused_space_ids  = vector_new();
   c->focused_window_ids = vector_new();
   c->ee                 = eventemitter_new();
-  c->cur_space_id       = (size_t)get_space_id();
+  c->cur_space_id       = (size_t)get_current_space_id();
   eventemitter_add_listener(c->ee, EVENT_SPACE_ID_CHANGED, on_space_id_changed, (void *)c);
   return(c);
 }

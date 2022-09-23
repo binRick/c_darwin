@@ -27,7 +27,7 @@ keyboard_utils_c_args = [
 keyboard_utils_link_args = [
 ]
 
-keyboard_utils_lib = static_library('keyboard-utils',
+keyboard_utils_lib = library('keyboard-utils',
   keyboard_utils_srcs,
   install: false,
   dependencies: keyboard_utils_deps,

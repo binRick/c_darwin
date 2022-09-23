@@ -27,7 +27,7 @@ alacritty_c_args = [
 alacritty_link_args = [
 ]
 
-alacritty_lib = static_library('alacritty',
+alacritty_lib = library('alacritty',
   alacritty_srcs,
   install: false,
   dependencies: alacritty_deps,

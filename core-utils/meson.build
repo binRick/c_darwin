@@ -51,7 +51,7 @@ core_utils_link_args +=  ['-Wl,-framework,AppKit']
 core_utils_link_args +=  ['-Wl,-framework,IOKit']
 core_utils_link_args +=  ['-F/System/Library/PrivateFrameworks']
 
-core_utils_lib = static_library('core-utils',
+core_utils_lib = library('core-utils',
   core_utils_srcs,
   install: false,
   dependencies: core_utils_deps,

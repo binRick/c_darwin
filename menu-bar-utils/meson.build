@@ -24,7 +24,7 @@ menu_bar_utils_link_args = osx_link_args
 
 menu_bar_utils_dir = join_paths(meson.current_source_dir(), '..')
 
-menu_bar_utils_lib = static_library('menu-bar-utils',
+menu_bar_utils_lib = library('menu-bar-utils',
   menu_bar_utils_srcs,
   install: false,
   dependencies: menu_bar_utils_deps,

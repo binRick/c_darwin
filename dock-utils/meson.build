@@ -23,7 +23,7 @@ dock_utils_link_args = osx_link_args
 
 dock_utils__dir = join_paths(meson.current_source_dir(), '..')
 
-dock_utils_lib = static_library('dock-utils',
+dock_utils_lib = library('dock-utils',
   dock_utils_srcs,
   install: false,
   dependencies: dock_utils_deps,

@@ -31,7 +31,7 @@ icon_utils_c_args = [
 icon_utils_link_args = [
 ]
 
-icon_utils_lib = static_library('icon-utils',
+icon_utils_lib = library('icon-utils',
   icon_utils_srcs,
   install: false,
   dependencies: icon_utils_deps,

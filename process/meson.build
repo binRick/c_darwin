@@ -20,7 +20,7 @@ process_dirs = [
   '.',
   inc,
 ]
-process_lib = static_library('process',
+process_lib = library('process',
   process_srcs,
   dependencies: process_deps,
   c_args: process_c_args,

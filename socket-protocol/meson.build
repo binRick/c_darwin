@@ -29,7 +29,7 @@ socket_protocol_c_args = [
 socket_protocol_link_args = [
 ]
 
-socket_protocol_lib = static_library('socket-protocol',
+socket_protocol_lib = library('socket-protocol',
   socket_protocol_srcs,
   install: false,
   dependencies: socket_protocol_deps,

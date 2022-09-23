@@ -21,7 +21,7 @@ space_utils_deps = [
   hash_dep,
   module_dep,
   process_dep,
-  timestamp_dep,
+  timestamp_dep,display_utils_dep,process_utils_dep,
 ]
 space_utils_link_flags = [
 '-Wl,-framework,CoreFoundation',
@@ -32,7 +32,11 @@ space_utils_link_flags = [
 '-Wl,-framework,Cocoa', 
 '-Wl,-framework,Carbon', 
 '-Wl,-framework,CoreServices', 
-'-Wl,-framework,AppKit'
+'-Wl,-framework,AppKit',
+'-Wl,-framework,SkyLight',
+'-Wl,-framework,ApplicationServices',
+'-Wl,-framework,AppKit',
+'-F/System/Library/PrivateFrameworks',
 ]
 
 space_utils_link_flags +=  ['-Wl,-framework,Foundation']
@@ -54,7 +58,7 @@ space_utils_link_flags +=  ['-Wl,-framework,AppKit']
 space_utils_link_flags +=  ['-Wl,-framework,IOKit']
 space_utils_link_flags +=  ['-F/System/Library/PrivateFrameworks']
 
-space_utils_lib = static_library('space-utils',
+space_utils_lib = library('space-utils',
   space_utils_srcs,
   install: false,
   dependencies: space_utils_deps,

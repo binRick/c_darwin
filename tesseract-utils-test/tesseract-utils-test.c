@@ -23,23 +23,24 @@
 #include "timestamp/timestamp.h"
 #include "window-utils/window-utils.h"
 ///////////////////////////////////////////////////////////
-#define MIN_PNG_SIZE      1024 * 32
-#define MIN_PNG_WIDTH     100
-#define MIN_PNG_HEIGHT    50
-static size_t MAX_WINDOWS = 100;
+#define ENABLE_TIF_PROCESSING    false
+#define MIN_PNG_SIZE             1024 * 32
+#define MIN_PNG_WIDTH            100
+#define MIN_PNG_HEIGHT           50
+#define TU_MAX_WINDOWS           100
+#define TU_MAX_SPACES            10
 static char *image_grayscale_name(char *image_path);
 static char *image_results_file_name(char *image_path);
-static const char         *tess_lang = "eng";
-static TessBaseAPI        *api;
-static char               *tess_ver;
-static char               *extracted_text = NULL;
-static TessResultIterator *tess_iterator = NULL;
-static bool               TESSERACT_TEST_DEBUG_MODE = false;
-static struct Vector      *space_id_images, *window_id_images, *space_ids_v, *windows_v;
-static const char         *TEST_IMAGES[] = {
+static const char    *tess_lang = "eng";
+static TessBaseAPI   *api;
+static char          *tess_ver;
+static char          *extracted_text = NULL;
+static bool          TESSERACT_TEST_DEBUG_MODE = false;
+static struct Vector *space_id_images, *window_id_images, *space_ids_v, *windows_v;
+static const char    *TEST_IMAGES[] = {
   "tesseract-utils-test/etc/ss1.png",
 };
-struct Pix                *img;
+struct Pix           *img;
 ///////////////////////////////////////////////////////////
 
 #define RUN_TESTS()    {                                                                                         \
@@ -49,7 +50,6 @@ struct Pix                *img;
     RUN_TESTp(t_tesseract_read_image, (void *)TEST_IMAGES[0]);                                                   \
     RUN_TEST(t_tesseract_api_recognize);                                                                         \
     RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(TEST_IMAGES[0])); \
-    RUN_TESTp(t_tesseract_api_get_text, (void *)image_results_file_name(TEST_IMAGES[0]));                        \
     RUN_TEST(t_tesseract_api_cleanup);                                                                           \
 }
 
@@ -69,6 +69,17 @@ static char *image_iterator_file_name(char *image_path){
 
   asprintf(&image_filename, "%s-iterator.txt", _image_filename);
   return(image_filename);
+}
+
+static char *temp_file_name(char *prefix, int id, char *extension){
+  char *f;
+
+  asprintf(&f, "%s%d-%s-%d.%s",
+           gettempdir(), getpid(),
+           prefix, id,
+           extension
+           );
+  return(f);
 }
 
 static char *image_results_file_name(char *image_path){
@@ -92,16 +103,16 @@ static char *image_grayscale_name(char *image_path){
 TEST t_tesseract_capture_windows(){
   unsigned long captures_started = timestamp();
 
-  windows_v = get_windows();
+  windows_v = get_window_infos_v();
   char   *msg;
   char   *image_filename;
   size_t window_ids_bytes = 0;
 
-  for (size_t i = 0; i < vector_size(windows_v) && vector_size(window_id_images) < MAX_WINDOWS; i++) {
-    struct window_t *window = (struct window_t *)vector_get(windows_v, i);
-    unsigned long   started = timestamp();
+  for (size_t i = 0; i < vector_size(windows_v) && vector_size(window_id_images) < TU_MAX_WINDOWS; i++) {
+    struct window_info_t *window = (struct window_info_t *)vector_get(windows_v, i);
+    unsigned long        started = timestamp();
     log_info("capturing window %lu", window->window_id);
-    asprintf(&image_filename, "/tmp/window-%lu.png", window->window_id);
+    image_filename = temp_file_name("window", window->window_id, "png");
     bool ok = capture_type_capture_png_file(CAPTURE_TYPE_WINDOW, window->window_id, image_filename);
     if (ok == false || fsio_file_size(image_filename) < MIN_PNG_SIZE) {
       if (TESSERACT_TEST_DEBUG_MODE) {
@@ -141,16 +152,16 @@ TEST t_tesseract_capture_windows(){
 
 TEST t_tesseract_capture_spaces(){
   unsigned long captures_started = timestamp();
+  char          *image_filename;
 
   space_ids_v = get_space_ids_v();
   char   *msg;
   size_t space_ids_bytes = 0;
 
-  for (size_t i = 0; i < vector_size(space_ids_v); i++) {
+  for (size_t i = 0; i < vector_size(space_ids_v) && i < TU_MAX_SPACES; i++) {
     unsigned long started  = timestamp();
     size_t        space_id = (size_t)vector_get(space_ids_v, i);
-    char          *image_filename;
-    asprintf(&image_filename, "/tmp/space-%lu.png", space_id);
+    image_filename = temp_file_name("space", space_id, "png");
     bool          ok = capture_type_capture_png_file(CAPTURE_TYPE_SPACE, space_id, image_filename);
     log_info("capturing space %lu to %s", space_id, image_filename);
     if (ok == false || fsio_file_size(image_filename) < MIN_PNG_SIZE) {
@@ -201,33 +212,9 @@ TEST t_tesseract_api_cleanup(){
   PASSm(msg);
 }
 
-TEST t_tesseract_api_get_text(void *RESULTS_FILE){
-  unsigned long started = timestamp();
-
-  extracted_text = TessBaseAPIGetUTF8Text(api);
-  ASSERT_NEQ(extracted_text, NULL);
-  fsio_write_text_file((char *)RESULTS_FILE, extracted_text);
-  struct StringFNStrings lines = stringfn_split_lines_and_trim(extracted_text);
-
-  TessDeleteText(extracted_text);
-  char *msg;
-
-  asprintf(&msg, "Extracted %s, %d Lines of text to %s in %s",
-           bytes_to_string(strlen(extracted_text)),
-           lines.count,
-           (char *)RESULTS_FILE,
-           milliseconds_to_string(timestamp() - started)
-           );
-  if (TESSERACT_TEST_DEBUG_MODE == true) {
-    log_debug("%s", extracted_text);
-  }
-  stringfn_release_strings_struct(lines);
-  PASSm(msg);
-}
-
-TEST t_tesseract_api_iterator(void *ITERATOR_LEVEL, void *ITERATOR_RESULTS_FILE){
-  unsigned long started = timestamp();
-
+TEST t_tesseract_api_iterator(void *_MODE, void *ITERATOR_RESULTS_FILE){
+  int           MODE          = (int)(size_t)_MODE;
+  unsigned long started       = timestamp();
   char          *results_file = (char *)ITERATOR_RESULTS_FILE;
 
   if (fsio_file_exists(results_file)) {
@@ -235,19 +222,21 @@ TEST t_tesseract_api_iterator(void *ITERATOR_LEVEL, void *ITERATOR_RESULTS_FILE)
   }
   char        *m;
   size_t      i      = 0;
-  struct Boxa *boxes = TessBaseAPIGetComponentImages(api, RIL_TEXTLINE, true, NULL, NULL);
+  struct Boxa *boxes = TessBaseAPIGetComponentImages(api, MODE, true, NULL, NULL);
 
   if (boxes != NULL) {
     log_info("%d", boxes->n);
     for (int i = 0; i < boxes->n; i++) {
-      BOX *box = boxaGetBox(boxes, i, L_CLONE);
-      TessBaseAPISetRectangle(api, box->x, box->y, box->w, box->h);
-
-      const char *c   = TessBaseAPIGetUTF8Text(api);
-      int        conf = TessBaseAPIMeanTextConf(api);
-      if ((c != NULL) && (c[0] != '\0')) {
+      BOX                      *box = boxaGetBox(boxes, i, L_CLONE);
+      struct component_image_t *C   = calloc(1, sizeof(struct component_image_t));
+      C->mode = MODE;
+      C->x    = box->x; C->y = box->y; C->width = box->w; C->height = box->h;
+      TessBaseAPISetRectangle(api, C->x, C->y, C->width, C->height);
+      C->text       = TessBaseAPIGetUTF8Text(api);
+      C->confidence = TessBaseAPIMeanTextConf(api);
+      if ((C->text != NULL) && (C->text[0] != '\0')) {
         asprintf(&m, "Box[%d]: x=%d, y=%d, w=%d, h=%d, confidence: %d, text: %s",
-                 i, box->x, box->y, box->w, box->h, conf, c);
+                 i, C->x, C->y, C->width, C->height, C->confidence, C->text);
         log_info("%s", m);
         fsio_append_text_file(results_file, m);
         i++;
@@ -255,52 +244,6 @@ TEST t_tesseract_api_iterator(void *ITERATOR_LEVEL, void *ITERATOR_RESULTS_FILE)
       boxDestroy(&box);
     }
   }
-
-/*
- * tess_iterator = TessBaseAPIGetIterator(api);
- * TessPageIteratorLevel level = (int)(size_t)ITERATOR_LEVEL;
- * char                  *TS_WORD_TYPE = NULL; size_t TS_WORD_LEN = 0; int TS_VALID_WORD = -1;
- * do{
- *  char  *ts_word = TessResultIteratorGetUTF8Text(tess_iterator, level);
- *  float conf     = TessResultIteratorConfidence(tess_iterator, level);
- *
- *
- *
- *
- *  TS_WORD_LEN   = strlen(ts_word);
- *  TS_VALID_WORD = TessBaseAPIIsValidWord(api, ts_word);
- *  if (conf < 0.1) {
- *    goto next_word;
- *  }
- *  if (stringfn_is_ascii(ts_word) == false) {
- *    if (TESSERACT_TEST_DEBUG_MODE == true) {
- *      log_debug("Skipping non ascii '%s'", ts_word);
- *    }
- *    goto next_word;
- *  }
- *  if (stringfn_is_digits(ts_word)) {
- *    TS_WORD_TYPE = AC_BLUE "digits" AC_RESETALL;
- *  }else{
- *    TS_WORD_TYPE = AC_GREEN "characters" AC_RESETALL;
- *  }
- *  fsio_append_text_file(results_file, ts_word);
- * //    fsio_append_text_file(results_file,"\n");
- *
- *  if (TESSERACT_TEST_DEBUG_MODE == true) {
- *    log_debug("#%.4lu> [%.2f][%s][%d][" AC_CYAN "%.2lu" AC_RESETALL "] %s",
- *              i,
- *              conf, TS_WORD_TYPE, TS_VALID_WORD, TS_WORD_LEN,
- *              ts_word
- *              );
- *  }
- * next_word:
- *  TessDeleteText(ts_word);
- *  i++;
- * } while (TessPageIteratorNext((TessPageIterator *)tess_iterator, level));
- *
- *
- */
-
   char *msg;
 
   asprintf(&msg, "Processed %lu items and wrote %s to %s in %s",
@@ -353,7 +296,6 @@ TEST t_tesseract_read_image(void *IMG_PATH){
   log_info("Reading %s", image_path);
   img = pixRead(image_path);
   ASSERT_NEQ(img, NULL);
-  char *msg;
 
   log_info("Read %s Image %s in %s",
            bytes_to_string(fsio_file_size(image_path)), image_path, milliseconds_to_string(timestamp() - started)
@@ -405,12 +347,13 @@ SUITE(s_tesseract_windows) {
 
   window_id_images = vector_new();
   RUN_TEST(t_tesseract_capture_windows);
-  RUN_TEST(t_tesseract_version);
-  RUN_TEST(t_tesseract_api);
-  RUN_TEST(t_tesseract_api_init);
+
   unsigned long pngs_started = timestamp();
 
   for (size_t i = 0; i < vector_size(window_id_images); i++) {
+    RUN_TEST(t_tesseract_version);
+    RUN_TEST(t_tesseract_api);
+    RUN_TEST(t_tesseract_api_init);
     char *image = (char *)vector_get(window_id_images, i);
     if (fsio_file_exists(image) == false) {
       continue;
@@ -419,26 +362,26 @@ SUITE(s_tesseract_windows) {
     RUN_TESTp(t_tesseract_read_image, (void *)image);
     RUN_TEST(t_tesseract_api_recognize);
     RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(image));
-    RUN_TESTp(t_tesseract_api_get_text, (void *)image_results_file_name(image));
+    RUN_TEST(t_tesseract_api_cleanup);
   }
   log_info("Completed PNGs in %s", milliseconds_to_string(timestamp() - pngs_started));
-  unsigned long tifs_started = timestamp();
-
-  for (size_t i = 0; i < vector_size(window_id_images); i++) {
-    char *image = (char *)vector_get(window_id_images, i);
-    if (fsio_file_exists(image) == false) {
-      continue;
+  if (ENABLE_TIF_PROCESSING == true) {
+    unsigned long tifs_started = timestamp();
+    for (size_t i = 0; i < vector_size(window_id_images); i++) {
+      char *image = (char *)vector_get(window_id_images, i);
+      if (fsio_file_exists(image) == false) {
+        continue;
+      }
+      char *tif = image_grayscale_name(image);
+      RUN_TESTp(t_tesseract_convert_image, (void *)image);
+      log_info("Loading window tif image %s", tif);
+      RUN_TESTp(t_tesseract_read_image, (void *)tif);
+      RUN_TEST(t_tesseract_api_recognize);
+      RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(image));
+      RUN_TEST(t_tesseract_api_cleanup);
     }
-    char *tif = image_grayscale_name(image);
-    RUN_TESTp(t_tesseract_convert_image, (void *)image);
-    log_info("Loading window tif image %s", tif);
-    RUN_TESTp(t_tesseract_read_image, (void *)tif);
-    RUN_TEST(t_tesseract_api_recognize);
-    RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(image));
-    RUN_TESTp(t_tesseract_api_get_text, (void *)image_results_file_name(tif));
+    log_info("Completed TIFs in %s", milliseconds_to_string(timestamp() - tifs_started));
   }
-  log_info("Completed TIFs in %s", milliseconds_to_string(timestamp() - tifs_started));
-  RUN_TEST(t_tesseract_api_cleanup);
   log_info("Completed Windows Tests in %s", milliseconds_to_string(timestamp() - started));
 }
 
@@ -447,12 +390,13 @@ SUITE(s_tesseract_spaces) {
 
   space_id_images = vector_new();
   RUN_TEST(t_tesseract_capture_spaces);
-  RUN_TEST(t_tesseract_version);
-  RUN_TEST(t_tesseract_api);
-  RUN_TEST(t_tesseract_api_init);
+
   unsigned long pngs_started = timestamp();
 
   for (size_t i = 0; i < vector_size(space_id_images); i++) {
+    RUN_TEST(t_tesseract_version);
+    RUN_TEST(t_tesseract_api);
+    RUN_TEST(t_tesseract_api_init);
     char *image = (char *)vector_get(space_id_images, i);
     if (fsio_file_exists(image) == false) {
       continue;
@@ -461,26 +405,26 @@ SUITE(s_tesseract_spaces) {
     RUN_TESTp(t_tesseract_read_image, (void *)image);
     RUN_TEST(t_tesseract_api_recognize);
     RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(image));
-    RUN_TESTp(t_tesseract_api_get_text, (void *)image_results_file_name(image));
+    RUN_TEST(t_tesseract_api_cleanup);
   }
   log_info("Completed PNGs in %s", milliseconds_to_string(timestamp() - pngs_started));
-  unsigned long tifs_started = timestamp();
-
-  for (size_t i = 0; i < vector_size(space_id_images); i++) {
-    char *image = (char *)vector_get(space_id_images, i);
-    if (fsio_file_exists(image) == false) {
-      continue;
+  if (ENABLE_TIF_PROCESSING == true) {
+    unsigned long tifs_started = timestamp();
+    for (size_t i = 0; i < vector_size(space_id_images); i++) {
+      char *image = (char *)vector_get(space_id_images, i);
+      if (fsio_file_exists(image) == false) {
+        continue;
+      }
+      char *tif = image_grayscale_name(image);
+      RUN_TESTp(t_tesseract_convert_image, (void *)image);
+      log_info("Loading space tif image %s", tif);
+      RUN_TESTp(t_tesseract_read_image, (void *)tif);
+      RUN_TEST(t_tesseract_api_recognize);
+      RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(tif));
+      RUN_TEST(t_tesseract_api_cleanup);
     }
-    char *tif = image_grayscale_name(image);
-    RUN_TESTp(t_tesseract_convert_image, (void *)image);
-    log_info("Loading space tif image %s", tif);
-    RUN_TESTp(t_tesseract_read_image, (void *)tif);
-    RUN_TEST(t_tesseract_api_recognize);
-    RUN_TESTp(t_tesseract_api_iterator, (void *)RIL_TEXTLINE, (void *)image_iterator_file_name(tif));
-    RUN_TESTp(t_tesseract_api_get_text, (void *)image_results_file_name(tif));
+    log_info("Completed TIFs in %s", milliseconds_to_string(timestamp() - tifs_started));
   }
-  log_info("Completed TIFs in %s", milliseconds_to_string(timestamp() - tifs_started));
-  RUN_TEST(t_tesseract_api_cleanup);
   log_info("Completed Spaces Tests in %s", milliseconds_to_string(timestamp() - started));
 }
 

@@ -27,7 +27,7 @@ output_utils_c_args = [
 output_utils_link_args = [
 ]
 
-output_utils_lib = static_library('output-utils',
+output_utils_lib = library('output-utils',
   output_utils_srcs,
   install: false,
   dependencies: output_utils_deps,

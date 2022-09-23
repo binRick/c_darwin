@@ -78,7 +78,7 @@ JSON_Value *get_json_config(){
 
   assert(cfg_contents != NULL && cfg_contents_b64 != NULL);
   JSON_Value     *cfg_data    = json_value_init_object();
-  int            cur_space_id = get_space_id();
+  int            cur_space_id = get_current_space_id();
   uid_t          euid         = geteuid();
   struct passwd  *user        = getpwuid(euid);
   struct utsname buffer;

@@ -39,7 +39,7 @@ keylogger_c_args = [
 ]
 keylogger_db_args = [
 ]
-keylogger_db_lib = static_library('keylogger-db',
+keylogger_db_lib = library('keylogger-db',
   keylogger_db_srcs,
   install: false,
   dependencies: keylogger_db_deps,

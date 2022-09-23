@@ -10,7 +10,7 @@ active_app_module_link_args = [
   ]
 active_app_module_c_args = [
   ]
-active_app_module_lib = static_library('active-app-module',
+active_app_module_lib = library('active-app-module',
   active_app_module_srcs,
   install: false,
   dependencies: active_app_module_deps,

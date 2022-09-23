@@ -22,11 +22,12 @@ tesseract_utils_deps = [
   bytes_dep,
   tesseract_dep,
   leptonica_dep,wildcardcmp_dep,
+  c_workqueue_dep,chan_dep,
   stb_dep,
   space_utils_dep,
   display_utils_dep,
   window_utils_dep,
-  app_utils_dep,image_utils_dep,
+  app_utils_dep,image_utils_dep,process_utils_dep,display_utils_dep,
   c_img_dep,
 ]
 
@@ -40,7 +41,7 @@ tesseract_utils_link_args = [
   leptonica_libs,
 ]
 
-tesseract_utils_lib = static_library('tesseract-utils',
+tesseract_utils_lib = library('tesseract-utils',
   tesseract_utils_srcs,
   install: false,
   dependencies: tesseract_utils_deps,

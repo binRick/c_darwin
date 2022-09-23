@@ -28,7 +28,7 @@ usbdevs_utils_c_args = [
 usbdevs_utils_link_args = [
 ]
 
-usbdevs_utils_lib = static_library('usbdevs-utils',
+usbdevs_utils_lib = library('usbdevs-utils',
   usbdevs_utils_srcs,
   install: false,
   dependencies: usbdevs_utils_deps,

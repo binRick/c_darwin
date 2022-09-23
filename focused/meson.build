@@ -14,7 +14,7 @@ focused_deps = [
   osx_keys_dep,
   core_utils_dep,
   app_utils_dep,
-  dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,msgbox_dep,
+  dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,msgbox_dep,window_utils_dep,
   ansi_codes_dep,msgpack_c_dep,base64_simple_dep,hexify_c_dep,
   log_dep,
   timestamp_dep,
@@ -28,7 +28,7 @@ focused_link_args = [
 
 focused_test_dir = join_paths(meson.current_source_dir(), '..')
 
-focused_lib = static_library('focused',
+focused_lib = library('focused',
   focused_srcs,
   install: false,
   dependencies: focused_deps,

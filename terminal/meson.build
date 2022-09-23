@@ -27,7 +27,7 @@ terminal_c_args = [
 terminal_link_args = [
 ]
 
-terminal_lib = static_library('terminal',
+terminal_lib = library('terminal',
   terminal_srcs,
   install: false,
   dependencies: terminal_deps,

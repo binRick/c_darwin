@@ -30,6 +30,8 @@ struct process_info_t {
   struct Vector *open_files_v, *open_connections_v, *open_ports_v;
   unsigned long started, dur;
 };
+bool focus_pid(pid_t pid);
+struct Vector *get_window_infos_v();
 struct process_info_t *get_process_info(int pid);
 void process_info_release(struct process_info_t *I);
 pid_t PSN2PID(ProcessSerialNumber psn);

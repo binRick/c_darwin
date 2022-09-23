@@ -14,7 +14,7 @@ system_utils_link_args = [
   '-Wl,-framework,AppKit'
 ]
 
-system_utils_lib = static_library('system-utils',
+system_utils_lib = library('system-utils',
   system_utils_srcs,
   install: false,
   dependencies: system_utils_deps,

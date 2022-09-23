@@ -17,7 +17,7 @@ hotkey_utils_deps = [
   c_string_buffer_dep,
   timestamp_dep,
   log_dep,
-  ms_dep,
+  ms_dep,display_utils_dep,
   bytes_dep,libcyaml_dep,path_module_dep,window_utils_dep,app_utils_dep,
   murmurhash_dep,
 ]
@@ -28,7 +28,7 @@ hotkey_utils_c_args = [
 hotkey_utils_link_args = [
 ]
 
-hotkey_utils_lib = static_library('hotkey-utils',
+hotkey_utils_lib = library('hotkey-utils',
   hotkey_utils_srcs,
   install: false,
   dependencies: hotkey_utils_deps,

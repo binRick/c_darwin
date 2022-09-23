@@ -1,9 +1,16 @@
+#pragma once
+#ifndef SPACE_UTILS_C
+#define SPACE_UTILS_C
 #include "core-utils/core-utils.h"
 #include "display-utils/display-utils.h"
+#include "frameworks/frameworks.h"
 #include "image-utils/image-utils.h"
 #include "log.h/log.h"
 #include "space-utils/space-utils.h"
 #include "string-utils/string-utils.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
+#include <CoreServices/CoreServices.h>
 static bool SPACE_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__space_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_SPACE_UTILS") != NULL) {
@@ -15,7 +22,7 @@ static void __attribute__((constructor)) __constructor__space_utils(void){
 struct Vector *get_spaces_v(){
   struct Vector *spaces_v    = vector_new();
   struct Vector *space_ids_v = get_space_ids_v();
-  int           cur_space_id = get_space_id();
+  int           cur_space_id = get_current_space_id();
 
   for (size_t i = 0; i < vector_size(space_ids_v); i++) {
     size_t         space_id = (size_t)vector_get(space_ids_v, i);
@@ -80,45 +87,6 @@ struct Vector *get_space_window_ids_v(size_t space_id){
     vector_push(ids, (void *)(size_t)windows_list[i]);
   }
   return(ids);
-}
-
-struct Vector *get_display_id_space_ids_v(uint32_t did){
-  struct Vector *display_space_ids_v = vector_new();
-  CFStringRef   uuid                 = get_display_uuid_ref(did);
-
-  if (!uuid) {
-    log_error("Unable to determine uuid of display id %d", did);
-    return(display_space_ids_v);
-  }
-  CFArrayRef display_spaces_ref = SLSCopyManagedDisplaySpaces(g_connection);
-
-  if (!display_spaces_ref) {
-    log_error("Unable to determine spaces ref of display id %d", did);
-    return(display_space_ids_v);
-  }
-
-  int display_spaces_count = CFArrayGetCount(display_spaces_ref);
-
-  for (int i = 0; i < display_spaces_count; i++) {
-    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);
-    CFStringRef     identifier  = CFDictionaryGetValue(display_ref, CFSTR("Display Identifier"));
-    if (!CFEqual(uuid, identifier)) {
-      continue;
-    }
-
-    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
-    int        qty        = CFArrayGetCount(spaces_ref);
-    for (int j = 0; j < qty; ++j) {
-      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
-      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
-      size_t          space_id  = 0;
-      CFNumberGetValue(sid_ref, CFNumberGetType(CFDictionaryGetValue(space_ref, CFSTR("id64"))), &space_id);
-      vector_push(display_space_ids_v, (void *)(size_t)space_id);
-    }
-  }
-  CFRelease(display_spaces_ref);
-  CFRelease(uuid);
-  return(display_space_ids_v);
 }
 
 struct Vector *get_space_owners(int space_id){
@@ -387,10 +355,12 @@ uint32_t get_display_id_for_space(uint32_t sid) {
   return(id);
 }
 
-int get_space_id(void){
+int get_current_space_id(void){
   return(SLSGetActiveSpace(g_connection));
 }
 
 bool get_space_is_user(uint64_t sid){
   return(SLSSpaceGetType(g_connection, sid) == 0);
 }
+
+#endif

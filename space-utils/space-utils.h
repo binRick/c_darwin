@@ -15,7 +15,6 @@ struct space_t {
 uint32_t get_display_id_for_space(uint32_t sid);
 uint64_t get_display_space_id(uint32_t did);
 int get_space_display_id(int sid);
-struct Vector *get_display_id_space_ids_v(uint32_t did);
 /////////////////////////////////////////////////
 struct Vector *get_space_window_ids_v(size_t space_id);
 struct Vector *get_space_ids_v();
@@ -26,7 +25,7 @@ bool get_space_is_fullscreen(uint64_t sid);
 bool get_space_is_system(uint64_t sid);
 bool get_space_is_visible(uint64_t sid);
 /////////////////////////////////////////////////
-int get_space_id(void);
+int get_current_space_id(void);
 uint64_t get_dsid_from_sid(uint32_t sid);
 int get_total_spaces(void);
 uint32_t *get_space_window_list(uint64_t sid, int *count, bool include_minimized);

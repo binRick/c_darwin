@@ -28,7 +28,7 @@ pbpaste_deps = [
 ]
 
 
-pbpaste_lib = static_library('pbpaste',
+pbpaste_lib = library('pbpaste',
   pbpaste_srcs,
   install: false,
   dependencies: pbpaste_deps,

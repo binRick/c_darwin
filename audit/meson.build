@@ -23,7 +23,7 @@ audit_dirs = [
   '.',
   inc,
 ]
-audit_lib =static_library('audit',
+audit_lib = library('audit',
   audit_srcs,
   install: false,
   dependencies: audit_deps,

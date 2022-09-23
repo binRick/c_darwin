@@ -12,6 +12,7 @@ httpserver_utils_include_dirs = [
 ]
 
 httpserver_utils_deps = [
+  log_dep,wslay_dep,tempdir_dep,parson_dep,c_img_dep,
   timestamp_dep,chan_dep,
   ansi_codes_dep,
   httpserver_h_dep,
@@ -24,7 +25,7 @@ httpserver_utils_deps = [
   ms_dep,
   bytes_dep,incbin_dep,string_utils_dep,
   url_h_dep,capture_utils_dep,ms_dep,config_utils_dep,
-  querystring_c_dep,hotkey_utils_dep,
+  querystring_c_dep,hotkey_utils_dep,image_utils_dep,
   tesseract_dep,space_utils_dep,display_utils_dep,screen_utils_dep,
 ]
 
@@ -36,7 +37,7 @@ httpserver_utils_c_args = [
 httpserver_utils_link_args = [
 ]
 
-httpserver_utils_lib = static_library('httpserver-utils',
+httpserver_utils_lib = library('httpserver-utils',
   httpserver_utils_srcs,
   install: false,
   dependencies: httpserver_utils_deps,

@@ -12,7 +12,7 @@ osx_keys_dirs = [
 ]
 
 
-osx_keys_lib = static_library('osx-keys',
+osx_keys_lib = library('osx-keys',
   osx_keys_srcs,
   install: false,
   dependencies: osx_keys_deps,

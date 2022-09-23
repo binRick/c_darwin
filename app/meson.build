@@ -27,7 +27,7 @@ app_c_args = [
 app_link_args = [
 ]
 
-app_lib = static_library('app',
+app_lib = library('app',
   app_srcs,
   install: false,
   dependencies: app_deps,

@@ -17,7 +17,7 @@ capture_utils_deps = [
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,window_utils_dep,process_utils_dep,
   ms_dep,
   bytes_dep,
 ]
@@ -28,7 +28,7 @@ capture_utils_c_args = [
 capture_utils_link_args = [
 ]
 
-capture_utils_lib = static_library('capture-utils',
+capture_utils_lib = library('capture-utils',
   capture_utils_srcs,
   install: false,
   dependencies: capture_utils_deps,

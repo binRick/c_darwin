@@ -8,20 +8,20 @@ display_utils_dirs = [
 ]
 display_utils_deps = [
   c_fsio_dep,c_vector_dep,
-  c_stringfn_dep,string_utils_dep,
+  c_stringfn_dep,string_utils_dep,frameworks_dep,
   ansi_codes_dep,
-  log_dep,space_utils_dep,
+  log_dep,
   timestamp_dep,
-  ms_dep,
-  bytes_dep,
+  ms_dep,window_info_dep,
+  bytes_dep,process_utils_dep,
 ]
 display_utils_c_args = [
 ]
-display_utils_link_args = osx_link_args
+display_utils_link_args = osx_ldflags
 
 display_utils_dir = join_paths(meson.current_source_dir(), '..')
 
-display_utils_lib = static_library('display-utils',
+display_utils_lib = library('display-utils',
   display_utils_srcs,
   install: false,
   dependencies: display_utils_deps,

@@ -10,7 +10,7 @@ window_info_include_dirs = [
 ]
 
 window_info_deps = [
-  c_stringfn_dep,
+  c_stringfn_dep,window_sort_dep,
   parson_dep,
   log_dep,
   ansi_codes_dep,
@@ -32,7 +32,7 @@ window_info_link_args = [
   osx_link_args,
 ]
 
-window_info_lib = static_library('window-info',
+window_info_lib = library('window-info',
   window_info_srcs,
   install: false,
   dependencies: window_info_deps,

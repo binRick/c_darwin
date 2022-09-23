@@ -10,6 +10,7 @@ process_include_cargs = [
   ]
 ls_proc_deps = [
   process_dep,
+  c_string_buffer_dep,
   timestamp_dep,
   c_vector_dep,
   c_dbg_dep,

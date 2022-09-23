@@ -27,20 +27,6 @@ TEST t_screen_utils_test_init_screen_capture(){
   PASS();
 }
 
-TEST t_screen_utils_test_save_capture(){
-  struct screen_capture_t *C = screen_capture();
-
-  C->debug_mode    = true;
-  C->save_png_file = true;
-  C->save_qoi_file = false;
-  C->resize_factor = 0.5;
-  bool ok = save_captures(C);
-
-  ASSERT_EQ(ok, true);
-  free(C);
-  PASS();
-}
-
 TEST t_screen_utils_test_capture(){
   struct screen_capture_t *C = screen_capture();
 
@@ -62,7 +48,6 @@ TEST t_screen_utils_test_module_init(){
 
 SUITE(s_screen_utils_test_capture) {
   RUN_TEST(t_screen_utils_test_capture);
-  RUN_TEST(t_screen_utils_test_save_capture);
 }
 
 SUITE(s_screen_utils_test_init) {

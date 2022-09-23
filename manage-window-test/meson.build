@@ -11,7 +11,7 @@ manage_window_test_deps = [
   c_vector_dep,
   c_fsio_dep,
   window_utils_dep, core_utils_dep, app_utils_dep,
-  c_stringfn_dep,
+  c_stringfn_dep,process_utils_dep,
   ansi_codes_dep,
   bytes_dep, ms_dep,
   log_dep,

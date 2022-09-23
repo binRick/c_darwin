@@ -23,6 +23,9 @@ image_utils_deps = [
   timestamp_dep,
   stb_dep,
   qoi_dep,
+  timg_utils_dep,
+  c_workqueue_dep,
+  fancy_progress_dep,
 ]
 image_utils_link_flags = [
   osx_link_args,
@@ -36,7 +39,7 @@ image_utils_c_args = [
 ]
 
 
-image_utils_lib = static_library('image-utils',
+image_utils_lib = library('image-utils',
   image_utils_srcs,
   install: false,
   dependencies: image_utils_deps,

@@ -22,22 +22,22 @@ darwin_ls_deps = [
   core_utils_dep,
   window_utils_dep,
   app_utils_dep,font_utils_dep,
-  wrec_utils_dep,
+  
   focused_dep,
   space_utils_dep,
   display_utils_dep,
   dock_utils_dep,output_utils_dep,
   menu_bar_utils_dep, table_utils_dep,string_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,
-  wrec_common_dep,httpserver_h_dep,usbdevs_utils_dep,monitor_utils_dep,
-  wrec_capture_dep,icon_utils_dep,
+  httpserver_h_dep,usbdevs_utils_dep,monitor_utils_dep,
+  icon_utils_dep,
   capture_utils_dep,
   process_dep,keylogger_dep,hotkey_utils_dep,
   url_h_dep,
   querystring_c_dep,
   b64_dep,screen_utils_dep,
-  leptonica_dep,
+  leptonica_dep,timg_utils_dep,
   c_img_dep,image_utils_dep,config_utils_dep,tesseract_dep,tesseract_utils_dep,
-  httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,
+  httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,window_sort_dep,
 ]
 
 darwin_ls_c_args = [
@@ -52,11 +52,19 @@ darwin_ls_link_args = [
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
 test_args = [
-  'spaces','args','dock','menu-bar','displays','apps',
+  'spaces',
+  'args',
+  'dock',
+  'menu-bar',
+  'displays',
+  'apps',
   'fonts',
-  'usb','monitors','processes',
-  'kittys','alacrittys',
   'windows',
+  'usb',
+  'monitors',
+  'processes',
+  'kittys',
+  'alacrittys',
   ]
 
 if get_option('enable-binaries')

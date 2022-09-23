@@ -31,7 +31,7 @@ static const char     *capture_types_cache_dir = NULL;
 struct capture_type_t capture_types[] = {
   [CAPTURE_TYPE_SPACE] =   {
     .name           = "space",
-    .get_default_id = ^ size_t (void){ return(get_space_id());                                            },
+    .get_default_id = ^ size_t (void){ return(get_current_space_id());                                    },
     .validate_id    = ^ bool (size_t space_id){ return((space_id > 0 && space_id < 10000) ? true : false); },
     .capture        = ^ CGImageRef (size_t space_id){
       return(capture_space_id((uint32_t)space_id));

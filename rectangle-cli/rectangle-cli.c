@@ -65,52 +65,23 @@ int resize_non_todo_windows(){
   int           new_width     = display_width - todo_width;
   int           new_x         = 0;
   int           new_y         = 25;
-  struct Vector *windows      = get_windows();
+  struct Vector *windows      = get_window_infos_v();
 
   for (size_t i = 0; i < vector_size(windows); i++) {
-    struct window_t *w = vector_get(windows, i);
-    if (strcmp(w->app_name, todo_app) == 0) {
+    struct window_info_t *w = vector_get(windows, i);
+    if (strcmp(w->app, todo_app) == 0) {
       continue;
     }
     char *todo_app_app;
     asprintf(&todo_app_app, "%s.app", todo_app);
-    if (strcmp(w->app_name, todo_app_app) == 0) {
-      continue;
-    }
-    if (w->pid == todo_pid) {
-      continue;
-    }
-    if ((w->width == new_width) && ((int)w->position.x == new_x) && ((int)w->position.y) == new_y) {
-      continue;
-    }
-    if (w->layer != 0) {
-      continue;
-    }
-    if (w->is_visible != true) {
-      continue;
-    }
-    if (ctx.verbose == true) {
-      printf("[todo:%s] Resizing %s> %d|%d from %dx%d to %dx%d | moving from %dx%d to %dx%d\n",
-             todo_app,
-             w->app_name,
-             w->pid, w->window_id,
-             w->width, w->height,
-             new_width, w->height,
-             (int)w->position.x, (int)w->position.y,
-             new_x, new_y
-             );
-    }
-    move_window(w->window, new_x, new_y);
-    usleep(1000 * 1);
-    resize_window(w->window, new_width, w->height);
     usleep(1000 * 10);
   }
   return(EXIT_SUCCESS);
 } /* resize_non_todo_windows */
 
 int info_todo(){
-  int             pid = get_focused_pid();
-  struct window_t *W  = get_pid_window(pid);
+  int                  pid = get_focused_pid();
+  struct window_info_t *W  = get_pid_window(pid);
 
   fprintf(stdout, "=========================================\n");
   fprintf(stdout, "Rectangle PID              :         %d\n", rectangle_get_pid());
@@ -120,13 +91,10 @@ int info_todo(){
   fprintf(stdout, "=========================================\n");
   fprintf(stdout, "Focused Window PID         :         %d\n", W->pid);
   fprintf(stdout, "Focused Window ID          :         %d\n", W->window_id);
-  fprintf(stdout, "Focused Window Name        :         %s\n", W->window_name);
-  fprintf(stdout, "Focused App Name           :         %s\n", W->app_name);
-  fprintf(stdout, "Focused Window Position    :         %dx%d\n", (int)W->position.x, (int)W->position.y);
+  fprintf(stdout, "Focused Window Name        :         %s\n", W->name);
+  fprintf(stdout, "Focused App Name           :         %s\n", W->name);
   fprintf(stdout, "Focused Window Layer       :         %d\n", W->layer);
-  fprintf(stdout, "Focused Window Size        :         %dx%d\n", W->width, W->height);
   fprintf(stdout, "Focused Window Focused     :         %s\n", W->is_focused ? "Yes" : "No");
-  fprintf(stdout, "Focused Window Visible     :         %s\n", W->is_visible ? "Yes" : "No");
   fprintf(stdout, "=========================================\n");
   fprintf(stdout, "Display Width              :         %d\n", get_display_width());
   fprintf(stdout, "=========================================\n");

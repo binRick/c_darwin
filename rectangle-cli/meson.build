@@ -11,7 +11,7 @@ rectangle_cli_deps = [
   rectangle_dep,
   c_fsio_dep,
   ansi_codes_dep,
-  cargs_dep,process_utils_dep,window_info_dep,
+  cargs_dep,process_utils_dep,window_info_dep,window_utils_dep,display_utils_dep,
   active_app_dep,
   app_utils_dep,
   generic_print_dep,

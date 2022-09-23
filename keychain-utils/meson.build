@@ -27,7 +27,7 @@ keychain_utils_c_args = [
 keychain_utils_link_args = [
 ]
 
-keychain_utils_lib = static_library('keychain-utils',
+keychain_utils_lib = library('keychain-utils',
   keychain_utils_srcs,
   install: false,
   dependencies: keychain_utils_deps,

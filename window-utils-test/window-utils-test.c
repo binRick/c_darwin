@@ -20,33 +20,8 @@
 #include "submodules/libfort/src/fort.h"
 #include "window-utils-test/window-utils-test.h"
 #include "window-utils/window-utils.h"
-#include "wrec-capture/wrec-capture.h"
 
 ////////////////////////////////////////
-
-TEST t_windows_search(void *NAME){
-  LsWinCtx ctx;
-  char     *name = (char *)NAME;
-
-  ctx.longDisplay = 0;
-  ctx.id          = -1;
-  ctx.numFound    = 0;
-  char *pattern = NULL;
-
-  if (name != NULL) {
-    pattern = strdup(name);
-
-    EnumerateWindows(pattern, PrintWindow, (void *)&ctx);
-    printf("\n"
-           "%s> ctx.numFound: %d|"
-           "\t"
-           "Pattern:%s|ID:%d|\n",
-           APPLICATION_NAME, ctx.numFound,
-           pattern, ctx.id
-           );
-  }
-  PASS();
-}
 
 TEST t_authorized_tests(void){
   authorized_test_t *authorized_test_results = execute_authorization_tests();
@@ -67,9 +42,6 @@ TEST t_windows_qty(void){
 
 SUITE(s_windows){
   RUN_TEST(t_windows_qty);
-  RUN_TESTp(t_windows_search, (void *)NULL);
-  RUN_TESTp(t_windows_search, (void *)"kitty");
-  RUN_TESTp(t_windows_search, (void *)"chrome");
 }
 
 TEST t_list_windows(){
@@ -103,23 +75,10 @@ TEST t_list_windows(){
               );
 
   ct_start(NULL);
-  struct Vector *windows = get_windows();
+  struct Vector *windows = get_window_infos_v();
 
   for (size_t i = 0; i < vector_size(windows); i++) {
-    struct window_t *w = (struct window_t *)vector_get(windows, i);
-    ft_printf_ln(table,
-                 "%.20s|%d|%d|%d|%d|%d|%dx%d|%dx%d|%d|%s|%s|%s|%d",
-                 strip_non_ascii(w->app_name),
-                 w->pid, w->connection_id,
-                 w->window_id, w->display_id, w->space_id,
-                 (int)w->size.height, (int)w->size.width,
-                 (int)w->position.x, (int)w->position.y,
-                 w->layer,
-                 int_to_string(w->is_focused),
-                 int_to_string(w->is_visible),
-                 int_to_string(w->is_minimized),
-                 w->pid_info.kp_eproc.e_ppid
-                 );
+    struct window_info_t *w = (struct window_info_t *)vector_get(windows, i);
 
     ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
     ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
@@ -128,11 +87,6 @@ TEST t_list_windows(){
     ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_UNDERLINED);
     ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
 
-    if (w->position.x != 0 || w->position.y != 0) {
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    }else{
-      ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-    }
     if (w->layer != 0) {
       ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
     }else{
@@ -185,7 +139,6 @@ SUITE(s_capture_to_memory){
 }
 SUITE(s_window_info){
   RUN_TEST(t_info);
-  RUN_TESTp(t_windows_search, (void *)"Alacritty");
 }
 
 GREATEST_MAIN_DEFS();

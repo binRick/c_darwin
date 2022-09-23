@@ -1,9 +1,16 @@
 #pragma once
+#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
+#include <CoreServices/CoreServices.h>
+#include <IOKit/ps/IOPowerSources.h>
+#include <IOKit/ps/IOPSKeys.h>
+
 #include "active-app/active-app.h"
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "frameworks/frameworks.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
 #include "mission-control-utils/mission-control-utils.h"
@@ -15,6 +22,9 @@
 #include "submodules/log.h/log.h"
 #include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
+#include <CoreServices/CoreServices.h>
 static bool MISSION_CONTROL_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__mission_control_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_MISSION_CONTROL") != NULL) {

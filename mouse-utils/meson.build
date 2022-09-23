@@ -33,7 +33,7 @@ mouse_utils_link_flags +=  ['-Wl,-framework,SkyLight']
 mouse_utils_link_flags +=  ['-F/System/Library/PrivateFrameworks']
 
 
-mouse_utils_lib = static_library('mouse-utils',
+mouse_utils_lib = library('mouse-utils',
   mouse_utils_srcs,
   install: false,
   dependencies: mouse_utils_deps,

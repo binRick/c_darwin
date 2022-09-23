@@ -2,6 +2,7 @@
 #include "app-utils/app-utils.h"
 #include "app/app.h"
 #include "date.c/date.h"
+#include "frameworks/frameworks.h"
 #include "icon-utils/icon-utils.h"
 #include "string-utils/string-utils.h"
 #include "systemprofiler/systemprofiler.h"
@@ -175,6 +176,17 @@ struct Vector *get_running_apps_v(){
   return(a);
 }
 
+char *get_pid_path(pid_t pid) {
+  char *path_of_app = malloc(PROC_PIDPATHINFO_MAXSIZE);
+
+  proc_pidpath(pid, path_of_app, sizeof(path_of_app));
+  CFStringRef path = CFStringCreateWithCString(kCFAllocatorDefault, (const char *)path_of_app, kCFStringEncodingUTF8);
+  CFURLRef    url  = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, path, kCFURLPOSIXPathStyle, true);
+
+  strcpy(path, path_of_app);
+  return(path_of_app);
+}
+
 ///////////////////////////////////////////////////////////////////////
 AXUIElementRef get_frontmost_app(){
   pid_t pid; ProcessSerialNumber psn;
@@ -225,6 +237,40 @@ bool is_authorized_for_screen_recording() {
   }
   CFRelease(stream);
   return(true);
+}
+
+void list_apps(){
+  CFArrayRef applications = _LSCopyApplicationArrayInFrontToBackOrder(0xFFFFFFFE, 1);
+
+  if (!applications) {
+    return(false);
+  }
+
+  bool                found_front_psn = false;
+  ProcessSerialNumber front_psn;
+
+  _SLPSGetFrontProcess(&front_psn);
+
+  for (int i = 0; i < CFArrayGetCount(applications); ++i) {
+    CFTypeRef asn = CFArrayGetValueAtIndex(applications, i);
+    assert(CFGetTypeID(asn) == _LSASNGetTypeID());
+  }
+
+  CFRelease(applications);
+  return(true);
+}
+
+size_t app_main_window_id(AXUIElementRef app){
+  CFTypeRef window_ref = NULL;
+
+  AXUIElementCopyAttributeValue(app, kAXMainWindowAttribute, &window_ref);
+  if (!window_ref) {
+    return(0);
+  }
+  size_t window_id = (size_t)ax_window_id(window_ref);
+
+  CFRelease(window_ref);
+  return(window_id);
 }
 
 bool is_authorized_for_accessibility() {

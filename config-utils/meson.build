@@ -10,12 +10,12 @@ config_utils_include_dirs = [
 ]
 
 config_utils_deps = [
-  ansi_codes_dep,
+  ansi_codes_dep,parson_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
+  c_string_buffer_dep,b64_dep,process_utils_dep,
+  timestamp_dep,dock_utils_dep,parson_dep,menu_bar_utils_dep,libcyaml_dep,hotkey_utils_dep,monitor_utils_dep,
   log_dep,
   ms_dep,
   bytes_dep,
@@ -31,7 +31,7 @@ config_utils_c_args = [
 config_utils_link_args = [
 ]
 
-config_utils_lib = static_library('config-utils',
+config_utils_lib = library('config-utils',
   config_utils_srcs,
   install: false,
   dependencies: config_utils_deps,

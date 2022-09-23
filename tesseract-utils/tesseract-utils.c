@@ -13,7 +13,9 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "c_workqueue/include/workqueue.h"
 #include "capture-utils/capture-utils.h"
+#include "chan/src/chan.h"
 #include "frameworks/frameworks.h"
 #include "image-utils/image-utils.h"
 #include "log/log.h"
@@ -206,6 +208,101 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
     }
   }
 } /* tesseract_find_window_matching_word_locations */
+struct TesseractArgs {
+  size_t        window_id;
+  char          *file;
+  size_t        index;
+  struct Vector *results_v;
+};
+
+static void __tesseract_capture_window(void *ARGS){
+  unsigned long starteds[3];
+
+  starteds[0] = timestamp();
+  struct TesseractArgs *args = (struct TesseractArgs *)ARGS;
+
+  args->file = capture_type_capture_png_random_file(CAPTURE_TYPE_WINDOW, args->window_id);
+  log_info("\tCaptured Window in %s", milliseconds_to_string(timestamp() - starteds[0]));
+}
+
+static void __tesseract_extract_window(void *ARGS){
+  struct TesseractArgs *args = (struct TesseractArgs *)ARGS;
+  unsigned long        starteds[3];
+
+  starteds[0] = timestamp();
+  starteds[1] = timestamp();
+  if (!args->file || fsio_file_exists(args->file) == false) {
+    return;
+  }
+  starteds[2] = timestamp();
+  log_info(AC_YELLOW "\tExtracting window #%lu %s File %s"AC_RESETALL, args->window_id, bytes_to_string(fsio_file_size(args->file)), args->file);
+  args->results_v = tesseract_extract_file_mode(args->file, RIL_TEXTLINE);
+  log_info(AC_GREEN "\tExtracted %lu items from %s in %s"AC_RESETALL,
+           vector_size(args->results_v),
+           args->file,
+           milliseconds_to_string(timestamp() - starteds[1])
+           );
+}
+struct Vector *tesseract_extract_windows(struct Vector *v, size_t concurrency){
+  struct Vector *Args   = vector_new();
+  unsigned long started = timestamp();
+
+  log_info("%lu Windows", vector_size(v));
+  struct WorkQueue *extract_queues[concurrency], *capture_queues[concurrency];
+
+  for (size_t i = 0; i < concurrency; i++) {
+    extract_queues[i] = workqueue_new_with_options(vector_size(v), NULL);
+    capture_queues[i] = workqueue_new_with_options(vector_size(v), NULL);
+  }
+  unsigned long cap_started = timestamp();
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    struct TesseractArgs *a = calloc(1, sizeof(struct TesseractArgs));
+    a->window_id = (size_t)vector_get(v, i);
+    a->results_v = vector_new();
+    vector_push(Args, (void *)a);
+    if (!workqueue_push(capture_queues[i % concurrency], __tesseract_capture_window, a)) {
+      log_error("Failed to push work function to queue\n");
+    }
+  }
+  for (size_t c = 0; c < concurrency; c++) {
+    printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(capture_queues[c]));
+  }
+  for (size_t c = 0; c < concurrency; c++) {
+    workqueue_drain(capture_queues[c]);
+  }
+  log_info("Captured in %s", milliseconds_to_string(timestamp() - cap_started));
+  unsigned long extract_started = timestamp();
+
+  for (size_t i = 0; i < vector_size(Args); i++) {
+    size_t Q = i % concurrency;
+    log_info("pushing %lu to queue %lu", i, Q);
+    if (!workqueue_push(extract_queues[Q], __tesseract_extract_window, (struct TesseractArgs *)vector_get(Args, i))) {
+      log_error("Failed to push work function to queue\n");
+    }
+  }
+  for (size_t c = 0; c < concurrency; c++) {
+    printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(extract_queues[c]));
+  }
+  for (size_t c = 0; c < concurrency; c++) {
+    workqueue_drain(extract_queues[c]);
+  }
+  log_info("Extract finished in %s", milliseconds_to_string(timestamp() - extract_started));
+  for (size_t c = 0; c < concurrency; c++) {
+    printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(extract_queues[c]));
+  }
+  for (size_t c = 0; c < concurrency; c++) {
+    workqueue_release(extract_queues[c]);
+  }
+  log_info("Finished in %s", milliseconds_to_string(timestamp() - started));
+  for (size_t i = 0; i < vector_size(Args); i++) {
+    log_info("Window ID %lu has %lu results",
+             ((struct TesseractArgs *)vector_get(Args, i))->window_id,
+             vector_size(((struct TesseractArgs *)vector_get(Args, i))->results_v)
+             );
+  }
+  return(Args);
+} /* tesseract_extract_windows */
 struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE){
   struct Vector *words = vector_new();
   struct Boxa   *boxes;

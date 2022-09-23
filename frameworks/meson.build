@@ -27,7 +27,7 @@ frameworks_c_args = [
 frameworks_link_args = [
 ]
 
-frameworks_lib = static_library('frameworks',
+frameworks_lib = library('frameworks',
   frameworks_srcs,
   install: false,
   dependencies: frameworks_deps,

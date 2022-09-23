@@ -22,12 +22,12 @@ screen_utils_deps = [
   system_utils_dep,
   hash_dep,
   core_utils_dep,
-  wrec_common_dep,
-  wrec_capture_dep,
+  
+  
   module_dep,
   process_dep,
   timestamp_dep,
-  wrec_image_dep,
+  
 ]
 screen_utils_link_flags = [
 '-Wl,-framework,CoreFoundation',
@@ -60,7 +60,7 @@ screen_utils_link_flags +=  ['-Wl,-framework,AppKit']
 screen_utils_link_flags +=  ['-Wl,-framework,IOKit']
 screen_utils_link_flags +=  ['-F/System/Library/PrivateFrameworks']
 
-screen_utils_lib = static_library('screen-utils',
+screen_utils_lib = library('screen-utils',
   screen_utils_srcs,
   install: false,
   dependencies: screen_utils_deps,

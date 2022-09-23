@@ -3,8 +3,6 @@
 #include "app-utils/app-utils.h"
 #include "bytes/bytes.h"
 #include "core-utils/core-utils.h"
-#include "core-utils/core-utils.h"
-#include "image-utils/image-utils.h"
 #include "image-utils/image-utils.h"
 #include "log.h/log.h"
 #include "ms/ms.h"
@@ -15,8 +13,6 @@
 #include "system-utils/system-utils.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
-#include "wrec-capture/wrec-capture.h"
-#include "wrec-common/image.h"
 static bool SCREEN_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__screen_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_SCREEN_UTILS") != NULL) {
@@ -25,49 +21,11 @@ static void __attribute__((constructor)) __constructor__screen_utils(void){
   }
 }
 /////////////////////////////////////////////////////
-static bool save_captured_display(struct screen_t *D);
-static bool capture_display(struct screen_t *D);
-static bool save_to_file_qoi(struct screen_t *D);
 bool save_captures(struct screen_capture_t *S);
 struct screen_capture_t *init_screen_capture();
 struct screen_t *init_display(size_t DISPLAY_ID);
 
 ///////////////////////////////////////////////////////////////////
-static bool save_to_file_qoi(struct screen_t *D){
-  struct qoi_encode_to_file_request_t *qoi_file_req = calloc(1, sizeof(struct qoi_encode_to_file_request_t));
-
-  qoi_file_req->desc = calloc(1, sizeof(struct qoi_desc));
-  asprintf(&qoi_file_req->qoi_file_path, "display-%lu.qoi", D->id);
-  qoi_file_req->rgb_pixels       = D->capture->buffer;
-  qoi_file_req->desc->width      = D->capture->rect.size.width;
-  qoi_file_req->desc->height     = D->capture->rect.size.height;
-  qoi_file_req->desc->channels   = RGBA_CHANNELS;
-  qoi_file_req->desc->colorspace = QOI_SRGB;
-  struct qoi_encode_to_file_result_t *qoi_encode_to_file_result = qoi_encode_to_file(qoi_file_req);
-}
-
-static bool save_captured_display(struct screen_t *D){
-  D->save->started_ms = timestamp();
-
-  D->save->url_ref         = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfstring_from_cstring(D->save_file_name), kCFURLPOSIXPathStyle, false);
-  D->save->destination_ref = CGImageDestinationCreateWithURL(D->save->url_ref, SAVE_IMAGE_TYPE, 1, NULL);
-  CGImageDestinationAddImage(D->save->destination_ref, D->capture->image_ref, NULL);
-  D->save->success = (CGImageDestinationFinalize(D->save->destination_ref));
-  {
-    CGImageRelease(D->capture->image_ref);
-  }
-  D->save->dur_ms = timestamp() - D->save->started_ms;
-  if (SCREEN_UTILS_DEBUG_MODE == true) {
-    log_debug("   [Save Display #%lu]  File %s |success:%s| in %s | %s | %fx%f | ",
-              D->id,
-              D->save_file_name,
-              D->save->success == true ? "Yes" : "No",
-              milliseconds_to_string(D->capture->dur_ms),
-              bytes_to_string(D->capture->buffer_size),
-              D->capture->rect.size.width, D->capture->rect.size.height
-              );
-  }
-} /* save_captured_display */
 
 struct screen_t *init_display(size_t DISPLAY_ID){
   struct screen_t *D = calloc(1, sizeof(struct screen_t));
@@ -173,23 +131,6 @@ struct screen_capture_t *screen_capture(){
               );
   }
   return(C);
-}
-
-bool save_captures(struct screen_capture_t *S){
-  for (size_t i = 0; i < vector_size(S->displays_v); i++) {
-    struct display_image_t *D = (struct screen_t *)vector_get(S->displays_v, i);
-    D->resize_factor = S->resize_factor;
-    if (SCREEN_UTILS_DEBUG_MODE == true) {
-      log_info("resize %f", D->resize_factor);
-    }
-    if (S->save_png_file == true) {
-      save_captured_display(D);
-    }
-    if (S->save_qoi_file == true) {
-      save_to_file_qoi(D);
-    }
-  }
-  return(true);
 }
 
 struct screen_capture_t *init_screen_capture(){
