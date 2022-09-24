@@ -1,9 +1,9 @@
 #pragma once
 #include "active-app.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "core-utils/core-utils.h"
 #include "log.h/log.h"
-#include "process-utils/process-utils.h"
+#include "process/utils/utils.h"
 static bool ACTIVE_APP_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__active_app_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_ACTIVE_APP_UTILS") != NULL) {
@@ -112,4 +112,4 @@ focused_t * get_focused_process(){
   }
   return(f);
 }
-#include "window-info/window-info.h"
+#include "window/info/info.h"

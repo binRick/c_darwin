@@ -7,16 +7,16 @@
 #include <assert.h>
 ////////////////////////////////////////////////////////
 #include "active-app/active-app.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "c_greatest/greatest/greatest.h"
-#include "display-utils/display-utils.h"
+#include "display/utils/utils.h"
 #include "generic-print/print.h"
 #include "keylogger-db/keylogger-db.h"
 #include "log.h/log.h"
 #include "pasteboard/pasteboard.h"
-#include "system-utils/system-utils.h"
-#include "window-utils-test/window-utils-test.h"
-#include "window-utils/window-utils.h"
+#include "process/utils/utils.h"
+#include "window/utils/test/test.h"
+#include "window/utils/utils.h"
 ////////////////////////////////////////////////////////
 static bool exited = false, was_icanon = false;
 static int                windows_qty = 0, display_qty = 0;

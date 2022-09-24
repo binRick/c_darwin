@@ -12,17 +12,17 @@
 #include <stdint.h>
 #include <stdio.h>
 //////////////////////////////////////////////////////////////
-#include "app-utils/app-utils.h"
-#include "display-utils/display-utils.h"
-#include "dock-utils/dock-utils.h"
-#include "image-utils/image-utils.h"
+#include "app/utils/utils.h"
+#include "display/utils/utils.h"
+#include "dock/utils/utils.h"
+#include "image/utils/utils.h"
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "mission-control-utils/mission-control-utils.h"
-#include "process-utils/process-utils.h"
 #include "process/process.h"
-#include "system-utils/system-utils.h"
-#include "table-utils/table-utils.h"
-#include "window-utils/window-utils.h"
+#include "process/utils/utils.h"
+#include "process/utils/utils.h"
+#include "table/utils/utils.h"
+#include "window/utils/utils.h"
 //////////////////////////////////////////////////////////////
 struct offset_t {
   int left_offset, right_offset, top_offset, bottom_offset;

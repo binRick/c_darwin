@@ -1,15 +1,15 @@
 #pragma once
 ////////////////////////////////////////////////////////
 #include "active-app/active-app.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "keylogger-config/keylogger-config-logic.h"
 #include "keylogger-config/keylogger-config-types.h"
 #include "keylogger-config/keylogger-config.h"
 #include "keylogger-db/keylogger-db.h"
 #include "log.h/log.h"
-#include "system-utils/system-utils.h"
-#include "window-utils-test/window-utils-test.h"
-#include "window-utils/window-utils.h"
+#include "process/utils/utils.h"
+#include "window/utils/test/test.h"
+#include "window/utils/utils.h"
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /////             Structures
 //////////////////////////////////////////////////////////////////////////////////////////////////

@@ -4,7 +4,7 @@
 #include "manage-window-test/manage-window-test.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_stringfn/include/stringfn.h"
@@ -13,7 +13,7 @@
 #include "log.h/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
-#include "window-utils/window-utils.h"
+#include "window/utils/utils.h"
 #define MIN_Y_VALUE             25
 #define POLL_WINDOW_STATE_MS    5
 static char *msg;

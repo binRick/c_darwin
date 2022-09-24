@@ -3,6 +3,7 @@
 #define CONFIG_UTILS_H
 //////////////////////////////////////
 #include "parson/parson.h"
+#include "system/utils/utils.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>

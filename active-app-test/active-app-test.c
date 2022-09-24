@@ -1,10 +1,10 @@
 #include "active-app-module/active-app-module.h"
 #include "active-app-test/active-app-test.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "c_greatest/greatest/greatest.h"
 #include "log.h/log.h"
-#include "process-utils/process-utils.h"
-#include "window-utils/window-utils.h"
+#include "process/utils/utils.h"
+#include "window/utils/utils.h"
 bool RUNNING = true;
 
 void show_focus(){
@@ -78,4 +78,4 @@ int main(int argc, char **argv) {
   }
   return(do_test(argc, argv));
 }
-#include "window-info/window-info.h"
+#include "window/info/info.h"

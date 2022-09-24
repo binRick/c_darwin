@@ -1,11 +1,11 @@
 ////////////////////////////////////////////
 #include "active-app/active-app.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "generic-print/print.h"
-#include "process-utils/process-utils.h"
+#include "process/utils/utils.h"
 #include "rectangle-cli/rectangle-cli.h"
 #include "timestamp/timestamp.h"
-#include "window-utils/window-utils.h"
+#include "window/utils/utils.h"
 ////////////////////////////////////////////
 
 static struct ctx_t      ctx = {
@@ -174,4 +174,4 @@ static int parse_args(int argc, char *argv[]){
   }
   return(EXIT_SUCCESS);
 } /* parse_args */
-#include "window-info/window-info.h"
+#include "window/info/info.h"

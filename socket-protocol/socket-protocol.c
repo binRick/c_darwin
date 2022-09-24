@@ -13,9 +13,9 @@
 #include "config-utils/config-utils.h"
 #include "log/log.h"
 #include "ms/ms.h"
-#include "process-utils/process-utils.h"
+#include "process/utils/utils.h"
 #include "timestamp/timestamp.h"
-#include "window-utils/window-utils.h"
+#include "window/utils/utils.h"
 ////////////////////////////////////////////
 static bool SOCKET_PROTOCOL_DEBUG_MODE = false;
 
@@ -72,4 +72,4 @@ static void __attribute__((constructor)) __constructor__socket_protocol(void){
   }
 }
 #endif
-#include "window-info/window-info.h"
+#include "window/info/info.h"

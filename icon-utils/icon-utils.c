@@ -17,7 +17,7 @@
 #include "c_vector/vector/vector.h"
 #include "extname.c/src/extname.h"
 #include "icon-utils/icon-xml-utils.h"
-#include "image-utils/image-utils.h"
+#include "image/utils/utils.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "path_module/src/path.h"

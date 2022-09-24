@@ -31,3 +31,4 @@ process_dep = declare_dependency(
   link_with: process_lib,
   link_args: process_link_flags,
 )
+subdir('utils')

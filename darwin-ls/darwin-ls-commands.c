@@ -2,7 +2,7 @@
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
 #include "c_vector/vector/vector.h"
-#include "capture-utils/capture-utils.h"
+#include "capture/utils/utils.h"
 #include "darwin-ls/darwin-ls-commands.h"
 #include "darwin-ls/darwin-ls.h"
 #include "hotkey-utils/hotkey-utils.h"
@@ -12,11 +12,11 @@
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
-#include "table-utils/table-utils.h"
+#include "table/utils/utils.h"
 #include "tesseract-utils/tesseract-utils.h"
-#include "timg-utils/timg-utils.h"
+#include "timg/utils/utils.h"
 #include "wildcardcmp/wildcardcmp.h"
-#include "window-sort/window-sort.h"
+#include "window/sort/sort.h"
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////

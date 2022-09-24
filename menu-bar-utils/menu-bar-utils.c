@@ -1,8 +1,8 @@
-#include "display-utils/display-utils.h"
+#include "display/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "log.h/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
-#include "space-utils/space-utils.h"
+#include "space/utils/utils.h"
 static bool MENU_BAR_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__menu_bar_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_MENU_BAR_UTILS") != NULL) {

@@ -20,7 +20,7 @@
 #include <sys/time.h>
 //////////////////////////////////////
 #include "active-app/active-app.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_ansi/ansi-codes/ansi-codes.h"
 #include "c_ansi/ansi-utils/ansi-utils.h"
@@ -42,7 +42,7 @@
 #include "sqldbal/src/sqldbal.h"
 #include "submodules/b64.c/b64.h"
 #include "timestamp/timestamp.h"
-#include "window-utils/window-utils.h"
+#include "window/utils/utils.h"
 //////////////////////////////////////////
 typedef struct DB_STATEMENT_T {
   enum sqldbal_status_code rc;

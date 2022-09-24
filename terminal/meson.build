@@ -40,3 +40,4 @@ terminal_dep = declare_dependency(
   link_with: terminal_lib,
   link_args: terminal_link_args,
 )
+subdir('utils')

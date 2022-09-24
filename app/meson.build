@@ -40,3 +40,4 @@ app_dep = declare_dependency(
   link_with: app_lib,
   link_args: app_link_args,
 )
+subdir('utils')

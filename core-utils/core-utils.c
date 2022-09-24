@@ -12,10 +12,10 @@
 #include "ms/ms.h"
 #include "osx-keys/osx-keys.h"
 #include "parson/parson.h"
-#include "space-utils/space-utils.h"
+#include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
-#include "window-utils/window-utils.h"
+#include "window/utils/utils.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <bsm/libbsm.h>
 #include <Carbon/Carbon.h>

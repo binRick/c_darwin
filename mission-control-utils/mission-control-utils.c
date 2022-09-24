@@ -6,7 +6,7 @@
 #include <IOKit/ps/IOPSKeys.h>
 
 #include "active-app/active-app.h"
-#include "app-utils/app-utils.h"
+#include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
@@ -18,9 +18,9 @@
 #include "parson/parson.h"
 #include "process/process.h"
 #include "process/process.h"
-#include "space-utils/space-utils.h"
+#include "process/utils/utils.h"
+#include "space/utils/utils.h"
 #include "submodules/log.h/log.h"
-#include "system-utils/system-utils.h"
 #include "timestamp/timestamp.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
