@@ -46,16 +46,6 @@ int main(int argc, char **argv) {
         .function    = optparse_print_help_subcmd,
       },
       {
-        .name        = "args",
-        .description = "Debug Arguments",
-        .function    = cmds[COMMAND_DEBUG_ARGS].fxn,
-        .about       = "🐛" "\t" COLOR_DEBUG "Debug Arguments" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
         .name        = cmds[COMMAND_WINDOWS].name,
         .description = cmds[COMMAND_WINDOWS].description,
         .function    = cmds[COMMAND_WINDOWS].fxn,

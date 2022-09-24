@@ -39,7 +39,6 @@ static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
 static void _command_spaces();
-static void _command_debug_args();
 static void _command_sticky_window();
 static void _command_menu_bar();
 static void _command_usb_devices();
@@ -848,9 +847,6 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name = "displays", .icon = "🐾", .color = COLOR_WINDOW, .description = "List Displays",
     .fxn  = (*_command_displays)
   },
-  [COMMAND_DEBUG_ARGS] =            {
-    .fxn = (*_command_debug_args)
-  },
   [COMMAND_HTTPSERVER] =            {
     .fxn = (*_command_httpserver)
   },
@@ -1432,18 +1428,6 @@ static void _command_httpserver(){
 
 static void _command_set_space_index(){
   log_debug("setting space id from %d to %d", get_current_space_id(), args->space_id);
-  exit(EXIT_SUCCESS);
-}
-
-static void _command_debug_args(){
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Debug args" AC_RESETALL
-    );
-  log_info("Verbose:                 %s", args->verbose == true ? "Yes" : "No");
-  log_info("Current Space Only:      %s", args->current_space_only == true ? "Yes" : "No");
-  log_info("Space ID:                %d", args->space_id);
-  log_info("Window ID:               %d", args->window_id);
-  log_info("Output Mode:             %s (%d)", args->output_mode_s, args->output_mode);
   exit(EXIT_SUCCESS);
 }
 
