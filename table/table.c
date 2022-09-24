@@ -23,23 +23,5 @@ static void __attribute__((constructor)) __constructor__table(void){
     TABLE_DEBUG_MODE = true;
   }
 }
-static void table_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void table_internal_fxn1(void){
-  log_info("Called function table_internal_fxn1");
-  if (TABLE_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void table_fxn1(void){
-  table_internal_fxn1();
-  log_info("Called function table_fxn1");
-  if (TABLE_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
 ////////////////////////////////////////////
 #endif

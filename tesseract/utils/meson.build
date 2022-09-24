@@ -11,7 +11,7 @@ tesseract_utils_include_dirs = [
 ]
 
 tesseract_utils_deps = [
-  ansi_codes_dep,capture_utils_dep,
+  ansi_codes_dep,capture_utils_dep,tempdir_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,

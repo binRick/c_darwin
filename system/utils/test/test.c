@@ -3,8 +3,8 @@
 //////////////////////////////////////////
 #include "c_greatest/greatest/greatest.h"
 #include "display/utils/utils.h"
-#include "system/utils/test/test.h"
 #include "process/utils/utils.h"
+#include "system/utils/test/test.h"
 
 //////////////////////////////////////////
 static int get_argmax() {

@@ -27,7 +27,7 @@ image_c_args = [
 image_link_args = [
 ]
 
-image_lib = static_library('image',
+image_lib = library('image',
   image_srcs,
   install: false,
   dependencies: image_deps,

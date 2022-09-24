@@ -15,7 +15,7 @@ window_utils_test_deps = [
   ms_dep,
   bytes_dep,
   log_dep,display_utils_dep,process_utils_dep,
-  c_greatest_dep,
+  c_greatest_dep,c_vector_dep,
   dbg_dep,
   c_timer_dep,
  

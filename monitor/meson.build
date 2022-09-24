@@ -27,7 +27,7 @@ monitor_c_args = [
 monitor_link_args = [
 ]
 
-monitor_lib = static_library('monitor',
+monitor_lib = library('monitor',
   monitor_srcs,
   install: false,
   dependencies: monitor_deps,

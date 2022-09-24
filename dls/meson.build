@@ -1,6 +1,6 @@
 darwin_ls_srcs = [
-  'darwin-ls.c',
-  'darwin-ls-commands.c',
+  'dls.c',
+  'dls-commands.c',
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
@@ -9,7 +9,7 @@ darwin_ls_include_dirs = [
 ]
 darwin_ls_deps = [
   font_utils_dep,
-  memory_leak_detector_dep,kitty_dep,alacritty_dep,
+  memory_leak_detector_dep,kitty_dep,alacritty_dep,c_stringfn_dep,c_string_buffer_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
@@ -32,7 +32,7 @@ darwin_ls_deps = [
   icon_utils_dep,
   capture_utils_dep,
   process_dep,keylogger_dep,hotkey_utils_dep,
-  url_h_dep,
+  url_h_dep,pasteboard_dep,
   querystring_c_dep,
   b64_dep,screen_utils_dep,
   leptonica_dep,timg_utils_dep,
@@ -52,20 +52,35 @@ darwin_ls_link_args = [
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
 test_args = [
-  'spaces',
-  'args',
-  'dock',
-  'menu-bar',
-  'displays',
-  'apps',
-  'fonts',
-  'windows',
-  'usb',
-  'monitors',
-  'processes',
-  'kittys',
-  'alacrittys',
-  ]
+  ['spaces'],
+  ['args'],
+  ['dock'],
+  ['menu-bar'],
+  ['displays'],
+  ['apps'],
+  ['fonts'],
+  ['windows'],
+  ['usb'],
+  ['monitors'],
+  ['processes'],
+  ['paste'],
+  ['copy','-c','test123'],
+  ['paste'],
+  ['kittys'],
+  ['alacrittys'],
+  ['focused-window'],
+  ['focused-pid'],
+  ['focused-space'],
+  ['capture-window','-r','-o','/tmp/test-capture.png'],
+  ['extract-window','-a','-c','10','-l','10'],
+  ['security'],
+  ['app-icns-file','-P','/Applications/kitty.app'],
+  ['get-icon-png','-P','/Applications/kitty.app','-s','512','-f','/tmp/kitty-icon-512.png'],
+  ['get-icon','-P','/Applications/kitty.app','-f','/tmp/kitty.icns'],
+  ['icon-info','-f','/tmp/kitty.icns'],
+  ['info-plist','-P','/Applications/kitty.app'],
+  ['image-conversions','-i','/tmp/test-capture.png'],
+]
 
 if get_option('enable-binaries')
   darwin_ls_exec = executable('dls',
@@ -76,11 +91,11 @@ if get_option('enable-binaries')
      c_args: darwin_ls_c_args,
      install: false,
   )
-  test('darwin-ls help 1', darwin_ls_exec, args: ['--help'], workdir: darwin_ls_dir,timeout: 1)
-  test('darwin-ls help 2', darwin_ls_exec, args: ['-h'], workdir: darwin_ls_dir,timeout: 1)
-  test('darwin-ls help 3', darwin_ls_exec, args: ['help'], workdir: darwin_ls_dir,timeout: 1)
+  test('dls help 1', darwin_ls_exec, args: ['--help'], workdir: darwin_ls_dir,timeout: 1)
+  test('dls help 2', darwin_ls_exec, args: ['-h'], workdir: darwin_ls_dir,timeout: 1)
+  test('dls help 3', darwin_ls_exec, args: ['help'], workdir: darwin_ls_dir,timeout: 1)
   foreach a : test_args
-    test('darwin-ls ' + a + ' help', darwin_ls_exec, args: ['help',a], workdir: darwin_ls_dir, timeout: 1)
-    test('darwin-ls ' + a, darwin_ls_exec, args: [a], workdir: darwin_ls_dir, timeout: 60)
+    test('dls ' + a[0] + ' help', darwin_ls_exec, args: ['help',a[0]], workdir: darwin_ls_dir, timeout: 1)
+    test('dls ' + a[0], darwin_ls_exec, args: a, workdir: darwin_ls_dir, timeout: 30)
   endforeach
 endif

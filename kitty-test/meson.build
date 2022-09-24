@@ -9,6 +9,7 @@ system_utils_test_deps = [
   c_greatest_dep,
   kitty_dep,
   system_utils_dep,
+  c_string_buffer_dep,
   process_dep,
   log_dep,
   c_stringfn_dep,

@@ -18,7 +18,7 @@ capture_deps = [
   timestamp_dep,
   log_dep,
   ms_dep,
-  bytes_dep,
+  bytes_dep,tempdir_dep,
 ]
 
 capture_c_args = [
@@ -27,7 +27,7 @@ capture_c_args = [
 capture_link_args = [
 ]
 
-capture_lib = static_library('capture',
+capture_lib = library('capture',
   capture_srcs,
   install: false,
   dependencies: capture_deps,

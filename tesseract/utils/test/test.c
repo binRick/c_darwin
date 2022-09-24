@@ -17,9 +17,9 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "space/utils/utils.h"
-#include "tesseract-utils-test/tesseract-utils-test.h"
-#include "tesseract-utils/tesseract-utils.h"
 #include "tesseract/capi.h"
+#include "tesseract/utils/test/test.h"
+#include "tesseract/utils/utils.h"
 #include "timestamp/timestamp.h"
 #include "window/utils/utils.h"
 ///////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ static char          *extracted_text = NULL;
 static bool          TESSERACT_TEST_DEBUG_MODE = false;
 static struct Vector *space_id_images, *window_id_images, *space_ids_v, *windows_v;
 static const char    *TEST_IMAGES[] = {
-  "tesseract-utils-test/etc/ss1.png",
+  "tesseract/utils/test/etc/ss1.png",
 };
 struct Pix           *img;
 ///////////////////////////////////////////////////////////

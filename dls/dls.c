@@ -1,9 +1,5 @@
-#include "darwin-ls/darwin-ls-commands.h"
-#include "darwin-ls/darwin-ls.h"
-#include "icons/icons.h"
-#include "memory_leak_detector/leak.h"
-////////////////////////////////////////////
-
+#include "dls/dls.h"
+static void __attribute__((constructor)) __constructor__dls(void);
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
 struct args_t                 *args               = &(struct args_t){
   .verbose            = false,
@@ -22,31 +18,15 @@ struct args_t                 *args               = &(struct args_t){
   .width              = -1, .height = -1,
   .output_file        = "output.png",
   .concurrency        = 1,
+  .limit              = -1,
 };
-
-char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height){
-  switch (width_or_height) {
-  case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT: return("height"); break;
-  case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH: return("width"); break;
-  default: return("UNKNOWN"); break;
-  }
-}
 
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
-  if (is_authorized_for_accessibility() != true) {
-    fprintf(stderr, "Application is not authorized for accessibility\n");
-    exit(EXIT_FAILURE);
-  }
-  ARGV = argv;
-  realpath(argv[0], EXECUTABLE_PATH);
-  EXECUTABLE              = basename(EXECUTABLE_PATH);
-  EXECUTABLE_PATH_DIRNAME = dirname(EXECUTABLE_PATH);
-
   struct optparse_cmd main_cmd = {
-    .about       = "darwin-ls v1.00 - List Darwin Objects",
+    .about       = "dls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
-    .name        = "darwin-ls",
+    .name        = "dls",
     .operands    = "[COMMAND...]",
     .options     = (struct optparse_opt[]) {
       common_options_b[COMMON_OPTION_HELP](args),
@@ -81,6 +61,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),
           common_options_b[COMMON_OPTION_PID](args),
+          common_options_b[COMMON_OPTION_LIMIT](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_DISPLAY_ID](args),
@@ -108,6 +89,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_LIMIT](args),
           { END_OF_OPTIONS },
         },
       },
@@ -129,6 +111,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_WINDOW_HEIGHT_GROUP](args),
           common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
           common_options_b[COMMON_OPTION_DISPLAY_ID](args),
+          common_options_b[COMMON_OPTION_LIMIT](args),
           { END_OF_OPTIONS },
         },
       },
@@ -166,6 +149,7 @@ int main(int argc, char **argv) {
         .function    = cmds[COMMAND_DISPLAYS].fxn,
         .about       = get_command_about(COMMAND_DISPLAYS),
         .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
           { END_OF_OPTIONS },
         },
       },
@@ -174,12 +158,20 @@ int main(int argc, char **argv) {
         .description = cmds[COMMAND_ALACRITTYS].description,
         .function    = cmds[COMMAND_ALACRITTYS].fxn,
         .about       = get_command_about(COMMAND_ALACRITTYS),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = cmds[COMMAND_KITTYS].name,
         .description = cmds[COMMAND_KITTYS].description,
         .function    = cmds[COMMAND_KITTYS].fxn,
         .about       = get_command_about(COMMAND_KITTYS),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = cmds[COMMAND_SECURITY].name,
@@ -192,18 +184,30 @@ int main(int argc, char **argv) {
         .description = "Processes",
         .function    = cmds[COMMAND_PROCESSES].fxn,
         .about       = "💒" "\t" COLOR_LIST "List Processes" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "monitors",
         .description = "Monitors",
         .function    = cmds[COMMAND_MONITORS].fxn,
         .about       = "💮" "\t" COLOR_LIST "List Monitors" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "usb",
         .description = "USB Devices",
         .function    = cmds[COMMAND_USB_DEVICES].fxn,
         .about       = "📡" "\t" COLOR_LIST "List USB Devices" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = cmds[COMMAND_IMAGE_CONVERSIONS].name,
@@ -220,12 +224,31 @@ int main(int argc, char **argv) {
         .description = cmds[COMMAND_FONTS].description,
         .function    = cmds[COMMAND_FONTS].fxn,
         .about       = get_command_about(COMMAND_FONTS),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "apps",
         .description = "List Applications",
         .function    = cmds[COMMAND_APPS].fxn,
         .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_LIST_HOTKEYS].name,
+        .description = cmds[COMMAND_LIST_HOTKEYS].description,
+        .function    = cmds[COMMAND_LIST_HOTKEYS].fxn,
+        .about       = get_command_about(COMMAND_LIST_HOTKEYS),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = cmds[COMMAND_HOTKEYS].name,
@@ -238,6 +261,10 @@ int main(int argc, char **argv) {
         .description = cmds[COMMAND_SPACES].description,
         .function    = cmds[COMMAND_SPACES].fxn,
         .about       = get_command_about(COMMAND_SPACES),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = cmds[COMMAND_MOVE_WINDOW].name,
@@ -345,6 +372,22 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = cmds[COMMAND_COPY].name,
+        .description = cmds[COMMAND_COPY].description,
+        .function    = cmds[COMMAND_COPY].fxn,
+        .about       = get_command_about(COMMAND_COPY),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_CONTENT](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_PASTE].name,
+        .description = cmds[COMMAND_PASTE].description,
+        .function    = cmds[COMMAND_PASTE].fxn,
+        .about       = get_command_about(COMMAND_PASTE),
+      },
+      {
         .name        = cmds[COMMAND_FOCUSED_WINDOW].name,
         .description = cmds[COMMAND_FOCUSED_WINDOW].description,
         .function    = cmds[COMMAND_FOCUSED_WINDOW].fxn,
@@ -382,10 +425,10 @@ int main(int argc, char **argv) {
         },
       },
       {
-        .name        = "focused-space",
-        .description = "Show Focused Space",
+        .name        = cmds[COMMAND_FOCUSED_SPACE].name,
+        .description = cmds[COMMAND_FOCUSED_SPACE].description,
         .function    = cmds[COMMAND_FOCUSED_SPACE].fxn,
-        .about       = "🍕" "\t" COLOR_SHOW "Show Focused Space" AC_RESETALL,
+        .about       = get_command_about(COMMAND_FOCUSED_SPACE),
       },
       {
         .name        = cmds[COMMAND_FOCUSED_PID].name,
@@ -521,7 +564,20 @@ int main(int argc, char **argv) {
       { END_OF_SUBCOMMANDS },
     },
   };
+
   optparse_parse(&main_cmd, &argc, &argv);
   optparse_print_help();
-  return(0);
+  return(EXIT_SUCCESS);
 } /* main */
+static void __attribute__((constructor)) __constructor__dls(void){
+  errno = 0;
+  if (is_authorized_for_accessibility() == false) {
+    log_error("Not Authorized for Accessibility");
+    exit(EXIT_FAILURE);
+  }
+  errno = 0;
+  if (is_authorized_for_screen_recording() == false) {
+    log_error("Not Authorized for Screen Recording");
+    exit(EXIT_FAILURE);
+  }
+}

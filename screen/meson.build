@@ -27,7 +27,7 @@ screen_c_args = [
 screen_link_args = [
 ]
 
-screen_lib = static_library('screen',
+screen_lib = library('screen',
   screen_srcs,
   install: false,
   dependencies: screen_deps,

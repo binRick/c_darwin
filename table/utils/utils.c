@@ -7,6 +7,7 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "frameworks/frameworks.h"
+#include "hotkey-utils/hotkey-utils.h"
 #include "libfort/lib/fort.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
@@ -22,13 +23,6 @@
 #include "window/info/info.h"
 #include "window/sort/sort.h"
 ///////////////////////////////////////////////////////////////////////////////
-static bool TABLE_UTILS_DEBUG_MODE = false;
-static void __attribute__((constructor)) __constructor__table_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_TABLE_UTILS") != NULL) {
-    log_debug("Enabling Table Utils Debug Mode");
-    TABLE_UTILS_DEBUG_MODE = true;
-  }
-}
 enum table_dur_type_t {
   TABLE_DUR_TYPE_COLORS,
   TABLE_DUR_TYPE_TOTAL,
@@ -43,6 +37,13 @@ struct table_dur_t {
   unsigned long started;
   unsigned long dur;
 };
+static bool TABLE_UTILS_DEBUG_MODE = false;
+static void __attribute__((constructor)) __constructor__table_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_TABLE_UTILS") != NULL) {
+    log_debug("Enabling Table Utils Debug Mode");
+    TABLE_UTILS_DEBUG_MODE = true;
+  }
+}
 static const char *table_dur_type_names[] = {
   [TABLE_DUR_TYPE_COLORS]            = "colors",
   [TABLE_DUR_TYPE_QUERIES]           = "queries",
@@ -52,6 +53,77 @@ static const char *table_dur_type_names[] = {
   [TABLE_DUR_TYPE_TOTAL]             = "total",
   [TABLE_DUR_TYPE_FORT]              = "fort",
 };
+
+int list_hotkeys_table(void *ARGS) {
+  struct list_table_t     *args = (struct list_table_t *)ARGS;
+  ft_table_t              *table;
+  struct hotkeys_config_t *cfg;
+  struct key_t            *hk;
+  {
+    cfg   = load_yaml_config_file_path(get_homedir_yaml_config_file_path());
+    table = ft_create_table();
+    ft_write_ln(table,
+                "ID",
+                "Name",
+                "Key",
+                "Action",
+                "Enabled"
+                );
+    ft_set_border_style(table, FT_FRAME_STYLE);
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_RIGHT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
+  }
+
+  for (unsigned long i = 0; i < cfg->keys_count; i++) {
+    if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
+      continue;
+    }
+    hk = &(cfg->keys[i]);
+    ft_printf_ln(table,
+                 "%ld"
+                 "|%s"
+                 "|%.45s"
+                 "|%s"
+                 "|%s"
+                 "%s",
+                 i + 1,
+                 (strlen(hk->name) > 0) ? hk->name : get_hotkey_type_action_name(hk->action_type),
+                 hk->key,
+                 (hk->action != NULL && strlen(hk->action) > 0 && strcmp(hk->action, "null") != 0) ? hk->action : "",
+                 hk->enabled ? "Yes" : "No",
+                 ""
+
+                 );
+
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+
+    ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+
+    ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, (hk->enabled == true)? FT_COLOR_GREEN : FT_COLOR_RED);
+  }
+  char *table_s = ft_to_string(table);
+
+  fprintf(stdout, "%s\n", table_s);
+  ft_destroy_table(table);
+  return(EXIT_SUCCESS);
+} /* list_hotkeys_table */
 
 int list_window_infos_table(void *ARGS) {
   struct list_table_t  *args = (struct list_table_t *)ARGS;
@@ -66,7 +138,6 @@ int list_window_infos_table(void *ARGS) {
   for (int o = 0; o < TABLE_DUR_TYPES_QTY; o++) {
     durs[o].dur = 0;
   }
-
   {
     unsigned long started = timestamp();
     unsigned long s0;
@@ -152,6 +223,9 @@ int list_window_infos_table(void *ARGS) {
       }
     }
     w = (struct window_info_t *)vector_get(window_infos_v, i);
+    if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
+      continue;
+    }
     if (args->width >= 0 && (int)w->rect.size.width != args->width) {
       continue;
     }
@@ -298,10 +372,11 @@ int list_window_infos_table(void *ARGS) {
   ft_destroy_table(table);
 } /* list_window_infos_table */
 
-int list_displays_table(__attribute__((unused)) void *ARGS) {
-  unsigned long list_displays_table_started = timestamp();
-  struct Vector *displays_v                 = get_displays_v();
-  ft_table_t    *table                      = ft_create_table();
+int list_displays_table(void *ARGS) {
+  struct list_table_t *args                       = (struct list_table_t *)ARGS;
+  unsigned long       list_displays_table_started = timestamp();
+  struct Vector       *displays_v                 = get_displays_v();
+  ft_table_t          *table                      = ft_create_table();
   {
     ft_set_border_style(table, FT_FRAME_STYLE);
     ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
@@ -326,6 +401,9 @@ int list_displays_table(__attribute__((unused)) void *ARGS) {
   }
 
   for (size_t i = 0; i < vector_size(displays_v); i++) {
+    if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
+      continue;
+    }
     struct display_t *display = (struct display_t *)vector_get(displays_v, i);
     ft_printf_ln(table,
                  "%lu"
@@ -376,11 +454,12 @@ int list_displays_table(__attribute__((unused)) void *ARGS) {
   return(0);
 } /* list_displays_table */
 
-int list_spaces_table(__attribute__((unused)) void *ARGS) {
-  unsigned long list_spaces_table_started = timestamp();
-  int           terminal_width            = get_terminal_width();
-  struct Vector *spaces_v                 = get_spaces_v();
-  ft_table_t    *table                    = ft_create_table();
+int list_spaces_table(void *ARGS) {
+  struct list_table_t *args                     = (struct list_table_t *)ARGS;
+  unsigned long       list_spaces_table_started = timestamp();
+  int                 terminal_width            = get_terminal_width();
+  struct Vector       *spaces_v                 = get_spaces_v();
+  ft_table_t          *table                    = ft_create_table();
 
   {
     ft_set_border_style(table, FT_FRAME_STYLE);
@@ -404,6 +483,9 @@ int list_spaces_table(__attribute__((unused)) void *ARGS) {
   }
 
   for (size_t i = 0; i < vector_size(spaces_v); i++) {
+    if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
+      continue;
+    }
     struct space_t *space = (struct space_t *)vector_get(spaces_v, i);
     ft_printf_ln(table,
                  "%d"

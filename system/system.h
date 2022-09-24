@@ -13,5 +13,4 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-void system_fxn1(void);
 #endif

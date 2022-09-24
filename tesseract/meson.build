@@ -27,7 +27,7 @@ tesseract_c_args = [
 tesseract_link_args = [
 ]
 
-tesseract_lib = static_library('tesseract',
+tesseract_lib = library('tesseract',
   tesseract_srcs,
   install: false,
   dependencies: tesseract_deps,

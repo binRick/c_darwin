@@ -10,7 +10,6 @@
 #include "parson/parson.h"
 #include "process/process.h"
 #include "process/utils/utils.h"
-#include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log.h/log.h"
@@ -23,7 +22,6 @@
 #define MIN_VALID_WINDOW_HEIGHT    100
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static char *get_axerror_name(AXError err);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 bool minimize_window_id(size_t window_id){
@@ -1000,10 +998,6 @@ void window_send_to_space(struct window_info_t *window, uint64_t dsid) {
   }
 }
 
-static char *get_axerror_name(AXError err){
-  return(ax_error_str[-err]);
-}
-
 bool get_window_id_is_minimized(size_t window_id){
   bool                 ret    = false;
   bool                 is_min = false;
@@ -1759,148 +1753,9 @@ char *front_window_owner(void) {
   return(NULL);
 }
 
-#include <ApplicationServices/ApplicationServices.h>
-#include <ColorSync/ColorSyncDevice.h>
-#include <CoreGraphics/CGDirectDisplay.h>
-#include <CoreGraphics/CGDisplayConfiguration.h>
-#include <IOKit/graphics/IOGraphicsLib.h>
-#include <IOKit/i2c/IOI2CInterface.h>
-#include <IOKit/IOKitLib.h>
-#ifndef kMaxRequests
-#define kMaxRequests    10
-#endif
-
-#ifndef _IOKIT_IOFRAMEBUFFER_H
-#define kIOFBDependentIDKey       "IOFBDependentID"
-#define kIOFBDependentIndexKey    "IOFBDependentIndex"
-#endif
-
-long DDCDelayBase = 1;
-
-io_service_t IOFramebufferPortFromCGDisplayID(CGDirectDisplayID displayID, CFStringRef displayLocation){
-  io_iterator_t iter;
-  io_service_t  serv, servicePort = 0;
-
-  kern_return_t err = IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching(IOFRAMEBUFFER_CONFORMSTO), &iter);
-
-  if (err != KERN_SUCCESS) {
-    return(0);
-  }
-
-  // now recurse the IOReg tree
-  while ((serv = IOIteratorNext(iter)) != MACH_PORT_NULL) {
-    CFDictionaryRef info;
-    CFIndex         vendorID = 0, productID = 0, serialNumber = 0;
-    CFNumberRef     vendorIDRef, productIDRef, serialNumberRef;
-    CFStringRef     location = CFSTR("");
-#ifdef DEBUG
-    CFIndex         dependID = 0, dependIndex = 0;
-    CFNumberRef     dependIDRef, dependIndexRef;
-    io_name_t       name;
-    CFStringRef     serial = CFSTR("");
-
-    // get metadata from IOreg node
-    IORegistryEntryGetName(serv, name);
-    info = IODisplayCreateInfoDictionary(serv, kIODisplayOnlyPreferredName);
-
-    CFStringRef ioRegPath = IORegistryEntryCopyPath(serv, kIOServicePlane);
-    // just location/../../ (-- /display0/AppleDisplay)
-
-    // https://stackoverflow.com/a/48450870/3878712
-    CFUUIDRef   uuid    = CGDisplayCreateUUIDFromDisplayID(displayID);
-    CFStringRef uuidStr = CFUUIDCreateString(NULL, uuid);
-#endif
-    Boolean     success = 0;
-
-    info = IODisplayCreateInfoDictionary(serv, kIODisplayOnlyPreferredName);     // kIODisplayMatchingInfo
-
-    /* When assigning a display ID, Quartz considers the following parameters:Vendor, Model, Serial Number and Position in the I/O Kit registry */
-    // http://opensource.apple.com//source/IOGraphics/IOGraphics-179.2/IOGraphicsFamily/IOKit/graphics/IOGraphicsTypes.h
-    CFStringRef locationRef = CFDictionaryGetValue(info, CFSTR(kIODisplayLocationKey));
-    if (locationRef) {
-      location = CFStringCreateCopy(NULL, locationRef);
-    }
-#ifdef DEBUG
-    CFStringRef serialRef = CFDictionaryGetValue(info, CFSTR(kDisplaySerialString));
-    if (serialRef) {
-      serial = CFStringCreateCopy(NULL, serialRef);
-    }
-
-    if ((dependIDRef = CFDictionaryGetValue(info, CFSTR(kIOFBDependentIDKey)))) {
-      CFNumberGetValue(dependIDRef, kCFNumberCFIndexType, &dependID);
-    }
-    if ((dependIndexRef = CFDictionaryGetValue(info, CFSTR(kIOFBDependentIndexKey)))) {
-      CFNumberGetValue(dependIndexRef, kCFNumberCFIndexType, &dependIndex);
-    }
-#endif
-    if (CFDictionaryGetValueIfPresent(info, CFSTR(kDisplayVendorID), (const void **)&vendorIDRef)) {
-      success = CFNumberGetValue(vendorIDRef, kCFNumberCFIndexType, &vendorID);
-    }
-
-    if (CFDictionaryGetValueIfPresent(info, CFSTR(kDisplayProductID), (const void **)&productIDRef)) {
-      success &= CFNumberGetValue(productIDRef, kCFNumberCFIndexType, &productID);
-    }
-
-    IOItemCount busCount;
-    IOFBGetI2CInterfaceCount(serv, &busCount);
-
-    if (!success || busCount < 1 || CGDisplayIsBuiltin(displayID)) {
-      // this does not seem to be a DDC-enabled display, skip it
-#ifdef DEBUG
-      CFRelease(location);
-      CFRelease(serial);
-#endif
-      CFRelease(info);
-      continue;
-    }
-    // kAppleDisplayTypeKey -- if this is an Apple display, can use IODisplay func to change brightness: http://stackoverflow.com/a/32691700/3878712
-
-    if (CFDictionaryGetValueIfPresent(info, CFSTR(kDisplaySerialNumber), (const void **)&serialNumberRef)) {
-      CFNumberGetValue(serialNumberRef, kCFNumberCFIndexType, &serialNumber);
-    }
-#ifdef DEBUG
-    printf("I: Attempting match for %s's IODisplayPort @ %s...\n",
-           CFStringGetCStringPtr(uuidStr, kCFStringEncodingUTF8), CFStringGetCStringPtr(location, kCFStringEncodingUTF8));
-#endif
-    if (displayLocation) {
-      // we were provided with a specific ioreg location we suspect the targeted framebuffer to be attached to...
-      if (!CFStringHasPrefix(location, displayLocation)) {
-        // this framebuffer doesn't reside within the provided location
-        CFRelease(info);
-        continue;
-      }
-    }
-    // compare IOreg's metadata to CGDisplay's metadata to infer if the IOReg's I2C monitor is the display for the given NSScreen.displayID
-    if (CGDisplayVendorNumber(displayID) != (UInt32)vendorID
-        || CGDisplayModelNumber(displayID) != (UInt32)productID
-        || CGDisplaySerialNumber(displayID) != (UInt32)serialNumber) { // SN is zero in lots of cases, so duplicate-monitors can confuse us :-/
-#ifdef DEBUG
-      CFRelease(location);
-      CFRelease(serial);
-#endif
-      CFRelease(info);
-      continue;
-    }
-
-#ifdef DEBUG
-    // considering this IOFramebuffer as the match for the CGDisplay, dump out its information
-    // compare with `make displaylist`
-    printf("\nFramebuffer: %s\n", name);
-    printf("%s\n", CFStringGetCStringPtr(ioRegPath, kCFStringEncodingUTF8));
-    printf("%s\n", CFStringGetCStringPtr(location, kCFStringEncodingUTF8));
-    printf("VN:%ld PN:%ld SN:%ld", vendorID, productID, serialNumber);
-    printf(" UN:%d", CGDisplayUnitNumber(displayID));
-    printf(" IN:%d", iter);
-    printf(" depID:%ld depIdx:%ld", dependID, dependIndex);
-    printf(" Serial:%s\n\n", CFStringGetCStringPtr(serial, kCFStringEncodingUTF8));
-    CFRelease(location);
-    CFRelease(serial);
-#endif
-    servicePort = serv;
-    CFRelease(info);
-    break;
-  }
-} /* IOFramebufferPortFromCGDisplayID */
+static char *get_axerror_name(AXError err){
+  return(ax_error_str[-err]);
+}
 static void __attribute__((constructor)) __constructor__window_utils(void){
   if (getenv("DEBUG") != NULL || getenv("VERBOSE_DEBUG_WINDOW_UTILS") != NULL) {
     log_debug("Enabling Window Utils Verbose Debug Mode");

@@ -41,6 +41,13 @@ size_t get_config_file_hash(char *CONFIG_FILE_PATH){
   return(config_hash);
 }
 
+char *get_hotkey_type_action_name(enum action_type_t action){
+for(size_t i=0;i<(sizeof(action_type_strings)/sizeof(action_type_strings[0]));i++){
+  if(action==action_type_strings[i].val)
+    return(action_type_strings[i].str);
+}
+return NULL;
+}
 char *get_homedir_yaml_config_file_path(){
   char *path;
   char *home = getenv("HOME");
@@ -48,7 +55,7 @@ char *get_homedir_yaml_config_file_path(){
     log_error("HOME Environment variable not set!");
     exit(EXIT_FAILURE);
   }
-  asprintf(&path, "%s/.config/darwin-ls/hotkeys.yaml", home);
+  asprintf(&path, "%s/.config/dls/dls.hotkeys.yaml", home);
   if (fsio_file_exists(path) == false) {
     fsio_mkdirs_parent(path, 0700);
     log_error("Config File %s is Missing. Create it.", path);

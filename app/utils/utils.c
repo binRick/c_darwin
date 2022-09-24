@@ -9,6 +9,23 @@
 #include "timelib/timelib.h"
 #define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
 #define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8) * 1000
+authorized_tests_t         authorized_tests = {
+  .tests             = {
+    [AUTHORIZED_ACCESSIBILITY] =     {
+      .id            = AUTHORIZED_ACCESSIBILITY,
+      .name          = "accessibility",
+      .test_function = (*is_authorized_for_accessibility),
+      .authorized    = false,                             .ts= 0, .dur_ms = 0,
+    },
+    [AUTHORIZED_SCREEN_RECORDING] =  {
+      .id            = AUTHORIZED_SCREEN_RECORDING,
+      .name          = "screen_recording",
+      .test_function = (*is_authorized_for_screen_recording),
+      .authorized    = false,                                .ts= 0, .dur_ms = 0,
+    },
+    [AUTHORIZED_TEST_TYPE_IDS_QTY] = { 0 },
+  },
+};
 static struct app_parser_t app_parsers[APP_PARSER_TYPES_QTY] = {
   [APP_PARSER_TYPE_NAME] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
                                                                                    app->name                                                  = (json_object_has_value_of_type(app_object, "_name", JSONString))
@@ -98,10 +115,6 @@ static void debug_app(struct app_t *app){
           app->obtained_from,
           "\n"
           );
-
-  //get_icon_data_from_path(app->path);
-  //log_debug("ok");
-  //exit(0);
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -122,24 +135,6 @@ bool request_accessibility_permissions() {
   CFRelease(options);
   return(result);
 }
-
-authorized_tests_t authorized_tests = {
-  .tests             = {
-    [AUTHORIZED_ACCESSIBILITY] =     {
-      .id            = AUTHORIZED_ACCESSIBILITY,
-      .name          = "accessibility",
-      .test_function = (*is_authorized_for_accessibility),
-      .authorized    = false,                             .ts= 0, .dur_ms = 0,
-    },
-    [AUTHORIZED_SCREEN_RECORDING] =  {
-      .id            = AUTHORIZED_SCREEN_RECORDING,
-      .name          = "screen_recording",
-      .test_function = (*is_authorized_for_screen_recording),
-      .authorized    = false,                                .ts= 0, .dur_ms = 0,
-    },
-    [AUTHORIZED_TEST_TYPE_IDS_QTY] = { 0 },
-  },
-};
 
 ///////////////////////////////////////////////////////////////////////
 static void parse_app(struct app_t *app, JSON_Object *app_object){
@@ -162,7 +157,9 @@ struct Vector *get_installed_apps_v(){
       for (size_t i = 0; i < apps_qty; i++) {
         struct app_t *app = calloc(1, sizeof(struct app_t));
         parse_app(app, json_array_get_object(apps_array, i));
-        debug_app(app);
+        if (APP_UTILS_DEBUG_MODE) {
+          debug_app(app);
+        }
       }
     }
   }

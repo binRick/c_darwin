@@ -58,3 +58,4 @@ tmp
 .DS_Store
 *.qoi
 *.gif.[0-9]*
+.new

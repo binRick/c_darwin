@@ -23,23 +23,4 @@ static void __attribute__((constructor)) __constructor__system(void){
     SYSTEM_DEBUG_MODE = true;
   }
 }
-static void system_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void system_internal_fxn1(void){
-  log_info("Called function system_internal_fxn1");
-  if (SYSTEM_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void system_fxn1(void){
-  system_internal_fxn1();
-  log_info("Called function system_fxn1");
-  if (SYSTEM_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-////////////////////////////////////////////
 #endif

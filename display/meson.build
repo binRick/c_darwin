@@ -27,7 +27,7 @@ display_c_args = [
 display_link_args = [
 ]
 
-display_lib = static_library('display',
+display_lib = library('display',
   display_srcs,
   install: false,
   dependencies: display_deps,

@@ -1,13 +1,11 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_H
 #define LS_WIN_COMMANDS_H
-#include "darwin-ls/darwin-ls.h"
+#include "ansi-codes/ansi-codes.h"
+#include "dls/dls.h"
 #include "icon-utils/icon-utils.h"
 #include "output-utils/output-utils.h"
 ////////////////////////////////////////////
-typedef struct optparse_opt (^common_option_b)(struct args_t *args);
-typedef char (^common_option_description)(void *sorts);
-#include "ansi-codes/ansi-codes.h"
 #define COLOR_FOCUS      "\x1b[38;2;151;252;50m" AC_UNDERLINE
 #define COLOR_SHOW       "\x1b[38;2;50;252;142m" AC_UNDERLINE
 #define COLOR_LIST       "\x1b[38;2;50;175;252m" AC_UNDERLINE
@@ -41,6 +39,7 @@ enum check_command_type_t {
   CHECK_COMMAND_ICON_SIZE,
   CHECK_COMMAND_RESIZE_FACTOR,
   CHECK_COMMAND_XML_FILE,
+  CHECK_COMMAND_CONTENT,
   CHECK_COMMAND_RANDOM_WINDOW_ID,
   CHECK_COMMAND_HEIGHT_LESS,
   CHECK_COMMAND_HEIGHT_GREATER,
@@ -53,6 +52,7 @@ enum check_command_type_t {
   CHECK_COMMAND_NON_MINIMIZED_ONLY,
   CHECK_COMMAND_CLEAR_SCREEN,
   CHECK_COMMAND_CONCURRENCY,
+  CHECK_COMMAND_LIMIT,
   CHECK_COMMAND_TYPES_QTY,
 };
 enum common_option_group_t {
@@ -64,8 +64,10 @@ enum common_option_name_t {
   COMMON_OPTION_DISPLAY_ID,
   COMMON_OPTION_WINDOW_ID,
   COMMON_OPTION_CLEAR_SCREEN,
+  COMMON_OPTION_CONTENT,
   COMMON_OPTION_WINDOW_WIDTH,
   COMMON_OPTION_CONCURRENCY,
+  COMMON_OPTION_LIMIT,
   COMMON_OPTION_ALL_WINDOWS,
   COMMON_OPTION_WINDOW_HEIGHT,
   COMMON_OPTION_WINDOW_WIDTH_GROUP,
@@ -147,6 +149,7 @@ enum command_type_t {
   COMMAND_APP_ICNS_PATH,
   COMMAND_CLEAR_ICONS_CACHE,
   COMMAND_HOTKEYS,
+  COMMAND_LIST_HOTKEYS,
   COMMAND_MINIMIZE_WINDOW,
   COMMAND_PID_IS_MINIMIZED,
   COMMAND_WINDOW_IS_MINIMIZED,
@@ -154,6 +157,8 @@ enum command_type_t {
   COMMAND_WINDOW_LEVEL,
   COMMAND_IMAGE_CONVERSIONS,
   COMMAND_SECURITY,
+  COMMAND_PASTE,
+  COMMAND_COPY,
   COMMAND_WINDOW_PID_INFOS,
   COMMAND_WINDOW_ID_INFO,
   COMMAND_TYPES_QTY,
@@ -162,6 +167,8 @@ enum color_types_t {
   COLOR_TYPE_FOCUS,
   COLOR_TYPES_QTY,
 };
+typedef struct optparse_opt (^common_option_b)(struct args_t *args);
+typedef char (^common_option_description)(void *sorts);
 struct item_color_t {
   const char *color;
 };
@@ -174,10 +181,10 @@ struct check_cmd_t {
   void (*fxn)(void);
   int  arg_data_type;
 };
-
 struct cmd_t        cmds[COMMAND_TYPES_QTY + 1];
 struct check_cmd_t  check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
 struct item_color_t item_colors[COLOR_TYPES_QTY + 1];
 common_option_b     common_options_b[COMMON_OPTION_NAMES_QTY + 1];
 char *get_command_about(enum command_type_t COMMAND_ID);
+char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height);
 #endif

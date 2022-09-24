@@ -1,8 +1,8 @@
 ////////////////////////////////////////////
 
 ////////////////////////////////////////////
-#include "screen-utils-test/screen-utils-test.h"
-#include "screen-utils/screen-utils-module.h"
+#include "screen/utils/test/test.h"
+#include "screen/utils/utils-module.h"
 #include "screen/utils/utils.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"

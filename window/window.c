@@ -13,8 +13,6 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
-
-////////////////////////////////////////////
 static bool WINDOW_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__window(void){
@@ -23,23 +21,4 @@ static void __attribute__((constructor)) __constructor__window(void){
     WINDOW_DEBUG_MODE = true;
   }
 }
-static void window_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void window_internal_fxn1(void){
-  log_info("Called function window_internal_fxn1");
-  if (WINDOW_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void window_fxn1(void){
-  window_internal_fxn1();
-  log_info("Called function window_fxn1");
-  if (WINDOW_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-////////////////////////////////////////////
 #endif

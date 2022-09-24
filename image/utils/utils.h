@@ -16,10 +16,10 @@
 #include <time.h>
 #include <unistd.h>
 ///////////////////////////////////////////////////
-#include "libspng/spng/spng.h"
 #include "ansi-codes/ansi-codes.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "libspng/spng/spng.h"
 #include "tesseract/capi.h"
 ///////////////////////////////////////////////////
 #define PREVIEW_FACTOR      2

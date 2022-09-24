@@ -6,9 +6,9 @@ image_utils_dirs = [
     inc,
   ]
 image_utils_deps = [
-  lodepng_dep,
+  lodepng_dep,c_fsio_dep,
   imagequant_dep,
-  leptonica_dep,
+  leptonica_dep,tempdir_dep,
   stb_dep,
   c_stringfn_dep,tesseract_dep,
   parson_dep,
@@ -35,7 +35,10 @@ image_utils_link_flags = [
 ]
 image_utils_c_args = [
   '-DMSF_GIF_IMPL',
-  '-Wno-address',
+  '-DSTB_IMAGE_IMPLEMENTATION',
+  '-DSTB_IMAGE_WRITE_IMPLEMENTATION',
+  '-DSTB_IMAGE_RESIZE_IMPLEMENTATION',
+  '-DQOI_IMPLEMENTATION',
   tesseract_cflags,
   leptonica_cflags,
 ]

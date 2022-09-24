@@ -27,7 +27,7 @@ keyboard_c_args = [
 keyboard_link_args = [
 ]
 
-keyboard_lib = static_library('keyboard',
+keyboard_lib = library('keyboard',
   keyboard_srcs,
   install: false,
   dependencies: keyboard_deps,

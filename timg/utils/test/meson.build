@@ -35,8 +35,8 @@ if get_option('enable-binaries')
      c_args: timg_utils_test_c_args,
      install: false,
   )
-  #test('timg-utils-test', 
-  #  timg_utils_test_exec, args: ['-v','-a'],
-  #  workdir: timg_utils_test_test_dir,
-  #)
+  test('timg-utils-test', 
+    timg_utils_test_exec, args: ['-v','-a'],
+    workdir: timg_utils_test_test_dir,
+  )
 endif

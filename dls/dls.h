@@ -1,10 +1,8 @@
 #pragma once
 #ifndef LS_WIN_H
 #define LS_WIN_H
-#include "ansi-codes/ansi-codes.h"
-#include "optparse99/optparse99.h"
-//////////////////////////////////////
 #include "alacritty/alacritty.h"
+#include "ansi-codes/ansi-codes.h"
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -12,8 +10,8 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "core-utils/core-utils.h"
-#include "darwin-ls/darwin-ls-commands.h"
 #include "display/utils/utils.h"
+#include "dls/dls-commands.h"
 #include "dock/utils/utils.h"
 #include "focused/focused.h"
 #include "font-utils/font-utils.h"
@@ -22,6 +20,7 @@
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "monitor/utils/utils.h"
 #include "ms/ms.h"
+#include "optparse99/optparse99.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
@@ -39,14 +38,12 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-char *EXECUTABLE_PATH_DIRNAME, *EXECUTABLE_PATH, *EXECUTABLE, **ARGV, *ASSETS_DIR;
 enum common_option_width_or_height_t {
   COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN = 0,
   COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT,
   COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH,
   COMMON_OPTION_WIDTH_OR_HEIGHT_QTYS,
 };
-char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height);
 struct args_t {
   bool                                 verbose, current_space_only, current_display_only;
   int                                  space_id, window_id;
@@ -59,9 +56,9 @@ struct args_t {
   enum common_option_width_or_height_t width_or_height;
   struct window_info_t                 *window;
   size_t                               icon_size;
-  int                                  concurrency;
+  int                                  concurrency, limit;
   double                               resize_factor;
-  char                                 *xml_file_path;
+  char                                 *xml_file_path, *content;
   bool                                 clear_icons_cache, minimized_only, non_minimized_only;
   bool                                 display_output_file, all_windows;
   bool                                 random_window_id, clear_screen;
@@ -69,5 +66,5 @@ struct args_t {
   char                                 *sort_direction, *application_name;
   char                                 *sort_key;
 };
-extern struct args_t *args;
+struct args_t *args;
 #endif

@@ -12,5 +12,4 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-void table_fxn1(void);
 #endif

@@ -10,3 +10,4 @@
 #include <stdlib.h>
 
 char *read_clipboard(void);
+bool copy_clipboard(char *text);

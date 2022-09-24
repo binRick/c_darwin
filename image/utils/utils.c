@@ -1,8 +1,4 @@
 #pragma once
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define QOI_IMPLEMENTATION
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
@@ -31,10 +27,12 @@
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log.h/log.h"
+#include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "timg/utils/utils.h"
 #include "window/info/info.h"
 static bool IMAGE_UTILS_DEBUG_MODE = false;
+static bool FANCY_PROGRESS_ENABLED = false;
 
 const char *color_type_str(enum spng_color_type color_type){
   switch (color_type) {
@@ -72,9 +70,13 @@ char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
 void create_animated_gif(){
   unsigned long started = timestamp();
 
-  char          *gif = "/tmp/output.gif";
-  char          *file = "/tmp/output.png";
-  FILE          *fp = fopen(file, "rb");
+  char          *gif;
+
+  asprintf(&gif, "%soutput-%d.gif", gettempdir(), getpid());
+  char *png;
+
+  asprintf(&png, "%soutput-%d.png", gettempdir(), getpid());
+  FILE          *fp = fopen(png, "rb");
   unsigned long frame_ms = 10000;
   int           width, height, format;
   unsigned char *pixels = stbi_load_from_file(fp, &width, &height, &format, STBI_rgb_alpha);
@@ -175,7 +177,9 @@ static struct image_conversion_test_t IC[] = {
 };
 
 bool image_conversions(char *file){
-  fancy_progress_start();
+  if (FANCY_PROGRESS_ENABLED == true) {
+    fancy_progress_start();
+  }
   size_t ROUNDS = 100;
   srand(time(NULL));
 
@@ -224,7 +228,9 @@ bool image_conversions(char *file){
   return(true);
 
   int progress = 5;
-  fancy_progress_step(progress);
+  if (FANCY_PROGRESS_ENABLED == true) {
+    fancy_progress_step(progress);
+  }
   for (size_t i = 0; i < IMAGE_CONVERSIONS_QTY; i++) {
     for (size_t c = 0; c < sizeof(image_conversion_compressions) / sizeof(image_conversion_compressions[0]); c++) {
       for (size_t q = 0; q < sizeof(image_conversion_qualities) / sizeof(image_conversion_qualities[0]); q++) {
@@ -232,7 +238,7 @@ bool image_conversions(char *file){
         IC[i].compression = image_conversion_compressions[c];
         IC[i].quality     = image_conversion_qualities[q];
         //fancy_progress_step(progress + 1);
-        asprintf(&(IC[i].file), "/tmp/output-%d-%dx%d-comp-%d-qual-%d.%s", getpid(), width, height, IC[i].compression, IC[i].quality, IC[i].ext);
+        asprintf(&(IC[i].file), "%soutput-%d-%dx%d-comp-%d-qual-%d.%s", gettempdir(), getpid(), width, height, IC[i].compression, IC[i].quality, IC[i].ext);
         log_info("%s", IC[i].file);
         IC[i].started = timestamp();
         if (IC[i].fxn(IC[i].file, width, height, 0, rgb, 0) != 0) {
@@ -249,10 +255,13 @@ bool image_conversions(char *file){
       }
     }
   }
-  fancy_progress_step(100);
+  if (FANCY_PROGRESS_ENABLED == true) {
+    fancy_progress_step(100);
+  }
 
-  sleep(1);
-  fancy_progress_stop();
+  if (FANCY_PROGRESS_ENABLED == true) {
+    fancy_progress_stop();
+  }
 
   return(true);
 } /* image_conversions */
@@ -684,5 +693,8 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_IMAGE_UTILS") != NULL) {
     log_debug("Enabling Image Utils Debug Mode");
     IMAGE_UTILS_DEBUG_MODE = true;
+  }
+  if (isatty(STDOUT_FILENO)) {
+    FANCY_PROGRESS_ENABLED = true;
   }
 }

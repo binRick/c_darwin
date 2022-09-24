@@ -7,7 +7,7 @@ pasteboard_dirs = [
 ]
 pasteboard_deps = [
   c_stringfn_dep,
-  pbpaste_dep,
+  pbpaste_dep,reproc_dep,
   log_dep,
 ]
 

@@ -32,7 +32,7 @@ window_c_args = [
 window_link_args = [
 ]
 
-window_lib = static_library('window',
+window_lib = library('window',
   window_srcs,
   install: false,
   dependencies: window_deps,

@@ -27,7 +27,7 @@ table_c_args = [
 table_link_args = [
 ]
 
-table_lib = static_library('table',
+table_lib = library('table',
   table_srcs,
   install: false,
   dependencies: table_deps,

@@ -72,7 +72,7 @@ struct list_table_t {
   bool          current_space_only, current_display_only;
   size_t        space_id, display_id, window_id;
   char          *sort_key, *sort_direction, *application_name;
-  int           width_less, width_greater, height_less, height_greater, width, height;
+  int           width_less, width_greater, height_less, height_greater, width, height, limit;
   pid_t         pid;
 };
 struct table_order_t {
@@ -93,4 +93,5 @@ int list_window_infos_table(void *ARGS);
 int list_windows_table(void *ARGS);
 int list_spaces_table(void *ARGS);
 int list_displays_table(void *ARGS);
+int list_hotkeys_table(void *ARGS);
 #endif

@@ -60,3 +60,80 @@ bool window_id_is_minimized(size_t window_id){
   }
   return(CFBooleanGetValue(boolRef));
 }
+
+char *get_encoding_type_name(int encoding) {
+  if (encoding == kCFStringEncodingMacRoman) {
+    return((char *)&"macintosh");
+  }
+  if (encoding == kCFStringEncodingUTF8) {
+    return((char *)&"UTF-8");
+  }
+  if (encoding == kCFStringEncodingShiftJIS) {
+    return((char *)&"ShiftJIS");
+  }
+  if (encoding == kCFStringEncodingISOLatin1) {
+    return((char *)&"Latin1");
+  }
+  return((char *)&"macintosh");
+}
+
+int run_applescript(const void *text, long textLength, AEDesc *resultData) {
+  ComponentInstance theComponent;
+  AEDesc            scriptTextDesc;
+  OSStatus          err;
+  OSAID             scriptID, resultID;
+
+  /* set up locals to a known state */
+  theComponent = NULL;
+  AECreateDesc(typeNull, NULL, 0, &scriptTextDesc);
+  scriptID = kOSANullScript;
+  resultID = kOSANullScript;
+
+  /* open the scripting component */
+  theComponent = OpenDefaultComponent(kOSAComponentType,
+                                      typeAppleScript);
+  if (theComponent == NULL) {
+    err = paramErr; goto bail;
+  }
+
+  /* put the script text into an aedesc */
+  err = AECreateDesc(typeChar, text, textLength, &scriptTextDesc);
+  if (err != noErr) {
+    goto bail;
+  }
+
+  /* compile the script */
+  err = OSACompile(theComponent, &scriptTextDesc,
+                   kOSAModeNull, &scriptID);
+  if (err != noErr) {
+    goto bail;
+  }
+
+  /* run the script */
+  err = OSAExecute(theComponent, scriptID, kOSANullScript,
+                   kOSAModeNull, &resultID);
+
+  /* collect the results - if any */
+  if (resultData != NULL) {
+    AECreateDesc(typeNull, NULL, 0, resultData);
+    if (err == errOSAScriptError) {
+      OSAScriptError(theComponent, kOSAErrorMessage,
+                     typeChar, resultData);
+    } else if (err == noErr && resultID != kOSANullScript) {
+      OSADisplay(theComponent, resultID, typeChar,
+                 kOSAModeNull, resultData);
+    }
+  }
+bail:
+  AEDisposeDesc(&scriptTextDesc);
+  if (scriptID != kOSANullScript) {
+    OSADispose(theComponent, scriptID);
+  }
+  if (resultID != kOSANullScript) {
+    OSADispose(theComponent, resultID);
+  }
+  if (theComponent != NULL) {
+    CloseComponent(theComponent);
+  }
+  return(err);
+} /* run_applescript */

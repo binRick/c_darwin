@@ -17,38 +17,11 @@ window_utils_deps = [
   log_dep,image_utils_dep,
   ansi_codes_dep,display_utils_dep,
   c_vector_dep,string_utils_dep,window_info_dep,process_utils_dep,
-  process_dep,app_utils_dep,image_utils_dep,
+  process_dep,app_utils_dep,image_utils_dep,ms_dep,timestamp_dep,c_vector_dep,c_stringfn_dep,c_vector_dep,
 ]
 window_utils_link_flags = [
-'-Wl,-framework,CoreFoundation',
-'-Wl,-framework,Carbon',
-'-Wl,-framework,ScriptingBridge',
-'-Wl,-framework,Foundation', 
-'-Wl,-framework,CoreGraphics', 
-'-Wl,-framework,Cocoa', 
-'-Wl,-framework,Carbon', 
-'-Wl,-framework,CoreServices', 
-'-Wl,-framework,AppKit'
+  osx_ldflags,
 ]
-
-window_utils_link_flags +=  ['-Wl,-framework,Foundation']
-window_utils_link_flags +=  ['-Wl,-framework,Security']
-window_utils_link_flags +=  ['-Wl,-framework,SkyLight']
-window_utils_link_flags +=  ['-Wl,-framework,ApplicationServices']
-window_utils_link_flags +=  ['-Wl,-framework,ScriptingBridge']
-window_utils_link_flags +=  ['-Wl,-framework,CoreFoundation']
-
-window_utils_link_flags +=  ['-Wl,-framework,SystemExtensions']
-window_utils_link_flags +=  ['-Wl,-framework,DeviceCheck']
-window_utils_link_flags +=  ['-Wl,-framework,Carbon']
-window_utils_link_flags +=  ['-Wl,-framework,Metal']
-window_utils_link_flags +=  ['-Wl,-framework,MetalKit']
-window_utils_link_flags +=  ['-Wl,-framework,QuartzCore']
-window_utils_link_flags +=  ['-Wl,-framework,ICADevices']
-window_utils_link_flags +=  ['-Wl,-framework,DeviceCheck']
-window_utils_link_flags +=  ['-Wl,-framework,AppKit']
-window_utils_link_flags +=  ['-Wl,-framework,IOKit']
-window_utils_link_flags +=  ['-F/System/Library/PrivateFrameworks']
 
 window_utils_lib = library('window-utils',
   window_utils_srcs,

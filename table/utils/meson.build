@@ -9,7 +9,7 @@ table_utils_dirs = [
     inc,
   ]
 table_utils_deps = [
-  c_stringfn_dep,
+  c_stringfn_dep,hotkey_utils_dep,
   parson_dep,
   log_dep,
   ansi_codes_dep,

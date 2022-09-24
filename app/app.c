@@ -1,10 +1,8 @@
 #pragma once
 #ifndef APP_C
 #define APP_C
-////////////////////////////////////////////
-#include "app/app.h"
-////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "app/app.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
@@ -14,7 +12,7 @@
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
-const char  *app_type_names[APP_TYPES_QTY + 1] = {
+const char       *app_type_names[APP_TYPES_QTY + 1] = {
   [APP_TYPE_APPLE]          = "Apple",
   [APP_TYPE_ABSENT]         = "Absent",
   [APP_TYPE_EXISTANT]       = "Existant",
@@ -27,7 +25,11 @@ const char  *app_type_names[APP_TYPES_QTY + 1] = {
   [APP_TYPE_VERSIONED]      = "Versioned",
   [APP_TYPES_QTY]           = NULL,
 };
-static bool APP_DEBUG_MODE = false;
+static const int app_event_types[] = {
+  kEventAppActivated,
+  kEventAppDeactivated,
+};
+static bool      APP_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__app(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_APP") != NULL) {

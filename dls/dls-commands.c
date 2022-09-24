@@ -3,30 +3,32 @@
 #define LS_WIN_COMMANDS_C
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
-#include "darwin-ls/darwin-ls-commands.h"
-#include "darwin-ls/darwin-ls.h"
+#include "dls/dls-commands.h"
+#include "dls/dls.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "httpserver-utils/httpserver-utils.h"
 #include "httpserver/httpserver.h"
 #include "keylogger/keylogger.h"
+#include "pasteboard/pasteboard.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
 #include "table/utils/utils.h"
-#include "tesseract-utils/tesseract-utils.h"
+#include "tesseract/utils/utils.h"
 #include "timg/utils/utils.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/sort/sort.h"
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////
-static void _command_window_pid_infos();
 static void _command_move_window();
 static void _command_window_id_info();
 static void _command_resize_window();
 static void _command_minimize_window();
 static void _command_set_window_space();
 static void _command_set_space();
+static void _command_copy();
+static void _command_paste();
 static void _command_image_conversions();
 static void _command_set_space_index();
 static void _command_set_window_all_spaces();
@@ -36,8 +38,6 @@ static void _command_focus_window();
 static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
-static void _command_window_infos();
-static void _command_window_id_info();
 static void _command_spaces();
 static void _command_debug_args();
 static void _command_sticky_window();
@@ -69,6 +69,7 @@ static void _command_window_layer();
 static void _command_window_level();
 static void _command_open_security();
 static void _command_hotkeys();
+static void _command_list_hotkeys();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_clear_screen(void);
@@ -78,6 +79,7 @@ static void _check_height_greater(int height_greater);
 static void _check_height_less(int height_less);
 static void _check_width_greater(int width_greater);
 static void _check_concurrency(int concurrency);
+static void _check_limit(int limit);
 static void _check_width_less(int width_less);
 static void _check_height_group(uint16_t window_id);
 static void _check_width(uint16_t window_id);
@@ -438,6 +440,17 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->clear_icons_cache),
     });
   },
+  [COMMON_OPTION_LIMIT] = ^ struct optparse_opt (struct args_t *args)                        {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'l',
+      .long_name = "limit",
+      .description = "Limit",
+      .arg_name = "LIMIT",
+      .arg_dest = &(args->limit),
+      .arg_data_type = check_cmds[CHECK_COMMAND_LIMIT].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_LIMIT].fxn,
+    });
+  },
   [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                      {
     return((struct optparse_opt)                                                             {
       .short_name = 'v',
@@ -466,6 +479,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_name = "WINDOW-X",
       .arg_data_type = DATA_TYPE_UINT16,
       .arg_dest = &(args->x),
+    });
+  },
+  [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args)                      {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'c',
+      .long_name = "content",
+      .description = "Content",
+      .arg_name = "CONTENT",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->content),
     });
   },
   [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)                     {
@@ -547,6 +570,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
+  [CHECK_COMMAND_LIMIT] =            {
+    .fxn           = (void (*)(void))(*_check_limit),
+    .arg_data_type = DATA_TYPE_INT,
+  },
   [CHECK_COMMAND_CONCURRENCY] =      {
     .fxn           = (void (*)(void))(*_check_concurrency),
     .arg_data_type = DATA_TYPE_INT,
@@ -643,12 +670,16 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_xml_file),
     .arg_data_type = DATA_TYPE_STR,
   },
+  [CHECK_COMMAND_CLEAR_SCREEN] =     {
+    .fxn = (void (*)(void))(*_check_clear_screen),
+  },
   [CHECK_COMMAND_OUTPUT_FILE] =      {
     .fxn           = (void (*)(void))(*_check_output_file),
     .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_TYPES_QTY] =        { 0},
 };
+
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_MOVE_WINDOW] =           {
     .name = "move-window",           .icon = "🪟", .color = COLOR_WINDOW, .description = "Move Window",
@@ -659,7 +690,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .fxn  = (*_command_resize_window),
   },
   [COMMAND_HOTKEYS] =               {
-    .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Hotkeys",
+    .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Hotkeys Daemon",
     .fxn  = (*_command_hotkeys),
   },
   [COMMAND_WINDOW_LEVEL] =          {
@@ -704,19 +735,6 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SET_SPACE_INDEX] =       {
     .fxn = (*_command_set_space_index)
   },
-  [COMMAND_FOCUSED_SPACE] =         {
-    .fxn = (*_command_focused_space)
-  },
-  [COMMAND_FOCUSED_WINDOW] =        {
-    .name        = "focused-window", .icon = "💮", .color = COLOR_LIST,
-    .description = "Focused Window",
-    .fxn         = (*_command_focused_window)
-  },
-  [COMMAND_FOCUSED_PID] =           {
-    .name        = "focused-pid", .icon = "🌈", .color = COLOR_LIST,
-    .description = "Focused PID",
-    .fxn         = (*_command_focused_pid)
-  },
   [COMMAND_WINDOWS] =               {
     .name = "windows", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Windows",
     .fxn  = (*_command_windows)
@@ -760,7 +778,9 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .fxn         = (*_command_dock)
   },
   [COMMAND_FOCUSED_SPACE] =         {
-    .fxn = (*_command_focused_space)
+    .name        = "focused-space", .icon = "💮", .color = COLOR_LIST,
+    .description = "Focused Space",
+    .fxn         = (*_command_focused_space)
   },
   [COMMAND_FOCUSED_WINDOW] =        {
     .name        = "focused-window", .icon = "💮", .color = COLOR_LIST,
@@ -791,6 +811,21 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name        = "image-conversions", .icon = "💮", .color = COLOR_LIST,
     .description = "Image Conversions",
     .fxn         = (*_command_image_conversions)
+  },
+  [COMMAND_PASTE] =                 {
+    .name        = "paste",           .icon = "💮", .color = COLOR_LIST,
+    .description = "Clipboard Paste",
+    .fxn         = (*_command_paste)
+  },
+  [COMMAND_COPY] =                  {
+    .name        = "copy",           .icon = "💮", .color = COLOR_LIST,
+    .description = "Clipboard Copy",
+    .fxn         = (*_command_copy)
+  },
+  [COMMAND_LIST_HOTKEYS] =          {
+    .name        = "list-hotkeys", .icon = "💮", .color = COLOR_LIST,
+    .description = "List Hotkeys",
+    .fxn         = (*_command_list_hotkeys)
   },
   [COMMAND_ALACRITTYS] =            {
     .name        = "alacrittys", .icon = "💮", .color = COLOR_LIST,
@@ -877,14 +912,6 @@ static void _check_resize_factor(double resize_factor){
   return(EXIT_SUCCESS);
 }
 
-static void _check_non_minimized_only(bool minimized_only){
-  return(EXIT_SUCCESS);
-}
-
-static void _check_minimized_only(bool minimized_only){
-  return(EXIT_SUCCESS);
-}
-
 static void _check_sort_direction(char *sort_direction){
   if (strcmp(sort_direction, "desc") != 0 && strcmp(sort_direction, "asc") != 0) {
     errno = 0;
@@ -961,7 +988,7 @@ static void _check_random_window_id(void){
   args->window    = get_random_window_info();
   args->window_id = args->window->window_id;
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-    log_debug("%lu|%d|%dx%d|",
+    log_debug("%d|%d|%dx%d|",
               args->window_id, args->random_window_id,
               (int)args->window->rect.size.width,
               (int)args->window->rect.size.height
@@ -976,6 +1003,10 @@ static void _check_input_png_file(char *input_png_file){
     exit(EXIT_FAILURE);
   }
   return(EXIT_SUCCESS);
+}
+
+static void _check_limit(int c){
+  args->limit = c;
 }
 
 static void _check_concurrency(int c){
@@ -1107,14 +1138,48 @@ static int hotkey_callback(char *KEYS){
 
 static void _command_hotkeys(){
   exit((keylogger_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_clear_icons_cache(){
   exit((clear_icons_cache() == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_open_security(){
   exit((tesseract_security_preferences_logic() == true)? EXIT_SUCCESS: EXIT_FAILURE);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_paste(){
+  errno = 0;
+  char *pasteboard_content = read_clipboard();
+  if (pasteboard_content == NULL) {
+    log_error(AC_RESETALL AC_RED "pasteboard read failed." AC_RESETALL);
+    exit(EXIT_FAILURE);
+  }
+  size_t len = (pasteboard_content != NULL) ? strlen(pasteboard_content) : 0;
+  if (len < 1) {
+    exit(EXIT_FAILURE);
+  }
+  fprintf(stdout, "%s\n", pasteboard_content);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_copy(){
+  bool ok = false;
+
+  if (args->content == NULL) {
+    asprintf(&(args->content), "%lld", timestamp());
+  }
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_info("copying '%s'", args->content);
+  }
+  ok = copy_clipboard(args->content);
+  if (ok == false) {
+    log_error("Failed to copy %s to clipboard", bytes_to_string(strlen(args->content)));
+  }
+  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_app_icns_path(){
@@ -1142,12 +1207,10 @@ static void _command_app_icns_path(){
 }
 
 static void _command_app_info_plist_path(){
-  bool ok                   = false;
   char *app_plist_info_path = get_app_path_plist_info_path(args->application_path);
 
   log_info("Application %s has plist info file %s", args->application_path, app_plist_info_path);
-
-  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((fsio_file_exists(app_plist_info_path) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_parse_xml_file(){
@@ -1303,14 +1366,19 @@ static void _command_extract_window(){
   if (args->all_windows == true) {
     struct Vector *a = get_window_infos_v();
     for (size_t i = 0; i < vector_size(a); i++) {
+      if ((size_t)args->limit > 0 && vector_size(v) >= (size_t)args->limit) {
+        continue;
+      }
       struct window_info_t *w = (struct window_info_t *)vector_get(a, i);
       vector_push(v, (void *)(w->window_id));
     }
   }else if (args->window_id > 0) {
     vector_push(v, (void *)(size_t)(args->window_id));
   }
-  log_info("%lu", vector_size(v));
+  log_info("%lu Windows", vector_size(v));
   struct Vector *r = tesseract_extract_windows(v, args->concurrency);
+
+  log_info("%lu Results", vector_size(r));
 
   exit(EXIT_SUCCESS);
 }
@@ -1529,7 +1597,7 @@ static void _command_windows(){
       .height_greater     = args->height_greater, .height_less = args->height_less,
       .width_greater      = args->width_greater, .width_less = args->width_less,
       .application_name   = args->application_name,
-      .width              = args->width, .height = args->height,
+      .width              = args->width, .height = args->height, .limit = args->limit,
     });
     break;
   case OUTPUT_MODE_JSON:
@@ -1567,6 +1635,7 @@ static void _command_window_is_minimized(){
 static void _command_window_id_info(){
   struct window_info_t *w = get_window_id_info(args->window_id);
 
+  log_debug("window ID %lu", w->window_id);
   exit(EXIT_SUCCESS);
 }
 
@@ -1582,6 +1651,7 @@ static void _command_minimize_window(){
 }
 
 static void _command_set_window_all_spaces(){
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_set_window_space(){
@@ -1628,7 +1698,9 @@ static void _command_set_space(){
 static void _command_displays(){
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-    list_displays_table((void *)0);
+    list_displays_table(&(struct list_table_t){
+      .limit = args->limit,
+    });
     break;
   case OUTPUT_MODE_JSON:
     log_info("display json");
@@ -1640,68 +1712,24 @@ static void _command_displays(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_spaces(){
-  struct Vector       *spaces_v;
-  struct list_table_t *list_options;
-
+static void _command_list_hotkeys(){
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-    list_options = &(struct list_table_t){
-    };
-    list_spaces_table((void *)list_options);
+    list_hotkeys_table(&(struct list_table_t){
+      .limit = args->limit,
+    });
     break;
   case OUTPUT_MODE_JSON:
     break;
   case OUTPUT_MODE_TEXT:
-    spaces_v = get_spaces_v();
-    log_debug(
-      "\t" AC_YELLOW AC_UNDERLINE "Spaces" AC_RESETALL
-      "\n\t# Spaces           :     %lu"
-      "",
-      vector_size(spaces_v)
-      );
-    for (size_t i = 0; i < vector_size(spaces_v); i++) {
-      struct space_t *space = (struct space_t *)vector_get(spaces_v, i);
-      printf("#%d- %lu windows\n", space->id, vector_size(space->window_ids_v));
-      for (size_t I = 0; I < vector_size(space->window_ids_v); I++) {
-        size_t window_id = (size_t)vector_get(space->window_ids_v, I);
-        printf("\t%lu\n", window_id);
-      }
-    }
     break;
   }
-
   exit(EXIT_SUCCESS);
 }
 
-char *get_command_about(enum command_type_t COMMAND_ID){
-  char *about;
+static void _command_spaces(){
+  struct Vector *spaces_v;
 
-  asprintf(&about, AC_RESETALL "%s\t%s%s" AC_RESETALL,
-           cmds[COMMAND_ID].icon,
-           cmds[COMMAND_ID].color,
-           cmds[COMMAND_ID].description
-           );
-  return(about);
-}
-
-static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
-    log_debug("Enabling Darwin Ls Debug Mode");
-    DARWIN_LS_COMMANDS_DEBUG_MODE = true;
-  }
-}
-
-static void _command_window_pid_infos(){
-  unsigned long started         = timestamp();
-  struct Vector *window_infos_v = get_window_pid_infos(args->pid);
-
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    struct window_info_t *w = (struct window_info_t *)vector_get(window_infos_v, i);
-  }
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-    log_debug("%lu Window Infos in %s", vector_size(window_infos_v), milliseconds_to_string(timestamp() - started));
-  }
   exit(EXIT_SUCCESS);
 }
 
@@ -1835,5 +1863,30 @@ static void _command_focused_window(){
     );
 
   exit(EXIT_SUCCESS);
+}
+
+char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height){
+  switch (width_or_height) {
+  case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT: return("height"); break;
+  case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH: return("width"); break;
+  default: return("UNKNOWN"); break;
+  }
+}
+
+char *get_command_about(enum command_type_t COMMAND_ID){
+  char *about;
+
+  asprintf(&about, AC_RESETALL "%s\t%s%s" AC_RESETALL,
+           cmds[COMMAND_ID].icon,
+           cmds[COMMAND_ID].color,
+           cmds[COMMAND_ID].description
+           );
+  return(about);
+}
+static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
+    log_debug("Enabling Darwin Ls Debug Mode");
+    DARWIN_LS_COMMANDS_DEBUG_MODE = true;
+  }
 }
 #endif

@@ -27,7 +27,7 @@ mouse_c_args = [
 mouse_link_args = [
 ]
 
-mouse_lib = static_library('mouse',
+mouse_lib = library('mouse',
   mouse_srcs,
   install: false,
   dependencies: mouse_deps,

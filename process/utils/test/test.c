@@ -9,8 +9,8 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "process-utils-test/process-utils-test.h"
-#include "process/utils/utils.h"
 #include "process/process.h"
+#include "process/utils/utils.h"
 #include "timestamp/timestamp.h"
 #include "window/utils/utils.h"
 

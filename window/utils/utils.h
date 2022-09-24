@@ -1,9 +1,6 @@
 #pragma once
 #ifndef WINDOW_UTILS_H
 #define WINDOW_UTILS_H
-#ifndef DEFAULT_LOGLEVEL
-#define DEFAULT_LOGLEVEL    1
-#endif
 #include <Carbon/Carbon.h>
 #include <fnmatch.h>
 #include <libproc.h>

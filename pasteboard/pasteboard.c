@@ -1,5 +1,6 @@
 #include "log.h/log.h"
 #include "pasteboard/pasteboard.h"
+#include <stdbool.h>
 static bool PASTEBOARD_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__pasteboard(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_PASTEBOARD") != NULL) {
@@ -12,6 +13,41 @@ static void __attribute__((constructor)) __constructor__pasteboard(void){
 #define CLIPBOARD_CONTENT_TYPE    "public.utf8-plain-text"
 static size_t MAX_PASTEBOARD_CONTENT_LENGTH = CLIPBOARD_MAX_SIZE_KB * 1024 + 1;
 static PasteboardRef pasteboard_reference;
+
+bool copy_clipboard(char *text){
+  OSStatus      err;
+  PasteboardRef pb;
+  CFDataRef     data;
+
+  errno = 0;
+  if (PasteboardCreate(kPasteboardClipboard, &pb)) {
+    log_error("PasteboardCreate");
+    return(false);
+  }
+  errno = 0;
+  if (PasteboardClear(pb)) {
+    log_error("PasteboardClear");
+    return(false);
+  }
+
+  errno = 0;
+  PasteboardSynchronize(pb);
+  errno = 0;
+  data  = CFDataCreate(kCFAllocatorDefault, (UInt8 *)(text), strlen(text));
+  if (!data) {
+    log_error("CFDataCreate");
+    return(false);
+  }
+
+  errno = 0;
+  err   = PasteboardPutItemFlavor(pb, (PasteboardItemID)1, kUTTypeUTF8PlainText, data, 0);
+  CFRelease(data);
+  if (err) {
+    log_error("PasteboardPutItemFlavor");
+    return(false);
+  }
+  return((strcmp(read_clipboard(), text) == 0) ? true : false);
+}
 
 char *read_clipboard(void) {
   if (CLIPBOARD_DEBUG_MODE) {

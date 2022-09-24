@@ -4,7 +4,7 @@
 #include "allheaders.h"
 #include "tesseract/capi.h"
 ////////////////////////////////////////////
-#include "tesseract-utils/tesseract-utils.h"
+#include "tesseract/utils/utils.h"
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
@@ -23,6 +23,7 @@
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
+#include "tempdir.c/tempdir.h"
 #include "wildcardcmp/wildcardcmp.h"
 ////////////////////////////////////////////
 static bool       TESSERACT_UTILS_DEBUG_MODE = false;
@@ -150,7 +151,7 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
     assert(window_id == window_info->window_id);
   }
   {
-    asprintf(&files[0], "%s/window-%lu.png", "/tmp", window_id);
+    asprintf(&files[0], "%swindow-%lu.png", gettempdir(), window_id);
     extract_file = files[0];
     if (fsio_file_exists(extract_file) == true) {
       assert(fsio_remove(extract_file) == true);
@@ -247,7 +248,9 @@ struct Vector *tesseract_extract_windows(struct Vector *v, size_t concurrency){
   struct Vector *Args   = vector_new();
   unsigned long started = timestamp();
 
-  log_info("%lu Windows", vector_size(v));
+  if (TESSERACT_UTILS_DEBUG_MODE) {
+    log_info("%lu Windows", vector_size(v));
+  }
   struct WorkQueue *extract_queues[concurrency], *capture_queues[concurrency];
 
   for (size_t i = 0; i < concurrency; i++) {
@@ -266,7 +269,9 @@ struct Vector *tesseract_extract_windows(struct Vector *v, size_t concurrency){
     }
   }
   for (size_t c = 0; c < concurrency; c++) {
-    printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(capture_queues[c]));
+    if (TESSERACT_UTILS_DEBUG_MODE) {
+      printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(capture_queues[c]));
+    }
   }
   for (size_t c = 0; c < concurrency; c++) {
     workqueue_drain(capture_queues[c]);
@@ -276,20 +281,26 @@ struct Vector *tesseract_extract_windows(struct Vector *v, size_t concurrency){
 
   for (size_t i = 0; i < vector_size(Args); i++) {
     size_t Q = i % concurrency;
-    log_info("pushing %lu to queue %lu", i, Q);
+    if (TESSERACT_UTILS_DEBUG_MODE) {
+      log_info("pushing %lu to queue %lu", i, Q);
+    }
     if (!workqueue_push(extract_queues[Q], __tesseract_extract_window, (struct TesseractArgs *)vector_get(Args, i))) {
       log_error("Failed to push work function to queue\n");
     }
   }
   for (size_t c = 0; c < concurrency; c++) {
-    printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(extract_queues[c]));
+    if (TESSERACT_UTILS_DEBUG_MODE) {
+      printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(extract_queues[c]));
+    }
   }
   for (size_t c = 0; c < concurrency; c++) {
     workqueue_drain(extract_queues[c]);
   }
   log_info("Extract finished in %s", milliseconds_to_string(timestamp() - extract_started));
   for (size_t c = 0; c < concurrency; c++) {
-    printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(extract_queues[c]));
+    if (TESSERACT_UTILS_DEBUG_MODE) {
+      printf("Queue #%lu Backlog Size: %zu\n", c, workqueue_get_backlog_size(extract_queues[c]));
+    }
   }
   for (size_t c = 0; c < concurrency; c++) {
     workqueue_release(extract_queues[c]);

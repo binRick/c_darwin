@@ -27,7 +27,7 @@ dock_c_args = [
 dock_link_args = [
 ]
 
-dock_lib = static_library('dock',
+dock_lib = library('dock',
   dock_srcs,
   install: false,
   dependencies: dock_deps,

@@ -27,7 +27,7 @@ system_c_args = [
 system_link_args = [
 ]
 
-system_lib = static_library('system',
+system_lib = library('system',
   system_srcs,
   install: false,
   dependencies: system_deps,

@@ -28,7 +28,7 @@ space_c_args = [
 space_link_args = [
 ]
 
-space_lib = static_library('space',
+space_lib = library('space',
   space_srcs,
   install: false,
   dependencies: space_deps,

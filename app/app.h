@@ -2,8 +2,8 @@
 #ifndef APP_H
 #define APP_H
 //////////////////////////////////////
+#include "frameworks/frameworks.h"
 #include "timelib/timelib.h"
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -27,7 +27,6 @@ enum app_type_t {
   APP_TYPE_UNVERSIONED,
   APP_TYPES_QTY,
 };
-const char *app_type_names[APP_TYPES_QTY + 1];
 struct app_t {
   char          *name;
   char          *version;
@@ -37,9 +36,9 @@ struct app_t {
   char          *obtained_from;
   char          *info;
   char          **signed_by;
-
   timelib_time  *last_modified_time;
   unsigned long last_modified_timestamp;
   bool          path_exists;
 };
+const char *app_type_names[APP_TYPES_QTY + 1];
 #endif

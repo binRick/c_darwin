@@ -216,4 +216,5 @@ static struct action_type_handler_t __attribute__((unused)) action_type_handlers
   [ACTION_TYPE_BOTTOM_SIXTY_PERCENT_FOCUSED_APPLICATION]  =        { .fxn = bottom_sixty_percent_focused_application,         },
 ////////////////////////////////////////////////////////////
 };
+char *get_hotkey_type_action_name(enum action_type_t action);
 #endif

@@ -29,7 +29,7 @@ timg_c_args = [
 timg_link_args = [
 ]
 
-timg_lib = static_library('timg',
+timg_lib = library('timg',
   timg_srcs,
   install: false,
   dependencies: timg_deps,
