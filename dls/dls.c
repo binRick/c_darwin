@@ -19,10 +19,13 @@ struct args_t                 *args               = &(struct args_t){
   .output_file        = "output.png",
   .concurrency        = 1,
   .limit              = -1,
+  .font_name          = NULL, .font_family = NULL, .font_style = NULL,
+  .exact_match        = false, .case_sensitive = false,
 };
 
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
+  args->retries = 0;
   struct optparse_cmd main_cmd = {
     .about       = "dls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
@@ -178,6 +181,10 @@ int main(int argc, char **argv) {
         .description = cmds[COMMAND_SECURITY].description,
         .function    = cmds[COMMAND_SECURITY].fxn,
         .about       = get_command_about(COMMAND_SECURITY),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_RETRIES](args),
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "processes",
@@ -226,6 +233,16 @@ int main(int argc, char **argv) {
         .about       = get_command_about(COMMAND_FONTS),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_LIMIT](args),
+          common_options_b[COMMON_OPTION_FONT_NAME](args),
+          common_options_b[COMMON_OPTION_FONT_FAMILY](args),
+          common_options_b[COMMON_OPTION_FONT_TYPE](args),
+          common_options_b[COMMON_OPTION_FONT_STYLE](args),
+          common_options_b[COMMON_OPTION_SORT_FONT_KEYS](args),
+          common_options_b[COMMON_OPTION_SORT_DIRECTION](args),
+          common_options_b[COMMON_OPTION_EXACT_MATCH](args),
+          common_options_b[COMMON_OPTION_CASE_SENSITIVE](args),
+          common_options_b[COMMON_OPTION_DUPLICATE](args),
+          common_options_b[COMMON_OPTION_NON_DUPLICATE](args),
           { END_OF_OPTIONS },
         },
       },

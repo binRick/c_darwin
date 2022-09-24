@@ -58,31 +58,52 @@ struct Vector *get_security_words_v(){
 bool tesseract_security_preferences_logic(){
   struct tesseract_extract_result_t *r, *words;
   size_t                            focused_window_id, window_id;
+  char                              *error = NULL;
 
   {
     focused_window_id = get_focused_window_id();
     assert(focused_window_id > 0);
     window_id = run_osascript_system_prefs();
-    assert(window_id > 0);
+    if (window_id <= 0) {
+      error = "failed to run osascript";
+      goto log_error;
+    }
     focus_window_id(focused_window_id);
-    assert((size_t)get_focused_window_id() == focused_window_id);
+    if ((size_t)get_focused_window_id() != focused_window_id) {
+      error = "failed to focus window";
+      goto log_error;
+    }
   }
   {
     words = get_security_words_v();
-    assert(vector_size(words) > 0);
+    if (vector_size(words) <= 0) {
+      return(false);
+    }
     r = tesseract_find_window_matching_word_locations(window_id, words);
   }
   {
-    assert(minimize_window_id(window_id) == true);
-    assert(stbi_info(r->source_file.file, &(r->source_file.width), &(r->source_file.height), &(r->source_file.stbi_format)) == 1);
+    if (minimize_window_id(window_id) != true) {
+      return(false);
+    }
+    if (stbi_info(r->source_file.file, &(r->source_file.width), &(r->source_file.height), &(r->source_file.stbi_format)) != 1) {
+      return(false);
+    }
   }
   {
-    assert(parse_tesseract_extraction_results(r) == true);
+    if (parse_tesseract_extraction_results(r) != true) {
+      return(false);
+    }
     report_tesseract_extraction_results(r);
   }
 
   return(true);
-}
+
+log_error:
+  if (error) {
+    log_error("%s", error);
+  }
+  return(false);
+} /* tesseract_security_preferences_logic */
 
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);

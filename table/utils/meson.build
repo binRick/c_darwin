@@ -13,7 +13,7 @@ table_utils_deps = [
   parson_dep,
   log_dep,
   ansi_codes_dep,
-  c_vector_dep,
+  c_vector_dep,app_utils_dep,font_utils_dep,
   process_dep,
   fort_dep,
   bytes_dep,

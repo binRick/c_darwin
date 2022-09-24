@@ -25,6 +25,23 @@
 #include "window/info/info.h"
 #include "window/utils/utils.h"
 ///////////////////////////////////////////////////
+enum table_dur_type_t {
+  TABLE_DUR_TYPE_COLORS,
+  TABLE_DUR_TYPE_TOTAL,
+  TABLE_DUR_TYPE_QUERIES,
+  TABLE_DUR_TYPE_QUERY_ITEMS,
+  TABLE_DUR_TYPE_QUERY_SPACES,
+  TABLE_DUR_TYPE_QUERY_CUR_DISPLAY,
+  TABLE_DUR_TYPE_QUERY_WINDOWS,
+  TABLE_DUR_TYPE_SORT_ROWS,
+  TABLE_DUR_TYPE_FILTER_ROWS,
+  TABLE_DUR_TYPE_FORT,
+  TABLE_DUR_TYPES_QTY,
+};
+struct table_dur_t {
+  unsigned long started;
+  unsigned long dur;
+};
 enum table_row_filter_type_t {
   TABLE_ROW_FILTER_CURRENT_SPACE,
   TABLE_ROW_FILTER_CURRENT_DISPLAY,
@@ -69,9 +86,9 @@ enum table_order_direction_type_t {
 };
 struct list_table_t {
   struct Vector *windows_v;
-  bool          current_space_only, current_display_only;
+  bool          current_space_only, current_display_only, exact_match, case_sensitive, duplicate, non_duplicate;
   size_t        space_id, display_id, window_id;
-  char          *sort_key, *sort_direction, *application_name;
+  char          *sort_key, *sort_direction, *application_name, *font_family, *font_name, *font_type, *font_style;
   int           width_less, width_greater, height_less, height_greater, width, height, limit;
   pid_t         pid;
 };
@@ -89,9 +106,21 @@ static struct table_order_t __attribute__((unused)) table_orders[] = {
   [TABLE_ORDER_MINIMIZED]                                          = { .key = "minimized", .name   = "Minimized", .default_order_direction   = TABLE_ORDER_DIRECTION_DESC, },
   [TABLE_ORDER_DURATION]                                           = { .key = "duration", .name    = "Duration", .default_order_direction    = TABLE_ORDER_DIRECTION_DESC, },
 };
+static const char *table_dur_type_names[] = {
+  [TABLE_DUR_TYPE_COLORS]            = "colors",
+  [TABLE_DUR_TYPE_QUERIES]           = "queries",
+  [TABLE_DUR_TYPE_QUERY_SPACES]      = "query spaces",
+  [TABLE_DUR_TYPE_QUERY_WINDOWS]     = "query windows",
+  [TABLE_DUR_TYPE_QUERY_CUR_DISPLAY] = "query current display",
+  [TABLE_DUR_TYPE_TOTAL]             = "total",
+  [TABLE_DUR_TYPE_FORT]              = "fort",
+  [TABLE_DUR_TYPE_SORT_ROWS]         = "sort items",
+};
 int list_window_infos_table(void *ARGS);
 int list_windows_table(void *ARGS);
 int list_spaces_table(void *ARGS);
 int list_displays_table(void *ARGS);
 int list_hotkeys_table(void *ARGS);
+int list_installed_apps_table(void *ARGS);
+int list_installed_fonts_table(void *ARGS);
 #endif

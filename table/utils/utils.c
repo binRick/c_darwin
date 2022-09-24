@@ -3,9 +3,11 @@
 #define TABLE_UTILS_C
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
+#include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "font-utils/font-utils.h"
 #include "frameworks/frameworks.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "libfort/lib/fort.h"
@@ -23,36 +25,260 @@
 #include "window/info/info.h"
 #include "window/sort/sort.h"
 ///////////////////////////////////////////////////////////////////////////////
-enum table_dur_type_t {
-  TABLE_DUR_TYPE_COLORS,
-  TABLE_DUR_TYPE_TOTAL,
-  TABLE_DUR_TYPE_QUERIES,
-  TABLE_DUR_TYPE_QUERY_SPACES,
-  TABLE_DUR_TYPE_QUERY_CUR_DISPLAY,
-  TABLE_DUR_TYPE_QUERY_WINDOWS,
-  TABLE_DUR_TYPE_FORT,
-  TABLE_DUR_TYPES_QTY,
-};
-struct table_dur_t {
-  unsigned long started;
-  unsigned long dur;
-};
 static bool TABLE_UTILS_DEBUG_MODE = false;
-static void __attribute__((constructor)) __constructor__table_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_TABLE_UTILS") != NULL) {
-    log_debug("Enabling Table Utils Debug Mode");
-    TABLE_UTILS_DEBUG_MODE = true;
+
+static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive){
+  if (!s0 || strlen(s0) < 1) {
+    return(false);
   }
+  bool skip_row = false;
+  char *s[2];
+  asprintf(&s[0], "%s%s%s", exact_match ? "" : "*", stringfn_trim(s0), exact_match ? "" : "*");
+  asprintf(&s[1], "%s", stringfn_trim(s1));
+  s[0]     = case_sensitive ? s[0] : stringfn_to_lowercase(s[0]);
+  s[1]     = case_sensitive ? s[1] : stringfn_to_lowercase(s[1]);
+  skip_row = (!wildcardcmp(s[0], s[1]));
+  if (TABLE_UTILS_DEBUG_MODE) {
+    log_debug("%s|%s skip? %s", s[0], s[1], skip_row ? "Yes":"No");
+  }
+  free(s[0]);
+  free(s[1]);
+  return(skip_row);
 }
-static const char *table_dur_type_names[] = {
-  [TABLE_DUR_TYPE_COLORS]            = "colors",
-  [TABLE_DUR_TYPE_QUERIES]           = "queries",
-  [TABLE_DUR_TYPE_QUERY_SPACES]      = "query spaces",
-  [TABLE_DUR_TYPE_QUERY_WINDOWS]     = "query windows",
-  [TABLE_DUR_TYPE_QUERY_CUR_DISPLAY] = "query current display",
-  [TABLE_DUR_TYPE_TOTAL]             = "total",
-  [TABLE_DUR_TYPE_FORT]              = "fort",
-};
+
+int list_installed_fonts_table(void *ARGS) {
+  struct list_table_t *args = (struct list_table_t *)ARGS;
+  struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];
+
+  durs[TABLE_DUR_TYPE_TOTAL].started = timestamp();
+  ft_table_t    *table;
+  struct font_t *f;
+  struct Vector *v;
+  int           term_width;
+  {
+    term_width                               = get_terminal_width();
+    durs[TABLE_DUR_TYPE_QUERY_ITEMS].started = timestamp();
+    v                                        = get_installed_fonts_v();
+    durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur     = timestamp() - durs[TABLE_DUR_TYPE_QUERY_ITEMS].started;
+    table                                    = ft_create_table();
+    ft_write_ln(table,
+                "ID",
+                "Family",
+                "Enabled",
+                "Size",
+                "Type",
+                "Style",
+                "Faces",
+                "Dupe"
+                );
+    ft_set_border_style(table, FT_FRAME_STYLE);
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_RIGHT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
+  }
+
+  durs[TABLE_DUR_TYPE_SORT_ROWS].started = timestamp();
+  if (args->sort_key && args->sort_direction && get_font_sort_function_from_key(args->sort_key, args->sort_direction)) {
+    struct font_t *sorted_fonts  = calloc((vector_size(v) + 1), sizeof(struct font_t));
+    struct font_t *_sorted_fonts = vector_new();
+    for (size_t i = 0; i < vector_size(v); i++) {
+      sorted_fonts[i] = *((struct font_t *)vector_get(v, i));
+    }
+    qsort(sorted_fonts, vector_size(v), sizeof(struct font_t), get_font_sort_function_from_key(args->sort_key, args->sort_direction));
+    for (size_t i = 0; i < vector_size(v); i++) {
+      vector_push(_sorted_fonts, (void *)&(sorted_fonts[i]));
+    }
+    v = _sorted_fonts;
+  }
+  durs[TABLE_DUR_TYPE_SORT_ROWS].dur = timestamp() - durs[TABLE_DUR_TYPE_SORT_ROWS].started;
+  size_t filtered_qty = 0;
+
+  durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;
+  for (unsigned long i = 0; i < vector_size(v); i++) {
+    if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
+      break;
+    }
+    f = (struct font_t *)vector_get(v, i);
+    if (TABLE_UTILS_DEBUG_MODE) {
+      debug_font(f);
+    }
+    durs[TABLE_DUR_TYPE_FILTER_ROWS].started = timestamp();
+    if ((string_compare_skip_row(args->font_family, f->family, args->exact_match, args->case_sensitive))
+        || (string_compare_skip_row(args->font_name, f->name, args->exact_match, args->case_sensitive))
+        || (string_compare_skip_row(args->font_style, f->style, args->exact_match, args->case_sensitive))
+        || (string_compare_skip_row(args->font_type, f->type, args->exact_match, args->case_sensitive))
+        || (args->duplicate && !f->duplicate)
+        || (args->non_duplicate && f->duplicate)
+        ) {
+      filtered_qty++;
+      continue;
+    }
+    durs[TABLE_DUR_TYPE_FILTER_ROWS].dur += timestamp() - durs[TABLE_DUR_TYPE_FILTER_ROWS].started;
+    ft_printf_ln(table,
+                 "%ld"
+                 "|%.*s"
+                 "|%.*s"
+                 "|%.*s"
+                 "|%.*s"
+                 "|%.*s"
+                 "|%lu"
+                 "|%.*s"
+                 "%s",
+                 i + 1,
+                 (int)((float)term_width * .40), stringfn_trim(f->family),
+                 (int)((float)term_width * .5), f->enabled ? "Yes":"No",
+                 (int)((float)term_width * .8), bytes_to_string(f->size),
+                 (int)((float)term_width * .10), stringfn_trim(f->type),
+                 (int)((float)term_width * .10), stringfn_trim(f->style),
+                 f->typefaces_qty,
+                 (int)((float)term_width * .5), f->duplicate ? "Yes":"No",
+                 ""
+                 );
+
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_FG_COLOR, (f->enabled == true)? FT_COLOR_GREEN : FT_COLOR_RED);
+
+    ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, f->size > 5 * 1024 * 1024 ? FT_COLOR_RED : f->size > 1024 * 1024 ? FT_COLOR_BLUE : FT_COLOR_LIGHT_BLUE);
+
+    ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+    ft_set_cell_prop(table, i + 1, 4, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+    ft_set_cell_prop(table, i + 1, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+
+    ft_set_cell_prop(table, i + 1, 5, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+    ft_set_cell_prop(table, i + 1, 5, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+    ft_set_cell_prop(table, i + 1, 6, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_FG_COLOR, f->duplicate ? FT_COLOR_RED : FT_COLOR_GREEN);
+    ft_set_cell_prop(table, i + 1, 7, FT_CPROP_CONT_TEXT_STYLE, f->duplicate ? (FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED) : FT_TSTYLE_DEFAULT);
+  }
+
+  ft_add_separator(table);
+  durs[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - durs[TABLE_DUR_TYPE_TOTAL].started;
+  ft_printf_ln(table,
+               "Queried %lu %s in %s, filtered %lu items%s%s, and rendered %lu rows in %s"
+               "%s",
+               vector_size(v),
+               "Fonts",
+               milliseconds_to_string(durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur),
+               filtered_qty,
+               durs[TABLE_DUR_TYPE_FILTER_ROWS].dur > 0
+        ? " in " : "",
+               durs[TABLE_DUR_TYPE_FILTER_ROWS].dur > 0
+        ? milliseconds_to_string(durs[TABLE_DUR_TYPE_FILTER_ROWS].dur) : "",
+               ft_row_count(table) - 1,
+               milliseconds_to_string(durs[TABLE_DUR_TYPE_TOTAL].dur),
+               ""
+               );
+  ft_set_cell_span(table, ft_row_count(table) - 1, 0, ft_col_count(table));
+  ft_set_cell_prop(table, ft_row_count(table) - 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  char *table_s = ft_to_string(table);
+
+  fprintf(stdout, "%s\n", table_s);
+  ft_destroy_table(table);
+  return(EXIT_SUCCESS);
+} /* list_installed_fonts_table */
+
+int list_installed_apps_table(void *ARGS) {
+  struct list_table_t *args = (struct list_table_t *)ARGS;
+  ft_table_t          *table;
+  struct app_t        *app;
+  struct Vector       *v;
+  int                 term_width;
+  {
+    term_width = get_terminal_width();
+    v          = get_installed_apps_v();
+    table      = ft_create_table();
+    ft_write_ln(table,
+                "ID",
+                "Name",
+                "Version",
+                "Path"
+                );
+    ft_set_border_style(table, FT_FRAME_STYLE);
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
+    ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_RIGHT_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+    ft_set_tbl_prop(table, FT_TPROP_BOTTOM_MARGIN, 0);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);
+  }
+  char *s[2];
+
+  for (unsigned long i = 0; i < vector_size(v); i++) {
+    if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
+      break;
+    }
+    app = (struct app_t *)vector_get(v, i);
+    if (args->application_name != NULL) {
+      bool skip_row = false;
+      asprintf(&s[0], "%s%s%s", "*", stringfn_to_lowercase(args->application_name), "*");
+      asprintf(&s[1], "%s", stringfn_to_lowercase(app->name));
+      if (wildcardcmp(s[0], s[1]) == 0) {
+        skip_row = true;
+      }
+      if (skip_row == true) {
+        continue;
+      }
+      if (s[0]) {
+        free(s[0]);
+      }
+      if (s[1]) {
+        free(s[1]);
+      }
+    }
+    ft_printf_ln(table,
+                 "%ld"
+                 "|%.*s"
+                 "|%.*s"
+                 "|%.*s"
+                 "%s",
+                 i + 1,
+                 (int)((float)term_width * .15), app->name,
+                 (int)((float)term_width * .10), app->version,
+                 (int)((float)term_width * .50), app->path,
+                 ""
+                 );
+
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+    ft_set_cell_prop(table, i + 1, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+    ft_set_cell_prop(table, i + 1, 1, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+    ft_set_cell_prop(table, i + 1, 2, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+
+    ft_set_cell_prop(table, i + 1, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+  }
+  char *table_s = ft_to_string(table);
+
+  fprintf(stdout, "%s\n", table_s);
+  ft_destroy_table(table);
+  return(EXIT_SUCCESS);
+} /* list_installed_apps_table */
 
 int list_hotkeys_table(void *ARGS) {
   struct list_table_t     *args = (struct list_table_t *)ARGS;
@@ -84,7 +310,7 @@ int list_hotkeys_table(void *ARGS) {
 
   for (unsigned long i = 0; i < cfg->keys_count; i++) {
     if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
-      continue;
+      break;
     }
     hk = &(cfg->keys[i]);
     ft_printf_ln(table,
@@ -224,7 +450,7 @@ int list_window_infos_table(void *ARGS) {
     }
     w = (struct window_info_t *)vector_get(window_infos_v, i);
     if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
-      continue;
+      break;
     }
     if (args->width >= 0 && (int)w->rect.size.width != args->width) {
       continue;
@@ -402,7 +628,7 @@ int list_displays_table(void *ARGS) {
 
   for (size_t i = 0; i < vector_size(displays_v); i++) {
     if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
-      continue;
+      break;
     }
     struct display_t *display = (struct display_t *)vector_get(displays_v, i);
     ft_printf_ln(table,
@@ -484,7 +710,7 @@ int list_spaces_table(void *ARGS) {
 
   for (size_t i = 0; i < vector_size(spaces_v); i++) {
     if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) {
-      continue;
+      break;
     }
     struct space_t *space = (struct space_t *)vector_get(spaces_v, i);
     ft_printf_ln(table,
@@ -539,5 +765,11 @@ int list_spaces_table(void *ARGS) {
 
   return(0);
 } /* list_spaces_table */
+static void __attribute__((constructor)) __constructor__table_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_TABLE_UTILS") != NULL) {
+    log_debug("Enabling Table Utils Debug Mode");
+    TABLE_UTILS_DEBUG_MODE = true;
+  }
+}
 
 #endif

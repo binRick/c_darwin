@@ -96,8 +96,6 @@ static void _check_resize_factor(double resize_factor);
 static void _check_xml_file(char *xml_file_path);
 static void _check_icon_size(size_t icon_size);
 static void _check_pid(int pid);
-static void _check_sort_direction(char *sort_direction);
-static void _check_sort_key(char *sort_key);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                  {
@@ -171,6 +169,27 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width_greater),
     });
   },
+  [COMMON_OPTION_SORT_FONT_KEYS] = ^ struct optparse_opt (struct args_t *args)               {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'S',
+      .long_name = "sort-by",
+      .description = get_font_sort_types_description(),
+      .arg_name = "SORT-BY",
+      .arg_dest = &(args->sort_key),
+      .arg_data_type = DATA_TYPE_STR,
+    });
+  },
+  [COMMON_OPTION_SORT_APP_KEYS] = ^ struct optparse_opt (struct args_t *args)                {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'S',
+      .long_name = "sort-by",
+      .description = get_app_sort_types_description(),
+      .arg_name = "SORT-BY",
+      .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
+      .arg_dest = &(args->sort_key),
+    });
+  },
   [COMMON_OPTION_SORT_WINDOW_KEYS] = ^ struct optparse_opt (struct args_t *args)             {
     return((struct optparse_opt)                                                             {
       .short_name = 'S',
@@ -188,9 +207,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "sort-by",
       .description = "Sort By Key Name",
       .arg_name = "SORT-KEY-NAME",
-      .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
       .arg_dest = &(args->sort_key),
+      .arg_data_type = DATA_TYPE_STR,
     });
   },
   [COMMON_OPTION_SORT_DIRECTION] = ^ struct optparse_opt (struct args_t *args)               {
@@ -199,9 +217,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "sort",
       .description = "Sort Direction (asc or desc)",
       .arg_name = "SORT-DIRECTION",
-      .arg_data_type = check_cmds[CHECK_COMMAND_SORT_DIRECTION].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_SORT_DIRECTION].fxn,
       .arg_dest = &(args->sort_direction),
+      .arg_data_type = DATA_TYPE_STR,
     });
   },
   [COMMON_OPTION_ALL_WINDOWS] = ^ struct optparse_opt (struct args_t *args)                  {
@@ -451,6 +468,39 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_LIMIT].fxn,
     });
   },
+  [COMMON_OPTION_NON_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                {
+    return((struct optparse_opt)                                                             {
+      .long_name = "non-duplicate",
+      .description = "Show Non Duplicate Fonts",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->non_duplicate),
+    });
+  },
+  [COMMON_OPTION_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                    {
+    return((struct optparse_opt)                                                             {
+      .long_name = "duplicate",
+      .description = "Show Duplicate Fonts",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->duplicate),
+    });
+  },
+  [COMMON_OPTION_CASE_SENSITIVE] = ^ struct optparse_opt (struct args_t *args)               {
+    return((struct optparse_opt)                                                             {
+      .long_name = "case-sensitive",
+      .description = "Case Sensitive Match",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->case_sensitive),
+    });
+  },
+  [COMMON_OPTION_EXACT_MATCH] = ^ struct optparse_opt (struct args_t *args)                  {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'e',
+      .long_name = "exact-match",
+      .description = "Exact Match (does not use wildcard)",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->exact_match),
+    });
+  },
   [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                      {
     return((struct optparse_opt)                                                             {
       .short_name = 'v',
@@ -481,6 +531,46 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->x),
     });
   },
+  [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args)                    {
+    return((struct optparse_opt)                                                             {
+      .short_name = 't',
+      .long_name = "type",
+      .description = "Font Type",
+      .arg_name = "FONT-TYPE",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->font_type),
+    });
+  },
+  [COMMON_OPTION_FONT_STYLE] = ^ struct optparse_opt (struct args_t *args)                   {
+    return((struct optparse_opt)                                                             {
+      .short_name = 's',
+      .long_name = "style",
+      .description = "Font Style",
+      .arg_name = "FONT-STYLE",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->font_style),
+    });
+  },
+  [COMMON_OPTION_FONT_FAMILY] = ^ struct optparse_opt (struct args_t *args)                  {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'f',
+      .long_name = "family",
+      .description = "Font Family",
+      .arg_name = "FONT-FAMILY",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->font_family),
+    });
+  },
+  [COMMON_OPTION_FONT_NAME] = ^ struct optparse_opt (struct args_t *args)                    {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'n',
+      .long_name = "name",
+      .description = "Font Name",
+      .arg_name = "FONT-NAME",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->font_name),
+    });
+  },
   [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args)                      {
     return((struct optparse_opt)                                                             {
       .short_name = 'c',
@@ -489,6 +579,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_name = "CONTENT",
       .arg_data_type = DATA_TYPE_STR,
       .arg_dest = &(args->content),
+    });
+  },
+  [COMMON_OPTION_RETRIES] = ^ struct optparse_opt (struct args_t *args)                      {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'r',
+      .long_name = "retries",
+      .description = "Retries",
+      .arg_name = "RETRIES",
+      .arg_data_type = DATA_TYPE_INT,
+      .arg_dest = &(args->retries),
     });
   },
   [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)                     {
@@ -601,14 +701,6 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   [CHECK_COMMAND_WIDTH_GREATER] =    {
     .fxn           = (void (*)(void))(*_check_width_greater),
     .arg_data_type = DATA_TYPE_INT,
-  },
-  [CHECK_COMMAND_SORT_KEY] =         {
-    .fxn           = (void (*)(void))(*_check_sort_key),
-    .arg_data_type = DATA_TYPE_STR,
-  },
-  [CHECK_COMMAND_SORT_DIRECTION] =   {
-    .fxn           = (void (*)(void))(*_check_sort_direction),
-    .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_RANDOM_WINDOW_ID] = {
     .fxn           = (void (*)(void))(*_check_random_window_id),
@@ -912,21 +1004,6 @@ static void _check_resize_factor(double resize_factor){
   return(EXIT_SUCCESS);
 }
 
-static void _check_sort_direction(char *sort_direction){
-  if (strcmp(sort_direction, "desc") != 0 && strcmp(sort_direction, "asc") != 0) {
-    errno = 0;
-    log_error("Invalid Sort Direction (must be asc or desc)");
-  }
-  args->sort_direction = sort_direction;
-  return(EXIT_SUCCESS);
-}
-
-static void _check_sort_key(char *sort_key){
-  errno          = 0;
-  args->sort_key = sort_key;
-  return(EXIT_SUCCESS);
-}
-
 static void _check_pid(int pid){
   errno = 0;
   if (pid < 2) {
@@ -1147,8 +1224,18 @@ static void _command_clear_icons_cache(){
 }
 
 static void _command_open_security(){
-  exit((tesseract_security_preferences_logic() == true)? EXIT_SUCCESS: EXIT_FAILURE);
-  exit(EXIT_SUCCESS);
+  log_debug("%d", args->retries);
+  int retry_interval = 500;
+  int ret            = EXIT_FAILURE;
+  for (int tries = 0; tries <= args->retries && ret == EXIT_FAILURE; tries++) {
+    ret = ((tesseract_security_preferences_logic() == true) ? EXIT_SUCCESS: EXIT_FAILURE);
+    if (ret == EXIT_SUCCESS) {
+      break;
+    }
+    tries++;
+    usleep(1000 * retry_interval);
+  }
+  exit(ret);
 }
 
 static void _command_paste(){
@@ -1484,32 +1571,40 @@ static void _command_kittys(){
 }
 
 static void _command_fonts(){
-  struct Vector *_installed_fonts_v = get_installed_fonts_v();
+  struct list_table_t *filter = &(struct list_table_t){
+    .sort_key       = stringfn_to_lowercase(args->sort_key),
+    .sort_direction = stringfn_to_lowercase(args->sort_direction),
+    .limit          = args->limit, .font_family = args->font_family,
+    .exact_match    = args->exact_match, .case_sensitive = args->case_sensitive,
+    .font_name      = args->font_name, .font_style = args->font_style, .font_type = args->font_type,
+    .duplicate      = args->duplicate, .non_duplicate = args->non_duplicate,
+  };
 
-  fprintf(stdout,
-          "\t" AC_YELLOW AC_UNDERLINE "Fonts" AC_RESETALL
-          "\n\t# Installed Fonts      :       %lu"
-          "\n%s",
-          vector_size(_installed_fonts_v),
-          ""
-          );
-
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+    list_installed_fonts_table(filter);
+    break;
+  case OUTPUT_MODE_JSON:
+    break;
+  case OUTPUT_MODE_TEXT:
+    break;
+  }
   exit(EXIT_SUCCESS);
 }
 
 static void _command_apps(){
-  struct Vector *_running_apps_v   = get_running_apps_v();
-  struct Vector *_installed_apps_v = get_installed_apps_v();
-
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Applications" AC_RESETALL
-    "\n\t# Running Applications        :       %lu"
-    "\n\t# Installed Applications      :       %lu"
-    "\n%s",
-    vector_size(_running_apps_v),
-    vector_size(_installed_apps_v),
-    ""
-    );
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+    list_installed_apps_table(&(struct list_table_t){
+      .application_name = args->application_name,
+      .limit            = args->limit,
+    });
+    break;
+  case OUTPUT_MODE_JSON:
+    break;
+  case OUTPUT_MODE_TEXT:
+    break;
+  }
 
   exit(EXIT_SUCCESS);
 }
@@ -1660,40 +1755,58 @@ static void _command_set_window_space(){
 }
 
 static void _command_set_space(){
-  log_debug("setting space id from %d to %d", get_current_space_id(), args->space_id);
+  if (args->space_id == get_current_space_id()) {
+    exit(EXIT_SUCCESS);
+  }
+  struct Vector        *v = get_window_infos_v(), *wins = vector_new();
+  struct window_info_t *w;
+  for (size_t i = 0; i < vector_size(v); i++) {
+    w = (struct window_info_t *)vector_get(v, i);
+    if (!w || (w->space_id != (size_t)args->space_id)) {
+      vector_remove(v, i);
+    }
+  }
+  uint64_t   set_tags        = 1;
+  uint64_t   clear_tags      = 0;
+  uint32_t   options         = 0x2;
+  uint64_t   space_list[1]   = { (uint64_t)(args->space_id) };
+  CFArrayRef space_list_ref  = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), 1, kCFNumberSInt64Type);
+  CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, 0, space_list_ref, options, &set_tags, &clear_tags);
+  if (window_list_ref) {
+    int       qty      = CFArrayGetCount(window_list_ref);
+    CFTypeRef query    = SLSWindowQueryWindows(g_connection, window_list_ref, qty);
+    CFTypeRef iterator = SLSWindowQueryResultCopyWindows(query);
 
-  int g_connection1 = SLSMainConnectionID();
-  printf("SLSMainConnectionID: %d\n", g_connection1);
-
-  int status = 0;
-  SLSGetMenuBarAutohideEnabled(g_connection1, &status);
-  printf("SLSGetMenuBarAutohideEnabled: %d\n", status);
-
-  int activeSpace = SLSGetActiveSpace(g_connection1);
-  printf("SLSGetActiveSpace: %d\n", activeSpace);
-
-  activeSpace = SLSManagedDisplayGetCurrentSpace(g_connection1, CFUUIDCreateString(NULL, CGDisplayCreateUUIDFromDisplayID(CGMainDisplayID())));
-  printf("SLSManagedDisplayGetCurrentSpace: %d\n", activeSpace);
-
-  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);
-  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);
-  log_info("spaces qty:%d", display_spaces_count);
-
-  int         display_id       = get_space_display_id(args->space_id);
-  CFStringRef display_uuid_ref = get_display_uuid_ref(display_id);
-
-  log_info("space display id: %d | %s", display_id, cfstring_copy(display_uuid_ref));
-
-  CFArrayRef src_spaces = SLSCopyManagedDisplaySpaces(g_connection);
-  uint32_t   ds         = args->space_id;
-  CFArrayRef dst_spaces = cfarray_of_cfnumbers(&(ds), sizeof(uint32_t), 1, kCFNumberSInt32Type);
-  CGSHideSpaces(g_connection, src_spaces);
-  CGSShowSpaces(g_connection, dst_spaces);
-  uint64_t sid = args->space_id;
-  CGSManagedDisplaySetCurrentSpace(g_connection, display_uuid_ref, sid);
-
-  exit(EXIT_SUCCESS);
-}
+    while (SLSWindowIteratorAdvance(iterator)) {
+      size_t parent_wid = (size_t)SLSWindowIteratorGetParentID(iterator);
+      size_t wid        = (size_t)SLSWindowIteratorGetWindowID(iterator);
+      log_debug("%lu|%lu", wid, parent_wid);
+      for (size_t i = 0; i < vector_size(v); i++) {
+        w = (struct window_info_t *)vector_get(v, i);
+        if (w->window_id == wid) {
+          vector_push(wins, (void *)w);
+        }
+      }
+    }
+  }
+  log_debug("now have %lu wids", vector_size(wins));
+  for (size_t i = 0; i < vector_size(wins); i++) {
+    w = (struct window_info_t *)vector_get(wins, i);
+    log_info("setting window #%lu @ Level %d | Layer %d",
+             w->window_id,
+             get_window_id_level(w->window_id),
+             window_layer(w)
+             );
+    focus_window_id(w->window_id);
+    usleep(500 * 1000);
+    int cur = get_current_space_id();
+    log_debug("%d/%d", cur, args->space_id);
+    if (cur == args->space_id) {
+      exit(EXIT_SUCCESS);
+    }
+  }
+  exit(EXIT_FAILURE);
+} /* _command_set_space */
 
 static void _command_displays(){
   switch (args->output_mode) {
@@ -1728,7 +1841,17 @@ static void _command_list_hotkeys(){
 }
 
 static void _command_spaces(){
-  struct Vector *spaces_v;
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+    list_spaces_table(&(struct list_table_t){
+      .limit = args->limit,
+    });
+    break;
+  case OUTPUT_MODE_JSON:
+    break;
+  case OUTPUT_MODE_TEXT:
+    break;
+  }
 
   exit(EXIT_SUCCESS);
 }

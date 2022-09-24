@@ -98,6 +98,8 @@ static struct font_parser_t font_parsers[FONT_PARSER_TYPES_QTY] = {
                                           font->type       = (json_object_has_value_of_type(font_object,"type", JSONString))
        ? json_object_get_string(font_object, "type")
        : NULL;
+                                          stringfn_mut_to_lowercase(font->type);
+                                          stringfn_mut_trim(font->type);
                                         }, },
   [FONT_PARSER_TYPE_SIZE] =           { .enabled = true,
                                         .parser  = ^ void (struct font_t *font, __attribute__((unused)) JSON_Object *font_object){
@@ -110,6 +112,7 @@ static struct font_parser_t font_parsers[FONT_PARSER_TYPES_QTY] = {
             ? json_object_get_string(font->typefaces_o, "family")
             : NULL
          : NULL;
+                                          stringfn_mut_trim(font->family);
                                         }, },
   [FONT_PARSER_TYPE_UNIQUE] =         { .enabled = true,
                                         .parser  = ^ void (struct font_t *font, __attribute__((unused)) JSON_Object *font_object){
@@ -122,6 +125,7 @@ static struct font_parser_t font_parsers[FONT_PARSER_TYPES_QTY] = {
   [FONT_PARSER_TYPE_NAME] =           { .enabled = true,
                                         .parser  = ^ void (struct font_t *font,                                           __attribute__((unused)) JSON_Object *font_object){
                                           font->name       = (font->typefaces_o) ? (json_object_has_value_of_type(font->typefaces_o,"_name", JSONString)) ? json_object_get_string(font->typefaces_o, "_name") : NULL : NULL;
+                                          stringfn_mut_trim(font->name);
                                         }, },
   [FONT_PARSER_TYPE_FULLNAME] =       { .enabled = true,
                                         .parser  = ^ void (struct font_t *font, __attribute__((unused)) JSON_Object *font_object){
@@ -130,10 +134,13 @@ static struct font_parser_t font_parsers[FONT_PARSER_TYPES_QTY] = {
             ? json_object_get_string(font->typefaces_o, "fullname")
             : NULL
          : NULL;
+                                          stringfn_mut_trim(font->fullname);
                                         }, },
   [FONT_PARSER_TYPE_STYLE] =          { .enabled = true,
                                         .parser  = ^ void (struct font_t *font,                                           __attribute__((unused)) JSON_Object *font_object){
                                           font->style     = (font->typefaces_o) ? (json_object_has_value_of_type(font->typefaces_o,"style", JSONString)) ? json_object_get_string(font->typefaces_o, "style") : NULL : NULL;
+                                          stringfn_mut_to_lowercase(font->style);
+                                          stringfn_mut_trim(font->style);
                                         }, },
   [FONT_PARSER_TYPE_VERSION] =        { .enabled = true,
                                         .parser  = ^ void (struct font_t *font,                                           __attribute__((unused)) JSON_Object *font_object){
@@ -186,7 +193,7 @@ static struct font_parser_t font_parsers[FONT_PARSER_TYPES_QTY] = {
                                         }, },
 };
 
-static void debug_font(struct font_t *font){
+void debug_font(struct font_t *font){
   fprintf(stdout,
           "\n  File Name        :   " AC_RESETALL AC_GREEN "%s" AC_RESETALL
           "\n\tName             :   %s"
@@ -235,11 +242,8 @@ static void parse_font(struct font_t *font, JSON_Object *font_object){
   }
 }
 struct Vector *get_installed_fonts_v(){
-  struct Vector *a   = vector_new();
-  char          *out = run_system_profiler_item_subprocess(FONT_UTILS_SYSTEM_PROFILER_MODE, FONT_UTILS_SYSTEM_PROFILER_TTL);
-
-  log_debug("%s", bytes_to_string(strlen(out)));
-  JSON_Value *root_value = json_parse_string(out);
+  struct Vector *a          = vector_new();
+  JSON_Value    *root_value = json_parse_string(run_system_profiler_item_subprocess(FONT_UTILS_SYSTEM_PROFILER_MODE, FONT_UTILS_SYSTEM_PROFILER_TTL));
 
   if (json_value_get_type(root_value) == JSONObject) {
     JSON_Object *root_object = json_value_get_object(root_value);
@@ -249,7 +253,9 @@ struct Vector *get_installed_fonts_v(){
       for (size_t i = 0; i < fonts_qty; i++) {
         struct font_t *font = calloc(1, sizeof(struct font_t));
         parse_font(font, json_array_get_object(fonts_array, i));
-        debug_font(font);
+        if (font) {
+          vector_push(a, (void *)font);
+        }
       }
     }
   }

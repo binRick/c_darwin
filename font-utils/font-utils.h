@@ -39,5 +39,6 @@ const char *font_file_type_extensions[FONT_FILE_TYPES_QTY + 1];
 const char *font_file_type_names[FONT_FILE_TYPES_QTY + 1];
 //////////////////////////////////////
 struct Vector *get_installed_fonts_v();
+void debug_font(struct font_t *font);
 ///////////////////////////////////////////////////////////////////////
 #endif

@@ -56,6 +56,7 @@ struct args_t {
   enum common_option_width_or_height_t width_or_height;
   struct window_info_t                 *window;
   size_t                               icon_size;
+  int                                  retries;
   int                                  concurrency, limit;
   double                               resize_factor;
   char                                 *xml_file_path, *content;
@@ -64,7 +65,8 @@ struct args_t {
   bool                                 random_window_id, clear_screen;
   int                                  pid, display_id, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;
-  char                                 *sort_key;
+  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style;
+  bool                                 exact_match, case_sensitive, duplicate, non_duplicate;
 };
 struct args_t *args;
 #endif

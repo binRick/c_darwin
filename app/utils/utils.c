@@ -9,7 +9,7 @@
 #include "timelib/timelib.h"
 #define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
 #define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8) * 1000
-authorized_tests_t         authorized_tests = {
+static authorized_tests_t  authorized_tests = {
   .tests             = {
     [AUTHORIZED_ACCESSIBILITY] =     {
       .id            = AUTHORIZED_ACCESSIBILITY,
@@ -82,16 +82,9 @@ static struct app_parser_t app_parsers[APP_PARSER_TYPES_QTY] = {
 ///////////////////////////////////////////////////////////////////////
 static void parse_app(struct app_t *app, JSON_Object *app_object);
 static bool APP_UTILS_DEBUG_MODE = false;
-static void debug_app(struct app_t *app);
 ///////////////////////////////////////////////////////////////////////
-static void __attribute__((constructor)) __constructor__app_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_APP_UTILS") != NULL) {
-    log_debug("Enabling App Utils Debug Mode");
-    APP_UTILS_DEBUG_MODE = true;
-  }
-}
 
-static void debug_app(struct app_t *app){
+void debug_app(struct app_t *app){
   fprintf(stdout,
           "\n\tName             :   %s"
           "\n\tVersion          :   %s"
@@ -146,8 +139,7 @@ static void parse_app(struct app_t *app, JSON_Object *app_object){
 }
 struct Vector *get_installed_apps_v(){
   struct Vector *a          = vector_new();
-  char          *out        = run_system_profiler_item_subprocess(APP_UTILS_SYSTEM_PROFILER_MODE, APP_UTILS_SYSTEM_PROFILER_TTL);
-  JSON_Value    *root_value = json_parse_string(out);
+  JSON_Value    *root_value = json_parse_string(run_system_profiler_item_subprocess(APP_UTILS_SYSTEM_PROFILER_MODE, APP_UTILS_SYSTEM_PROFILER_TTL));
 
   if (json_value_get_type(root_value) == JSONObject) {
     JSON_Object *root_object = json_value_get_object(root_value);
@@ -157,8 +149,8 @@ struct Vector *get_installed_apps_v(){
       for (size_t i = 0; i < apps_qty; i++) {
         struct app_t *app = calloc(1, sizeof(struct app_t));
         parse_app(app, json_array_get_object(apps_array, i));
-        if (APP_UTILS_DEBUG_MODE) {
-          debug_app(app);
+        if (app) {
+          vector_push(a, (void *)app);
         }
       }
     }
@@ -276,4 +268,10 @@ bool is_authorized_for_accessibility() {
 #else
   return(AXIsProcessTrusted());
 #endif
+}
+static void __attribute__((constructor)) __constructor__app_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_APP_UTILS") != NULL) {
+    log_debug("Enabling App Utils Debug Mode");
+    APP_UTILS_DEBUG_MODE = true;
+  }
 }
