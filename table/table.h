@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 //#include "window/info/info.h"
-//#include "window/sort/sort.h"
+//#include "table/sort/sort.h"
 #include "c_vector/vector/vector.h"
 #include "libfort/lib/fort.h"
 //////////////////////////////////////

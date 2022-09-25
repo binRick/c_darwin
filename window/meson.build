@@ -1,4 +1,3 @@
-subdir('sort')
 subdir('info')
 subdir('utils')
 subdir('utils/test')

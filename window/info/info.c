@@ -3,7 +3,6 @@
 #define WINDOW_INFO_C
 ////////////////////////////////////////////
 #include "window/info/info.h"
-#include "window/sort/sort.h"
 ////////////////////////////////////////////
 #include "active-app/active-app.h"
 #include "ansi-codes/ansi-codes.h"
@@ -20,7 +19,6 @@
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process/process.h"
-#include "process/utils/utils.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"

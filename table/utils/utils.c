@@ -27,7 +27,7 @@
 #include "usbdevs-utils/usbdevs-utils.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
-#include "window/sort/sort.h"
+#include "table/sort/sort.h"
 ///////////////////////////////////////////////////////////////////////////////
 #define DEFAULT_FONTS_LIMIT    50
 #define DEFAULT_APPS_LIMIT     50
@@ -577,122 +577,36 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
   return(skip_row);
 }
 
-int list_installed_fonts_table(void *ARGS) {
-  struct list_table_t *args = (struct list_table_t *)ARGS;
-
-  args->limit <= 0 ? DEFAULT_FONTS_LIMIT : args->limit;
-  struct table_dur_t durs[TABLE_DUR_TYPES_QTY];
-
-  durs[TABLE_DUR_TYPE_TOTAL].started = timestamp();
-  ft_table_t    *table;
-  struct font_t *f;
-  struct Vector *fonts_v;
-  {
-    term_width                               = get_terminal_width();
-    durs[TABLE_DUR_TYPE_QUERY_ITEMS].started = timestamp();
-    fonts_v                                  = tables[TABLE_TYPE_FONT]->query_items();
-    INIT_TABLE(table, FONT_COLUMNS);
-  }
-
-  durs[TABLE_DUR_TYPE_SORT_ROWS].started = timestamp();
-  if (args->sort_key && args->sort_direction && get_font_sort_function_from_key(args->sort_key, args->sort_direction)) {
-    struct font_t *sorted_fonts = calloc((vector_size(fonts_v) + 1), sizeof(struct font_t)), *_sorted_fonts = vector_new();
-    for (size_t i = 0; i < vector_size(fonts_v); i++) {
-      sorted_fonts[i] = *(VECTOR_ITEM(fonts_v, font_t *, i));
-    }
-    qsort(sorted_fonts, vector_size(fonts_v), sizeof(struct font_t), get_font_sort_function_from_key(args->sort_key, args->sort_direction));
-    for (size_t i = 0; i < vector_size(fonts_v); i++) {
-      vector_push(_sorted_fonts, (void *)&(sorted_fonts[i]));
-    }
-    fonts_v = _sorted_fonts;
-  }
-  durs[TABLE_DUR_TYPE_SORT_ROWS].dur = timestamp() - durs[TABLE_DUR_TYPE_SORT_ROWS].started;
-  size_t filtered_qty = 0;
-
-  durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;
-  for (unsigned long i = 0; i < vector_size(fonts_v); i++) {
-    BREAK_IF_ROW_LIMIT(table, args);
-    f                                        = VECTOR_ITEM(fonts_v, font_t *, i);
-    durs[TABLE_DUR_TYPE_FILTER_ROWS].started = timestamp();
-    CONTINUE_IF_ROW_SKIP((tables[TABLE_TYPE_FONT]->row_skip(table, i, f, args)))
-    durs[TABLE_DUR_TYPE_FILTER_ROWS].dur += timestamp() - durs[TABLE_DUR_TYPE_FILTER_ROWS].started;
-    tables[TABLE_TYPE_FONT]->row(table, i, f);
-    tables[TABLE_TYPE_FONT]->row_style(table, i, f);
-  }
-  TABLE_SUMMARY("Fonts", fonts_v, table, durs)
-} /* list_installed_fonts_table */
-
-int list_window_infos_table(void *ARGS) {
-  struct list_table_t  *args = (struct list_table_t *)ARGS;
-  struct Vector        *window_infos_v;
-  struct window_info_t *w, *sorted_window_infos, *_sorted_window_infos;
-  struct table_dur_t   durs[TABLE_DUR_TYPES_QTY];
-
-  term_width = get_terminal_width();
-  size_t     max_name_len = 0;
-  size_t     filtered_qty = 0;
-  ft_table_t *table;
-
-  durs[TABLE_DUR_TYPE_TOTAL].started = timestamp();
-  {
-    durs[TABLE_DUR_TYPE_QUERY_ITEMS].started = timestamp();
-    window_infos_v                           = tables[TABLE_TYPE_WINDOW]->query_items();
-    cur_space_id                             = get_current_space_id();
-    cur_display_id                           = get_display_id_for_space(cur_space_id);
-    durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur     = timestamp() - durs[TABLE_DUR_TYPE_QUERY_ITEMS].started;
-  }
-  {
-    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-      w = VECTOR_ITEM(window_infos_v, window_info_t *, i);
-      if (w->rect.size.width <= 1 && w->rect.size.height <= 1) {
-        vector_remove(window_infos_v, i);
-      }
-    }
-  }
-
-  if (args->sort_key && args->sort_direction && get_window_sort_function_from_key(args->sort_key, args->sort_direction)) {
-    sorted_window_infos = calloc((vector_size(window_infos_v) + 1), sizeof(struct window_info_t));
-
-    _sorted_window_infos = vector_new();
-    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-      sorted_window_infos[i] = *(VECTOR_ITEM(window_infos_v, window_info_t *, i));
-    }
-    qsort(sorted_window_infos, vector_size(window_infos_v), sizeof(struct window_info_t), get_window_sort_function_from_key(args->sort_key, args->sort_direction));
-    for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-      vector_push(_sorted_window_infos, (void *)&(sorted_window_infos[i]));
-    }
-    window_infos_v = _sorted_window_infos;
-  }
-  INIT_TABLE(table, WINDOW_COLUMNS);
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    w            = VECTOR_ITEM(window_infos_v, window_info_t *, i);
-    max_name_len = (strlen(w->name) > (size_t)max_name_len) ? (int)strlen(w->name) : max_name_len;
-  }
-  while (term_width > 0 && max_name_len > (term_width / 4)) {
-    max_name_len--;
-  }
-  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
-    BREAK_IF_ROW_LIMIT(table, args)
-    w = VECTOR_ITEM(window_infos_v, window_info_t *, i);
-    CONTINUE_IF_ROW_SKIP(tables[TABLE_TYPE_WINDOW]->row_skip(table, i, w, args))
-    tables[TABLE_TYPE_WINDOW]->row(table, i, w);
-    tables[TABLE_TYPE_WINDOW]->row_style(table, i, w);
-  }
-  TABLE_SUMMARY("Windows", window_infos_v, table, durs);
-} /* list_window_infos_table */
-
 #define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE)                               \
   int FXN(void *ARGS) {                                                        \
     struct list_table_t *args    = (struct list_table_t *)ARGS;                \
-    struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(); \
-    struct STRUCT       *item;                                                 \
+    struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(), *sorted_items = vector_new();\
+    struct STRUCT_TYPE       *item, *_item;                                                 \
     size_t              filtered_qty = 0;                                      \
     struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];                             \
     durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                  \
     durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                  \
     durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = 0;                                  \
     ft_table_t *table;                                                         \
-    INIT_TABLE(table, TYPE ## _COLUMNS);                                       \
+    INIT_TABLE(table, TYPE ## _COLUMNS);        \
+    log_debug("sort key:%s|dir:%s",args->sort_key,args->sort_direction);\
+    if (args->sort_key && args->sort_direction){\
+      sort_function sort = get_sort_type_function_from_key(SORT_TYPE_##TYPE, args->sort_key,args->sort_direction);\
+      if(sort){\
+        if(TABLE_UTILS_DEBUG_MODE){\
+          log_debug("Sorting %s %lu items",NAME,vector_size(items_v));\
+        }\
+        _item = calloc((vector_size(items_v) + 1), sizeof(struct STRUCT_TYPE));\
+        for (size_t i = 0; i < vector_size(items_v); i++) {\
+          _item[i] = *(VECTOR_ITEM(items_v, STRUCT_TYPE *, i));\
+        }\
+        qsort(_item, vector_size(items_v), sizeof(struct STRUCT_TYPE), sort);\
+        for (size_t i = 0; i < vector_size(items_v); i++) {\
+          vector_push(sorted_items, (void *)&(_item[i]));\
+        }\
+        items_v = sorted_items;\
+      }\
+    }\
     for (size_t i = 0; i < vector_size(items_v); i++) {                        \
       BREAK_IF_ROW_LIMIT(table, args)                                          \
       item = VECTOR_ITEM(items_v, TYPE *, i);                                  \
@@ -701,14 +615,7 @@ int list_window_infos_table(void *ARGS) {
     }                                                                          \
     TABLE_SUMMARY(NAME, items_v, table, durs);                                 \
   }
-
-LIST_TABLE(list_process_table, "Processes", PROCESS, process_info_t)
-LIST_TABLE(list_usb_table, "USB Devices", USB, usbdev_t)
-LIST_TABLE(list_kitty_table, "Kitty Processes", KITTY, kitty_t)
-LIST_TABLE(list_spaces_table, "Spaces", SPACE, space_t)
-LIST_TABLE(list_displays_table, "Displays", DISPLAY, display_t)
-LIST_TABLE(list_app_table, "Applications", APP, app_t)
-LIST_TABLE(list_hotkey_table, "Hotkeys", HOTKEY, key_t)
-LIST_TABLE(list_monitor_table, "Monitors", MONITOR, monitor_t)
+ LIST_TABLE_ITEMS()
+#undef LIST_TABLE
 
 #endif

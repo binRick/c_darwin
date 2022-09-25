@@ -37,7 +37,7 @@ darwin_ls_deps = [
   b64_dep,screen_utils_dep,
   leptonica_dep,timg_utils_dep,
   c_img_dep,image_utils_dep,config_utils_dep,tesseract_dep,tesseract_utils_dep,
-  httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,window_sort_dep,
+  httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,table_sort_dep,
 ]
 
 darwin_ls_c_args = [

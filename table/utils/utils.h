@@ -25,6 +25,19 @@
 #include "window/info/info.h"
 #include "window/utils/utils.h"
 ///////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+#define LIST_TABLE_ITEMS()\
+  LIST_TABLE(list_window_table, "Windows", WINDOW, window_info_t)\
+  LIST_TABLE(list_process_table, "Processes", PROCESS, process_info_t)\
+  LIST_TABLE(list_usb_table, "USB Devices", USB, usbdev_t)\
+  LIST_TABLE(list_kitty_table, "Kitty Processes", KITTY, kitty_t)\
+  LIST_TABLE(list_spaces_table, "Spaces", SPACE, space_t)\
+  LIST_TABLE(list_displays_table, "Displays", DISPLAY, display_t)\
+  LIST_TABLE(list_app_table, "Applications", APP, app_t)\
+  LIST_TABLE(list_hotkey_table, "Hotkeys", HOTKEY, key_t)\
+  LIST_TABLE(list_monitor_table, "Monitors", MONITOR, monitor_t)\
+  LIST_TABLE(list_font_table, "Fonts", FONT, font_t)\
+////////////////////////////////////////////////////////////////////////
 enum table_dur_type_t {
   TABLE_DUR_TYPE_COLORS,
   TABLE_DUR_TYPE_TOTAL,
@@ -116,8 +129,7 @@ static const char *table_dur_type_names[] = {
   [TABLE_DUR_TYPE_FORT]              = "fort",
   [TABLE_DUR_TYPE_SORT_ROWS]         = "sort items",
 };
-int list_window_infos_table(void *ARGS);
-int list_windows_table(void *ARGS);
+int list_window_table(void *ARGS);
 int list_spaces_table(void *ARGS);
 int list_displays_table(void *ARGS);
 int list_hotkey_table(void *ARGS);
@@ -127,4 +139,9 @@ int list_usb_table(void *ARGS);
 int list_process_table(void *ARGS);
 int list_kitty_table(void *ARGS);
 int list_monitor_table(void *ARGS);
+
+#define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE)\
+int FXN(void *ARGS);
+ LIST_TABLE_ITEMS()
+#undef LIST_TABLE
 #endif

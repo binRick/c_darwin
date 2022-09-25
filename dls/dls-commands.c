@@ -19,7 +19,7 @@
 #include "tesseract/utils/utils.h"
 #include "timg/utils/utils.h"
 #include "wildcardcmp/wildcardcmp.h"
-#include "window/sort/sort.h"
+#include "table/sort/sort.h"
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////
@@ -49,7 +49,7 @@ static void _command_dock();
 static void _command_processes();
 static void _command_list_app();
 static void _command_list_monitor();
-static void _command_fonts();
+static void _command_list_font();
 static void _command_list_kitty();
 static void _command_alacrittys();
 static void _command_capture_window();
@@ -174,7 +174,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                             {
       .short_name = 'S',
       .long_name = "sort-by",
-      .description = get_font_sort_types_description(),
+      .description = "",
       .arg_name = "SORT-BY",
       .arg_dest = &(args->sort_key),
       .arg_data_type = DATA_TYPE_STR,
@@ -184,18 +184,17 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                             {
       .short_name = 'S',
       .long_name = "sort-by",
-      .description = get_app_sort_types_description(),
+      .description = "", //get_app_sort_types_description(),
       .arg_name = "SORT-BY",
-      .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
       .arg_dest = &(args->sort_key),
+      .arg_data_type = DATA_TYPE_STR,
     });
   },
   [COMMON_OPTION_SORT_WINDOW_KEYS] = ^ struct optparse_opt (struct args_t *args)             {
     return((struct optparse_opt)                                                             {
       .short_name = 'S',
       .long_name = "sort-by",
-      .description = get_window_sort_types_description(),
+      .description = "", //get_window_sort_types_description(),
       .arg_name = "SORT-BY",
       .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
@@ -890,7 +889,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_FONTS] =                 {
     .name        = "fonts", .icon = "🦓", .color = COLOR_SHOW,
     .description = "Fonts",
-    .fxn         = (*_command_fonts)
+    .fxn         = (*_command_list_font)
   },
   [COMMAND_KITTYS] =                {
     .name        = "kittys", .icon = "💤", .color = COLOR_LIST,
@@ -1532,7 +1531,7 @@ static void _command_alacrittys(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_fonts(){
+static void _command_list_font(){
   struct list_table_t *filter = &(struct list_table_t){
     .sort_key       = stringfn_to_lowercase(args->sort_key),
     .sort_direction = stringfn_to_lowercase(args->sort_direction),
@@ -1544,7 +1543,7 @@ static void _command_fonts(){
 
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-    list_installed_fonts_table(filter);
+    list_font_table(filter);
     break;
   case OUTPUT_MODE_JSON:
     break;
@@ -1629,7 +1628,7 @@ static void _command_windows(){
 
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-    list_window_infos_table(&(struct list_table_t){
+    list_window_table(&(struct list_table_t){
       .sort_key           = args->sort_key, .sort_direction = args->sort_direction,
       .current_space_only = args->current_space_only, .current_display_only = args->current_display_only,
       .space_id           = args->space_id, .display_id = args->display_id, .window_id = args->window_id,
@@ -1946,6 +1945,7 @@ static void __attribute__((constructor)) __constructor__darwin_ls_commands(void)
   static void _command_list_ ## NAME(){                             \
     struct list_table_t *filter = &(struct list_table_t){           \
       .limit = args->limit,                                         \
+      .sort_key = args->sort_key, .sort_direction=args->sort_direction,\
     };                                                              \
     switch (args->output_mode) {                                    \
     case OUTPUT_MODE_TABLE: list_ ## NAME ## _table(filter); break; \

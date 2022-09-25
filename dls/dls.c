@@ -244,6 +244,8 @@ int main(int argc, char **argv) {
         .about       = "🚥" "\t" COLOR_LIST "List Applications" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
+          common_options_b[COMMON_OPTION_SORT_APP_KEYS](args),
+          common_options_b[COMMON_OPTION_SORT_DIRECTION](args),
           common_options_b[COMMON_OPTION_LIMIT](args),
           { END_OF_OPTIONS },
         },

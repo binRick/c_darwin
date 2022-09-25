@@ -10,7 +10,7 @@ window_info_include_dirs = [
 ]
 
 window_info_deps = [
-  c_stringfn_dep,window_sort_dep,
+  c_stringfn_dep,
   parson_dep,
   log_dep,
   ansi_codes_dep,

@@ -20,7 +20,7 @@ table_utils_deps = [
   ms_dep,
   string_utils_dep,
   timestamp_dep,
-  window_info_dep,window_sort_dep,wildcardcmp_dep,space_utils_dep,display_utils_dep,process_utils_dep,
+  window_info_dep,table_sort_dep,wildcardcmp_dep,space_utils_dep,display_utils_dep,process_utils_dep,
 ]
 table_utils_link_flags = [
   osx_link_args,

@@ -1,3 +1,4 @@
+subdir('sort')
 subdir('utils')
 table_srcs = [
   'table.c',
@@ -19,7 +20,7 @@ table_deps = [
   timestamp_dep,
   log_dep,
   ms_dep,
-  bytes_dep,
+  bytes_dep,table_utils_dep,table_sort_dep,
 ]
 
 table_c_args = [
