@@ -1,3 +1,4 @@
+subdir('utils')
 table_srcs = [
   'table.c',
 ]
@@ -10,7 +11,7 @@ table_include_dirs = [
 ]
 
 table_deps = [
-  ansi_codes_dep,
+  ansi_codes_dep,font_utils_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
@@ -41,4 +42,3 @@ table_dep = declare_dependency(
   link_args: table_link_args,
 )
 
-subdir('utils')

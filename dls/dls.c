@@ -21,11 +21,11 @@ struct args_t                 *args               = &(struct args_t){
   .limit              = -1,
   .font_name          = NULL, .font_family = NULL, .font_style = NULL,
   .exact_match        = false, .case_sensitive = false,
+  .retries            = 0,
 };
 
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
-  args->retries = 0;
   struct optparse_cmd main_cmd = {
     .about       = "dls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",

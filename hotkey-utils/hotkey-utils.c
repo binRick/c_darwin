@@ -48,6 +48,7 @@ for(size_t i=0;i<(sizeof(action_type_strings)/sizeof(action_type_strings[0]));i+
 }
 return NULL;
 }
+
 char *get_homedir_yaml_config_file_path(){
   char *path;
   char *home = getenv("HOME");
@@ -297,6 +298,14 @@ int handle_action(enum action_type_t action_type, void *action){
   return(action_type_handlers[action_type].fxn(action));
 }
 
+struct Vector *get_config_keys_v(){
+  struct Vector *v=vector_new();
+  struct hotkeys_config_t *cfg = load_yaml_config_file_path(get_homedir_yaml_config_file_path());
+  for(size_t i = 0; i < cfg->keys_count;i++){
+    vector_push(v,(void*)(struct key_t*)&(cfg->keys[i]));
+  }
+  return(v);
+}
 struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path){
   static struct hotkeys_config_t *hotkeys_config = NULL;
   char *config_contents = fsio_read_text_file(config_file_path);

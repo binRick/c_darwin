@@ -1,6 +1,8 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
+#define OPEN_SECURITY_RETRY_INTERVAL_MS      500
+#define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
 #include "dls/dls-commands.h"
@@ -1220,16 +1222,24 @@ static void _command_clear_icons_cache(){
 }
 
 static void _command_open_security(){
-  log_debug("%d", args->retries);
-  int retry_interval = 500;
-  int ret            = EXIT_FAILURE;
+  if (args->retries <= 0) {
+    args->retries = OPEN_SECURITY_DEFAULT_RETRIES_QTY;
+  }
+  int ret = EXIT_FAILURE;
   for (int tries = 0; tries <= args->retries && ret == EXIT_FAILURE; tries++) {
-    ret = ((tesseract_security_preferences_logic() == true) ? EXIT_SUCCESS: EXIT_FAILURE);
-    if (ret == EXIT_SUCCESS) {
+    errno = 0;
+    ret   = ((tesseract_security_preferences_logic() == true) ? EXIT_SUCCESS: EXIT_FAILURE);
+    if (ret == EXIT_SUCCESS || (ret != EXIT_SUCCESS && tries >= args->retries)) {
       break;
     }
     tries++;
-    usleep(1000 * retry_interval);
+    log_error("tesseract_security_preferences_logic Returned %d> Attempt #%d/%d", ret, tries, args->retries);
+    usleep(1000 * OPEN_SECURITY_RETRY_INTERVAL_MS);
+  }
+  if (ret) {
+    log_error("tesseract_security_preferences_logic Failed");
+  }else{
+    log_info(AC_GREEN "tesseract_security_preferences_logic Success"AC_RESETALL);
   }
   exit(ret);
 }

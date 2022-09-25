@@ -23,12 +23,11 @@
 #include "timestamp/timestamp.h"
 #include "window/utils/utils.h"
 ////////////////////////////////////////////
-static bool           CAPTURE_UTILS_DEBUG_MODE = false;
-static const size_t   CAPTURE_TYPE_TTL         = 60;
+static bool                  CAPTURE_UTILS_DEBUG_MODE = false;
+static const size_t          CAPTURE_TYPE_TTL         = 60;
 #define CACHE_ENABLED    false
-static const char     *capture_types_cache_dir = NULL;
-///////////////////////////////////////////////////////////////////////
-struct capture_type_t capture_types[] = {
+static const char            *capture_types_cache_dir = NULL;
+static struct capture_type_t capture_types[]          = {
   [CAPTURE_TYPE_SPACE] =   {
     .name           = "space",
     .get_default_id = ^ size_t (void){ return(get_current_space_id());                                    },
@@ -66,6 +65,7 @@ struct capture_type_t capture_types[] = {
     .get_items = ^ struct Vector *(void){ return(get_spaces_v());                               },
   },
 };
+///////////////////////////////////////////////////////////////////////
 
 size_t capture_type_validate_id_or_get_default_id(enum capture_type_id_t capture_type_id, size_t capture_id){
   return((capture_type_validate_id(capture_type_id, capture_id) == true) ? capture_id : capture_type_get_default_id(capture_type_id));

@@ -1,4 +1,4 @@
-assets_hash = run_command('./.assets/hash.sh', check:true).stdout().strip()
+#assets_hash = run_command('./.assets/hash.sh', check:true).stdout().strip()
 
 httpserver_utils_srcs = [
   'httpserver-utils.c',
@@ -30,7 +30,7 @@ httpserver_utils_deps = [
 ]
 
 httpserver_utils_c_args = [
-  '-DASSETS_HASH="'+assets_hash+'"',
+  #  '-DASSETS_HASH="'+assets_hash+'"',
   '-DINCBIN_EXTERN_SILENCE_BITCODE_WARNING',
 ]
 
