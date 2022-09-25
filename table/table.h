@@ -28,6 +28,10 @@ typedef void (^row_style_b)(ft_table_t *table, size_t index, void *item);
 typedef bool (^row_skip_b)(ft_table_t *table, size_t index, void *item, struct list_table_t *args);
 typedef struct Vector *(*query_items_f)(void);
 enum table_type_t {
+  TABLE_TYPE_KITTY,
+  TABLE_TYPE_MONITOR,
+  TABLE_TYPE_PROCESS,
+  TABLE_TYPE_USB,
   TABLE_TYPE_FONT,
   TABLE_TYPE_APP,
   TABLE_TYPE_WINDOW,

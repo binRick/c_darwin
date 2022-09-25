@@ -43,14 +43,14 @@ static void _command_focused_space();
 static void _command_spaces();
 static void _command_sticky_window();
 static void _command_menu_bar();
-static void _command_usb_devices();
+static void _command_list_usb();
 static void _command_httpserver();
 static void _command_dock();
 static void _command_processes();
-static void _command_apps();
-static void _command_monitors();
+static void _command_list_app();
+static void _command_list_monitor();
 static void _command_fonts();
-static void _command_kittys();
+static void _command_list_kitty();
 static void _command_alacrittys();
 static void _command_capture_window();
 static void _command_extract_window();
@@ -70,7 +70,7 @@ static void _command_window_layer();
 static void _command_window_level();
 static void _command_open_security();
 static void _command_hotkeys();
-static void _command_list_hotkeys();
+static void _command_list_hotkey();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_clear_screen(void);
@@ -883,9 +883,9 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .fxn         = (*_command_focused_pid)
   },
   [COMMAND_APPS] =                  {
-    .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
-    .description = "Dock Info",
-    .fxn         = (*_command_apps)
+    .name        = "apps",         .icon = "📡", .color = COLOR_SHOW,
+    .description = "Applications",
+    .fxn         = (*_command_list_app)
   },
   [COMMAND_FONTS] =                 {
     .name        = "fonts", .icon = "🦓", .color = COLOR_SHOW,
@@ -895,7 +895,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_KITTYS] =                {
     .name        = "kittys", .icon = "💤", .color = COLOR_LIST,
     .description = "Kittys",
-    .fxn         = (*_command_kittys)
+    .fxn         = (*_command_list_kitty)
   },
   [COMMAND_IMAGE_CONVERSIONS] =     {
     .name        = "image-conversions", .icon = "💮", .color = COLOR_LIST,
@@ -915,7 +915,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_LIST_HOTKEYS] =          {
     .name        = "list-hotkeys", .icon = "💮", .color = COLOR_LIST,
     .description = "List Hotkeys",
-    .fxn         = (*_command_list_hotkeys)
+    .fxn         = (*_command_list_hotkey)
   },
   [COMMAND_ALACRITTYS] =            {
     .name        = "alacrittys", .icon = "💮", .color = COLOR_LIST,
@@ -923,10 +923,10 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .fxn         = (*_command_alacrittys)
   },
   [COMMAND_USB_DEVICES] =           {
-    .fxn = (*_command_usb_devices)
+    .fxn = (*_command_list_usb)
   },
   [COMMAND_MONITORS] =              {
-    .fxn = (*_command_monitors)
+    .fxn = (*_command_list_monitor)
   },
   [COMMAND_PROCESSES] =             {
     .fxn = (*_command_processes)
@@ -1384,50 +1384,18 @@ static void _command_write_app_icon_icns(){
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-static void _command_monitors(){
-  print_monitors();
-  exit(EXIT_SUCCESS);
-}
-
 static void _command_processes(){
-  struct Vector *_process_infos_v = get_all_process_infos_v();
+  struct list_table_t *filter = &(struct list_table_t){
+    .limit = args->limit, .font_family = args->font_family,
+  };
 
-  fprintf(stdout,
-          "\t" AC_YELLOW AC_UNDERLINE "%lu Processes" AC_RESETALL
-          "%s",
-          vector_size(_process_infos_v),
-          "\n"
-          );
-  for (size_t i = 0; i < vector_size(_process_infos_v); i++) {
-    fprintf(stdout,
-            "\t" AC_CYAN AC_BOLD
-            "%6.d |%3.lu open ports|%6.lu open files|%4.lu open connections|" AC_RESETALL
-            AC_MAGENTA "%s" AC_RESETALL "|"
-            AC_RESETALL
-            "%s",
-            ((struct process_info_t *)vector_get(_process_infos_v, i))->pid,
-            vector_size(((struct process_info_t *)vector_get(_process_infos_v, i))->open_ports_v),
-            vector_size(((struct process_info_t *)vector_get(_process_infos_v, i))->open_files_v),
-            vector_size(((struct process_info_t *)vector_get(_process_infos_v, i))->open_connections_v),
-            milliseconds_to_string(((struct process_info_t *)vector_get(_process_infos_v, i))->dur),
-            "\n"
-            );
-    process_info_release((struct process_info_t *)vector_get(_process_infos_v, i));
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE: list_process_table(filter); break;
+  case OUTPUT_MODE_JSON:
+    break;
+  case OUTPUT_MODE_TEXT:
+    break;
   }
-
-  exit(EXIT_SUCCESS);
-}
-
-static void _command_usb_devices(){
-  struct Vector *_usb_devices_v = get_usb_devices_v();
-
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "USB Devices" AC_RESETALL
-    "\n\t# USB Devices      :       %lu"
-    "\n%s",
-    vector_size(_usb_devices_v),
-    ""
-    );
   exit(EXIT_SUCCESS);
 }
 
@@ -1478,42 +1446,65 @@ static void _command_capture_window(){
              args->verbose
              );
   }
-  CGImageRef img_ref     = capture_type_capture(CAPTURE_TYPE_WINDOW, args->window_id);
-  int        orig_width  = CGImageGetWidth(img_ref);
-  int        orig_height = CGImageGetHeight(img_ref);
-  if (args->width_or_height_group > 0) {
-    int   new_width    = CGImageGetWidth(img_ref);
-    int   new_height   = CGImageGetHeight(img_ref);
-    float resize_ratio = 0;
-    switch (args->width_or_height) {
-    case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH:
-      new_width    = args->width_or_height_group;
-      resize_ratio = ((float)orig_width) / ((float)new_width);
-      new_height   = (int)((float)orig_height / resize_ratio);
-      break;
-    case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT:
-      new_height   = args->width_or_height_group;
-      resize_ratio = ((float)(orig_height)) / ((float)new_height);
-      new_width    = (int)((float)orig_width / resize_ratio);
-      break;
-    default:
-      break;
+
+  int           res = 0;
+  struct Vector *v  = vector_new();
+  if (args->all_windows == true) {
+    struct Vector *a = get_window_infos_v();
+    for (size_t i = 0; i < vector_size(a); i++) {
+      if ((size_t)args->limit > 0 && vector_size(v) >= (size_t)args->limit) {
+        break;
+      }
+      struct window_info_t *w = (struct window_info_t *)vector_get(a, i);
+      vector_push(v, (void *)(w->window_id));
     }
-    log_debug("Resizing Image from %dx%d to %dx%d using ratio %f",
-              orig_width, orig_height,
-              new_width, new_height,
-              resize_ratio
-              );
-    img_ref = resize_cgimage(img_ref, new_width, new_height);
+  }else if (args->window_id > 0) {
+    vector_push(v, (void *)(size_t)(args->window_id));
   }
-  assert(save_cgref_to_png_file(img_ref, args->output_file) == true);
-  fprintf(stdout, "Saved %s File %s",
-          "PNG",
-          args->output_file
-          );
-  int res = 0;
-  if (args->display_output_file == true) {
-    assert(timg_utils_image((char *)args->output_file) == 0);
+  for (size_t i = 0; i < vector_size(v); i++) {
+    size_t     window_id   = (size_t)vector_get(v, i);
+    CGImageRef img_ref     = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+    int        orig_width  = CGImageGetWidth(img_ref);
+    int        orig_height = CGImageGetHeight(img_ref);
+    if (args->width_or_height_group > 0) {
+      int   new_width    = CGImageGetWidth(img_ref);
+      int   new_height   = CGImageGetHeight(img_ref);
+      float resize_ratio = 0;
+      switch (args->width_or_height) {
+      case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH:
+        new_width    = args->width_or_height_group;
+        resize_ratio = ((float)orig_width) / ((float)new_width);
+        new_height   = (int)((float)orig_height / resize_ratio);
+        break;
+      case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT:
+        new_height   = args->width_or_height_group;
+        resize_ratio = ((float)(orig_height)) / ((float)new_height);
+        new_width    = (int)((float)orig_width / resize_ratio);
+        break;
+      default:
+        break;
+      }
+      log_debug("Resizing Image from %dx%d to %dx%d using ratio %f",
+                orig_width, orig_height,
+                new_width, new_height,
+                resize_ratio
+                );
+      img_ref = resize_cgimage(img_ref, new_width, new_height);
+    }
+    errno = 0;
+    if (!save_cgref_to_png_file(img_ref, args->output_file)) {
+      log_error("Failed to save %lu", window_id);
+    }else{
+//timg_utils_image(args->output_file);
+      fprintf(stdout, "Saved %s File %s For Window ID #%lu\n",
+              "PNG",
+              args->output_file,
+              window_id
+              );
+    }
+    if (args->display_output_file == true) {
+      assert(timg_utils_image((char *)args->output_file) == 0);
+    }
   }
   exit(res);
 } /* _command_capture_window */
@@ -1541,29 +1532,6 @@ static void _command_alacrittys(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_kittys(){
-  struct Vector *_kitty_pids = get_kitty_pids();
-
-  fprintf(stdout,
-          "\t" AC_YELLOW AC_UNDERLINE "Kittys" AC_RESETALL
-          "\n\t# Kitty Terminals      :       %lu"
-          "%s",
-          vector_size(_kitty_pids),
-          "\n"
-          );
-  for (size_t i = 0; i < vector_size(_kitty_pids); i++) {
-    fprintf(stdout,
-            "\t\t" AC_CYAN AC_BOLD "%lu" AC_RESETALL
-            "%s",
-            (size_t)vector_get(_kitty_pids, i),
-            "\n"
-            );
-  }
-  vector_release(_kitty_pids);
-
-  exit(EXIT_SUCCESS);
-}
-
 static void _command_fonts(){
   struct list_table_t *filter = &(struct list_table_t){
     .sort_key       = stringfn_to_lowercase(args->sort_key),
@@ -1583,23 +1551,6 @@ static void _command_fonts(){
   case OUTPUT_MODE_TEXT:
     break;
   }
-  exit(EXIT_SUCCESS);
-}
-
-static void _command_apps(){
-  switch (args->output_mode) {
-  case OUTPUT_MODE_TABLE:
-    list_installed_apps_table(&(struct list_table_t){
-      .application_name = args->application_name,
-      .limit            = args->limit,
-    });
-    break;
-  case OUTPUT_MODE_JSON:
-    break;
-  case OUTPUT_MODE_TEXT:
-    break;
-  }
-
   exit(EXIT_SUCCESS);
 }
 
@@ -1819,21 +1770,6 @@ static void _command_displays(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_list_hotkeys(){
-  switch (args->output_mode) {
-  case OUTPUT_MODE_TABLE:
-    list_hotkeys_table(&(struct list_table_t){
-      .limit = args->limit,
-    });
-    break;
-  case OUTPUT_MODE_JSON:
-    break;
-  case OUTPUT_MODE_TEXT:
-    break;
-  }
-  exit(EXIT_SUCCESS);
-}
-
 static void _command_spaces(){
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
@@ -2006,4 +1942,24 @@ static void __attribute__((constructor)) __constructor__darwin_ls_commands(void)
     DARWIN_LS_COMMANDS_DEBUG_MODE = true;
   }
 }
+#define LIST_HANDLER(NAME)                                          \
+  static void _command_list_ ## NAME(){                             \
+    struct list_table_t *filter = &(struct list_table_t){           \
+      .limit = args->limit,                                         \
+    };                                                              \
+    switch (args->output_mode) {                                    \
+    case OUTPUT_MODE_TABLE: list_ ## NAME ## _table(filter); break; \
+    case OUTPUT_MODE_JSON:                                          \
+      break;                                                        \
+    case OUTPUT_MODE_TEXT:                                          \
+      break;                                                        \
+    }                                                               \
+    exit(EXIT_SUCCESS);                                             \
+  }
+
+LIST_HANDLER(usb)
+LIST_HANDLER(kitty)
+LIST_HANDLER(app)
+LIST_HANDLER(hotkey)
+LIST_HANDLER(monitor)
 #endif

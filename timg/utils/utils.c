@@ -1,9 +1,9 @@
 #pragma once
 #ifndef TIMG_UTILS_C
 #define TIMG_UTILS_C
-////////////////////////////////////////////
-#include "timg/utils/utils.h"
-////////////////////////////////////////////
+#define SYSTEM_TIMG_BINARY_SEARCH_PATH    "/usr/local/bin"
+static void __attribute__((constructor)) __constructor__timg_utils(void);
+static void __attribute__((destructor)) __destructor__timg_utils(void);
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -18,6 +18,7 @@
 #include "submodules/b64.c/b64.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+#include "timg/utils/utils.h"
 #include "which/src/which.h"
 #define USE_EMBEDDED_TIMG_BINARY      false
 #define TIMG_BINARY_MAX_RUNTIME_MS    15000
@@ -25,9 +26,6 @@
 #define TIMG_BINARY_PATH              "../submodules/c_deps/submodules/timg/src/timg"
 #define TIMG_BINARY_SIZE              530152
 #define TIMG_BINARY_HASH              "Jf+m5iKA3BaeNkJjda3Oe9bvwTNgzNMMIPypPbna+Z8="
-#ifndef INCBIN_SILENCE_BITCODE_WARNING
-#define INCBIN_SILENCE_BITCODE_WARNING
-#endif
 #ifdef INCBIN_STYLE
 #undef INCBIN_STYLE
 #endif
@@ -60,35 +58,6 @@ static struct timg_img_t timg_imgs[] = {
   { .data = timg_utils_donald_qoi_data, .format = "qoi", .size = 152940 },
   { .data = timg_utils_donald_jpg_data, .format = "jpg", .size = 26503 },
 };
-static void __attribute__((destructor)) __destructor__timg_utils(void){
-  if (USE_EMBEDDED_TIMG_BINARY == true) {
-    if (fsio_file_exists(get_binary_path()) == true) {
-      fsio_remove(get_binary_path());
-    }
-  }
-}
-
-static void __attribute__((constructor)) __constructor__timg_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_timg_utils") != NULL) {
-    log_debug("Enabling timg-utils Debug Mode");
-    TIMG_UTILS_DEBUG_MODE = true;
-  }
-  assert(get_binary_path());
-  if (USE_EMBEDDED_TIMG_BINARY == true) {
-    assert(write_binary_path() == true);
-  }
-  if (TIMG_UTILS_DEBUG_MODE) {
-    log_debug("%s|%s:%s|%s:%s", get_binary_path(), get_binary_hash(), TIMG_BINARY_HASH, bytes_to_string(fsio_file_size(get_binary_path())), bytes_to_string(TIMG_BINARY_SIZE));
-  }
-  if (USE_EMBEDDED_TIMG_BINARY == true) {
-    assert(fsio_file_exists(get_binary_path()) == true);
-    assert(strcmp(get_binary_hash(), TIMG_BINARY_HASH) == 0);
-    assert(fsio_file_size(get_binary_path()) == TIMG_BINARY_SIZE);
-    if (getenv("ALACRITTY_WINDOW_ID") != NULL) {
-      setenv("TIMG_USE_UPPER_BLOCK", "1", 1);
-    }
-  }
-}
 ////////////////////////////////////////////
 #define TITLE_FILENAME    AC_GREEN "%b" AC_RESETALL
 static const char *ARG_TITLE = "--title="
@@ -216,10 +185,27 @@ static char *get_binary_path(){
   if (TIMG_UTILS_DEBUG_MODE) {
     log_debug("%d", USE_EMBEDDED_TIMG_BINARY);
   }
+
   if (USE_EMBEDDED_TIMG_BINARY == false) {
-    p = which("timg");
-    assert(fsio_file_exists(p) == true);
-    return(p);
+    char *ORIG_PATH = getenv("PATH");
+    if (ORIG_PATH) {
+      setenv("PATH", SYSTEM_TIMG_BINARY_SEARCH_PATH, true);
+      p = which("timg");
+      if (TIMG_UTILS_DEBUG_MODE) {
+        log_debug("timg path: %s", p);
+      }
+      char                   *PATH = getenv("PATH");
+      struct StringFNStrings paths = stringfn_split(PATH, ':');
+      for (int i = 0; i < paths.count; i++) {
+        if (TIMG_UTILS_DEBUG_MODE) {
+          log_debug("%s", paths.strings[i]);
+        }
+      }
+      stringfn_release_strings_struct(paths);
+      setenv("PATH", ORIG_PATH, true);
+      assert(fsio_file_exists(p) == true);
+      return(p);
+    }
   }
 
   asprintf(&p, "%s.%s-%d", gettempdir(), "timg-binary", getpid());
@@ -361,7 +347,9 @@ int run_timg_cmd(char *args[]){
     log_error("process wait");
     goto finish;
   }
-  log_info("process waited");
+  if (TIMG_UTILS_DEBUG_MODE) {
+    log_info("process waited");
+  }
 
 finish:
   errno = 0;
@@ -389,6 +377,35 @@ finish:
   errno = 0;
   return(EXIT_SUCCESS);
 } /* run_timg_cmd */
+static void __attribute__((destructor)) __destructor__timg_utils(void){
+  if (USE_EMBEDDED_TIMG_BINARY == true) {
+    if (fsio_file_exists(get_binary_path()) == true) {
+      fsio_remove(get_binary_path());
+    }
+  }
+}
+
+static void __attribute__((constructor)) __constructor__timg_utils(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_timg_utils") != NULL) {
+    log_debug("Enabling timg-utils Debug Mode");
+    TIMG_UTILS_DEBUG_MODE = true;
+  }
+  assert(get_binary_path());
+  if (USE_EMBEDDED_TIMG_BINARY == true) {
+    assert(write_binary_path() == true);
+  }
+  if (TIMG_UTILS_DEBUG_MODE) {
+    log_debug("%s|%s:%s|%s:%s", get_binary_path(), get_binary_hash(), TIMG_BINARY_HASH, bytes_to_string(fsio_file_size(get_binary_path())), bytes_to_string(TIMG_BINARY_SIZE));
+  }
+  if (USE_EMBEDDED_TIMG_BINARY == true) {
+    assert(fsio_file_exists(get_binary_path()) == true);
+    assert(strcmp(get_binary_hash(), TIMG_BINARY_HASH) == 0);
+    assert(fsio_file_size(get_binary_path()) == TIMG_BINARY_SIZE);
+    if (getenv("ALACRITTY_WINDOW_ID") != NULL) {
+      setenv("TIMG_USE_UPPER_BLOCK", "1", 1);
+    }
+  }
+}
 #undef INCBIN_PREFIX
 #undef INCBIN_STYLE
 #undef TIMG_BINARY_HASH

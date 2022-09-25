@@ -21,6 +21,7 @@
 #include "screen/utils/utils.h"
 #include "space/utils/utils.h"
 #include "timestamp/timestamp.h"
+#include "timg/utils/utils.h"
 #include "window/utils/utils.h"
 ////////////////////////////////////////////
 static bool                  CAPTURE_UTILS_DEBUG_MODE = false;

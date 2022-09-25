@@ -151,6 +151,7 @@ bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef i
               bytes_to_string(fsio_file_size(image_file)), image_types[image_type].name, image_file, milliseconds_to_string(timestamp() - started)
               );
   }
+  //timg_utils_image(image_file);
   return((success == true) && fsio_file_exists(image_file));
 }
 enum image_conversion_test_type_t {

@@ -23,6 +23,7 @@ timg_utils_deps = [
 ]
 
 timg_utils_c_args = [
+  '-DINCBIN_SILENCE_BITCODE_WARNING',
 ]
 
 timg_utils_link_args = [

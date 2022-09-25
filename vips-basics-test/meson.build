@@ -16,7 +16,7 @@ vips_basics_test_deps = [
   timestamp_dep,
   log_dep,
   ms_dep,
-  bytes_dep,
+  bytes_dep,timg_utils_dep,
   vips_dep,
 ]
 vips_basics_test_c_args = [

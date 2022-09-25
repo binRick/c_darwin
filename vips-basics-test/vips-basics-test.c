@@ -9,6 +9,7 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
+#include "timg/utils/utils.h"
 #include "vips-basics-test/vips-basics-test.h"
 #include "vips/vips.h"
 #define UNUSED    __attribute__((unused))
@@ -20,7 +21,7 @@ INCBIN(kitty_icon, "assets/kitty_icon.png");
 static char *files[] = {
   "/tmp/communist-goals.png",
   "/tmp/kitty_icon.png",
-}, *exts[] = { "png", "gif", "jpg", "tif", "raw", "webp", "vips", "jxl", };
+}, *exts[] = { "png", "gif", "jpg", "tif", "raw", "webp", "vips" };
 static size_t files_qty = QTY(files), exts_qty = QTY(exts);
 
 static int annotate_image(VipsObject *context, VipsImage *image, VipsImage **out) {
@@ -114,6 +115,7 @@ TEST t_vips_basics_test3(){
       if (vips_image_write_to_file(out, outfile, NULL)) {
         FAIL();
       }
+      timg_utils_image(outfile);
       log_debug(AC_MAGENTA "%s %s [%dx%d] (%d)" AC_RESETALL,
                 bytes_to_string(fsio_file_size(outfile)),
                 outfile,
@@ -167,6 +169,7 @@ TEST t_vips_basics_test2(){
         FAIL();
         g_object_unref(image);
       }
+      timg_utils_image(outfile);
       log_debug(AC_CYAN "Annotated Image: %s [%dx%d] (%d)" AC_RESETALL,
                 outfile,
                 vips_image_get_width(image),
@@ -234,7 +237,9 @@ GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
   fsio_write_binary_file(files[0], gcommunist_goalsData, gcommunist_goalsSize);
+  timg_utils_image(files[0]);
   fsio_write_binary_file(files[1], gkitty_iconData, gkitty_iconSize);
+  timg_utils_image(files[1]);
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_vips_basics_test1);
   RUN_SUITE(s_vips_basics_test2);

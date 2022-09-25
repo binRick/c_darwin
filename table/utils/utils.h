@@ -120,7 +120,11 @@ int list_window_infos_table(void *ARGS);
 int list_windows_table(void *ARGS);
 int list_spaces_table(void *ARGS);
 int list_displays_table(void *ARGS);
-int list_hotkeys_table(void *ARGS);
-int list_installed_apps_table(void *ARGS);
+int list_hotkey_table(void *ARGS);
+int list_app_table(void *ARGS);
 int list_installed_fonts_table(void *ARGS);
+int list_usb_table(void *ARGS);
+int list_process_table(void *ARGS);
+int list_kitty_table(void *ARGS);
+int list_monitor_table(void *ARGS);
 #endif

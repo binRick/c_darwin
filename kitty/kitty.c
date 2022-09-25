@@ -562,6 +562,16 @@ int get_pid_kitty_pid(int pid){
   return(-1);
 }
 
+struct Vector *get_kittys(){
+  struct Vector *v = vector_new(), *pids_v = get_kitty_pids();
+
+  for (size_t i = 0; i < vector_size(pids_v); i++) {
+    struct kitty_t *k = calloc(1, sizeof(struct kitty_t));
+    k->pid = (pid_t)(size_t)vector_get(pids_v, i);
+    vector_push(v, (void *)k);
+  }
+  return(v);
+}
 struct Vector *get_kitty_pids(){
   struct Vector *pids_v       = get_all_processes();
   struct Vector *kitty_pids_v = vector_new();

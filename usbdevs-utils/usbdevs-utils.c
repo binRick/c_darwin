@@ -65,7 +65,7 @@ static struct usbdev_parser_t usbdev_parsers[USB_DEVICE_PARSER_TYPES_QTY + 1] = 
   [USB_DEVICE_PARSER_TYPES_QTY] =                                        { 0 },
 };
 
-static void debug_usbdev(struct usbdev_t *usbdev){
+static void __attribute__((unused)) debug_usbdev(struct usbdev_t *usbdev){
   fprintf(stdout,
           "\n  Path                   :   %s"
           "\n  Serial Number          :   %s"
@@ -118,19 +118,7 @@ static struct Vector *usbdevs_utils_iterate_devices(void){
   while (cur_dev) {
     struct usbdev_t *usbdev = calloc(1, sizeof(struct usbdev_t));
     parse_usbdev(usbdev, cur_dev);
-    debug_usbdev(usbdev);
-
-/*
- *  printf("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path,
- *         cur_dev->serial_number);
- *  printf("\n");
- *  printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
- *  printf("  Product:      %ls\n", cur_dev->product_string);
- *  printf("  Release:      %hx\n", cur_dev->release_number);
- *  printf("  Interface:    %d\n", cur_dev->interface_number);
- *  printf("  Usage (page): 0x%hx (0x%hx)\n", cur_dev->usage, cur_dev->usage_page);
- *  printf("\n");
- */
+    vector_push(_devs, (void *)usbdev);
     cur_dev = cur_dev->next;
   }
   hid_free_enumeration(devs);

@@ -95,6 +95,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
+          common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_PID](args),
           common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
           common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),

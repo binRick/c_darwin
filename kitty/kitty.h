@@ -77,6 +77,9 @@ typedef struct {
   char *key;
   char *val;
 } process_env_t;
+struct kitty_t {
+  pid_t pid;
+};
 struct kitty_foreground_process_t {
   int  pid;
   char *cwd, *cmdline;
@@ -106,6 +109,7 @@ struct kitty_proc_t {
   struct Vector *tabs_v;
 } kitty_proc_t;
 /////////////////////////////////////////////////////////////////////////////////////
+struct Vector *get_kittys();
 struct Vector *get_kitty_listen_ons();
 struct Vector *get_all_processes();
 struct Vector *get_process_env(int PID);
