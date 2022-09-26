@@ -95,4 +95,5 @@ bool image_conversions();
 const char *color_type_str(enum spng_color_type color_type);
 
 struct spng_info_t *spng_test(FILE *fp);
+bool compress_png_file(char *file);
 #endif

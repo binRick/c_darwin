@@ -20,8 +20,9 @@ static void __attribute__((destructor)) __destructor__timg_utils(void);
 #include "timestamp/timestamp.h"
 #include "timg/utils/utils.h"
 #include "which/src/which.h"
+static struct Vector *get_default_args_v();
 #define USE_EMBEDDED_TIMG_BINARY      false
-#define TIMG_BINARY_MAX_RUNTIME_MS    15000
+#define TIMG_BINARY_MAX_RUNTIME_MS    3000
 #define TIMG_BINARY_HASH_SIZE         32
 #define TIMG_BINARY_PATH              "../submodules/c_deps/submodules/timg/src/timg"
 #define TIMG_BINARY_SIZE              530152
@@ -41,7 +42,6 @@ INCBIN(donald_qoi, "assets/donald.qoi");
 INCBIN(donald_jpg, "assets/donald.jpg");
 INCBIN(donald_gif, "assets/donald.gif");
 ////////////////////////////////////////////
-static bool redirect_parent_io    = true;
 static bool TIMG_UTILS_DEBUG_MODE = false;
 static char *get_binary_path();
 static char *get_binary_hash();
@@ -82,12 +82,8 @@ static const char *ARG_KITTY          = "-pk";
 static const char *ARG_ITERM          = "-pi";
 static int run_timg_cmd(char **cmd_a);
 
-static const char **get_default_args(){
+static struct Vector *get_default_args_v(){
   struct Vector *v = vector_new();
-  char          *o;
-
-  //asprintf(&o,"-o%stimg-utils-output-%d.dat",gettempdir(),getpid());
-  vector_push(v, (void *)o);
 
   if (getenv("ALACRITTY_WINDOW_ID") != NULL) {
     vector_push(v, (void *)ARG_QUARTER_PIXELS);
@@ -99,24 +95,23 @@ static const char **get_default_args(){
   }else{
     vector_push(v, (void *)ARG_QUARTER_PIXELS);
   }
-  return(vector_to_array(v));
+  return(v);
+}
+
+static const char **get_default_args(){
+  return(vector_to_array(get_default_args_v()));
 }
 
 int timg_utils_test_images(){
-  char          *p;
   size_t        qty = (sizeof(timg_imgs) / sizeof(timg_imgs[0]));
-  char          *imgs_args[qty + 2];
-  struct Vector *v      = vector_new();
-  struct Vector *imgs_v = vector_new();
+  char          *imgs_args[qty + 2], *a, *p;
+  struct Vector *v = vector_new(), *imgs_v = vector_new();
 
   imgs_args[0] = ARG_TITLE;
-  char *a;
-
   asprintf(&a, "--grid=%lu", qty);
   vector_push(v, (void *)a);
   vector_push(v, (void *)ARG_CENTER);
   vector_push(v, (void *)ARG_TITLE_FILENAME);
-
   for (size_t i = 0; i < qty; i++) {
     asprintf(&p, "%stimg-%d-%lu.%s", gettempdir(), getpid(), i, timg_imgs[i].format);
     fsio_write_binary_file(p, timg_imgs[i].data, timg_imgs[i].size);
@@ -212,12 +207,58 @@ static char *get_binary_path(){
   return(p);
 }
 
-int timg_utils_image(char *file){
-  if (TIMG_UTILS_DEBUG_MODE) {
-    log_info("%s", file);
+int timg_utils_images(struct Vector *v){
+  struct Vector       *a  = vector_new();
+  struct StringBuffer *sb = stringbuffer_new();
+
+  stringbuffer_append_string(sb, "timg");
+  struct Vector *defaults = get_default_args_v();
+
+  for (size_t i = 0; i < vector_size(defaults); i++) {
+    stringbuffer_append_string(sb, " ");
+    stringbuffer_append_string(sb, (char *)vector_get(defaults, i));
   }
 
+  char *args[vector_size(v) + 2];
+
+  asprintf(&(args[0]), "--grid=%d", 3);
+  vector_push(a, (void *)args[0]);
+  struct StringBuffer *_s = stringbuffer_new();
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    char *img = (char *)vector_get(v, i);
+    stringbuffer_clear(_s);
+    stringbuffer_append_string(_s, " \"");
+    stringbuffer_append_string(_s, img);
+    stringbuffer_append_string(_s, "\"");
+    vector_push(a, (void *)stringbuffer_to_string(_s));
+    log_debug("adding img %s", img);
+  }
+  stringbuffer_release(_s);
+  for (size_t i = 0; i < vector_size(a); i++) {
+    log_debug("Arg #%lu> %s", i, (char *)vector_get(a, i));
+    stringbuffer_append_string(sb, " ");
+    stringbuffer_append_string(sb, (char *)vector_get(a, i));
+  }
+  char *cmd = stringbuffer_to_string(sb);
+
+  stringbuffer_release(sb);
+  log_debug("cmd:     \n" AC_YELLOW "%s" AC_RESETALL "\n", cmd);
+  args[vector_size(v) + 2] = NULL;
+
+  return(run_timg_cmd(args));
+
+  return(0);
+} /* timg_utils_images */
+
+int timg_utils_titled_image(char *file){
   char *args[] = { ARG_TITLE, file, NULL, };
+
+  return(run_timg_cmd(args));
+}
+
+int timg_utils_image(char *file){
+  char *args[] = { file, NULL, };
 
   return(run_timg_cmd(args));
 }
@@ -272,7 +313,7 @@ int run_timg_cmd(char *args[]){
   errno = 0;
   r     = reproc_start(process, cmd_a,
                        (reproc_options){
-    .redirect.parent = redirect_parent_io,
+    .redirect.parent = true,
     .deadline        = TIMG_BINARY_MAX_RUNTIME_MS,
   });
   if (r < 0) {
@@ -288,59 +329,6 @@ int run_timg_cmd(char *args[]){
 
   size_t size_e = 0, size_o = 0;
 
-  if (redirect_parent_io == false) {
-    for ( ;;) {
-      uint8_t buffer_o[4096];
-      errno = 0;
-      r     = reproc_read(process, REPROC_STREAM_OUT, buffer_o, sizeof(buffer_o));
-      if (r < 0) {
-        log_error("read error");
-        goto finish;
-        log_error("read error");
-        break;
-      }
-      size_t bytes_read_o = (size_t)r;
-      errno = 0;
-      char   *result_o = realloc(output_o, size_o + bytes_read_o + 1);
-      if (result_o == NULL) {
-        log_error("memory error");
-        r = REPROC_ENOMEM;
-        log_error("memory error");
-        goto finish;
-      }
-      output_o = result_o;
-      memcpy(output_o + size_o, buffer_o, bytes_read_o);
-      output_o[size_o + bytes_read_o] = '\0';
-      size_o                         += bytes_read_o;
-    }
-
-    for ( ;;) {
-      uint8_t buffer_e[4096];
-      errno = 0;
-      size_t  bytes_read_e = 0;
-      r = reproc_read(process, REPROC_STREAM_ERR, buffer_e, sizeof(buffer_e));
-      if (r < 0) {
-        log_error("stderr read error, (read %s)", bytes_to_string(size_e));
-        goto finish;
-        break;
-      }
-      bytes_read_e = (size_t)r;
-      errno        = 0;
-      log_debug("%lu", bytes_read_e);
-      if (bytes_read_e > 0) {
-        char *result_e = realloc(output_e, size_e + bytes_read_e + 1);
-        if (result_e == NULL) {
-          r = REPROC_ENOMEM;
-          log_error("memory error (wanted %s more bytes on top of %s)", bytes_to_string(bytes_read_e), bytes_to_string(size_e));
-          goto finish;
-        }
-        output_e = result_e;
-        memcpy(output_e + size_e, buffer_e, bytes_read_e);
-        output_e[size_e + bytes_read_e] = '\0';
-        size_e                         += bytes_read_e;
-      }
-    }
-  }
   errno = 0;
   r     = reproc_wait(process, REPROC_INFINITE);
   if (r < 0) {

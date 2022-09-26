@@ -1,6 +1,18 @@
 #pragma once
 #ifndef TABLE_UTILS_C
 #define TABLE_UTILS_C
+#define DEFAULT_FONTS_LIMIT    50
+#define DEFAULT_APPS_LIMIT     50
+#define MONITOR_COLUMNS        "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
+#define PROCESS_COLUMNS        "PID", "Open Ports", "Open Files", "Open Connections", "Dur"
+#define KITTY_COLUMNS          "PID"
+#define USB_COLUMNS            "Product", "Manufacturer"
+#define FONT_COLUMNS           "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
+#define APP_COLUMNS            "ID", "Name", "Version", "Path"
+#define WINDOW_COLUMNS         "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Dur"
+#define SPACE_COLUMNS          "ID", "Current", "Window IDs", "Windows"
+#define HOTKEY_COLUMNS         "ID", "Name", "Key", "Action", "Enabled"
+#define DISPLAY_COLUMNS        "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows"
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
@@ -15,33 +27,19 @@
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process/process.h"
-#include "process/process.h"
-#include "process/utils/utils.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log.h/log.h"
+#include "table/sort/sort.h"
 #include "table/table.h"
 #include "table/utils/utils.h"
 #include "timestamp/timestamp.h"
 #include "usbdevs-utils/usbdevs-utils.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
-#include "table/sort/sort.h"
 ///////////////////////////////////////////////////////////////////////////////
-#define DEFAULT_FONTS_LIMIT    50
-#define DEFAULT_APPS_LIMIT     50
-#define MONITOR_COLUMNS        "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
-#define PROCESS_COLUMNS        "PID", "Open Ports", "Open Files", "Open Connections", "Dur"
-#define KITTY_COLUMNS          "PID"
-#define USB_COLUMNS            "Product", "Manufacturer"
-#define FONT_COLUMNS           "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
-#define APP_COLUMNS            "ID", "Name", "Version", "Path"
-#define WINDOW_COLUMNS         "ID", "PID", "Application", "Size", "Position", "Space", "Disp", "Min", "Dur"
-#define SPACE_COLUMNS          "ID", "Current", "Window IDs", "Windows"
-#define HOTKEY_COLUMNS         "ID", "Name", "Key", "Action", "Enabled"
-#define DISPLAY_COLUMNS        "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows"
-static size_t               term_width, cur_display_id, cur_space_id;
+static size_t               term_width = 80, cur_display_id, cur_space_id;
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive);
 static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 #define VECTOR_ITEM(VECTOR,                                                                          TYPE,                                  INDEX)    (struct TYPE)vector_get(VECTOR, INDEX)
@@ -507,54 +505,38 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     },
   },
 };
-#define INIT_TABLE(TABLE, COLUMNS)                                 { do {                                                                                   \
-                                                                       durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = 0;                                            \
-                                                                       durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                            \
-                                                                       durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                            \
-                                                                       TABLE                                = ft_create_table();                            \
-                                                                       ft_write_ln(TABLE, COLUMNS);                                                         \
-                                                                       ft_set_border_style(TABLE, FT_FRAME_STYLE);                                          \
-                                                                       ft_set_border_style(TABLE, FT_SOLID_ROUND_STYLE);                                    \
-                                                                       ft_set_tbl_prop(TABLE, FT_TPROP_LEFT_MARGIN, 0);                                     \
-                                                                       ft_set_tbl_prop(TABLE, FT_TPROP_RIGHT_MARGIN, 0);                                    \
-                                                                       ft_set_tbl_prop(TABLE, FT_TPROP_TOP_MARGIN, 0);                                      \
-                                                                       ft_set_tbl_prop(TABLE, FT_TPROP_BOTTOM_MARGIN, 0);                                   \
-                                                                       ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);         \
-                                                                       ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);   \
-                                                                       ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
-                                                                       ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);   \
-                                                                       ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);   \
-                                                                     } while (0); }
+
 #define BREAK_IF_ROW_LIMIT(TABLE, ARGS) \
   if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) break;
 #define CONTINUE_IF_ROW_SKIP(SKIP) \
   if ((SKIP)) continue;
-#define TABLE_SUMMARY(ITEM_NAME, ITEM_VECTOR, TABLE, DURATIONS)    { do {                                                                                             \
-                                                                       durs[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - durs[TABLE_DUR_TYPE_TOTAL].started;             \
-                                                                       ft_add_separator(table);                                                                       \
-                                                                       DURATIONS[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - DURATIONS[TABLE_DUR_TYPE_TOTAL].started;   \
-                                                                       ft_printf_ln(TABLE,                                                                            \
-                                                                                    "Queried %lu %s in %s, filtered %lu items%s%s, and rendered %lu rows in %s"       \
-                                                                                    "%s",                                                                             \
-                                                                                    vector_size(ITEM_VECTOR),                                                         \
-                                                                                    ITEM_NAME,                                                                        \
-                                                                                    milliseconds_to_string(DURATIONS[TABLE_DUR_TYPE_QUERY_ITEMS].dur),                \
-                                                                                    filtered_qty,                                                                     \
-                                                                                    DURATIONS[TABLE_DUR_TYPE_FILTER_ROWS].dur > 0                                     \
-        ? " in " : "",                                                                                                                                                \
-                                                                                    DURATIONS[TABLE_DUR_TYPE_FILTER_ROWS].dur > 0                                     \
-        ? milliseconds_to_string(DURATIONS[TABLE_DUR_TYPE_FILTER_ROWS].dur) : "",                                                                                     \
-                                                                                    ft_row_count(TABLE) - 1,                                                          \
-                                                                                    milliseconds_to_string(DURATIONS[TABLE_DUR_TYPE_TOTAL].dur),                      \
-                                                                                    ""                                                                                \
-                                                                                    );                                                                                \
-                                                                       ft_set_cell_span(TABLE, ft_row_count(TABLE) - 1, 0, ft_col_count(TABLE));                      \
-                                                                       ft_set_cell_prop(TABLE, ft_row_count(TABLE) - 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
-                                                                       char *table_s = ft_to_string(table);                                                           \
-                                                                       fprintf(stdout, "%s\n", table_s);                                                              \
-                                                                       ft_destroy_table(table);                                                                       \
-                                                                       return((strlen(table_s) > 0) ? EXIT_SUCCESS : EXIT_FAILURE);                                   \
-                                                                     } while (0); }
+#define TABLE_SUMMARY(ITEM_NAME, ITEM_VECTOR, TABLE, DURATIONS)                                      \
+  { do {                                                                                             \
+      durs[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - durs[TABLE_DUR_TYPE_TOTAL].started;             \
+      ft_add_separator(table);                                                                       \
+      DURATIONS[TABLE_DUR_TYPE_TOTAL].dur = timestamp() - DURATIONS[TABLE_DUR_TYPE_TOTAL].started;   \
+      ft_printf_ln(TABLE,                                                                            \
+                   "Queried %lu %s in %s, filtered %lu items%s%s, and rendered %lu rows in %s"       \
+                   "%s",                                                                             \
+                   vector_size(ITEM_VECTOR),                                                         \
+                   ITEM_NAME,                                                                        \
+                   milliseconds_to_string(DURATIONS[TABLE_DUR_TYPE_QUERY_ITEMS].dur),                \
+                   filtered_qty,                                                                     \
+                   DURATIONS[TABLE_DUR_TYPE_FILTER_ROWS].dur > 0                                     \
+        ? " in " : "",                                                                               \
+                   DURATIONS[TABLE_DUR_TYPE_FILTER_ROWS].dur > 0                                     \
+        ? milliseconds_to_string(DURATIONS[TABLE_DUR_TYPE_FILTER_ROWS].dur) : "",                    \
+                   ft_row_count(TABLE) - 1,                                                          \
+                   milliseconds_to_string(DURATIONS[TABLE_DUR_TYPE_TOTAL].dur),                      \
+                   ""                                                                                \
+                   );                                                                                \
+      ft_set_cell_span(TABLE, ft_row_count(TABLE) - 1, 0, ft_col_count(TABLE));                      \
+      ft_set_cell_prop(TABLE, ft_row_count(TABLE) - 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
+      char *table_s = ft_to_string(table);                                                           \
+      fprintf(stdout, "%s\n", table_s);                                                              \
+      ft_destroy_table(table);                                                                       \
+      return((strlen(table_s) > 0) ? EXIT_SUCCESS : EXIT_FAILURE);                                   \
+    } while (0); }
 static bool TABLE_UTILS_DEBUG_MODE = false;
 
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive){
@@ -577,45 +559,70 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
   return(skip_row);
 }
 
-#define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE)                               \
-  int FXN(void *ARGS) {                                                        \
-    struct list_table_t *args    = (struct list_table_t *)ARGS;                \
-    struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(), *sorted_items = vector_new();\
-    struct STRUCT_TYPE       *item, *_item;                                                 \
-    size_t              filtered_qty = 0;                                      \
-    struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];                             \
-    durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                  \
-    durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                  \
-    durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = 0;                                  \
-    ft_table_t *table;                                                         \
-    INIT_TABLE(table, TYPE ## _COLUMNS);        \
-    log_debug("sort key:%s|dir:%s",args->sort_key,args->sort_direction);\
-    if (args->sort_key && args->sort_direction){\
-      sort_function sort = get_sort_type_function_from_key(SORT_TYPE_##TYPE, args->sort_key,args->sort_direction);\
-      if(sort){\
-        if(TABLE_UTILS_DEBUG_MODE){\
-          log_debug("Sorting %s %lu items",NAME,vector_size(items_v));\
-        }\
-        _item = calloc((vector_size(items_v) + 1), sizeof(struct STRUCT_TYPE));\
-        for (size_t i = 0; i < vector_size(items_v); i++) {\
-          _item[i] = *(VECTOR_ITEM(items_v, STRUCT_TYPE *, i));\
-        }\
-        qsort(_item, vector_size(items_v), sizeof(struct STRUCT_TYPE), sort);\
-        for (size_t i = 0; i < vector_size(items_v); i++) {\
-          vector_push(sorted_items, (void *)&(_item[i]));\
-        }\
-        items_v = sorted_items;\
-      }\
-    }\
-    for (size_t i = 0; i < vector_size(items_v); i++) {                        \
-      BREAK_IF_ROW_LIMIT(table, args)                                          \
-      item = VECTOR_ITEM(items_v, TYPE *, i);                                  \
-      tables[TABLE_TYPE_ ## TYPE]->row(table, i, item);                        \
-      tables[TABLE_TYPE_ ## TYPE]->row_style(table, i, item);                  \
-    }                                                                          \
-    TABLE_SUMMARY(NAME, items_v, table, durs);                                 \
+#define INIT_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)                                                          \
+  struct list_table_t *args = (struct list_table_t *)ARGS;                                                 \
+  struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(), *sorted_items = vector_new(); \
+  struct STRUCT_TYPE  *item, *_item;                                                                       \
+  ft_table_t          *table;                                                                              \
+  size_t              filtered_qty = 0;                                                                    \
+  struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];
+#define SETUP_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)           { do {                                                                                   \
+                                                                 durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = 0;                                            \
+                                                                 durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                            \
+                                                                 durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                            \
+                                                                 TABLE                                = ft_create_table();                            \
+                                                                 ft_write_ln(TABLE, TYPE ## _COLUMNS);                                                \
+                                                                 ft_set_border_style(TABLE, FT_FRAME_STYLE);                                          \
+                                                                 ft_set_border_style(TABLE, FT_SOLID_ROUND_STYLE);                                    \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_LEFT_MARGIN, 0);                                     \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_RIGHT_MARGIN, 0);                                    \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_TOP_MARGIN, 0);                                      \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_BOTTOM_MARGIN, 0);                                   \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);         \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);   \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);   \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);   \
+                                                               } while (0); }
+#define IF_SORT_FUNCTION_DO_SORT(NAME, TYPE, STRUCT_TYPE)    { do {                                                                                                                \
+                                                                 if (TABLE_UTILS_DEBUG_MODE)                                                                                       \
+                                                                 log_debug("sort key:%s|dir:%s", args->sort_key, args->sort_direction);                                            \
+                                                                 if (args->sort_key && args->sort_direction) {                                                                     \
+                                                                   sort_function sort = get_sort_type_function_from_key(SORT_TYPE_ ## TYPE, args->sort_key, args->sort_direction); \
+                                                                   if (sort) {                                                                                                     \
+                                                                     if (TABLE_UTILS_DEBUG_MODE) {                                                                                 \
+                                                                       log_debug("Sorting %s %lu items", NAME, vector_size(items_v));                                              \
+                                                                     }                                                                                                             \
+                                                                     _item = calloc((vector_size(items_v) + 1), sizeof(struct STRUCT_TYPE));                                       \
+                                                                     for (size_t i = 0; i < vector_size(items_v); i++) {                                                           \
+                                                                       _item[i] = *(VECTOR_ITEM(items_v, STRUCT_TYPE *, i));                                                       \
+                                                                     }                                                                                                             \
+                                                                     qsort(_item, vector_size(items_v), sizeof(struct STRUCT_TYPE), sort);                                         \
+                                                                     for (size_t i = 0; i < vector_size(items_v); i++) {                                                           \
+                                                                       vector_push(sorted_items, (void *)&(_item[i]));                                                             \
+                                                                     }                                                                                                             \
+                                                                     items_v = sorted_items;                                                                                       \
+                                                                   }else{                                                                                                          \
+                                                                     if (TABLE_UTILS_DEBUG_MODE) {                                                                                 \
+                                                                       log_error("Not Sorting %s %lu items", NAME, vector_size(items_v));                                          \
+                                                                     }                                                                                                             \
+                                                                   }                                                                                                               \
+                                                                 }                                                                                                                 \
+                                                               }while (0); }
+#define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE)              \
+  int FXN(void *ARGS) {                                       \
+    INIT_TABLE_VARS(table, TYPE, STRUCT_TYPE);                \
+    SETUP_TABLE_VARS(table, TYPE, STRUCT_TYPE);               \
+    IF_SORT_FUNCTION_DO_SORT(NAME, TYPE, STRUCT_TYPE);        \
+    for (size_t i = 0; i < vector_size(items_v); i++) {       \
+      BREAK_IF_ROW_LIMIT(table, args)                         \
+      item = VECTOR_ITEM(items_v, TYPE *, i);                 \
+      tables[TABLE_TYPE_ ## TYPE]->row(table, i, item);       \
+      tables[TABLE_TYPE_ ## TYPE]->row_style(table, i, item); \
+    }                                                         \
+    TABLE_SUMMARY(NAME, items_v, table, durs);                \
   }
- LIST_TABLE_ITEMS()
+LIST_TABLE_ITEMS()
 #undef LIST_TABLE
 
 #endif

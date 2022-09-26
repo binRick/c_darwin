@@ -30,9 +30,64 @@
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
 #include "timg/utils/utils.h"
+#include "vips/vips.h"
 #include "window/info/info.h"
 static bool IMAGE_UTILS_DEBUG_MODE = false;
 static bool FANCY_PROGRESS_ENABLED = false;
+
+bool compress_png_file(char *file){
+  unsigned long s = timestamp();
+  VipsImage     *image;
+  int           w = 0, h = 0;
+  unsigned char *buf = NULL;
+  size_t        len = 0, c_len = 0, rgb_len = 0;
+  char          *file_rgb;
+  unsigned char *c_buf = NULL;
+
+  len = fsio_file_size(file);
+  if (!(image = vips_image_new_from_file(file, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+    log_error("Failed to read file");
+    goto fail;
+  }
+  w = vips_image_get_width(image);
+  h = vips_image_get_height(image);
+  asprintf(&file_rgb, "%s.rgb", file);
+  if (vips_rawsave(image, file_rgb, NULL)) {
+    log_error("Failed to load rgb data");
+    goto fail;
+  }
+  g_object_unref(image);
+  rgb_len = fsio_file_size(file_rgb);
+  buf     = fsio_read_binary_file(file_rgb);
+  fsio_remove(file_rgb);
+  c_buf = imagequant_encode_rgb_pixels_to_png_buffer(buf, w, h, 5, 90, &c_len);
+  if (!c_buf || c_len == 0) {
+    log_error("Failed to quant compress rgb pixels from file %s", file);
+    goto fail;
+  }
+  if (c_len > 0 && c_len < len) {
+    if (!fsio_write_binary_file(file, c_buf, c_len)) {
+      log_error("Failed to save compressed png data");
+      goto fail;
+    }
+    if (IMAGE_UTILS_DEBUG_MODE) {
+      log_info(AC_BLUE "compressed %s from %s to %s using %s RGB Pixels in %s"AC_RESETALL,
+               file,
+               bytes_to_string(len),
+               bytes_to_string(c_len),
+               bytes_to_string(rgb_len),
+               milliseconds_to_string(timestamp() - s)
+               );
+    }
+  }
+  return(true);
+
+fail:
+  if (image) {
+    g_object_unref(image);
+  }
+  return(false);
+} /* compress_png_file */
 
 const char *color_type_str(enum spng_color_type color_type){
   switch (color_type) {
@@ -467,17 +522,25 @@ CGImageRef resize_png_file_factor(FILE *fp, double resize_factor){
 }
 
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("resize_cgimage %dx%d", width, height);
+  }
   CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
   CGContextRef context = CGBitmapContextCreate(NULL, width, height,
                                                CGImageGetBitsPerComponent(imageRef),
                                                CGImageGetBytesPerRow(imageRef),
                                                CGImageGetColorSpace(imageRef),
                                                CGImageGetBitmapInfo(imageRef));
+  if (!context) {
+    if (IMAGE_UTILS_DEBUG_MODE) {
+      log_error("Failed to create context");
+    }
+    return(NULL);
+  }
 
   CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
   CGContextDrawImage(context, newRect, imageRef);
   CGImageRef newImageRef = CGBitmapContextCreateImage(context);
-
   CGContextRelease(context);
   return(newImageRef);
 }

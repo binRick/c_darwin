@@ -15,11 +15,12 @@
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
+#include "table/sort/sort.h"
 #include "table/utils/utils.h"
 #include "tesseract/utils/utils.h"
 #include "timg/utils/utils.h"
+#include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
-#include "table/sort/sort.h"
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////
@@ -223,20 +224,22 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_ALL_WINDOWS] = ^ struct optparse_opt (struct args_t *args)                  {
     return((struct optparse_opt)                                                             {
-      .short_name = 'a',
+      .short_name = 'A',
       .long_name = "all-windows",
+      .arg_name = "ALL",
       .description = "All Windows",
-      .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->all_windows),
+      .arg_dest = &(args->all_windows),
+      .arg_data_type = DATA_TYPE_UINT16,
     });
   },
   [COMMON_OPTION_DISPLAY_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)          {
     return((struct optparse_opt)                                                             {
       .short_name = 'D',
       .long_name = "display-output-file",
+      .arg_name = "DISPLAY",
       .description = "Display Output File",
-      .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->display_output_file),
+      .arg_dest = &(args->display_output_file),
+      .arg_data_type = DATA_TYPE_UINT16,
     });
   },
   [COMMON_OPTION_NON_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                {
@@ -529,6 +532,15 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_name = "WINDOW-X",
       .arg_data_type = DATA_TYPE_UINT16,
       .arg_dest = &(args->x),
+    });
+  },
+  [COMMON_OPTION_COMPRESS] = ^ struct optparse_opt (struct args_t *args)                     {
+    return((struct optparse_opt)                                                             {
+      .short_name = 'z',
+      .long_name = "compress",
+      .description = "Compress Image",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->compress),
     });
   },
   [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args)                    {
@@ -1052,7 +1064,9 @@ static void _check_output_png_file(char *output_png_file){
 
 static void _check_clear_screen(void){
   if (args->clear_screen == true) {
-    log_debug("Clearing Screen");
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+      log_debug("Clearing Screen");
+    }
     fprintf(stdout, "%s", AC_CLS);
   }
   return(EXIT_SUCCESS);
@@ -1131,16 +1145,22 @@ static void _check_output_mode(char *output_mode){
 }
 
 static void _check_height_group(uint16_t height){
-  log_info("Validating Grouped Height %d", height);
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_info("Validating Grouped Height %d", height);
+  }
   args->width_or_height       = COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT;
   args->width_or_height_group = height;
+  args->height                = height;
   return(EXIT_SUCCESS);
 }
 
 static void _check_width_group(uint16_t width){
-  log_info("Validating Grouped Width %d", width);
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_info("Validating Grouped Width %d", width);
+  }
   args->width_or_height       = COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH;
   args->width_or_height_group = width;
+  args->width                 = width;
   return(EXIT_SUCCESS);
 }
 
@@ -1432,77 +1452,424 @@ static void _command_extract_window(){
 }
 
 static void _command_capture_window(){
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-    log_info("Capturing window #%d to %s with %s %d |%s|display_output_file:%d|verbose:%d|",
-             args->window_id,
-             args->output_file,
-             (args->width_or_height_group == COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN)
-        ? "default size"
-        : common_option_width_or_height_name(args->width_or_height),
-             args->width_or_height_group,
-             (args->display_output_file == true) ? " [Displaying file]|" : "",
-             args->display_output_file,
-             args->verbose
-             );
-  }
-
+  bool          gs = false;
   int           res = 0;
-  struct Vector *v  = vector_new();
+  struct Vector *v = vector_new(), *rendered_images = vector_new(), *all_windows;
+  unsigned long started;
+  size_t        window_id, len = 0;
+  char          *output_file = args->output_file;
+
   if (args->all_windows == true) {
-    struct Vector *a = get_window_infos_v();
-    for (size_t i = 0; i < vector_size(a); i++) {
-      if ((size_t)args->limit > 0 && vector_size(v) >= (size_t)args->limit) {
-        break;
+    all_windows = get_window_infos_v();
+    for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(v) < (size_t)(args->limit))  : true); i++) {
+      struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
+      if (w && w->window_id > 0) {
+        vector_push(v, (void *)(w->window_id));
       }
-      struct window_info_t *w = (struct window_info_t *)vector_get(a, i);
-      vector_push(v, (void *)(w->window_id));
     }
   }else if (args->window_id > 0) {
-    vector_push(v, (void *)(size_t)(args->window_id));
-  }
-  for (size_t i = 0; i < vector_size(v); i++) {
-    size_t     window_id   = (size_t)vector_get(v, i);
-    CGImageRef img_ref     = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
-    int        orig_width  = CGImageGetWidth(img_ref);
-    int        orig_height = CGImageGetHeight(img_ref);
-    if (args->width_or_height_group > 0) {
-      int   new_width    = CGImageGetWidth(img_ref);
-      int   new_height   = CGImageGetHeight(img_ref);
-      float resize_ratio = 0;
-      switch (args->width_or_height) {
-      case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH:
-        new_width    = args->width_or_height_group;
-        resize_ratio = ((float)orig_width) / ((float)new_width);
-        new_height   = (int)((float)orig_height / resize_ratio);
-        break;
-      case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT:
-        new_height   = args->width_or_height_group;
-        resize_ratio = ((float)(orig_height)) / ((float)new_height);
-        new_width    = (int)((float)orig_width / resize_ratio);
-        break;
-      default:
-        break;
-      }
-      log_debug("Resizing Image from %dx%d to %dx%d using ratio %f",
-                orig_width, orig_height,
-                new_width, new_height,
-                resize_ratio
-                );
-      img_ref = resize_cgimage(img_ref, new_width, new_height);
-    }
-    errno = 0;
-    if (!save_cgref_to_png_file(img_ref, args->output_file)) {
-      log_error("Failed to save %lu", window_id);
+    struct window_info_t *w = get_window_id_info((size_t)(args->window_id));
+    if (w && w->window_id == (size_t)(args->window_id)) {
+      vector_push(v, (void *)(size_t)(args->window_id));
     }else{
-//timg_utils_image(args->output_file);
-      fprintf(stdout, "Saved %s File %s For Window ID #%lu\n",
-              "PNG",
-              args->output_file,
-              window_id
-              );
+      log_error("Window ID #%lu not found", (size_t)(args->window_id));
     }
+  }
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    started   = timestamp();
+    window_id = (size_t)vector_get(v, i);
+    if (!output_file || i > 0) {
+      asprintf(&output_file, "%scapture-window-%d-%lu.png", gettempdir(), getpid(), window_id);
+    }
+    if (fsio_file_exists(output_file)) {
+      fsio_remove(output_file);
+    }
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+      log_info("Capturing window #%d to %s with %s %d |%s|display_output_file:%d|verbose:%d|",
+               args->window_id,
+               output_file,
+               (args->width_or_height_group == COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN)? "default size": common_option_width_or_height_name(args->width_or_height),
+               args->width_or_height_group,
+               (args->display_output_file == true) ? " [Displaying file]|" : "",
+               args->display_output_file,
+               args->verbose
+               );
+    }
+    CGImageRef img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+    if (img_ref) {
+      int orig_width  = CGImageGetWidth(img_ref);
+      int orig_height = CGImageGetHeight(img_ref);
+      if (args->width_or_height_group < 0) {
+        errno = 0;
+        if (!save_cgref_to_png_file(img_ref, output_file)) {
+          log_error("Failed to save window %lu", window_id);
+        }
+      }else{
+        int   new_width    = CGImageGetWidth(img_ref);
+        int   new_height   = CGImageGetHeight(img_ref);
+        float resize_ratio = 0;
+        switch (args->width_or_height) {
+        case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH:
+          new_width    = args->width_or_height_group;
+          resize_ratio = ((float)orig_width) / ((float)new_width);
+          new_height   = (int)((float)orig_height / resize_ratio);
+          break;
+        case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT:
+          new_height   = args->width_or_height_group;
+          resize_ratio = ((float)(orig_height)) / ((float)new_height);
+          new_width    = (int)((float)orig_width / resize_ratio);
+          break;
+        default:
+          break;
+        }
+        if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+          log_debug("Resizing Image from %dx%d to %dx%d using ratio %f",
+                    orig_width, orig_height,
+                    new_width, new_height,
+                    resize_ratio
+                    );
+        }
+        unsigned long _s;
+        char          *tmp_file;
+        asprintf(&tmp_file, "%stmp-resize-file-%lu-%d-%lld.png", gettempdir(), window_id, getpid(), timestamp());
+        unsigned char *bufs[10]    = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
+        size_t        buf_lens[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        VipsImage     *vips[10];
+/*
+ *      _s = started = timestamp();
+ *        if (!save_cgref_to_png_file(img_ref, output_file)) {
+ * log_error("png file failed");
+ *        }
+ *          log_debug("Wrote %s PNG File in %s",
+ *              bytes_to_string(fsio_file_size(output_file)),
+ *              milliseconds_to_string(timestamp() - _s)
+ *              );
+ *      _s = started = timestamp();
+ *          bufs[0] = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, img_ref, &(buf_lens[0]));
+ *          log_debug("converted cgref to %s png buffer in %s", bytes_to_string(buf_lens[0]), milliseconds_to_string(timestamp() - _s));
+ *          log_debug("Wrote %s PNG Buffer in %s",
+ *              bytes_to_string(buf_lens[0]),
+ *              milliseconds_to_string(timestamp() - _s)
+ *              );
+ */
+        if (args->compress == true) {
+          _s      = started = timestamp();
+          bufs[1] = cgimage_ref_to_rgb_pixels(img_ref, &(buf_lens[1]));
+          log_debug("Wrote %s RGB buffer in %s",
+                    bytes_to_string(buf_lens[1]),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+          _s      = started = timestamp();
+          bufs[2] = imagequant_encode_rgb_pixels_to_png_buffer(bufs[1], orig_width, orig_height, 5, 60, &(buf_lens[2]));
+          log_debug("Compressed %lux%lu %s RGB Pixels to %s PNG Buffer in %s", orig_width, orig_height,
+                    bytes_to_string(buf_lens[1]),
+                    bytes_to_string(buf_lens[2]),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+
+          _s      = started = timestamp();
+          vips[0] = vips_image_new_from_buffer(bufs[2], buf_lens[2], "", NULL);
+          if (vips[0]) {
+            log_debug("Loaded %s PNG buffer to %dx%d %s VIP Image im %s",
+                      bytes_to_string(buf_lens[2]),
+                      vips_image_get_width(vips[0]), vips_image_get_height(vips[0]),
+                      bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
+                      milliseconds_to_string(timestamp() - _s)
+                      );
+          }
+        }else{
+          _s      = started = timestamp();
+          bufs[1] = save_cgref_to_png_memory(img_ref, &(buf_lens[1]));
+          log_debug("Wrote %s PNG buffer in %s",
+                    bytes_to_string(buf_lens[1]),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+          _s      = started = timestamp();
+          _s      = started = timestamp();
+          vips[0] = vips_image_new_from_buffer(bufs[1], buf_lens[1], "", NULL);
+
+          log_debug("Loaded %s PNG buffer to %dx%d %s VIP PNG Image im %s",
+                    bytes_to_string(buf_lens[1]),
+                    vips_image_get_width(vips[0]), vips_image_get_height(vips[0]),
+                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+        }
+        if (args->width_or_height_group > 0) {
+          _s = started = timestamp();
+          if (vips_resize(vips[0], &(vips[1]), 1 / resize_ratio, NULL)) {
+            log_error("Failed to resize image");
+          }
+          log_debug("Resized %dx%d %s Image to %dx%d %s Image in %s",
+                    vips_image_get_width(vips[0]), vips_image_get_height(vips[0]),
+                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
+                    vips_image_get_width(vips[1]), vips_image_get_height(vips[1]),
+                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+          _s = started = timestamp();
+          if (vips_pngsave(vips[1], output_file, NULL)) {
+            log_error("Failed to write image");
+          }
+          log_debug("Saved %s buffer to %s PNG File in %s",
+                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
+                    bytes_to_string(fsio_file_size(output_file)),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+        }else{
+          _s = started = timestamp();
+          if (vips_pngsave(vips[0], output_file, NULL)) {
+            log_error("Failed to write image");
+          }
+          log_debug("Saved %s buffer to %s PNG File in %s",
+                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
+                    bytes_to_string(fsio_file_size(output_file)),
+                    milliseconds_to_string(timestamp() - _s)
+                    );
+        }
+        /*
+         * int bl = 0;
+         * _s = started = timestamp();
+         * void *b = vips_image_write_to_memory(vips[0],&bl);
+         * log_debug("Saved %s buffer to %s Buffer %s",
+         * bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
+         * bytes_to_string(bl),
+         * milliseconds_to_string(timestamp()-_s)
+         * );
+         * _s = started = timestamp();
+         * bufs[3] = vips_image_write_to_memory(vips[1],&(buf_lens[3]));
+         * log_debug("Saved %s buffer to %s Buffer %s",
+         * bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
+         * bytes_to_string(buf_lens[3]),
+         * milliseconds_to_string(timestamp()-_s)
+         * );
+         */
+        /*
+         *    bytes_to_string(buf_lens[7]),
+         *    milliseconds_to_string(timestamp() - _s),
+         *    CGImageGetBitsPerComponent(img_ref),CGImageGetBytesPerRow(img_ref),CGImageGetBitsPerPixel(img_ref)
+         *    );
+         * _s      = started = timestamp();
+         * bufs[7] = cgimage_ref_to_rgb_pixels(img_ref, &(buf_lens[7]));
+         * log_debug("converted %s RGB buffer in %s from %lu bit / %lu bytes per row, %lu bits per pixel CGImage",
+         *    bytes_to_string(buf_lens[7]),
+         *    milliseconds_to_string(timestamp() - _s),
+         *    CGImageGetBitsPerComponent(img_ref),CGImageGetBytesPerRow(img_ref),CGImageGetBitsPerPixel(img_ref)
+         *    );
+         * _s      = started = timestamp();
+         * vips[0] = vips_image_new_from_memory(bufs[7],buf_lens[7],orig_width,orig_height,4,VIPS_FORMAT_UCHAR);
+         * log_debug("Loaded %s RGB buffer in %s", bytes_to_string(buf_lens[7]), milliseconds_to_string(timestamp() - _s));
+         *
+         *
+         * _s      = started = timestamp();
+         * if (vips_pngsave(vips[1], output_file, NULL)) {
+         *  log_error("Failed to write image");
+         * }
+         * log_debug("Saved %s buffer to %s PNG File in %s",
+         *  bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
+         *  bytes_to_string(fsio_file_size(output_file)),
+         *  milliseconds_to_string(timestamp()-_s)
+         *  );
+         * bufs[6] = imagequant_encode_rgb_pixels_to_png_buffer(bufs[7], orig_width, orig_height, 5, 90, &(buf_lens[8]));
+         * log_debug("Compressed %dx%d %s RGB Pixels to %s PNG in %s", orig_width, orig_height,bytes_to_string(buf_lens[7]), bytes_to_string(buf_lens[7]), milliseconds_to_string(timestamp() - _s));
+         * _s      = started = timestamp();
+         * char *op = vips_foreign_find_load_buffer(bufs[6],buf_lens[6]);
+         *  log_debug("Buffer loader: %s %s",
+         *      op,
+         *      milliseconds_to_string(timestamp() - _s)
+         *      );
+         *
+         * _s      = started = timestamp();
+         * vips[1] = vips_image_new_from_buffer(bufs[6],buf_lens[6],);
+         * if(false){
+         * if(vips_pngload_buffer(bufs[6],buf_lens[6],&(vips[1]))==0){
+         *  log_debug("Loaded %s PNG buffer to %dx%d %s VIP PNG Image im %s",
+         *      bytes_to_string(buf_lens[6]),
+         *      vips_image_get_width(vips[1]),vips_image_get_height(vips[1]),
+         *      bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
+         *      milliseconds_to_string(timestamp() - _s)
+         *      );
+         *  }
+         * }
+         */
+
+        /*
+         */
+/*
+ *        _s      = started = timestamp();
+ *      CGImageRef    new_img_ref = resize_cgimage(img_ref, new_width, new_height);
+ *      if (new_img_ref) {
+ *        log_debug("Resized CGImage in %s", milliseconds_to_string(timestamp() - _s));
+ *        img_ref = new_img_ref;
+ *        errno   = 0;
+ *        if (!save_cgref_to_png_file(img_ref, output_file)) {
+ *          log_error("Failed to save window %lu", window_id);
+ *        }
+ *      }else{
+ *          _s      = started = timestamp();
+ *          bufs[0] = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, img_ref, &(buf_lens[0]));
+ *          log_debug("converted cgref to %s png buffer in %s", bytes_to_string(buf_lens[0]), milliseconds_to_string(timestamp() - _s));
+ *        buf = bufs[0]; buf_len = buf_lens[0];
+ *        _s      = started = timestamp();
+ *        bufs[1] = save_cgref_to_image_type_memory(IMAGE_TYPE_GIF, img_ref, &(buf_lens[1]));
+ *        log_debug("converted cgref to %s gif buffer in %s", bytes_to_string(buf_lens[1]), milliseconds_to_string(timestamp() - _s));
+ *        _s = started = timestamp();
+ *        if (vips_gifload_buffer(bufs[1], buf_lens[1], &(vips[1]), NULL) == 0) {
+ *          log_debug("Loaded %s GIF Buffer in %s",
+ *                    bytes_to_string(buf_lens[1]), milliseconds_to_string(timestamp() - _s)
+ *                    );
+ *        }
+ *        if (args->compress) {
+ *          log_error("failed to compress");
+ *          _s      = started = timestamp();
+ *          bufs[6] = imagequant_encode_rgb_pixels_to_png_buffer(bufs[5], w, h, 5, 90, &(buf_lens[6]));
+ *          log_debug("Compressed %dx%d RGB Pixels to %s PNG in %s", w, h, bytes_to_string(buf_lens[6]), milliseconds_to_string(timestamp() - _s));
+ *        }
+ *
+ *        _s = started = timestamp();
+ *        if (vips_pngload_buffer(bufs[6], buf_lens[6], &(vips[6]), NULL) == 0) {
+ *          log_debug("Loaded %s PNG Buffer in %s",
+ *                    bytes_to_string(buf_lens[6]), milliseconds_to_string(timestamp() - _s)
+ *                    );
+ *        }
+ *
+ *        _s      = started = timestamp();
+ *        bufs[2] = save_cgref_to_image_type_memory(IMAGE_TYPE_JPEG, img_ref, &(buf_lens[2]));
+ *        log_debug("converted cgref to %s jpg buffer in %s", bytes_to_string(buf_lens[2]), milliseconds_to_string(timestamp() - _s));
+ *        _s = started = timestamp();
+ *        if (vips_pngload_buffer(bufs[2], buf_lens[2], &(vips[2]), NULL) == 0) {
+ *          log_debug("Loaded %s JPEG Buffer in %s",
+ *                    bytes_to_string(buf_lens[2]), milliseconds_to_string(timestamp() - _s)
+ *                    );
+ *        }
+ *        _s      = started = timestamp();
+ *        bufs[3] = save_cgref_to_image_type_memory(IMAGE_TYPE_BMP, img_ref, &(buf_lens[3]));
+ *        log_debug("converted cgref to %s bmp buffer in %s", bytes_to_string(buf_lens[3]), milliseconds_to_string(timestamp() - _s));
+ *        _s      = started = timestamp();
+ *        bufs[4] = save_cgref_to_image_type_memory(IMAGE_TYPE_TIFF, img_ref, &(buf_lens[4]));
+ *        log_debug("converted cgref to %s tiff buffer in %s", bytes_to_string(buf_lens[4]), milliseconds_to_string(timestamp() - _s));
+ */
+        /*
+         * char *operation_name = NULL;
+         * //for(int i=0;i<7;i++){
+         * int i=1;
+         * if( !(operation_name = vips_foreign_find_load_buffer( bufs[i], buf_lens[i] )) ) {
+         * log_error("#%d> could not find load buffer function",i);
+         * }
+         * log_info("#%d> Load Buffer Function: %s",i, operation_name);
+         * //}
+         */
+/*
+ *        if (!buf || buf_len == 0) {
+ *          log_error("Failed to save cgref To a buffer");
+ *        }else{
+ *          VipsImage *image, *resized;
+ *          _s = started = timestamp();
+ *          if (vips_pngload_buffer(buf, buf_len, &image, NULL) != 0) {
+ *            //if (!(image = vips_image_new_from_file(tmp_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+ *            log_error("Failed to read buffer");
+ *          }
+ *          log_debug("Loaded PNG Buffer in %s", milliseconds_to_string(timestamp() - _s));
+ *          if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+ *            log_info("Manually resizing %s with ratio %f", tmp_file, 1 / resize_ratio);
+ *          }
+ *        _s      = started = timestamp();
+ *          if (vips_resize(image, &resized, 1 / resize_ratio, NULL)) {
+ *            log_error("Failed to resize image");
+ *          }
+ *          log_debug("Resized %s Image to %s Image in %s",
+ *              bytes_to_string(image->length),
+ *              bytes_to_string(resized->length),
+ *            milliseconds_to_string(timestamp()-_s)
+ *            );
+ *
+ *        _s      = started = timestamp();
+ *          if (vips_pngsave(resized, output_file, NULL)) {
+ *            log_error("Failed to write image");
+ *          }
+ *          log_debug("Saved buffer to %s PNG File in %s", bytes_to_string(fsio_file_size(output_file)),
+ *            milliseconds_to_string(timestamp()-_s)
+ *            );
+ *          g_object_unref(image);
+ *          g_object_unref(resized);
+ *        }
+ *        if (fsio_file_size(tmp_file)) {
+ *          fsio_remove(tmp_file);
+ *        }
+ *      }*/
+      }
+    }
+    if (fsio_file_exists(output_file)) {
+      unsigned long _s     = timestamp();
+      VipsImage     *image = vips_image_new_from_file(output_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL);
+      log_debug("Loaded %s buffer from %s PNG File in %s",
+                bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
+                bytes_to_string(fsio_file_size(output_file)),
+                milliseconds_to_string(timestamp() - _s)
+                );
+      int           width  = vips_image_get_width(image);
+      int           height = vips_image_get_height(image);
+      unsigned char *buf   = NULL;
+      if (vips_pngsave_buffer(image, &buf, &len, NULL) || !buf) {
+        log_error("failed to load png to buffer");
+        continue;
+      }
+      if (buf) {
+        free(buf);
+      }
+      g_object_unref(image);
+      if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+        log_debug(AC_GREEN "Saved %dx%d %s %s File %s For Window ID #%lu in %s with %s byte RGBs" AC_RESETALL "\n",
+                  width, height,
+                  bytes_to_string(fsio_file_size(output_file)),
+                  "PNG",
+                  output_file,
+                  window_id,
+                  milliseconds_to_string(timestamp() - started),
+                  bytes_to_string(len)
+                  );
+      }
+      if (output_file && fsio_file_exists(output_file)) {
+        VipsImage *image = vips_image_new_from_file(output_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL);
+        int       width  = vips_image_get_width(image);
+        int       height = vips_image_get_height(image);
+        g_object_unref(image);
+        if (width > 10 && height > 10 && fsio_file_size(output_file) > ((args->compress == true) ? (1 * 128) : (1 * 1024))) {
+          vector_push(rendered_images, (void *)output_file);
+        }
+      }
+    }
+  }
+
+  struct Vector *gifs = vector_new();
+
+  for (size_t i = 0; i < vector_size(rendered_images); i++) {
+    char      *img = (char *)vector_get(rendered_images, i);
+    char      *gif;
+    VipsImage *image;
+    {
+      asprintf(&gif, "%s.gif", stringfn_substring(img, 0, strlen(img) - 4));
+      image = vips_image_new_from_file(img, "access", VIPS_ACCESS_SEQUENTIAL, NULL);
+      vips_gifsave(image, gif, NULL);
+      vector_push(gifs, (void *)gif);
+      log_debug("gif:%s|png:%s|%dx%d",
+                bytes_to_string(fsio_file_size(img)),
+                bytes_to_string(fsio_file_size(gif)),
+                vips_image_get_width(image),
+                vips_image_get_height(image)
+                );
+      g_object_unref(image);
+    }
+  }
+  char *img;
+
+  for (size_t i = 0; i < vector_size(gifs); i++) {
+    img = (char *)vector_get(gifs, i);
     if (args->display_output_file == true) {
-      assert(timg_utils_image((char *)args->output_file) == 0);
+      assert(timg_utils_titled_image((char *)img) == 0);
+    }else{
+      fprintf(stdout, "%s\n", img);
     }
   }
   exit(res);
@@ -1941,20 +2308,20 @@ static void __attribute__((constructor)) __constructor__darwin_ls_commands(void)
     DARWIN_LS_COMMANDS_DEBUG_MODE = true;
   }
 }
-#define LIST_HANDLER(NAME)                                          \
-  static void _command_list_ ## NAME(){                             \
-    struct list_table_t *filter = &(struct list_table_t){           \
-      .limit = args->limit,                                         \
-      .sort_key = args->sort_key, .sort_direction=args->sort_direction,\
-    };                                                              \
-    switch (args->output_mode) {                                    \
-    case OUTPUT_MODE_TABLE: list_ ## NAME ## _table(filter); break; \
-    case OUTPUT_MODE_JSON:                                          \
-      break;                                                        \
-    case OUTPUT_MODE_TEXT:                                          \
-      break;                                                        \
-    }                                                               \
-    exit(EXIT_SUCCESS);                                             \
+#define LIST_HANDLER(NAME)                                                \
+  static void _command_list_ ## NAME(){                                   \
+    struct list_table_t *filter = &(struct list_table_t){                 \
+      .limit    = args->limit,                                            \
+      .sort_key = args->sort_key, .sort_direction = args->sort_direction, \
+    };                                                                    \
+    switch (args->output_mode) {                                          \
+    case OUTPUT_MODE_TABLE: list_ ## NAME ## _table(filter); break;       \
+    case OUTPUT_MODE_JSON:                                                \
+      break;                                                              \
+    case OUTPUT_MODE_TEXT:                                                \
+      break;                                                              \
+    }                                                                     \
+    exit(EXIT_SUCCESS);                                                   \
   }
 
 LIST_HANDLER(usb)

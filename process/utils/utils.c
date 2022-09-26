@@ -398,7 +398,7 @@ int get_focused_window_id(){
                             ? true : false;
 
 #define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS() \
-  if (!name || strlen(name) < 1 || pid < 1 || !title) { free(i);  continue; }
+  if (!name || strlen(name) < 1 || pid < 1 || !title || ((int)(bounds.size.height) < 75) || ((int)bounds.size.width * bounds.size.height <= 1)) { free(i);  continue; }
 
 #define WINDOW_DICTIONARY_SET_WINDOW_INFO()                                                                          \
   i->window_id                                       = (size_t)window_id;                                            \

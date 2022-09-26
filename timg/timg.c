@@ -23,23 +23,5 @@ static void __attribute__((constructor)) __constructor__timg(void){
     TIMG_DEBUG_MODE = true;
   }
 }
-static void timg_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void timg_internal_fxn1(void){
-  log_info("Called function timg_internal_fxn1");
-  if (TIMG_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void timg_fxn1(void){
-  timg_internal_fxn1();
-  log_info("Called function timg_fxn1");
-  if (TIMG_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
 ////////////////////////////////////////////
 #endif

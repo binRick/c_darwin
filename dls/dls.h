@@ -61,8 +61,8 @@ struct args_t {
   double                               resize_factor;
   char                                 *xml_file_path, *content;
   bool                                 clear_icons_cache, minimized_only, non_minimized_only;
-  bool                                 display_output_file, all_windows;
-  bool                                 random_window_id, clear_screen;
+  int                                  display_output_file, all_windows;
+  bool                                 random_window_id, clear_screen, compress;
   int                                  pid, display_id, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;
   char                                 *sort_key, *font_name, *font_family, *font_type, *font_style;
