@@ -18,6 +18,7 @@
 #include "table/sort/sort.h"
 #include "timestamp/timestamp.h"
 static bool TABLE_SORT_DEBUG_MODE = false;
+static struct Vector *get_sort_type_by_names_v(enum sort_type_t type);
 enum sort_direction_t get_sort_key_direction(char *name){
   for (size_t i = 0; i < SORT_DIRECTIONS_QTY; i++) {
     if (strcmp(sort_direction_keys[i],
@@ -30,6 +31,34 @@ enum sort_direction_t get_sort_key_direction(char *name){
 
 int default_sort_function(SORT_PARAMS){
   return(1);
+}
+
+char *get_sort_type_by_description(enum sort_type_t type){
+  char *s;
+  struct StringBuffer *sb = stringbuffer_new();
+  struct Vector *v = get_sort_type_by_names_v(type);
+  for(size_t i=0;i<vector_size(v);i++){
+    stringbuffer_append_string(sb,(char*)AC_BOLD);
+    stringbuffer_append_string(sb,(char*)AC_UNDERLINE);
+    stringbuffer_append_string(sb,(char*)sort_by_type_colors[(i % QTY(sort_by_type_colors))]);
+    stringbuffer_append_string(sb,(char*)vector_get(v,i));
+    stringbuffer_append_string(sb,(char*)AC_RESETALL);
+    if(i<vector_size(v)-1)
+      stringbuffer_append_string(sb,", ");
+  }
+  s = stringbuffer_to_string(sb);
+  stringbuffer_release(sb);
+  return(s);
+}
+
+static struct Vector *get_sort_type_by_names_v(enum sort_type_t type){
+  struct Vector *v = vector_new();
+  for(size_t i=0;i<SORT_BY_TYPES_QTY;i++){
+    if(sort_types[type]->handlers[i]){
+      vector_push(v,(void*)sort_by_type_names[i]);
+    }
+  }
+  return(v);
 }
 
 bool is_valid_sort_type_name(enum sort_type_t type, const char *name){
