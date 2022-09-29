@@ -87,6 +87,10 @@ enum sort_by_type_t {
   SORT_BY_TYPE_STYLE,
   SORT_BY_TYPES_QTY,
 };
+const char *sort_by_type_colors[] = {
+  AC_YELLOW, AC_BLUE, AC_MAGENTA, AC_RED, AC_CYAN,AC_GREEN,AC_WHITE
+};
+
 const char *sort_by_type_names[SORT_BY_TYPES_QTY] = {
   [SORT_BY_TYPE_NAME]      = "name",
   [SORT_BY_TYPE_HOTKEY]    = "hotkey",
@@ -189,4 +193,5 @@ static struct sort_t __attribute__((unused)) * sort_types[SORT_TYPES_QTY] = {
     },
   },
 };
+char *get_sort_type_by_description(enum sort_type_t type);
 #endif
