@@ -21,6 +21,7 @@
 #include "timg/utils/utils.h"
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "window/utils/utils.h"
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////
@@ -75,6 +76,9 @@ static void _command_list_hotkey();
 ////////////////////////////////////////////
 static void _check_window_id(uint16_t window_id);
 static void _check_clear_screen(void);
+static void _check_image_format(char *format);
+static void _check_sort_direction_desc(void);
+static void _check_sort_direction_asc(void);
 static void _check_random_window_id(void);
 static void _check_width_group(uint16_t window_id);
 static void _check_height_greater(int height_greater);
@@ -100,8 +104,8 @@ static void _check_icon_size(size_t icon_size);
 static void _check_pid(int pid);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
-  [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .long_name = "height-less",
       .description = "Height Less Than",
       .arg_name = "HEIGHT",
@@ -110,8 +114,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height_less),
     });
   },
-  [COMMON_OPTION_HEIGHT_GREATER] = ^ struct optparse_opt (struct args_t *args)               {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_HEIGHT_GREATER] = ^ struct optparse_opt (struct args_t *args)                              {
+    return((struct optparse_opt)                                                                            {
       .long_name = "height-greater",
       .description = "Height Greater Than",
       .arg_name = "HEIGHT",
@@ -120,8 +124,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height_greater),
     });
   },
-  [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                       {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                                      {
+    return((struct optparse_opt)                                                                            {
       .long_name = "height",
       .description = "Height Equal To",
       .arg_name = "HEIGHT",
@@ -130,8 +134,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height),
     });
   },
-  [COMMON_OPTION_CONCURRENCY] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_CONCURRENCY] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'c',
       .long_name = "concurrency",
       .description = "concurrency",
@@ -141,8 +145,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->concurrency),
     });
   },
-  [COMMON_OPTION_WIDTH] = ^ struct optparse_opt (struct args_t *args)                        {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WIDTH] = ^ struct optparse_opt (struct args_t *args)                                       {
+    return((struct optparse_opt)                                                                            {
       .long_name = "width",
       .description = "Width Equal To",
       .arg_name = "WIDTH",
@@ -151,8 +155,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width),
     });
   },
-  [COMMON_OPTION_WIDTH_LESS] = ^ struct optparse_opt (struct args_t *args)                   {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WIDTH_LESS] = ^ struct optparse_opt (struct args_t *args)                                  {
+    return((struct optparse_opt)                                                                            {
       .long_name = "width-less",
       .description = "Width Less Than",
       .arg_name = "WIDTH",
@@ -161,8 +165,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width_less),
     });
   },
-  [COMMON_OPTION_WIDTH_GREATER] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WIDTH_GREATER] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .long_name = "width-greater",
       .description = "Width Greater Than",
       .arg_name = "WIDTH",
@@ -171,18 +175,18 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width_greater),
     });
   },
-  [COMMON_OPTION_SORT_FONT_KEYS] = ^ struct optparse_opt (struct args_t *args)               {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_SORT_FONT_KEYS] = ^ struct optparse_opt (struct args_t *args)                              {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
-      .description = "",
+      .description = get_sort_type_by_description(SORT_TYPE_FONT),
       .arg_name = "SORT-BY",
       .arg_dest = &(args->sort_key),
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  [COMMON_OPTION_SORT_APP_KEYS] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_SORT_APP_KEYS] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
       .description = "", //get_app_sort_types_description(),
@@ -191,19 +195,19 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  [COMMON_OPTION_SORT_WINDOW_KEYS] = ^ struct optparse_opt (struct args_t *args)             {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_SORT_WINDOW_KEYS] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
-      .description = "", //get_window_sort_types_description(),
+      .description = get_sort_type_by_description(SORT_TYPE_WINDOW),
       .arg_name = "SORT-BY",
       .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
       .arg_dest = &(args->sort_key),
     });
   },
-  [COMMON_OPTION_SORT_KEY] = ^ struct optparse_opt (struct args_t *args)                     {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_SORT_KEY] = ^ struct optparse_opt (struct args_t *args)                                    {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
       .description = "Sort By Key Name",
@@ -212,38 +216,48 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  [COMMON_OPTION_SORT_DIRECTION] = ^ struct optparse_opt (struct args_t *args)               {
-    return((struct optparse_opt)                                                             {
-      .short_name = 'D',
-      .long_name = "sort",
-      .description = "Sort Direction (asc or desc)",
-      .arg_name = "SORT-DIRECTION",
-      .arg_dest = &(args->sort_direction),
-      .arg_data_type = DATA_TYPE_STR,
+  [COMMON_OPTION_HELP_SUBCMD] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args)         {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'h',
+      .long_name = "help",
+      .description = COLOR_HELP "Command Help" AC_RESETALL,
+      .function = optparse_print_help,
     });
   },
-  [COMMON_OPTION_ALL_WINDOWS] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_SORT_DIRECTION_ASC] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args)  {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "asc",
+      .description = "Sort Ascending",
+      .function = check_cmds[CHECK_COMMAND_SORT_DIRECTION_ASC].fxn,
+    });
+  },
+  [COMMON_OPTION_SORT_DIRECTION_DESC] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args) {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "desc",
+      .description = "Sort Descending",
+      .function = check_cmds[CHECK_COMMAND_SORT_DIRECTION_DESC].fxn,
+    });
+  },
+  [COMMON_OPTION_ALL_WINDOWS] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'A',
       .long_name = "all-windows",
-      .arg_name = "ALL",
       .description = "All Windows",
-      .arg_dest = &(args->all_windows),
-      .arg_data_type = DATA_TYPE_UINT16,
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->all_windows),
     });
   },
-  [COMMON_OPTION_DISPLAY_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)          {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_DISPLAY_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                         {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'D',
       .long_name = "display-output-file",
-      .arg_name = "DISPLAY",
       .description = "Display Output File",
-      .arg_dest = &(args->display_output_file),
-      .arg_data_type = DATA_TYPE_UINT16,
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->display_output_file),
     });
   },
-  [COMMON_OPTION_NON_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_NON_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'm',
       .long_name = "non-minimized",
       .description = "Show Non Minimized Only",
@@ -253,8 +267,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->non_minimized_only),
     });
   },
-  [COMMON_OPTION_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                    {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                                   {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'm',
       .long_name = "minimized",
       .description = "Show Minimized Only",
@@ -262,8 +276,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->minimized_only),
     });
   },
-  [COMMON_OPTION_RANDOM_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)             {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_RANDOM_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "random-window-id",
       .description = "Random Window ID",
@@ -272,8 +286,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->random_window_id),
     });
   },
-  [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args)                          {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args)                                         {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'p',
       .long_name = "pid",
       .description = "PID",
@@ -283,8 +297,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->pid),
     });
   },
-  [COMMON_OPTION_CLEAR_SCREEN] = ^ struct optparse_opt (struct args_t *args)                 {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_CLEAR_SCREEN] = ^ struct optparse_opt (struct args_t *args)                                {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'C',
       .long_name = "clear",
       .description = "Clear Screen to Create Clean Output",
@@ -293,8 +307,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->clear_screen),
     });
   },
-  [COMMON_OPTION_CURRENT_DISPLAY] = ^ struct optparse_opt (struct args_t *args)              {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_CURRENT_DISPLAY] = ^ struct optparse_opt (struct args_t *args)                             {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'X',
       .long_name = "current-display",
       .description = "Windows in Display only",
@@ -302,25 +316,24 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->current_display_only),
     });
   },
-  [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
-      .short_name = 'c',
+  [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .long_name = "current-space",
       .description = "Windows in current space only",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->current_space_only),
     });
   },
-  [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args) {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args)                {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'h',
       .long_name = "help",
       .description = "Print help information and quit",
       .function = optparse_print_help,
     });
   },
-  [COMMON_OPTION_ICON_SIZE] = ^ struct optparse_opt (struct args_t *args)                    {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_ICON_SIZE] = ^ struct optparse_opt (struct args_t *args)                                   {
+    return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "icon-size",
       .description = "Icon Size",
@@ -330,8 +343,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->icon_size),
     });
   },
-  [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args)             {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'a',
       .long_name = "application-name",
       .description = "Application Name",
@@ -341,8 +354,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->application_name),
     });
   },
-  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)             {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'P',
       .long_name = "application-path",
       .description = "Application Path",
@@ -352,8 +365,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->application_path),
     });
   },
-  [COMMON_OPTION_RESIZE_FACTOR] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_RESIZE_FACTOR] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "resize-factor",
       .description = "Resize Factor",
@@ -363,8 +376,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->resize_factor),
     });
   },
-  [COMMON_OPTION_XML_FILE] = ^ struct optparse_opt (struct args_t *args)                     {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_XML_FILE] = ^ struct optparse_opt (struct args_t *args)                                    {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'x',
       .long_name = "xml-file",
       .description = "XML File",
@@ -374,8 +387,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->xml_file_path),
     });
   },
-  [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)               {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)                              {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "png-file",
       .description = "PNG File",
@@ -385,8 +398,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->input_png_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)              {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)                             {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "png-file",
       .description = "PNG File",
@@ -396,8 +409,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_png_file),
     });
   },
-  [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)              {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)                             {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "icns-file",
       .description = "ICNS File",
@@ -407,8 +420,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->input_icns_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)             {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "icns-file",
       .description = "ICNS File",
@@ -418,8 +431,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_icns_file),
     });
   },
-  [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                   {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                                  {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'i',
       .long_name = "input-file",
       .description = "Input File",
@@ -429,8 +442,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->input_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'o',
       .long_name = "output-file",
       .description = "Output File",
@@ -440,8 +453,19 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_IMAGE_FORMAT] = ^ struct optparse_opt (struct args_t *args)                                {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'f',
+      .long_name = "format",
+      .description = get_image_format_names_csv(),
+      .arg_name = "IMAGE-FORMAT",
+      .arg_data_type = check_cmds[CHECK_COMMAND_IMAGE_FORMAT].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_IMAGE_FORMAT].fxn,
+      .arg_dest = &(args->image_format),
+    });
+  },
+  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'm',
       .long_name = "mode",
       .description = "Output Mode- text, json, or table",
@@ -451,8 +475,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_mode_s),
     });
   },
-  [COMMON_OPTION_CLEAR_ICONS_CACHE] = ^ struct optparse_opt (struct args_t *args)            {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_CLEAR_ICONS_CACHE] = ^ struct optparse_opt (struct args_t *args)                           {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'c',
       .long_name = "clear-icons-cache",
       .description = "Clear Icons Cache",
@@ -460,8 +484,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->clear_icons_cache),
     });
   },
-  [COMMON_OPTION_LIMIT] = ^ struct optparse_opt (struct args_t *args)                        {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_LIMIT] = ^ struct optparse_opt (struct args_t *args)                                       {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'l',
       .long_name = "limit",
       .description = "Limit",
@@ -471,32 +495,32 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_LIMIT].fxn,
     });
   },
-  [COMMON_OPTION_NON_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_NON_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .long_name = "non-duplicate",
       .description = "Show Non Duplicate Fonts",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->non_duplicate),
     });
   },
-  [COMMON_OPTION_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                    {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                                   {
+    return((struct optparse_opt)                                                                            {
       .long_name = "duplicate",
       .description = "Show Duplicate Fonts",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->duplicate),
     });
   },
-  [COMMON_OPTION_CASE_SENSITIVE] = ^ struct optparse_opt (struct args_t *args)               {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_CASE_SENSITIVE] = ^ struct optparse_opt (struct args_t *args)                              {
+    return((struct optparse_opt)                                                                            {
       .long_name = "case-sensitive",
       .description = "Case Sensitive Match",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->case_sensitive),
     });
   },
-  [COMMON_OPTION_EXACT_MATCH] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_EXACT_MATCH] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'e',
       .long_name = "exact-match",
       .description = "Exact Match (does not use wildcard)",
@@ -504,8 +528,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->exact_match),
     });
   },
-  [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                      {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                                     {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'v',
       .long_name = "verbose",
       .description = "Increase verbosity",
@@ -513,8 +537,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->verbose),
     });
   },
-  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                    {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                                   {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'w',
       .long_name = "window-id",
       .description = "window id",
@@ -524,8 +548,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
     });
   },
-  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)                     {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)                                    {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'x',
       .long_name = "window-x",
       .description = "Window X",
@@ -534,8 +558,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->x),
     });
   },
-  [COMMON_OPTION_COMPRESS] = ^ struct optparse_opt (struct args_t *args)                     {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_COMPRESS] = ^ struct optparse_opt (struct args_t *args)                                    {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'z',
       .long_name = "compress",
       .description = "Compress Image",
@@ -543,8 +567,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->compress),
     });
   },
-  [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args)                    {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args)                                   {
+    return((struct optparse_opt)                                                                            {
       .short_name = 't',
       .long_name = "type",
       .description = "Font Type",
@@ -553,8 +577,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->font_type),
     });
   },
-  [COMMON_OPTION_FONT_STYLE] = ^ struct optparse_opt (struct args_t *args)                   {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_FONT_STYLE] = ^ struct optparse_opt (struct args_t *args)                                  {
+    return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "style",
       .description = "Font Style",
@@ -563,8 +587,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->font_style),
     });
   },
-  [COMMON_OPTION_FONT_FAMILY] = ^ struct optparse_opt (struct args_t *args)                  {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_FONT_FAMILY] = ^ struct optparse_opt (struct args_t *args)                                 {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "family",
       .description = "Font Family",
@@ -573,8 +597,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->font_family),
     });
   },
-  [COMMON_OPTION_FONT_NAME] = ^ struct optparse_opt (struct args_t *args)                    {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_FONT_NAME] = ^ struct optparse_opt (struct args_t *args)                                   {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'n',
       .long_name = "name",
       .description = "Font Name",
@@ -583,8 +607,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->font_name),
     });
   },
-  [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args)                      {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args)                                     {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'c',
       .long_name = "content",
       .description = "Content",
@@ -593,8 +617,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->content),
     });
   },
-  [COMMON_OPTION_RETRIES] = ^ struct optparse_opt (struct args_t *args)                      {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_RETRIES] = ^ struct optparse_opt (struct args_t *args)                                     {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "retries",
       .description = "Retries",
@@ -603,8 +627,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->retries),
     });
   },
-  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)                     {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)                                    {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'y',
       .long_name = "window-y",
       .description = "Window y",
@@ -613,8 +637,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->y),
     });
   },
-  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args)                 {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args)                                {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'W',
       .long_name = "window-width",
       .description = "Window Width",
@@ -624,8 +648,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width),
     });
   },
-  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                               {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'H',
       .long_name = "window-height",
       .description = "Window Height",
@@ -635,8 +659,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height),
     });
   },
-  [COMMON_OPTION_WINDOW_WIDTH_GROUP] = ^ struct optparse_opt (struct args_t *args)           {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_WIDTH_GROUP] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'W',
       .long_name = "window-width",
       .description = "Window Width",
@@ -647,8 +671,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width_or_height_group),
     });
   },
-  [COMMON_OPTION_WINDOW_HEIGHT_GROUP] = ^ struct optparse_opt (struct args_t *args)          {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_WINDOW_HEIGHT_GROUP] = ^ struct optparse_opt (struct args_t *args)                         {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'H',
       .long_name = "window-height",
       .description = "Window Height",
@@ -659,8 +683,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->width_or_height_group),
     });
   },
-  [COMMON_OPTION_DISPLAY_ID] = ^ struct optparse_opt (struct args_t *args)                   {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_DISPLAY_ID] = ^ struct optparse_opt (struct args_t *args)                                  {
+    return((struct optparse_opt)                                                                            {
       .short_name = 'd',
       .long_name = "display-id",
       .description = "Display ID",
@@ -669,8 +693,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->display_id),
     });
   },
-  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)                     {
-    return((struct optparse_opt)                                                             {
+  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)                                    {
+    return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "space-id",
       .description = "space id",
@@ -682,106 +706,116 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
-  [CHECK_COMMAND_LIMIT] =            {
+  [CHECK_COMMAND_LIMIT] =               {
     .fxn           = (void (*)(void))(*_check_limit),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_CONCURRENCY] =      {
+  [CHECK_COMMAND_CONCURRENCY] =         {
     .fxn           = (void (*)(void))(*_check_concurrency),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH] =            {
+  [CHECK_COMMAND_WIDTH] =               {
     .fxn           = (void (*)(void))(*_check_width),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT] =           {
+  [CHECK_COMMAND_HEIGHT] =              {
     .fxn           = (void (*)(void))(*_check_height),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_LESS] =      {
+  [CHECK_COMMAND_HEIGHT_LESS] =         {
     .fxn           = (void (*)(void))(*_check_height_less),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_GREATER] =   {
+  [CHECK_COMMAND_HEIGHT_GREATER] =      {
     .fxn           = (void (*)(void))(*_check_height_greater),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH_LESS] =       {
+  [CHECK_COMMAND_WIDTH_LESS] =          {
     .fxn           = (void (*)(void))(*_check_width_less),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH_GREATER] =    {
+  [CHECK_COMMAND_WIDTH_GREATER] =       {
     .fxn           = (void (*)(void))(*_check_width_greater),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_RANDOM_WINDOW_ID] = {
+  [CHECK_COMMAND_RANDOM_WINDOW_ID] =    {
     .fxn           = (void (*)(void))(*_check_random_window_id),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_PID] =              {
+  [CHECK_COMMAND_PID] =                 {
     .fxn           = (void (*)(void))(*_check_pid),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WINDOW_ID] =        {
+  [CHECK_COMMAND_WINDOW_ID] =           {
     .fxn           = (void (*)(void))(*_check_window_id),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_ICON_SIZE] =        {
+  [CHECK_COMMAND_ICON_SIZE] =           {
     .fxn           = (void (*)(void))(*_check_icon_size),
     .arg_data_type = DATA_TYPE_UINT64,
   },
-  [CHECK_COMMAND_APPLICATION_NAME] = {
+  [CHECK_COMMAND_APPLICATION_NAME] =    {
     .fxn           = (void (*)(void))(*_check_application_name),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_APPLICATION_PATH] = {
+  [CHECK_COMMAND_APPLICATION_PATH] =    {
     .fxn           = (void (*)(void))(*_check_application_path),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_WIDTH_GROUP] =      {
+  [CHECK_COMMAND_SORT_DIRECTION_DESC] = {
+    .fxn = (void (*)(void))(*_check_sort_direction_desc),
+  },
+  [CHECK_COMMAND_SORT_DIRECTION_ASC] =  {
+    .fxn = (void (*)(void))(*_check_sort_direction_asc),
+  },
+  [CHECK_COMMAND_WIDTH_GROUP] =         {
     .fxn           = (void (*)(void))(*_check_width_group),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_GROUP] =     {
+  [CHECK_COMMAND_HEIGHT_GROUP] =        {
     .fxn           = (void (*)(void))(*_check_height_group),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_RESIZE_FACTOR] =    {
+  [CHECK_COMMAND_RESIZE_FACTOR] =       {
     .fxn           = (void (*)(void))(*_check_resize_factor),
     .arg_data_type = DATA_TYPE_DBL,
   },
-  [CHECK_COMMAND_INPUT_ICNS_FILE] =  {
+  [CHECK_COMMAND_INPUT_ICNS_FILE] =     {
     .fxn           = (void (*)(void))(*_check_input_icns_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_INPUT_PNG_FILE] =   {
+  [CHECK_COMMAND_IMAGE_FORMAT] =        {
+    .fxn           = (void (*)(void))(*_check_image_format),
+    .arg_data_type = DATA_TYPE_STR,
+  },
+  [CHECK_COMMAND_INPUT_PNG_FILE] =      {
     .fxn           = (void (*)(void))(*_check_input_png_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_PNG_FILE] =  {
+  [CHECK_COMMAND_OUTPUT_PNG_FILE] =     {
     .fxn           = (void (*)(void))(*_check_output_png_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_ICNS_FILE] = {
+  [CHECK_COMMAND_OUTPUT_ICNS_FILE] =    {
     .fxn           = (void (*)(void))(*_check_output_icns_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_MODE] =      {
+  [CHECK_COMMAND_OUTPUT_MODE] =         {
     .fxn           = (void (*)(void))(*_check_output_mode),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_XML_FILE] =         {
+  [CHECK_COMMAND_XML_FILE] =            {
     .fxn           = (void (*)(void))(*_check_xml_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_CLEAR_SCREEN] =     {
+  [CHECK_COMMAND_CLEAR_SCREEN] =        {
     .fxn = (void (*)(void))(*_check_clear_screen),
   },
-  [CHECK_COMMAND_OUTPUT_FILE] =      {
+  [CHECK_COMMAND_OUTPUT_FILE] =         {
     .fxn           = (void (*)(void))(*_check_output_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_TYPES_QTY] =        { 0},
+  [CHECK_COMMAND_TYPES_QTY] =           { 0},
 };
 
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
@@ -982,6 +1016,23 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
 };
 
 ////////////////////////////////////////////
+static void _check_image_format(char *format){
+  args->image_format_type = image_format_type(format);
+  if (args->image_format_type < 0) {
+    log_error("Invalid Image Format");
+    exit(EXIT_FAILURE);
+  }
+}
+
+static void _check_sort_direction_desc(){
+  args->sort_direction = "desc";
+  return(EXIT_SUCCESS);
+}
+
+static void _check_sort_direction_asc(){
+  args->sort_direction = "asc";
+  return(EXIT_SUCCESS);
+}
 
 static void _check_height_less(int height_less){
   args->height_less = height_less;
@@ -1452,13 +1503,16 @@ static void _command_extract_window(){
 }
 
 static void _command_capture_window(){
-  bool          gs = false;
-  int           res = 0;
-  struct Vector *v = vector_new(), *rendered_images = vector_new(), *all_windows;
-  unsigned long started;
-  size_t        window_id, len = 0;
-  char          *output_file = args->output_file;
+//    DARWIN_LS_COMMANDS_DEBUG_MODE = true;
+  struct Vector *v = vector_new(), *all_windows = NULL, *results = NULL;
 
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_debug("all windows:  %s", args->all_windows?"Yes":"No");
+    log_debug("display :  %s", args->display_output_file?"Yes":"No");
+    log_debug("compress :  %s", args->compress?"Yes":"No");
+    log_debug("format :  %s", args->image_format);
+    log_debug("format type:  %d", args->image_format_type);
+  }
   if (args->all_windows == true) {
     all_windows = get_window_infos_v();
     for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(v) < (size_t)(args->limit))  : true); i++) {
@@ -1475,428 +1529,27 @@ static void _command_capture_window(){
       log_error("Window ID #%lu not found", (size_t)(args->window_id));
     }
   }
-
-  for (size_t i = 0; i < vector_size(v); i++) {
-    started   = timestamp();
-    window_id = (size_t)vector_get(v, i);
-    if (!output_file || i > 0) {
-      asprintf(&output_file, "%scapture-window-%d-%lu.png", gettempdir(), getpid(), window_id);
-    }
-    if (fsio_file_exists(output_file)) {
-      fsio_remove(output_file);
-    }
-    if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-      log_info("Capturing window #%d to %s with %s %d |%s|display_output_file:%d|verbose:%d|",
-               args->window_id,
-               output_file,
-               (args->width_or_height_group == COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN)? "default size": common_option_width_or_height_name(args->width_or_height),
-               args->width_or_height_group,
-               (args->display_output_file == true) ? " [Displaying file]|" : "",
-               args->display_output_file,
-               args->verbose
-               );
-    }
-    CGImageRef img_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
-    if (img_ref) {
-      int orig_width  = CGImageGetWidth(img_ref);
-      int orig_height = CGImageGetHeight(img_ref);
-      if (args->width_or_height_group < 0) {
-        errno = 0;
-        if (!save_cgref_to_png_file(img_ref, output_file)) {
-          log_error("Failed to save window %lu", window_id);
+  results = capture_windows(v, args->concurrency, args->image_format_type);
+  for (size_t i = 0; (i < vector_size(results)); i++) {
+    struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+    log_info("Capture Result #%lu/%lu: %s %s (type %s)",
+             i + 1, vector_size(results),
+             bytes_to_string(fsio_file_size(r->file)),
+             r->file,
+             image_type_name(r->type)
+             );
+    if (args->output_file && i == 0) {
+      unsigned char *data = fsio_read_binary_file(r->file);
+      if (data) {
+        if (fsio_write_binary_file(args->output_file, data, fsio_file_size(r->file)) == false) {
+          log_error("Failed to write file %s", args->output_file);
         }
-      }else{
-        int   new_width    = CGImageGetWidth(img_ref);
-        int   new_height   = CGImageGetHeight(img_ref);
-        float resize_ratio = 0;
-        switch (args->width_or_height) {
-        case COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH:
-          new_width    = args->width_or_height_group;
-          resize_ratio = ((float)orig_width) / ((float)new_width);
-          new_height   = (int)((float)orig_height / resize_ratio);
-          break;
-        case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT:
-          new_height   = args->width_or_height_group;
-          resize_ratio = ((float)(orig_height)) / ((float)new_height);
-          new_width    = (int)((float)orig_width / resize_ratio);
-          break;
-        default:
-          break;
-        }
-        if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-          log_debug("Resizing Image from %dx%d to %dx%d using ratio %f",
-                    orig_width, orig_height,
-                    new_width, new_height,
-                    resize_ratio
-                    );
-        }
-        unsigned long _s;
-        char          *tmp_file;
-        asprintf(&tmp_file, "%stmp-resize-file-%lu-%d-%lld.png", gettempdir(), window_id, getpid(), timestamp());
-        unsigned char *bufs[10]    = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
-        size_t        buf_lens[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        VipsImage     *vips[10];
-/*
- *      _s = started = timestamp();
- *        if (!save_cgref_to_png_file(img_ref, output_file)) {
- * log_error("png file failed");
- *        }
- *          log_debug("Wrote %s PNG File in %s",
- *              bytes_to_string(fsio_file_size(output_file)),
- *              milliseconds_to_string(timestamp() - _s)
- *              );
- *      _s = started = timestamp();
- *          bufs[0] = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, img_ref, &(buf_lens[0]));
- *          log_debug("converted cgref to %s png buffer in %s", bytes_to_string(buf_lens[0]), milliseconds_to_string(timestamp() - _s));
- *          log_debug("Wrote %s PNG Buffer in %s",
- *              bytes_to_string(buf_lens[0]),
- *              milliseconds_to_string(timestamp() - _s)
- *              );
- */
-        if (args->compress == true) {
-          _s      = started = timestamp();
-          bufs[1] = cgimage_ref_to_rgb_pixels(img_ref, &(buf_lens[1]));
-          log_debug("Wrote %s RGB buffer in %s",
-                    bytes_to_string(buf_lens[1]),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-          _s      = started = timestamp();
-          bufs[2] = imagequant_encode_rgb_pixels_to_png_buffer(bufs[1], orig_width, orig_height, 5, 60, &(buf_lens[2]));
-          log_debug("Compressed %lux%lu %s RGB Pixels to %s PNG Buffer in %s", orig_width, orig_height,
-                    bytes_to_string(buf_lens[1]),
-                    bytes_to_string(buf_lens[2]),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-
-          _s      = started = timestamp();
-          vips[0] = vips_image_new_from_buffer(bufs[2], buf_lens[2], "", NULL);
-          if (vips[0]) {
-            log_debug("Loaded %s PNG buffer to %dx%d %s VIP Image im %s",
-                      bytes_to_string(buf_lens[2]),
-                      vips_image_get_width(vips[0]), vips_image_get_height(vips[0]),
-                      bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
-                      milliseconds_to_string(timestamp() - _s)
-                      );
-          }
-        }else{
-          _s      = started = timestamp();
-          bufs[1] = save_cgref_to_png_memory(img_ref, &(buf_lens[1]));
-          log_debug("Wrote %s PNG buffer in %s",
-                    bytes_to_string(buf_lens[1]),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-          _s      = started = timestamp();
-          _s      = started = timestamp();
-          vips[0] = vips_image_new_from_buffer(bufs[1], buf_lens[1], "", NULL);
-
-          log_debug("Loaded %s PNG buffer to %dx%d %s VIP PNG Image im %s",
-                    bytes_to_string(buf_lens[1]),
-                    vips_image_get_width(vips[0]), vips_image_get_height(vips[0]),
-                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-        }
-        if (args->width_or_height_group > 0) {
-          _s = started = timestamp();
-          if (vips_resize(vips[0], &(vips[1]), 1 / resize_ratio, NULL)) {
-            log_error("Failed to resize image");
-          }
-          log_debug("Resized %dx%d %s Image to %dx%d %s Image in %s",
-                    vips_image_get_width(vips[0]), vips_image_get_height(vips[0]),
-                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
-                    vips_image_get_width(vips[1]), vips_image_get_height(vips[1]),
-                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-          _s = started = timestamp();
-          if (vips_pngsave(vips[1], output_file, NULL)) {
-            log_error("Failed to write image");
-          }
-          log_debug("Saved %s buffer to %s PNG File in %s",
-                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
-                    bytes_to_string(fsio_file_size(output_file)),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-        }else{
-          _s = started = timestamp();
-          if (vips_pngsave(vips[0], output_file, NULL)) {
-            log_error("Failed to write image");
-          }
-          log_debug("Saved %s buffer to %s PNG File in %s",
-                    bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
-                    bytes_to_string(fsio_file_size(output_file)),
-                    milliseconds_to_string(timestamp() - _s)
-                    );
-        }
-        /*
-         * int bl = 0;
-         * _s = started = timestamp();
-         * void *b = vips_image_write_to_memory(vips[0],&bl);
-         * log_debug("Saved %s buffer to %s Buffer %s",
-         * bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
-         * bytes_to_string(bl),
-         * milliseconds_to_string(timestamp()-_s)
-         * );
-         * _s = started = timestamp();
-         * bufs[3] = vips_image_write_to_memory(vips[1],&(buf_lens[3]));
-         * log_debug("Saved %s buffer to %s Buffer %s",
-         * bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
-         * bytes_to_string(buf_lens[3]),
-         * milliseconds_to_string(timestamp()-_s)
-         * );
-         */
-        /*
-         *    bytes_to_string(buf_lens[7]),
-         *    milliseconds_to_string(timestamp() - _s),
-         *    CGImageGetBitsPerComponent(img_ref),CGImageGetBytesPerRow(img_ref),CGImageGetBitsPerPixel(img_ref)
-         *    );
-         * _s      = started = timestamp();
-         * bufs[7] = cgimage_ref_to_rgb_pixels(img_ref, &(buf_lens[7]));
-         * log_debug("converted %s RGB buffer in %s from %lu bit / %lu bytes per row, %lu bits per pixel CGImage",
-         *    bytes_to_string(buf_lens[7]),
-         *    milliseconds_to_string(timestamp() - _s),
-         *    CGImageGetBitsPerComponent(img_ref),CGImageGetBytesPerRow(img_ref),CGImageGetBitsPerPixel(img_ref)
-         *    );
-         * _s      = started = timestamp();
-         * vips[0] = vips_image_new_from_memory(bufs[7],buf_lens[7],orig_width,orig_height,4,VIPS_FORMAT_UCHAR);
-         * log_debug("Loaded %s RGB buffer in %s", bytes_to_string(buf_lens[7]), milliseconds_to_string(timestamp() - _s));
-         *
-         *
-         * _s      = started = timestamp();
-         * if (vips_pngsave(vips[1], output_file, NULL)) {
-         *  log_error("Failed to write image");
-         * }
-         * log_debug("Saved %s buffer to %s PNG File in %s",
-         *  bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[0])),
-         *  bytes_to_string(fsio_file_size(output_file)),
-         *  milliseconds_to_string(timestamp()-_s)
-         *  );
-         * bufs[6] = imagequant_encode_rgb_pixels_to_png_buffer(bufs[7], orig_width, orig_height, 5, 90, &(buf_lens[8]));
-         * log_debug("Compressed %dx%d %s RGB Pixels to %s PNG in %s", orig_width, orig_height,bytes_to_string(buf_lens[7]), bytes_to_string(buf_lens[7]), milliseconds_to_string(timestamp() - _s));
-         * _s      = started = timestamp();
-         * char *op = vips_foreign_find_load_buffer(bufs[6],buf_lens[6]);
-         *  log_debug("Buffer loader: %s %s",
-         *      op,
-         *      milliseconds_to_string(timestamp() - _s)
-         *      );
-         *
-         * _s      = started = timestamp();
-         * vips[1] = vips_image_new_from_buffer(bufs[6],buf_lens[6],);
-         * if(false){
-         * if(vips_pngload_buffer(bufs[6],buf_lens[6],&(vips[1]))==0){
-         *  log_debug("Loaded %s PNG buffer to %dx%d %s VIP PNG Image im %s",
-         *      bytes_to_string(buf_lens[6]),
-         *      vips_image_get_width(vips[1]),vips_image_get_height(vips[1]),
-         *      bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(vips[1])),
-         *      milliseconds_to_string(timestamp() - _s)
-         *      );
-         *  }
-         * }
-         */
-
-        /*
-         */
-/*
- *        _s      = started = timestamp();
- *      CGImageRef    new_img_ref = resize_cgimage(img_ref, new_width, new_height);
- *      if (new_img_ref) {
- *        log_debug("Resized CGImage in %s", milliseconds_to_string(timestamp() - _s));
- *        img_ref = new_img_ref;
- *        errno   = 0;
- *        if (!save_cgref_to_png_file(img_ref, output_file)) {
- *          log_error("Failed to save window %lu", window_id);
- *        }
- *      }else{
- *          _s      = started = timestamp();
- *          bufs[0] = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, img_ref, &(buf_lens[0]));
- *          log_debug("converted cgref to %s png buffer in %s", bytes_to_string(buf_lens[0]), milliseconds_to_string(timestamp() - _s));
- *        buf = bufs[0]; buf_len = buf_lens[0];
- *        _s      = started = timestamp();
- *        bufs[1] = save_cgref_to_image_type_memory(IMAGE_TYPE_GIF, img_ref, &(buf_lens[1]));
- *        log_debug("converted cgref to %s gif buffer in %s", bytes_to_string(buf_lens[1]), milliseconds_to_string(timestamp() - _s));
- *        _s = started = timestamp();
- *        if (vips_gifload_buffer(bufs[1], buf_lens[1], &(vips[1]), NULL) == 0) {
- *          log_debug("Loaded %s GIF Buffer in %s",
- *                    bytes_to_string(buf_lens[1]), milliseconds_to_string(timestamp() - _s)
- *                    );
- *        }
- *        if (args->compress) {
- *          log_error("failed to compress");
- *          _s      = started = timestamp();
- *          bufs[6] = imagequant_encode_rgb_pixels_to_png_buffer(bufs[5], w, h, 5, 90, &(buf_lens[6]));
- *          log_debug("Compressed %dx%d RGB Pixels to %s PNG in %s", w, h, bytes_to_string(buf_lens[6]), milliseconds_to_string(timestamp() - _s));
- *        }
- *
- *        _s = started = timestamp();
- *        if (vips_pngload_buffer(bufs[6], buf_lens[6], &(vips[6]), NULL) == 0) {
- *          log_debug("Loaded %s PNG Buffer in %s",
- *                    bytes_to_string(buf_lens[6]), milliseconds_to_string(timestamp() - _s)
- *                    );
- *        }
- *
- *        _s      = started = timestamp();
- *        bufs[2] = save_cgref_to_image_type_memory(IMAGE_TYPE_JPEG, img_ref, &(buf_lens[2]));
- *        log_debug("converted cgref to %s jpg buffer in %s", bytes_to_string(buf_lens[2]), milliseconds_to_string(timestamp() - _s));
- *        _s = started = timestamp();
- *        if (vips_pngload_buffer(bufs[2], buf_lens[2], &(vips[2]), NULL) == 0) {
- *          log_debug("Loaded %s JPEG Buffer in %s",
- *                    bytes_to_string(buf_lens[2]), milliseconds_to_string(timestamp() - _s)
- *                    );
- *        }
- *        _s      = started = timestamp();
- *        bufs[3] = save_cgref_to_image_type_memory(IMAGE_TYPE_BMP, img_ref, &(buf_lens[3]));
- *        log_debug("converted cgref to %s bmp buffer in %s", bytes_to_string(buf_lens[3]), milliseconds_to_string(timestamp() - _s));
- *        _s      = started = timestamp();
- *        bufs[4] = save_cgref_to_image_type_memory(IMAGE_TYPE_TIFF, img_ref, &(buf_lens[4]));
- *        log_debug("converted cgref to %s tiff buffer in %s", bytes_to_string(buf_lens[4]), milliseconds_to_string(timestamp() - _s));
- */
-        /*
-         * char *operation_name = NULL;
-         * //for(int i=0;i<7;i++){
-         * int i=1;
-         * if( !(operation_name = vips_foreign_find_load_buffer( bufs[i], buf_lens[i] )) ) {
-         * log_error("#%d> could not find load buffer function",i);
-         * }
-         * log_info("#%d> Load Buffer Function: %s",i, operation_name);
-         * //}
-         */
-/*
- *        if (!buf || buf_len == 0) {
- *          log_error("Failed to save cgref To a buffer");
- *        }else{
- *          VipsImage *image, *resized;
- *          _s = started = timestamp();
- *          if (vips_pngload_buffer(buf, buf_len, &image, NULL) != 0) {
- *            //if (!(image = vips_image_new_from_file(tmp_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
- *            log_error("Failed to read buffer");
- *          }
- *          log_debug("Loaded PNG Buffer in %s", milliseconds_to_string(timestamp() - _s));
- *          if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
- *            log_info("Manually resizing %s with ratio %f", tmp_file, 1 / resize_ratio);
- *          }
- *        _s      = started = timestamp();
- *          if (vips_resize(image, &resized, 1 / resize_ratio, NULL)) {
- *            log_error("Failed to resize image");
- *          }
- *          log_debug("Resized %s Image to %s Image in %s",
- *              bytes_to_string(image->length),
- *              bytes_to_string(resized->length),
- *            milliseconds_to_string(timestamp()-_s)
- *            );
- *
- *        _s      = started = timestamp();
- *          if (vips_pngsave(resized, output_file, NULL)) {
- *            log_error("Failed to write image");
- *          }
- *          log_debug("Saved buffer to %s PNG File in %s", bytes_to_string(fsio_file_size(output_file)),
- *            milliseconds_to_string(timestamp()-_s)
- *            );
- *          g_object_unref(image);
- *          g_object_unref(resized);
- *        }
- *        if (fsio_file_size(tmp_file)) {
- *          fsio_remove(tmp_file);
- *        }
- *      }*/
-      }
-    }
-    if (fsio_file_exists(output_file)) {
-      unsigned long _s     = timestamp();
-      VipsImage     *image = vips_image_new_from_file(output_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL);
-      log_debug("Loaded %s buffer from %s PNG File in %s",
-                bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
-                bytes_to_string(fsio_file_size(output_file)),
-                milliseconds_to_string(timestamp() - _s)
-                );
-      int           width  = vips_image_get_width(image);
-      int           height = vips_image_get_height(image);
-      unsigned char *buf   = NULL;
-      if (vips_pngsave_buffer(image, &buf, &len, NULL) || !buf) {
-        log_error("failed to load png to buffer");
-        continue;
-      }
-      if (buf) {
-        free(buf);
-      }
-      g_object_unref(image);
-      if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-        log_debug(AC_GREEN "Saved %dx%d %s %s File %s For Window ID #%lu in %s with %s byte RGBs" AC_RESETALL "\n",
-                  width, height,
-                  bytes_to_string(fsio_file_size(output_file)),
-                  "PNG",
-                  output_file,
-                  window_id,
-                  milliseconds_to_string(timestamp() - started),
-                  bytes_to_string(len)
-                  );
-      }
-      if (output_file && fsio_file_exists(output_file)) {
-        VipsImage *image = vips_image_new_from_file(output_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL);
-        int       width  = vips_image_get_width(image);
-        int       height = vips_image_get_height(image);
-        g_object_unref(image);
-        if (width > 10 && height > 10 && fsio_file_size(output_file) > ((args->compress == true) ? (1 * 128) : (1 * 1024))) {
-          vector_push(rendered_images, (void *)output_file);
-        }
+        free(data);
       }
     }
   }
-
-  struct Vector *gifs = vector_new();
-
-  for (size_t i = 0; i < vector_size(rendered_images); i++) {
-    char      *img = (char *)vector_get(rendered_images, i);
-    char      *gif;
-    VipsImage *image;
-    {
-      asprintf(&gif, "%s.gif", stringfn_substring(img, 0, strlen(img) - 4));
-      image = vips_image_new_from_file(img, "access", VIPS_ACCESS_SEQUENTIAL, NULL);
-      vips_gifsave(image, gif, NULL);
-      vector_push(gifs, (void *)gif);
-      log_debug("gif:%s|png:%s|%dx%d",
-                bytes_to_string(fsio_file_size(img)),
-                bytes_to_string(fsio_file_size(gif)),
-                vips_image_get_width(image),
-                vips_image_get_height(image)
-                );
-      g_object_unref(image);
-    }
-  }
-  char *img;
-
-  for (size_t i = 0; i < vector_size(gifs); i++) {
-    img = (char *)vector_get(gifs, i);
-    if (args->display_output_file == true) {
-      assert(timg_utils_titled_image((char *)img) == 0);
-    }else{
-      fprintf(stdout, "%s\n", img);
-    }
-  }
-  exit(res);
-} /* _command_capture_window */
-
-static void _command_alacrittys(){
-  struct Vector *_alacritty_pids = get_alacritty_pids();
-
-  fprintf(stdout,
-          "\t" AC_YELLOW AC_UNDERLINE "Alacrittys" AC_RESETALL
-          "\n\t# Alacritty Terminals      :       %lu"
-          "%s",
-          vector_size(_alacritty_pids),
-          "\n"
-          );
-  for (size_t i = 0; i < vector_size(_alacritty_pids); i++) {
-    fprintf(stdout,
-            "\t\t" AC_CYAN AC_BOLD "%lu" AC_RESETALL
-            "%s",
-            (size_t)vector_get(_alacritty_pids, i),
-            "\n"
-            );
-  }
-  vector_release(_alacritty_pids);
-
   exit(EXIT_SUCCESS);
-}
+} /* _command_capture_window */
 
 static void _command_list_font(){
   struct list_table_t *filter = &(struct list_table_t){
@@ -2280,6 +1933,29 @@ static void _command_focused_window(){
     w->space_id,
     w->display_id
     );
+
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_alacrittys(){
+  struct Vector *_alacritty_pids = get_alacritty_pids();
+
+  fprintf(stdout,
+          "\t" AC_YELLOW AC_UNDERLINE "Alacrittys" AC_RESETALL
+          "\n\t# Alacritty Terminals      :       %lu"
+          "%s",
+          vector_size(_alacritty_pids),
+          "\n"
+          );
+  for (size_t i = 0; i < vector_size(_alacritty_pids); i++) {
+    fprintf(stdout,
+            "\t\t" AC_CYAN AC_BOLD "%lu" AC_RESETALL
+            "%s",
+            (size_t)vector_get(_alacritty_pids, i),
+            "\n"
+            );
+  }
+  vector_release(_alacritty_pids);
 
   exit(EXIT_SUCCESS);
 }

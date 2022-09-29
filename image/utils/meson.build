@@ -6,7 +6,7 @@ image_utils_dirs = [
     inc,
   ]
 image_utils_deps = [
-  lodepng_dep,c_fsio_dep,timg_utils_dep,vips_dep,
+  lodepng_dep,c_fsio_dep,timg_utils_dep,vips_dep,c_string_buffer_dep,
   imagequant_dep,
   leptonica_dep,tempdir_dep,
   stb_dep,

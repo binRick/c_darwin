@@ -11,6 +11,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "c_workqueue/include/workqueue.h"
 #include "cache-utils/cache-utils.h"
 #include "display/utils/utils.h"
 #include "fs.c/fs.h"
@@ -22,6 +23,7 @@
 #include "space/utils/utils.h"
 #include "timestamp/timestamp.h"
 #include "timg/utils/utils.h"
+#include "vips/vips.h"
 #include "window/utils/utils.h"
 ////////////////////////////////////////////
 static bool                  CAPTURE_UTILS_DEBUG_MODE = false;

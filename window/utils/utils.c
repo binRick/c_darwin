@@ -17,6 +17,16 @@
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
 #include "window/utils/utils.h"
+#include <errno.h>
+#include <mach/clock.h>
+#include <mach/mach.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 ///////////////////////////////////////////////////////////////////////////////
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100
@@ -283,6 +293,18 @@ int get_window_level(struct window_info_t *w){
   SLSGetWindowLevel(w->connection_id, (uint32_t)(w->window_id), &level);
   return(level);
 }
+
+static void get_current_utc_time(struct timespec *ts) {
+  clock_serv_t    cclock;
+  mach_timespec_t mts;
+
+  host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+  clock_get_time(cclock, &mts);
+  mach_port_deallocate(mach_task_self(), cclock);
+  ts->tv_sec  = mts.tv_sec;
+  ts->tv_nsec = mts.tv_nsec;
+}
+
 struct window_info_t *get_random_window_info(){
   struct Vector        *windows_v = get_window_infos_v();
   bool                 ok = false;
@@ -298,7 +320,11 @@ struct window_info_t *get_random_window_info(){
   if (WINDOW_UTILS_DEBUG_MODE) {
     log_debug("%lu windows to choose from", vector_size(windows_v));
   }
-  srand(time(NULL));
+  struct timespec ts;
+
+  get_current_utc_time(&ts);
+  srand(ts.tv_nsec);
+
   while (ok == false && qty < 100) {
     id = (rand()) % (vector_size(windows_v) - 1);
     if (WINDOW_UTILS_DEBUG_MODE) {
@@ -319,7 +345,7 @@ struct window_info_t *get_random_window_info(){
     log_debug("random win id: %lu", w->window_id);
   }
   return(w);
-}
+} /* get_random_window_info */
 
 size_t get_random_window_info_id(){
   return(get_random_window_info()->window_id);
@@ -327,33 +353,45 @@ size_t get_random_window_info_id(){
 
 size_t get_first_window_id_by_name(char *name){
   size_t               window_id = 0;
-
-  struct Vector        *windows_v = get_window_infos_v();
   struct window_info_t *w;
+  struct Vector        *windows_v;
 
-  for (size_t i = 0; i < vector_size(windows_v); i++) {
+  windows_v = get_window_infos_v();
+
+  for (size_t i = 0; i < vector_size(windows_v) && window_id == 0; i++) {
     w = (struct window_info_t *)vector_get(windows_v, i);
+    if (!w || !w->name || w->window_id < 1) {
+      continue;
+    }
+    if (WINDOW_UTILS_DEBUG_MODE) {
+      log_debug("Checking app %s", w->name);
+    }
+    if (WINDOW_UTILS_DEBUG_MODE) {
+      log_debug("Comparing %s|%s", w->name, name);
+    }
+    if (strcmp(stringfn_to_lowercase(w->name), stringfn_to_lowercase(name)) == 0) {
+      window_id = (size_t)w->window_id;
+    }
     if (window_id == 0) {
-      if (strcmp(stringfn_to_lowercase(w->name), stringfn_to_lowercase(name)) == 0) {
+      char *s;
+      asprintf(&s, "%s.app", name);
+      if (WINDOW_UTILS_DEBUG_MODE) {
+        log_debug("Comparing %s|%s", w->name, s);
+      }
+      if (strcmp(stringfn_to_lowercase(s), stringfn_to_lowercase(w->name)) == 0) {
         window_id = (size_t)w->window_id;
       }
-      if (!stringfn_ends_with(name, ".app") == false) {
-        char *s;
-        asprintf(&s, "%s.app", name);
-        if (strcmp(stringfn_to_lowercase(w->name), stringfn_to_lowercase(s)) == 0) {
-          window_id = (size_t)w->window_id;
-        }
-        if (s) {
-          free(s);
-        }
-      }else{
-//StringFNStrings split = stringfn_split(name,".");
+      if (s) {
+        free(s);
       }
     }
-    free(w);
+    if (w) {
+      free(w);
+    }
   }
+  vector_release(windows_v);
   return(window_id);
-}
+} /* get_first_window_id_by_name */
 
 char *get_window_title(struct window_info_t *w){
   char      *title = NULL;
@@ -1208,6 +1246,14 @@ CGImageRef capture_window_id_rect(size_t window_id, CGRect rect){
   CGImageRef image_ref = NULL;
 
   SLSCaptureWindowsContentsToRectWithOptions(g_connection, &wid, true, rect, 1 << 8, &image_ref);
+  return(image_ref);
+}
+
+CGImageRef capture_window_id_ptr(size_t window_id){
+  CGImageRef *image_ref = NULL;
+  uint64_t   wid        = (uint64_t)(window_id);
+
+  SLSCaptureWindowsContentsToRectWithOptions(g_connection, &wid, true, CGRectNull, 1 << 8, image_ref);
   return(image_ref);
 }
 

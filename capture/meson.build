@@ -1,3 +1,5 @@
+subdir('utils')
+subdir('window')
 capture_srcs = [
   'capture.c',
 ]
@@ -40,4 +42,3 @@ capture_dep = declare_dependency(
   link_with: capture_lib,
   link_args: capture_link_args,
 )
-subdir('utils')

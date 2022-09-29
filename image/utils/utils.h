@@ -37,6 +37,8 @@ enum image_type_id_t {
   IMAGE_TYPE_JPEG,
   IMAGE_TYPE_BMP,
   IMAGE_TYPE_QOI,
+  IMAGE_TYPE_RGB,
+  IMAGE_TYPE_CGIMAGE,
   IMAGE_TYPES_QTY,
 };
 struct image_type_t {
@@ -69,6 +71,8 @@ CGImageRef resize_png_file_factor(FILE *fp, double resize_factor);
 CGImageRef rgb_pixels_to_png_cgimage_ref(unsigned char *rgb_pixels, int width, int height);
 CGImageRef png_file_to_grayscale_cgimage_ref_resized(FILE *fp, double resize_factor);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+char *image_type_name(enum image_type_id_t type);
+enum image_type_id_t image_format_type(char *format);
 bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file);
 unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,4 +100,5 @@ const char *color_type_str(enum spng_color_type color_type);
 
 struct spng_info_t *spng_test(FILE *fp);
 bool compress_png_file(char *file);
+char *get_image_format_names_csv();
 #endif

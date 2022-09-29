@@ -34,17 +34,19 @@ int default_sort_function(SORT_PARAMS){
 }
 
 char *get_sort_type_by_description(enum sort_type_t type){
-  char *s;
+  char                *s;
   struct StringBuffer *sb = stringbuffer_new();
-  struct Vector *v = get_sort_type_by_names_v(type);
-  for(size_t i=0;i<vector_size(v);i++){
-    stringbuffer_append_string(sb,(char*)AC_BOLD);
-    stringbuffer_append_string(sb,(char*)AC_UNDERLINE);
-    stringbuffer_append_string(sb,(char*)sort_by_type_colors[(i % QTY(sort_by_type_colors))]);
-    stringbuffer_append_string(sb,(char*)vector_get(v,i));
-    stringbuffer_append_string(sb,(char*)AC_RESETALL);
-    if(i<vector_size(v)-1)
-      stringbuffer_append_string(sb,", ");
+  struct Vector       *v  = get_sort_type_by_names_v(type);
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    stringbuffer_append_string(sb, (char *)AC_BOLD);
+    stringbuffer_append_string(sb, (char *)AC_UNDERLINE);
+    stringbuffer_append_string(sb, (char *)sort_by_type_colors[(i % QTY(sort_by_type_colors))]);
+    stringbuffer_append_string(sb, (char *)vector_get(v, i));
+    stringbuffer_append_string(sb, (char *)AC_RESETALL);
+    if (i < vector_size(v) - 1) {
+      stringbuffer_append_string(sb, ", ");
+    }
   }
   s = stringbuffer_to_string(sb);
   stringbuffer_release(sb);
@@ -53,9 +55,10 @@ char *get_sort_type_by_description(enum sort_type_t type){
 
 static struct Vector *get_sort_type_by_names_v(enum sort_type_t type){
   struct Vector *v = vector_new();
-  for(size_t i=0;i<SORT_BY_TYPES_QTY;i++){
-    if(sort_types[type]->handlers[i]){
-      vector_push(v,(void*)sort_by_type_names[i]);
+
+  for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++) {
+    if (sort_types[type]->handlers[i]) {
+      vector_push(v, (void *)sort_by_type_names[i]);
     }
   }
   return(v);

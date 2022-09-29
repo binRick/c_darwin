@@ -28,8 +28,10 @@ TEST t_timg_utils_test_images(){
 
 TEST t_timg_utils_test_image(void *img){
   log_debug("%s", (char *)img);
-  int ret = timg_utils_image((char *)img);
-  ASSERT_EQ(ret, 0);
+  if (fsio_file_exists((char *)img)) {
+    int ret = timg_utils_image((char *)img);
+    ASSERT_EQ(ret, 0);
+  }
   PASS();
 }
 

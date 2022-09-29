@@ -173,5 +173,6 @@ unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
 bool save_cgref_to_png_file(CGImageRef image, char *filename);
 CGImageRef preview_window_id(size_t window_id);
 CGImageRef capture_window_id_rect(size_t window_id, CGRect rect);
+CGImageRef capture_window_id_ptr(size_t window_id);
 ///////////////////////////////////////////////////
 #endif

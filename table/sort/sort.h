@@ -88,7 +88,7 @@ enum sort_by_type_t {
   SORT_BY_TYPES_QTY,
 };
 const char *sort_by_type_colors[] = {
-  AC_YELLOW, AC_BLUE, AC_MAGENTA, AC_RED, AC_CYAN,AC_GREEN,AC_WHITE
+  AC_YELLOW, AC_BLUE, AC_MAGENTA, AC_RED, AC_CYAN, AC_GREEN, AC_WHITE
 };
 
 const char *sort_by_type_names[SORT_BY_TYPES_QTY] = {

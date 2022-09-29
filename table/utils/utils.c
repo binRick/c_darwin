@@ -568,6 +568,7 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
   struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];
 #define SETUP_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)           { do {                                                                                   \
                                                                  durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = 0;                                            \
+                                                                 durs[TABLE_DUR_TYPE_TOTAL].started   = timestamp();                                  \
                                                                  durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                            \
                                                                  durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                            \
                                                                  TABLE                                = ft_create_table();                            \

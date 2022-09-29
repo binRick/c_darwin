@@ -88,10 +88,10 @@ static struct Vector *get_default_args_v(){
   if (getenv("ALACRITTY_WINDOW_ID") != NULL) {
     vector_push(v, (void *)ARG_QUARTER_PIXELS);
     setenv("TIMG_USE_UPPER_BLOCK", "1", 1);
-  }else if (getenv("ITERM_SESSION_ID") != NULL) {
-    vector_push(v, (void *)ARG_ITERM);
   }else if (getenv("KITTY_PID") != NULL) {
     vector_push(v, (void *)ARG_KITTY);
+  }else if (getenv("ITERM_SESSION_ID") != NULL) {
+    vector_push(v, (void *)ARG_ITERM);
   }else{
     vector_push(v, (void *)ARG_QUARTER_PIXELS);
   }
@@ -326,8 +326,6 @@ int run_timg_cmd(char *args[]){
     log_error("process stdin close failed");
     goto finish;
   }
-
-  size_t size_e = 0, size_o = 0;
 
   errno = 0;
   r     = reproc_wait(process, REPROC_INFINITE);

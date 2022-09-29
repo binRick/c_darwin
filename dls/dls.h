@@ -8,6 +8,7 @@
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "capture/window/window.h"
 #include "core-utils/core-utils.h"
 #include "core-utils/core-utils.h"
 #include "display/utils/utils.h"
@@ -61,11 +62,12 @@ struct args_t {
   double                               resize_factor;
   char                                 *xml_file_path, *content;
   bool                                 clear_icons_cache, minimized_only, non_minimized_only;
-  int                                  display_output_file, all_windows;
+  bool                                 display_output_file, all_windows;
   bool                                 random_window_id, clear_screen, compress;
   int                                  pid, display_id, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;
-  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style;
+  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *image_format;
+  enum image_type_id_t                 image_format_type;
   bool                                 exact_match, case_sensitive, duplicate, non_duplicate;
 };
 struct args_t *args;

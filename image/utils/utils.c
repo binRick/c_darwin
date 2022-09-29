@@ -7,6 +7,7 @@
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_img/src/img.h"
+#include "c_string_buffer/include/stringbuffer.h"
 #include "c_vector/vector/vector.h"
 #include "c_workqueue/include/workqueue.h"
 #include "core-utils/core-utils.h"
@@ -34,6 +35,7 @@
 #include "window/info/info.h"
 static bool IMAGE_UTILS_DEBUG_MODE = false;
 static bool FANCY_PROGRESS_ENABLED = false;
+static struct Vector *get_image_format_names_v();
 
 bool compress_png_file(char *file){
   unsigned long s = timestamp();
@@ -102,6 +104,54 @@ const char *color_type_str(enum spng_color_type color_type){
   case SPNG_COLOR_TYPE_TRUECOLOR_ALPHA: return("truecolor with alpha");
 
   default: return("(invalid)");
+  }
+}
+
+char *get_image_format_names_csv(){
+  char                *s;
+  struct StringBuffer *sb = stringbuffer_new();
+  struct Vector       *v  = get_image_format_names_v();
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    stringbuffer_append_string(sb, (char *)vector_get(v, i));
+    if (i < vector_size(v) - 1) {
+      stringbuffer_append_string(sb, ", ");
+    }
+  }
+  s = stringbuffer_to_string(sb);
+  stringbuffer_release(sb);
+  return(s);
+}
+
+static struct Vector *get_image_format_names_v(){
+  struct Vector *v = vector_new();
+
+  for (size_t i = 0; i < IMAGE_TYPES_QTY; i++) {
+    vector_push(v, (void *)stringfn_to_lowercase(image_type_name(i)));
+  }
+  return(v);
+}
+
+enum image_type_id_t image_format_type(char *format){
+  for (size_t i = 0; i < IMAGE_TYPES_QTY; i++) {
+    if (strcmp(stringfn_to_lowercase(format),
+               stringfn_to_lowercase(image_type_name(i))) == 0) {
+      return(i);
+    }
+  }
+  return(-1);
+}
+
+char *image_type_name(enum image_type_id_t type){
+  switch (type) {
+  case IMAGE_TYPE_PNG: return("PNG"); break;
+  case IMAGE_TYPE_CGIMAGE: return("CGIMAGE"); break;
+  case IMAGE_TYPE_GIF: return("GIF"); break;
+  case IMAGE_TYPE_RGB: return("RGB"); break;
+  case IMAGE_TYPE_BMP: return("BMP"); break;
+  case IMAGE_TYPE_JPEG: return("JPEG"); break;
+  case IMAGE_TYPE_QOI: return("QOI"); break;
+  default: return("UNKNOWN"); break;
   }
 }
 
