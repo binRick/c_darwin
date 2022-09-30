@@ -100,8 +100,8 @@ enum table_order_direction_type_t {
 struct list_table_t {
   struct Vector *windows_v;
   bool          current_space_only, current_display_only, exact_match, case_sensitive, duplicate, non_duplicate;
-  int display_id;
-  int space_id, window_id;
+  int           display_id;
+  int           space_id, window_id;
   char          *sort_key, *sort_direction, *application_name, *font_family, *font_name, *font_type, *font_style;
   int           width_less, width_greater, height_less, height_greater, width, height, limit;
   pid_t         pid;

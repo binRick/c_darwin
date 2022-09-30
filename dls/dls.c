@@ -26,6 +26,8 @@ struct args_t                 *args               = &(struct args_t){
   .font_name           = NULL, .font_family = NULL, .font_style = NULL,
   .exact_match         = false, .case_sensitive = false,
   .retries             = 0,
+  .image_format        = "png",
+  .image_format_type   = IMAGE_TYPE_PNG,
 };
 
 ////////////////////////////////////////////

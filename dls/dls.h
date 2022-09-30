@@ -48,7 +48,7 @@ enum common_option_width_or_height_t {
 struct args_t {
   bool                                 verbose, current_space_only, current_display_only;
   int                                  space_id, window_id;
-  int display_id;
+  int                                  display_id;
   int                                  x, y;
   int                                  width, height;
   int                                  width_or_height_group;

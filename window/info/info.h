@@ -55,7 +55,7 @@ struct window_info_t {
   CFArrayRef               pid_app_list;
   size_t                   pid_app_list_qty;
   struct kinfo_proc        pid_info;
-  AXUIElementRef app_window;
+  AXUIElementRef           app_window;
   struct Vector            *space_ids_v, *child_pids_v, *window_ids_above, *window_ids_below, *app_window_ids_v;
   struct window_info_dur_t durs[32];
 };

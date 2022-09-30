@@ -20,11 +20,11 @@
 #include "which/src/which.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
+#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>
 #include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CoreFoundation.h>
-#include <ApplicationServices/ApplicationServices.h>
-#include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
@@ -365,8 +365,8 @@ int get_focused_window_id(){
   CFNumberRef         store_type_ref    = CFDictionaryGetValue(DICT, kCGWindowStoreType);    \
   CFBooleanRef        is_onscreen_ref   = CFDictionaryGetValue(DICT, kCGWindowIsOnscreen);   \
   CFDictionaryRef     window            = CFDictionaryCreateCopy(NULL, DICT);                \
-  AXError        err;\
-  AXUIElementRef app;\
+  AXError             err;                                                                   \
+  AXUIElementRef      app;                                                                   \
   ProcessSerialNumber psn = {};
 
 #define WINDOW_DICTIONARY_VALIDATE_INFO_REFS() \
@@ -399,92 +399,91 @@ int get_focused_window_id(){
 #define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS() \
   if (!name || strlen(name) < 1 || pid < 1 || !title || ((int)(bounds.size.height) < 75) || ((int)bounds.size.width * bounds.size.height <= 1)) { free(i);  continue; }
 
-#define WINDOW_DICTIONARY_SET_WINDOW_INFO()                                                                          \
-  i->window_id                                       = (size_t)window_id;                                            \
-  i->window                                          = window;                                                       \
-  i->pid                                             = (pid_t)pid;                                                   \
-  i->psn                                             = &psn;                                                         \
-  i->name                                            = (name != NULL) ? strdup(name) : "";                           \
-  i->title                                           = (title != NULL) ? strdup(title) : "";                         \
-  i->memory_usage                                    = (size_t)memory_usage;                                         \
-  i->app_window_ids_v = vector_new();\
-  i->is_minimized                                    = false;                                                        \
-  i->is_fullscreen                                   = false;                                                        \
-  i->can_minimize                                    = false;                                                        \
-  i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].started = timestamp();                                                  \
-  i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].dur = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].started; \
-  i->layer                                       = (int)layer;                                                       \
-  i->sharing_state                               = (int)sharing_state;                                               \
-  i->store_type                                  = (int)store_type;                                                  \
-  i->is_onscreen                                 = is_onscreen;                                                      \
-  i->is_focused                                  = is_focused;                                                       \
-  i->rect                                        = (CGRect)bounds;                                                   \
-  i->display_id                                  = (size_t)get_window_id_display_id(i->window_id);                   \
-  int        wid = (int)(i->window_id);                                                                              \
-  i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started = timestamp();                                                      \
-  CFArrayRef window_list_ref = cfarray_of_cfnumbers(&wid, sizeof(int), 1, kCFNumberSInt32Type);                      \
-  CFArrayRef space_list_ref  = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);                          \
-  int        space_qty       = CFArrayGetCount(space_list_ref);                                                      \
-  int        space_id        = 0;                                                                                    \
-  if (space_qty == 1) {                                                                                              \
-    CFNumberRef id_ref = CFArrayGetValueAtIndex(space_list_ref, 0);                                                  \
-    CFNumberGetValue(id_ref, CFNumberGetType(id_ref), &space_id);                                                    \
-    i->space_id = (size_t)(space_id);                                                                                \
-  }                                                                                                                  \
-  i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].dur = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started;         \
-  i->dur                                     = timestamp() - i->started;                                             \
-  i->durs[WINDOW_INFO_DUR_TYPE_TOTAL].dur    = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_TOTAL].started;            \
-  if (PROCESS_UTILS_VERBOSE_DEBUG_MODE){                                                                              \
-    log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);\
+#define WINDOW_DICTIONARY_SET_WINDOW_INFO()                                                                              \
+  i->window_id                                       = (size_t)window_id;                                                \
+  i->window                                          = window;                                                           \
+  i->pid                                             = (pid_t)pid;                                                       \
+  i->psn                                             = &psn;                                                             \
+  i->name                                            = (name != NULL) ? strdup(name) : "";                               \
+  i->title                                           = (title != NULL) ? strdup(title) : "";                             \
+  i->memory_usage                                    = (size_t)memory_usage;                                             \
+  i->app_window_ids_v                                = vector_new();                                                     \
+  i->is_minimized                                    = false;                                                            \
+  i->is_fullscreen                                   = false;                                                            \
+  i->can_minimize                                    = false;                                                            \
+  i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].started = timestamp();                                                      \
+  i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].dur     = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_IS_MINIMIZED].started; \
+  i->layer                                           = (int)layer;                                                       \
+  i->sharing_state                                   = (int)sharing_state;                                               \
+  i->store_type                                      = (int)store_type;                                                  \
+  i->is_onscreen                                     = is_onscreen;                                                      \
+  i->is_focused                                      = is_focused;                                                       \
+  i->rect                                            = (CGRect)bounds;                                                   \
+  i->display_id                                      = (size_t)get_window_id_display_id(i->window_id);                   \
+  int        wid = (int)(i->window_id);                                                                                  \
+  i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started = timestamp();                                                          \
+  CFArrayRef window_list_ref = cfarray_of_cfnumbers(&wid, sizeof(int), 1, kCFNumberSInt32Type);                          \
+  CFArrayRef space_list_ref  = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);                              \
+  int        space_qty       = CFArrayGetCount(space_list_ref);                                                          \
+  int        space_id        = 0;                                                                                        \
+  if (space_qty == 1) {                                                                                                  \
+    CFNumberRef id_ref = CFArrayGetValueAtIndex(space_list_ref, 0);                                                      \
+    CFNumberGetValue(id_ref, CFNumberGetType(id_ref), &space_id);                                                        \
+    i->space_id = (size_t)(space_id);                                                                                    \
+  }                                                                                                                      \
+  i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].dur = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started;             \
+  i->dur                                     = timestamp() - i->started;                                                 \
+  i->durs[WINDOW_INFO_DUR_TYPE_TOTAL].dur    = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_TOTAL].started;                \
+  if (PROCESS_UTILS_VERBOSE_DEBUG_MODE) {                                                                                \
+    log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);                                     \
   }
 
-
-#define WINDOW_INFO_VECTOR_PUSH_LOGIC()                                                    \
-  bool is_excluded = false;                                                                \
-  for (size_t ei = 0; ei < EXCLUDED_WINDOW_INFO_NAMES_QTY && is_excluded == false; ei++) { \
-    if (wildcardcmp(EXCLUDED_WINDOW_INFO_NAMES[ei], i->name) == 1) is_excluded = true;     \
-  }\
-  if (is_excluded == false) {                                                              \
-    if(i->pid>1){\
-      i->app = AXUIElementCreateApplication(i->pid);\
-      if(i->app){\
-        AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));\
-        i->pid_app_list_qty = CFArrayGetCount(i->pid_app_list);\
-        if(PROCESS_UTILS_DEBUG_MODE){\
-          log_info("%s> PID %d has %lu apps",i->name,i->pid,i->pid_app_list_qty);\
-        }\
-        for (int x = 0; x < i->pid_app_list_qty; x++) {\
-          AXUIElementRef appWindow = CFArrayGetValueAtIndex(i->pid_app_list, x);\
-          CGWindowID wid;\
-          _AXUIElementGetWindow(appWindow, &(wid));\
-          vector_push(i->app_window_ids_v,(void*)(size_t)wid);\
-          if (wid == i->window_id) {        \
-            i->app_window = appWindow;\
-            CFBooleanRef is_fullscreen_ref;\
-            if (AXUIElementCopyAttributeValue(i->app_window, CFSTR("AXFullScreen"), &is_fullscreen_ref) == kAXErrorSuccess) {\
-              i->is_fullscreen = CFBooleanGetValue(is_fullscreen_ref);\
-              if(PROCESS_UTILS_DEBUG_MODE){\
-                  log_info("%s> got fs: %d",i->name, i->is_fullscreen);\
-              }\
-              CFRelease(is_fullscreen_ref);\
-            }\
-            Boolean can_minimize_ref;                                                      \
-            if (AXUIElementIsAttributeSettable(i->app_window, kAXMinimizedAttribute, &(i->can_minimize)) == kAXErrorSuccess) {\
-              CFBooleanRef is_minimized_ref;\
-              if (AXUIElementCopyAttributeValue(i->app_window, kAXMinimizedAttribute, &is_minimized_ref) == kAXErrorSuccess) {\
-                i->is_minimized = CFBooleanGetValue(is_minimized_ref);\
-                CFRelease(is_minimized_ref);\
-                if(PROCESS_UTILS_DEBUG_MODE){\
-                 if(i->is_minimized)\
-                  log_debug("found minimized window min: %s", i->name);\
-                }\
-              }\
-            }\
-          }\
-        }\
-      }\
-    }\
-    vector_push(window_infos_v, (void *)i);                                                \
+#define WINDOW_INFO_VECTOR_PUSH_LOGIC()                                                                                        \
+  bool is_excluded = false;                                                                                                    \
+  for (size_t ei = 0; ei < EXCLUDED_WINDOW_INFO_NAMES_QTY && is_excluded == false; ei++) {                                     \
+    if (wildcardcmp(EXCLUDED_WINDOW_INFO_NAMES[ei], i->name) == 1) is_excluded = true;                                         \
+  }                                                                                                                            \
+  if (is_excluded == false) {                                                                                                  \
+    if (i->pid > 1) {                                                                                                          \
+      i->app = AXUIElementCreateApplication(i->pid);                                                                           \
+      if (i->app) {                                                                                                            \
+        AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
+        i->pid_app_list_qty = CFArrayGetCount(i->pid_app_list);                                                                \
+        if (PROCESS_UTILS_DEBUG_MODE) {                                                                                        \
+          log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);                                           \
+        }                                                                                                                      \
+        for (int x = 0; x < i->pid_app_list_qty; x++) {                                                                        \
+          AXUIElementRef appWindow = CFArrayGetValueAtIndex(i->pid_app_list, x);                                               \
+          CGWindowID     wid;                                                                                                  \
+          _AXUIElementGetWindow(appWindow, &(wid));                                                                            \
+          vector_push(i->app_window_ids_v, (void *)(size_t)wid);                                                               \
+          if (wid == i->window_id) {                                                                                           \
+            i->app_window = appWindow;                                                                                         \
+            CFBooleanRef is_fullscreen_ref;                                                                                    \
+            if (AXUIElementCopyAttributeValue(i->app_window, CFSTR("AXFullScreen"), &is_fullscreen_ref) == kAXErrorSuccess) {  \
+              i->is_fullscreen = CFBooleanGetValue(is_fullscreen_ref);                                                         \
+              if (PROCESS_UTILS_DEBUG_MODE) {                                                                                  \
+                log_info("%s> got fs: %d", i->name, i->is_fullscreen);                                                         \
+              }                                                                                                                \
+              CFRelease(is_fullscreen_ref);                                                                                    \
+            }                                                                                                                  \
+            Boolean can_minimize_ref;                                                                                          \
+            if (AXUIElementIsAttributeSettable(i->app_window, kAXMinimizedAttribute, &(i->can_minimize)) == kAXErrorSuccess) { \
+              CFBooleanRef is_minimized_ref;                                                                                   \
+              if (AXUIElementCopyAttributeValue(i->app_window, kAXMinimizedAttribute, &is_minimized_ref) == kAXErrorSuccess) { \
+                i->is_minimized = CFBooleanGetValue(is_minimized_ref);                                                         \
+                CFRelease(is_minimized_ref);                                                                                   \
+                if (PROCESS_UTILS_DEBUG_MODE) {                                                                                \
+                  if (i->is_minimized)                                                                                         \
+                  log_debug("found minimized window min: %s", i->name);                                                        \
+                }                                                                                                              \
+              }                                                                                                                \
+            }                                                                                                                  \
+          }                                                                                                                    \
+        }                                                                                                                      \
+      }                                                                                                                        \
+    }                                                                                                                          \
+    vector_push(window_infos_v, (void *)i);                                                                                    \
   }
 
 #define WINDOW_DICTIONARY_PRINT_ITEMS(FILE_DESCRIPTOR)                        \
@@ -538,6 +537,7 @@ struct Vector *get_display_id_window_ids_v(uint32_t display_id){
 }
 struct Vector *get_window_infos_v(){
   unsigned long started = timestamp();
+
   WINDOW_DICTIONARY_INIT_WINDOW_LIST()
   for (size_t i = 0; i < windows_count; ++i) {
     CFDictionaryRef window_info = CFArrayGetValueAtIndex(windows_list, i);

@@ -126,14 +126,14 @@ char *get_image_format_names_csv(){
 static struct Vector *get_image_format_names_v(){
   struct Vector *v = vector_new();
 
-  for (size_t i = 0; i < IMAGE_TYPES_QTY; i++) {
+  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
     vector_push(v, (void *)stringfn_to_lowercase(image_type_name(i)));
   }
   return(v);
 }
 
 enum image_type_id_t image_format_type(char *format){
-  for (size_t i = 0; i < IMAGE_TYPES_QTY; i++) {
+  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
     if (strcmp(stringfn_to_lowercase(format),
                stringfn_to_lowercase(image_type_name(i))) == 0) {
       return(i);
@@ -145,6 +145,8 @@ enum image_type_id_t image_format_type(char *format){
 char *image_type_name(enum image_type_id_t type){
   switch (type) {
   case IMAGE_TYPE_PNG: return("PNG"); break;
+  case IMAGE_TYPE_PNG_COMPRESSED: return("COMPRESSED.PNG"); break;
+  case IMAGE_TYPE_TIFF: return("TIFF"); break;
   case IMAGE_TYPE_CGIMAGE: return("CGIMAGE"); break;
   case IMAGE_TYPE_GIF: return("GIF"); break;
   case IMAGE_TYPE_RGB: return("RGB"); break;
@@ -241,24 +243,6 @@ struct spng_info_t *spng_test(FILE *fp){
   return(i);
 }
 
-bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file){
-  unsigned long started = timestamp();
-  bool          success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
-
-  path        = CFStringCreateWithCString(NULL, image_file, kCFStringEncodingUTF8);
-  url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
-  destination = CGImageDestinationCreateWithURL(url, image_types[image_type].get_format(), 1, NULL);
-  CGImageDestinationAddImage(destination, image, nil);
-  success = CGImageDestinationFinalize(destination);
-  CFRelease(url); CFRelease(path); CFRelease(destination);
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("Saved %s to %s file %s in %s",
-              bytes_to_string(fsio_file_size(image_file)), image_types[image_type].name, image_file, milliseconds_to_string(timestamp() - started)
-              );
-  }
-  //timg_utils_image(image_file);
-  return((success == true) && fsio_file_exists(image_file));
-}
 enum image_conversion_test_type_t {
   IMAGE_CONVERSION_JPG,
   IMAGE_CONVERSION_PNG,
@@ -450,6 +434,37 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
 };
 
+bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file){
+  unsigned long started = timestamp();
+  bool          success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
+
+  path        = CFStringCreateWithCString(NULL, image_file, kCFStringEncodingUTF8);
+  url         = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
+  destination = CGImageDestinationCreateWithURL(url, image_types[image_type].get_format(), 1, NULL);
+  CGImageDestinationAddImage(destination, image, nil);
+  success = CGImageDestinationFinalize(destination);
+  CFRelease(url); CFRelease(path); CFRelease(destination);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("Saved %s to %s file %s in %s",
+              bytes_to_string(fsio_file_size(image_file)), image_types[image_type].name, image_file, milliseconds_to_string(timestamp() - started)
+              );
+  }
+  //timg_utils_image(image_file);
+  return((success == true) && fsio_file_exists(image_file));
+}
+
+unsigned char *save_cgref_to_image_type_memory1(CGImageRef image, size_t *len){
+  CGDataProviderRef provider_ref = CGImageGetDataProvider(image);
+  CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
+  size_t            buffer_size  = ((int)(CGImageGetBitsPerPixel(image) / 8)) * CGImageGetWidth(image) * CGImageGetHeight(image);
+  unsigned char     *buffer      = calloc(buffer_size, sizeof(unsigned char));
+
+  memcpy(buffer, CFDataGetBytePtr(data_ref), buffer_size);
+  CFRelease(data_ref);
+  *len = buffer_size;
+  return(buffer);
+}
+
 unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len){
   CFMutableDataRef      image_data = CFDataCreateMutable(kCFAllocatorDefault, 0);
   CGImageDestinationRef dataDest   = CGImageDestinationCreateWithData(image_data, image_types[image_type].get_format(), 1, NULL);
@@ -509,7 +524,7 @@ bool save_cgref_to_tiff_file(CGImageRef image, char *image_file) {
 
 bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   size_t        qoi_len     = 0;
-  unsigned char *qoi_pixels = cgref_to_qoi_memory(image, &qoi_len);
+  unsigned char *qoi_pixels = save_cgref_to_qoi_memory(image, &qoi_len);
 
   if (qoi_len < 1 || !qoi_pixels) {
     return(false);
@@ -520,10 +535,10 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   return((ok && (size_t)fsio_file_size(image_file) == (size_t)qoi_len) ? true : false);
 }
 
-unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
+unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
   size_t        rgb_len     = 0;
-  unsigned char *rgb_pixels = cgimage_ref_to_rgb_pixels(image_ref, &rgb_len);
+  unsigned char *rgb_pixels = save_cgref_to_rgb_memory(image_ref, &rgb_len);
 
   if (rgb_len < 1 || !rgb_pixels) {
     return(NULL);
@@ -630,7 +645,7 @@ unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, 
   return(buf);
 }
 
-unsigned char *cgimage_ref_to_rgb_pixels(CGImageRef image_ref, size_t *len){
+unsigned char *save_cgref_to_rgb_memory(CGImageRef image_ref, size_t *len){
   CFDataRef data_ref = CGDataProviderCopyData(CGImageGetDataProvider(image_ref));
 
   *len = CFDataGetLength(data_ref);

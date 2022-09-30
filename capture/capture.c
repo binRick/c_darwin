@@ -23,23 +23,5 @@ static void __attribute__((constructor)) __constructor__capture(void){
     CAPTURE_DEBUG_MODE = true;
   }
 }
-static void capture_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void capture_internal_fxn1(void){
-  log_info("Called function capture_internal_fxn1");
-  if (CAPTURE_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void capture_fxn1(void){
-  capture_internal_fxn1();
-  log_info("Called function capture_fxn1");
-  if (CAPTURE_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
 ////////////////////////////////////////////
 #endif

@@ -328,7 +328,7 @@ void handle_request(struct http_request_s *request) {
     size_t        rgb_len = 0;
     unsigned char *capture_pixels = NULL; size_t capture_len = 0;
     if (rq->pd->quant_mode) {
-      unsigned char *rgb_pixels = cgimage_ref_to_rgb_pixels(img_ref, &rgb_len);
+      unsigned char *rgb_pixels = save_cgref_to_rgb_memory(img_ref, &rgb_len);
       capture_pixels = imagequant_encode_rgb_pixels_to_png_buffer(rgb_pixels, w, h, rq->pd->min_quant_qual, rq->pd->max_quant_qual, &capture_len);
       free(rgb_pixels);
     }else{
@@ -368,7 +368,7 @@ void handle_request(struct http_request_s *request) {
  *  save_cgref_to_qoi_file(img_ref, "/tmp/a.qoi");
  *
  *  size_t        qoi_len     = 0;
- *  unsigned char *qoi_pixels = cgref_to_qoi_memory(img_ref, &qoi_len);
+ *  unsigned char *qoi_pixels = save_cgref_to_qoi_memory(img_ref, &qoi_len);
  *  log_debug("Got %lu qoi pixels", qoi_len);
  *
  *  int qoi_width = 0, qoi_height = 0;

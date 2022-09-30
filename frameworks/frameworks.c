@@ -34,7 +34,8 @@ char *windowTitle(char *appName, char *windowName);
 bool isAuthorizedForScreenRecording();
 bool isAuthorizedForAccessibility();
 void AXWindowSetPosition(AXUIElementRef window, CGPoint position);
-void AXWindowSetSize(AXUIElementRef window, CGSize size) ;
+void AXWindowSetSize(AXUIElementRef window, CGSize size);
+
 static int emptyWindowNameAllowed(char *appName) {
   return(0 == strcmp(appName, "Messages"));
 }
@@ -44,7 +45,6 @@ static int emptyWindowNameAllowed(char *appName) {
  * https://github.com/jmgao/metamove/blob/master/src/window.mm
  */
 extern AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID *out);
-
 
 /* Search windows for match (NULL for all), run function (NULL for none) */
 int EnumerateWindows(char *pattern,
@@ -121,7 +121,6 @@ skip:
   return(count);
 } /* EnumerateWindows */
 
-
 /* Fetch an integer value from a CFDictionary */
 int CFDictionaryGetInt(CFDictionaryRef dict, const void *key) {
   int isSuccess, value;
@@ -132,7 +131,6 @@ int CFDictionaryGetInt(CFDictionaryRef dict, const void *key) {
 
   return(isSuccess ? value : 0);
 }
-
 
 /* Copy a string value from a CFDictionary into a newly allocated string */
 char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
@@ -164,7 +162,6 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   return(isSuccess ? value : NULL);
 }
 
-
 /* Return newly allocated window title like "appName - windowName" */
 char *windowTitle(char *appName, char *windowName) {
   size_t titleSize;
@@ -186,7 +183,6 @@ char *windowTitle(char *appName, char *windowName) {
   return(title);
 }
 
-
 /* Given window dictionary from CGWindowList, return position */
 CGPoint CGWindowGetPosition(CFDictionaryRef window) {
   CFDictionaryRef bounds = CFDictionaryGetValue(window, kCGWindowBounds);
@@ -196,7 +192,6 @@ CGPoint CGWindowGetPosition(CFDictionaryRef window) {
   return(CGPointMake(x, y));
 }
 
-
 /* Given window dictionary from CGWindowList, return size */
 CGSize CGWindowGetSize(CFDictionaryRef window) {
   CFDictionaryRef bounds = CFDictionaryGetValue(window, kCGWindowBounds);
@@ -205,7 +200,6 @@ CGSize CGWindowGetSize(CFDictionaryRef window) {
 
   return(CGSizeMake(width, height));
 }
-
 
 /* Return true if and only if we are authorized to do screen recording */
 bool isAuthorizedForScreenRecording() {
@@ -229,7 +223,6 @@ bool isAuthorizedForScreenRecording() {
   }
 }
 
-
 /* Return true if and only if we are authorized to call accessibility APIs */
 bool isAuthorizedForAccessibility() {
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1090
@@ -242,7 +235,6 @@ bool isAuthorizedForAccessibility() {
 
 /* Silence warning that address of _AXUIElementGetWindow is always true */
 #pragma GCC diagnostic ignored "-Waddress"
-
 
 /* Given window dictionary from CGWindowList, return accessibility object */
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
@@ -280,7 +272,6 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   return(foundAppWindow);
 } /* AXWindowFromCGWindow */
 
-
 /* Get a value from an accessibility object */
 void AXWindowGetValue(AXUIElementRef window,
                       CFStringRef    attrName,
@@ -292,7 +283,6 @@ void AXWindowGetValue(AXUIElementRef window,
   CFRelease(attrValue);
 }
 
-
 /* Get position of window via accessibility object */
 
 /* Set position of window via accessibility object */
@@ -303,8 +293,6 @@ void AXWindowSetPosition(AXUIElementRef window, CGPoint position) {
   CFRelease(attrValue);
 }
 
-
-
 /* Set size of window via accessibility object */
 void AXWindowSetSize(AXUIElementRef window, CGSize size) {
   AXValueRef attrValue = AXValueCreate(kAXValueCGSizeType, &size);
@@ -312,6 +300,5 @@ void AXWindowSetSize(AXUIElementRef window, CGSize size) {
   AXUIElementSetAttributeValue(window, kAXSizeAttribute, attrValue);
   CFRelease(attrValue);
 }
-
 
 #endif

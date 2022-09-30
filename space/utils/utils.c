@@ -55,20 +55,20 @@ struct Vector *get_space_non_minimized_window_ids_v(size_t space_id){
   int           window_qty = 0;
   uint64_t      sid        = (uint64_t)space_id;
 
-  uint32_t *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, false);
+  uint32_t      *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, false);
 
-  if(windows_list){
+  if (windows_list) {
     for (int i = 0; i < window_qty; i++) {
-    vector_push(ids, (void *)(size_t)windows_list[i]);
+      vector_push(ids, (void *)(size_t)windows_list[i]);
     }
   }
   return(ids);
 }
 struct Vector *get_space_minimized_window_ids_v(size_t space_id){
-  struct Vector *ids = vector_new();
-  int      window_qty    = 0;
-  uint64_t sid           = (uint64_t)space_id;
-  uint32_t *windows_list = get_space_minimized_window_list(sid, &window_qty);
+  struct Vector *ids          = vector_new();
+  int           window_qty    = 0;
+  uint64_t      sid           = (uint64_t)space_id;
+  uint32_t      *windows_list = get_space_minimized_window_list(sid, &window_qty);
 
   for (int i = 0; i < window_qty; i++) {
     vector_push(ids, (void *)(size_t)windows_list[i]);
@@ -80,7 +80,8 @@ struct Vector *get_space_window_ids_v(size_t space_id){
   int           window_qty    = 0;
   uint64_t      sid           = (uint64_t)space_id;
   uint32_t      *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, true);
-  if(window_qty>0){
+
+  if (window_qty > 0) {
     for (int i = 0; i < window_qty; i++) {
       vector_push(ids, (void *)(size_t)windows_list[i]);
     }
@@ -204,6 +205,7 @@ uint32_t *get_space_window_list_for_connection(uint64_t *space_list, int space_c
   uint32_t   *window_list = calloc(1, sizeof(uint32_t));
 
   CFArrayRef space_list_ref = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), 1, kCFNumberSInt64Type);
+
   if (SPACE_UTILS_DEBUG_MODE == true) {
     log_info("space window list> %d||min?%d|cid:%d|space_count:%d|display id:%d|",
              space_count, include_minimized, cid, space_count,
@@ -252,10 +254,11 @@ err:
 
 uint32_t *get_space_window_list(uint64_t sid, int *count, bool include_minimized){
   void *d = get_space_window_list_for_connection(&sid, 1, 0, count, include_minimized);
-  if(d == NULL){
+
+  if (d == NULL) {
     return(NULL);
   }else{
-    return (uint32_t*)d;
+    return((uint32_t *)d);
   }
 }
 

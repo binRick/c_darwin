@@ -2,6 +2,7 @@
 #ifndef CAPTURE_UTILS_H
 #define CAPTURE_UTILS_H
 //////////////////////////////////////
+#include "capture/window/window.h"
 #include "screen/utils/utils.h"
 #include "space/utils/utils.h"
 #include "window/utils/utils.h"
@@ -15,12 +16,6 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-enum capture_type_id_t {
-  CAPTURE_TYPE_WINDOW  = 100,
-  CAPTURE_TYPE_DISPLAY = 200,
-  CAPTURE_TYPE_SPACE   = 300,
-  CAPTURE_TYPES_QTY    = 3,
-};
 //////////////////////////////////////
 struct capture_type_t {
   const char    *name;

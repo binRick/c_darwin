@@ -31,7 +31,8 @@ struct spng_info_t {
   unsigned long started, dur;
 };
 enum image_type_id_t {
-  IMAGE_TYPE_PNG,
+  IMAGE_TYPE_PNG = 1,
+  IMAGE_TYPE_PNG_COMPRESSED,
   IMAGE_TYPE_GIF,
   IMAGE_TYPE_TIFF,
   IMAGE_TYPE_JPEG,
@@ -41,6 +42,7 @@ enum image_type_id_t {
   IMAGE_TYPE_CGIMAGE,
   IMAGE_TYPES_QTY,
 };
+unsigned char *save_cgref_to_image_type_memory1(CGImageRef image, size_t *len);
 struct image_type_t {
   const char    *name, *file_extension;
   CFStringRef   (^get_format)(void);
@@ -88,9 +90,9 @@ bool save_cgref_to_gif_file(CGImageRef image, char *image_file);
 bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file);
 bool save_cgref_to_tiff_file(CGImageRef image, char *image_file);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-unsigned char *cgimage_ref_to_rgb_pixels(CGImageRef image_ref, size_t *len);
+unsigned char *save_cgref_to_rgb_memory(CGImageRef image_ref, size_t *len);
 bool save_cgref_to_qoi_file(CGImageRef image_ref, char *image_file);
-unsigned char *cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
+unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality);
 CGImageRef png_fp_to_cgimage(FILE *fp);

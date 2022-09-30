@@ -5,6 +5,7 @@
 #define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
+#include "clamp/clamp.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
 #include "hotkey-utils/hotkey-utils.h"
@@ -22,6 +23,7 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
+#define MAX_CONCURRENCY    25
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 ////////////////////////////////////////////
@@ -129,8 +131,9 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "concurrency",
       .description = "concurrency",
       .arg_name = "CONCURRENCY-LEVEL",
+      .arg_data_type = check_cmds[CHECK_COMMAND_CONCURRENCY].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_CONCURRENCY].fxn,
       .arg_dest = &(args->concurrency),
-      .arg_data_type = DATA_TYPE_INT,
     });
   },
   [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                                      {
@@ -849,7 +852,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SET_WINDOW_SPACE] =      {
     .fxn = (*_command_set_window_space)
   },
-  [COMMAND_FOCUS_SPACE] =          {
+  [COMMAND_FOCUS_SPACE] =           {
     .name = "focus-space",           .icon = "🔅", .color = COLOR_SPACE, .description = "Focus Space",
     .fxn  = (*_command_focus_space),
   },
@@ -1143,7 +1146,9 @@ static void _check_limit(int c){
 }
 
 static void _check_concurrency(int c){
-  args->concurrency = c;
+  args->concurrency = (c > MAX_CONCURRENCY) ? MAX_CONCURRENCY : c;
+  args->concurrency = (args->concurrency < 1) ? 1 : args->concurrency;
+  log_info("c:%d", args->concurrency);
 }
 
 static void _check_xml_file(char *xml_file_path){
@@ -1208,7 +1213,6 @@ static void _check_width_group(uint16_t width){
   args->width                 = width;
   return(EXIT_SUCCESS);
 }
-
 
 static void _check_window_id(uint16_t window_id){
   if (window_id < 1) {
@@ -1488,7 +1492,11 @@ static void _command_extract_window(){
 }
 
 static void _command_capture_window(){
-  DARWIN_LS_COMMANDS_DEBUG_MODE = true;
+  args->width       = clamp(args->width, -1, 4000);
+  args->height      = clamp(args->height, -1, 4000);
+  args->limit       = clamp(args->limit, 1, 999);
+  args->concurrency = clamp(args->concurrency, 1, args->limit);
+  args->concurrency = clamp(args->concurrency, 1, MAX_CONCURRENCY);
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
     log_debug("all windows:  %s", args->all_windows?"Yes":"No");
     log_debug("display :  %s", args->display_output_file?"Yes":"No");
@@ -1499,54 +1507,97 @@ static void _command_capture_window(){
     log_debug("format :  %s", args->image_format);
     log_debug("format type:  %d", args->image_format_type);
   }
-  struct capture_windows_t *cap = calloc(1,sizeof(struct capture_windows_t));
-  cap->window_ids = vector_new();
-  cap->concurrency = args->concurrency;
-  cap->type = args->image_format_type;
-  cap->width = args->width  > 0 ? args->width : 0;
-  cap->height = args->height > 0 ? args->height : 0;
+  struct capture_req_t *req = calloc(1, sizeof(struct capture_req_t));
+  req->ids          = vector_new();
+  req->concurrency  = args->concurrency;
+  req->type         = CAPTURE_TYPE_WINDOW;
+  req->format       = args->image_format_type;
+  req->width        = args->width > 0 ? args->width : 0;
+  req->height       = args->height > 0 ? args->height : 0;
+  req->time.started = timestamp();
+  req->time.dur     = 0;
   struct Vector *all_windows = NULL, *results = NULL;
 
   if (args->all_windows == true) {
     all_windows = get_window_infos_v();
-    for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(cap->window_ids) < (size_t)(args->limit))  : true); i++) {
+    for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(req->ids) < (size_t)(args->limit))  : true); i++) {
       struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
       if (w && w->window_id > 0) {
-        vector_push(cap->window_ids, (void *)(w->window_id));
+        vector_push(req->ids, (void *)(w->window_id));
       }
     }
   }else if (args->window_id > 0) {
     struct window_info_t *w = get_window_id_info((size_t)(args->window_id));
     if (w && w->window_id == (size_t)(args->window_id)) {
-      vector_push(cap->window_ids, (void *)(size_t)(args->window_id));
+      vector_push(req->ids, (void *)(size_t)(args->window_id));
     }else{
       log_error("Window ID #%lu not found", (size_t)(args->window_id));
     }
   }
-  results = capture_windows(cap);
-  for (size_t i = 0; (i < vector_size(results)); i++) {
-    struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
-    if (args->output_file && i == 0) {
-      unsigned char *data = fsio_read_binary_file(r->file);
-      if (data) {
-        if (fsio_write_binary_file(args->output_file, data, fsio_file_size(r->file)) == false) {
-          log_error("Failed to write file %s", args->output_file);
-        }
-        free(data);
-      }
-    }
-    if(args->display_output_file)
-      timg_utils_titled_image(r->file);
-    else
-      log_info("Capture Result #%lu/%lu: %s %s (type %s)",
-             i + 1, vector_size(results),
-             bytes_to_string(fsio_file_size(r->file)),
-             r->file,
-             image_type_name(r->type)
-             );
-  }
+  results = capture_windows(req);
+  log_info("%lu Results", vector_size(results));
   exit(EXIT_SUCCESS);
 } /* _command_capture_window */
+/*
+ * static void __command_capture_window(){
+ * if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+ *  log_debug("all windows:  %s", args->all_windows?"Yes":"No");
+ *  log_debug("display :  %s", args->display_output_file?"Yes":"No");
+ *  log_debug("compress :  %s", args->compress?"Yes":"No");
+ *  log_debug("width :  %d", args->width);
+ *  log_debug("concurrency :  %d", args->concurrency);
+ *  log_debug("height :  %d", args->height);
+ *  log_debug("format :  %s", args->image_format);
+ *  log_debug("format type:  %d", args->image_format_type);
+ * }
+ * struct capture_windows_t *cap = calloc(1,sizeof(struct capture_windows_t));
+ * cap->window_ids = vector_new();
+ * cap->concurrency = args->concurrency;
+ * cap->type = args->image_format_type;
+ * cap->width = args->width  > 0 ? args->width : 0;
+ * cap->height = args->height > 0 ? args->height : 0;
+ * struct Vector *all_windows = NULL, *results = NULL;
+ *
+ * if (args->all_windows == true) {
+ *  all_windows = get_window_infos_v();
+ *  for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(cap->window_ids) < (size_t)(args->limit))  : true); i++) {
+ *    struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
+ *    if (w && w->window_id > 0) {
+ *      vector_push(cap->window_ids, (void *)(w->window_id));
+ *    }
+ *  }
+ * }else if (args->window_id > 0) {
+ *  struct window_info_t *w = get_window_id_info((size_t)(args->window_id));
+ *  if (w && w->window_id == (size_t)(args->window_id)) {
+ *    vector_push(cap->window_ids, (void *)(size_t)(args->window_id));
+ *  }else{
+ *    log_error("Window ID #%lu not found", (size_t)(args->window_id));
+ *  }
+ * }
+ * results = capture_windows(cap);
+ * for (size_t i = 0; (i < vector_size(results)); i++) {
+ *  struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+ *  if (args->output_file && i == 0) {
+ *    unsigned char *data = fsio_read_binary_file(r->file);
+ *    if (data) {
+ *      if (fsio_write_binary_file(args->output_file, data, fsio_file_size(r->file)) == false) {
+ *        log_error("Failed to write file %s", args->output_file);
+ *      }
+ *      free(data);
+ *    }
+ *  }
+ *  if(args->display_output_file)
+ *    timg_utils_titled_image(r->file);
+ *  else
+ *    log_info("Capture Result #%lu/%lu: %s %s (type %s)",
+ *           i + 1, vector_size(results),
+ *           bytes_to_string(fsio_file_size(r->file)),
+ *           r->file,
+ *           image_type_name(r->type)
+ *           );
+ * }
+ * exit(EXIT_SUCCESS);
+ * } */
 
 static void _command_list_font(){
   struct list_table_t *filter = &(struct list_table_t){
@@ -1646,17 +1697,17 @@ static void _command_windows(){
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
     list_window_table(&(struct list_table_t){
-      .sort_key           = args->sort_key, .sort_direction = args->sort_direction,
-      .current_space_only = args->current_space_only, 
+      .sort_key             = args->sort_key, .sort_direction = args->sort_direction,
+      .current_space_only   = args->current_space_only,
       .current_display_only = args->current_display_only,
-      .space_id           = args->space_id, 
-      .display_id = args->display_id, 
-      .window_id = args->window_id,
-      .pid                = args->pid,
-      .height_greater     = args->height_greater, .height_less = args->height_less,
-      .width_greater      = args->width_greater, .width_less = args->width_less,
-      .application_name   = args->application_name,
-      .width              = args->width, .height = args->height, .limit = args->limit,
+      .space_id             = args->space_id,
+      .display_id           = args->display_id,
+      .window_id            = args->window_id,
+      .pid                  = args->pid,
+      .height_greater       = args->height_greater, .height_less = args->height_less,
+      .width_greater        = args->width_greater, .width_less = args->width_less,
+      .application_name     = args->application_name,
+      .width                = args->width, .height = args->height, .limit = args->limit,
     });
     break;
   case OUTPUT_MODE_JSON:
@@ -1806,7 +1857,7 @@ static void _command_spaces(){
 }
 
 static void _command_focus_space(){
-  log_info("Focusing space #%d",args->space_id);
+  log_info("Focusing space #%d", args->space_id);
   exit(EXIT_SUCCESS);
 }
 
