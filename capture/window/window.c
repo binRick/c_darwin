@@ -2,7 +2,7 @@
 #ifndef CAPTURE_WINDOW_C
 #define CAPTURE_WINDOW_C
 #define THUMBNAIL_WIDTH    150
-#define WRITE_FILE         true
+#define WRITE_FILE         false
 #define WRITE_THUMBNAIL    false
 ////////////////////////////////////////////
 #include "capture/window/window.h"
@@ -17,6 +17,7 @@
 #include "capture/utils/utils.h"
 #include "chan/src/chan.h"
 #include "clamp/clamp.h"
+#include "gifdec/gifdec.h"
 #include "image/utils/utils.h"
 #include "libimagequant/libimagequant.h"
 #include "log/log.h"
@@ -101,9 +102,6 @@ static const struct cap_t *__caps[] = {
             milliseconds_to_string(r->time.dur)
             );
       return((void *)r);
-
-      error :
-      return((void *)0);
     },
   },
   [CAPTURE_CHAN_TYPE_QOI] = &(struct cap_t)           {
@@ -670,6 +668,26 @@ bool end_animation(struct animated_capture_t *acap){
   return(true);
 }
 
+int poll_new_animated_frame(void *VOID){
+  struct animated_capture_t *acap = (struct animated_capture_t *)VOID;
+  void                      *msg;
+
+  while (chan_recv(acap->chan, &msg) == 0) {
+    struct capture_result_t *r = (struct capture_result_t *)msg;
+    pthread_mutex_lock(acap->mutex);
+    if (CAPTURE_WINDOW_DEBUG_MODE) {
+      log_info("msg %s|%lu|%lu", r->file, r->len, vector_size(acap->frames_v));
+    }
+    new_animated_frame(acap, r);
+    pthread_mutex_unlock(acap->mutex);
+  }
+  chan_send(acap->done, (void *)0);
+  if (CAPTURE_WINDOW_DEBUG_MODE) {
+    log_info("poller finished");
+  }
+  return(0);
+}
+
 bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t *r){
   struct animated_frame_t *n = calloc(1, sizeof(struct animated_frame_t));
 
@@ -678,10 +696,17 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
   n->len    = r->len;
   n->ts     = r->time.started - (r->time.dur / 2);
   int           f = 0, w = 0, h = 0;
-  FILE          *fp     = fopen(r->file, "rb");
+  FILE          *fp     = fmemopen(r->pixels, r->len, "rb");
+  unsigned long s       = timestamp();
   unsigned char *pixels = stbi_load_from_file(fp, &w, &h, &f, STBI_rgb_alpha);
 
   fclose(fp);
+  if (CAPTURE_WINDOW_DEBUG_MODE) {
+    log_info("STBI in %s",
+             milliseconds_to_string(timestamp() - s)
+             );
+  }
+
   if (vector_size(acap->frames_v) == 0) {
     acap->width   = n->width;
     acap->height  = n->width;
@@ -690,26 +715,27 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
   }
   acap->max_bit_depth = (int)((f == 4) ?  32 : 24);
   acap->pitch_bytes   = (int)((f == STBI_rgb_alpha) ? (4 * w) : (3 * w));
-  pixels = r->pixels;
-  log_info("%d|%d|%d|%d|%s|%s|%dx%d",
-           f,
-           acap->max_bit_depth,
-           acap->pitch_bytes,
-           STBI_rgb_alpha,
-           bytes_to_string(r->len),
-           r->file,
-           w, h
-           );
+  if (CAPTURE_WINDOW_DEBUG_MODE) {
+    log_info("%d|%d|%d|%d|%s|%s|%dx%d",
+             f,
+             acap->max_bit_depth,
+             acap->pitch_bytes,
+             STBI_rgb_alpha,
+             bytes_to_string(r->len),
+             r->file,
+             w, h
+             );
+  }
   msf_gif_frame(acap->gif, pixels,
                 (int)(acap->ms_per_frame / 10),
                 acap->max_bit_depth,
                 acap->pitch_bytes
                 );
-  free(pixels);
   vector_push(acap->frames_v, (void *)n);
   acap->total_size = animated_frames_len(acap);
+  free(pixels);
   return(true);
-}
+} /* new_animated_frame */
 
 size_t animated_frames_len(struct animated_capture_t *acap){
   size_t len = 0;
@@ -718,6 +744,31 @@ size_t animated_frames_len(struct animated_capture_t *acap){
     len += ((struct animated_frame_t *)vector_get(acap->frames_v, i))->len;
   }
   return(len);
+}
+
+bool inspect_frames(struct animated_capture_t *acap){
+  gd_GIF        *gif    = gd_open_gif(acap->file);
+  size_t        len     = (gif->width * gif->height * 3);
+  char          *buffer = malloc(len);
+  unsigned long ts;
+
+  for (unsigned looped = 1;; looped++) {
+    while (gd_get_frame(gif)) {
+      ts = timestamp();
+      gd_render_frame(gif, buffer);
+      log_debug("Loaded %s Buffer from frame #%d/%d in %s",
+                bytes_to_string(len),
+                looped, gif->loop_count,
+                milliseconds_to_string(timestamp() - ts)
+                );
+    }
+    if (looped == gif->loop_count) {
+      break;
+    }
+    gd_rewind(gif);
+  }
+  free(buffer);
+  gd_close_gif(gif);
 }
 
 struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame){
@@ -733,6 +784,14 @@ struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, en
   n->height       = 0;
   n->started      = 0;
   asprintf(&(n->file), "%s%s-%lu-animation.%s", gettempdir(), get_capture_type_name(n->type), id, "gif");
+
+  n->thread = calloc(1, sizeof(pthread_t));
+  n->mutex  = calloc(1, sizeof(pthread_mutex_t));
+  assert(pthread_mutex_init(n->mutex, NULL) == 0);
+  n->chan = chan_init(100);
+  n->done = chan_init(0);
+  pthread_create(n->thread, NULL, poll_new_animated_frame, (void *)n);
+
   return(n);
 }
 

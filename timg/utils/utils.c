@@ -70,6 +70,7 @@ static const char *ARG_TITLE_FILENAME = "--title=" TITLE_FILENAME;
 static const char *ARG_SCROLL         = "--scroll=60";
 static const char *ARG_FIT_WIDTH      = "--fit-width";
 static const char *ARG_CENTER         = "--center";
+static const char *ARG_LOOPS          = "--loops=1";
 static const char *ARG_UPSCALE        = "--upscale";
 static const char *ARG_COMPRESS       = "--compress";
 static const char *ARG_QUARTER_PIXELS = "-pq";
@@ -95,6 +96,7 @@ static struct Vector *get_default_args_v(){
   }else{
     vector_push(v, (void *)ARG_QUARTER_PIXELS);
   }
+  vector_push(v, (void *)ARG_LOOPS);
   return(v);
 }
 

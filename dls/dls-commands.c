@@ -1525,22 +1525,24 @@ static void _command_animated_capture_window(){
   args->concurrency      = clamp(args->concurrency, 1, args->limit);
   args->concurrency      = clamp(args->concurrency, 1, MAX_CONCURRENCY);
   args->duration_seconds = clamp(args->duration_seconds, 1, 300);
-  log_debug("frame rate :  %d", args->frame_rate);
-  log_debug("Duration sec :  %d", args->duration_seconds);
-  log_debug("window id :  %d", args->window_id);
-  log_debug("display :  %s", args->display_output_file?"Yes":"No");
-  log_debug("compress :  %s", args->compress?"Yes":"No");
-  log_debug("width :  %d", args->width);
-  log_debug("height :  %d", args->height);
-  log_debug("concurrency :  %d", args->concurrency);
   unsigned long animation_started = timestamp();
   unsigned long end_ts = animation_started + (args->duration_seconds * 1000);
   unsigned long interval_ms = (unsigned long)(1000 * (float)(((float)1) / (float)(args->frame_rate))), expected_frames_qty = args->duration_seconds * args->frame_rate;
-  log_debug("Expected Frames :  %ld", expected_frames_qty);
-  log_debug("start ts :  %ld", animation_started);
-  log_debug("end ts :  %ld", end_ts);
-  log_debug("ms dur :  %ld", end_ts - animation_started);
-  log_debug("interval ms :  %ld", interval_ms);
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_debug("frame rate :  %d", args->frame_rate);
+    log_debug("Duration sec :  %d", args->duration_seconds);
+    log_debug("window id :  %d", args->window_id);
+    log_debug("display :  %s", args->display_output_file?"Yes":"No");
+    log_debug("compress :  %s", args->compress?"Yes":"No");
+    log_debug("width :  %d", args->width);
+    log_debug("height :  %d", args->height);
+    log_debug("concurrency :  %d", args->concurrency);
+    log_debug("Expected Frames :  %ld", expected_frames_qty);
+    log_debug("start ts :  %ld", animation_started);
+    log_debug("end ts :  %ld", end_ts);
+    log_debug("ms dur :  %ld", end_ts - animation_started);
+    log_debug("interval ms :  %ld", interval_ms);
+  }
   struct capture_req_t *req = calloc(1, sizeof(struct capture_req_t));
   req->ids          = vector_new();
   req->concurrency  = args->concurrency;
@@ -1560,38 +1562,51 @@ static void _command_animated_capture_window(){
     exit(EXIT_FAILURE);
   }
   unsigned long prev_ts = 0, last_ts = 0, delta_ms = 0;
-  while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > vector_size(acap->frames_v)) {
+  size_t        qty = vector_size(acap->frames_v);
+  while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > qty) {
     unsigned long s = timestamp();
     results  = capture_windows(req);
     prev_ts  = last_ts;
     last_ts  = timestamp();
     delta_ms = last_ts - prev_ts;
-    for (size_t i = 0; i < vector_size(results); i++) {
+    size_t q = vector_size(results);
+    for (size_t i = 0; i < q; i++) {
       struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
-      assert(new_animated_frame(acap, r) == true);
-      log_info("Frame #%lu/%lu> Received %lu Results in %s"
-               "\n\tID:%lu|File:%s|Size:%s|Delta ms:%s|Time left:%lldms|"
-               "\n\t" AC_RESETALL AC_YELLOW "Total Frames Size:%s" AC_RESETALL "|" AC_GREEN "Avg Frame Size:%s" AC_RESETALL "|"
-               "\n\t%s",
-               vector_size(acap->frames_v), expected_frames_qty,
-               vector_size(results),
-               milliseconds_to_string(last_ts - s),
-               r->id,
-               r->file,
-               bytes_to_string(fsio_file_size(r->file)),
-               (vector_size(acap->frames_v) > 1) ? milliseconds_to_string(delta_ms) : "0ms",
-               end_ts - timestamp(),
-               bytes_to_string(acap->total_size),
-               bytes_to_string(acap->total_size / vector_size(acap->frames_v)),
-               ""
-               );
+      chan_send(acap->chan, (void *)r);
+      if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+        log_info("Frame #%lu/%lu> Received %lu Results in %s"
+                 "\n\tID:%lu|File:%s|Size:%s|Delta ms:%s|Time left:%lldms|"
+                 "\n\t%s",
+                 qty, expected_frames_qty,
+                 vector_size(results),
+                 milliseconds_to_string(last_ts - s),
+                 r->id,
+                 r->file,
+                 bytes_to_string(fsio_file_size(r->file)),
+                 (qty > 1) ? milliseconds_to_string(delta_ms) : "0ms",
+                 end_ts - timestamp(),
+                 ""
+                 );
+      }else{
+        fprintf(stdout, ".");
+      }
     }
     while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5)))) {
       usleep((interval_ms / 50) * 1000);
     }
+    pthread_mutex_lock(acap->mutex);
+    qty = vector_size(acap->frames_v);
+    pthread_mutex_unlock(acap->mutex);
   }
+  if (!DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    fprintf(stdout, "\n");
+  }
+  chan_close(acap->chan);
+  chan_recv(acap->done, NULL);
+  pthread_join(acap->thread, NULL);
   assert(end_animation(acap) == true);
-  timg_utils_image(acap->file);
+//  inspect_frames(acap);
+  timg_utils_titled_image(acap->file);
 
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture_window */
@@ -1644,66 +1659,6 @@ static void _command_capture_window(){
   log_info("%lu Results", vector_size(results));
   exit(EXIT_SUCCESS);
 } /* _command_capture_window */
-/*
- * static void __command_capture_window(){
- * if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
- *  log_debug("all windows:  %s", args->all_windows?"Yes":"No");
- *  log_debug("display :  %s", args->display_output_file?"Yes":"No");
- *  log_debug("compress :  %s", args->compress?"Yes":"No");
- *  log_debug("width :  %d", args->width);
- *  log_debug("concurrency :  %d", args->concurrency);
- *  log_debug("height :  %d", args->height);
- *  log_debug("format :  %s", args->image_format);
- *  log_debug("format type:  %d", args->image_format_type);
- * }
- * struct capture_windows_t *cap = calloc(1,sizeof(struct capture_windows_t));
- * cap->window_ids = vector_new();
- * cap->concurrency = args->concurrency;
- * cap->type = args->image_format_type;
- * cap->width = args->width  > 0 ? args->width : 0;
- * cap->height = args->height > 0 ? args->height : 0;
- * struct Vector *all_windows = NULL, *results = NULL;
- *
- * if (args->all_windows == true) {
- *  all_windows = get_window_infos_v();
- *  for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(cap->window_ids) < (size_t)(args->limit))  : true); i++) {
- *    struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
- *    if (w && w->window_id > 0) {
- *      vector_push(cap->window_ids, (void *)(w->window_id));
- *    }
- *  }
- * }else if (args->window_id > 0) {
- *  struct window_info_t *w = get_window_id_info((size_t)(args->window_id));
- *  if (w && w->window_id == (size_t)(args->window_id)) {
- *    vector_push(cap->window_ids, (void *)(size_t)(args->window_id));
- *  }else{
- *    log_error("Window ID #%lu not found", (size_t)(args->window_id));
- *  }
- * }
- * results = capture_windows(cap);
- * for (size_t i = 0; (i < vector_size(results)); i++) {
- *  struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
- *  if (args->output_file && i == 0) {
- *    unsigned char *data = fsio_read_binary_file(r->file);
- *    if (data) {
- *      if (fsio_write_binary_file(args->output_file, data, fsio_file_size(r->file)) == false) {
- *        log_error("Failed to write file %s", args->output_file);
- *      }
- *      free(data);
- *    }
- *  }
- *  if(args->display_output_file)
- *    timg_utils_titled_image(r->file);
- *  else
- *    log_info("Capture Result #%lu/%lu: %s %s (type %s)",
- *           i + 1, vector_size(results),
- *           bytes_to_string(fsio_file_size(r->file)),
- *           r->file,
- *           image_type_name(r->type)
- *           );
- * }
- * exit(EXIT_SUCCESS);
- * } */
 
 static void _command_list_font(){
   struct list_table_t *filter = &(struct list_table_t){
