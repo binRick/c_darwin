@@ -28,6 +28,7 @@ struct args_t                 *args               = &(struct args_t){
   .retries             = 0,
   .image_format        = "png",
   .image_format_type   = IMAGE_TYPE_PNG,
+  .duration_seconds    = 10,
 };
 
 ////////////////////////////////////////////
@@ -118,6 +119,30 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
           common_options_b[COMMON_OPTION_DISPLAY_ID](args),
           common_options_b[COMMON_OPTION_LIMIT](args),
+          common_options_b[COMMON_OPTION_COMPRESS](args),
+          common_options_b[COMMON_OPTION_CONCURRENCY](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_ANIMATED_CAPTURE_WINDOW].name,
+        .description = cmds[COMMAND_ANIMATED_CAPTURE_WINDOW].description,
+        .function    = cmds[COMMAND_ANIMATED_CAPTURE_WINDOW].fxn,
+        .about       = get_command_about(COMMAND_ANIMATED_CAPTURE_WINDOW),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_DURATION_SECONDS](args),
+          common_options_b[COMMON_OPTION_FRAME_RATE](args),
+          common_options_b[COMMON_OPTION_WIDTH](args),
+          common_options_b[COMMON_OPTION_HEIGHT](args),
+          common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
+          common_options_b[COMMON_OPTION_DISPLAY_ID](args),
+          common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_PID](args),
+          common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
+          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
+          common_options_b[COMMON_OPTION_SPACE_ID](args),
           common_options_b[COMMON_OPTION_COMPRESS](args),
           common_options_b[COMMON_OPTION_CONCURRENCY](args),
           { END_OF_OPTIONS },

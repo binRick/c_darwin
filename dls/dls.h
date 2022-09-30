@@ -70,6 +70,7 @@ struct args_t {
   char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *image_format;
   enum image_type_id_t                 image_format_type;
   bool                                 exact_match, case_sensitive, duplicate, non_duplicate;
+  int                                  frame_rate, duration_seconds;
 };
 struct args_t *args;
 #endif

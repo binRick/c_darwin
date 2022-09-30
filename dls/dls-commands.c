@@ -5,6 +5,7 @@
 #define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
+#include "capture/window/window.h"
 #include "clamp/clamp.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
@@ -58,6 +59,7 @@ static void _command_list_font();
 static void _command_list_kitty();
 static void _command_alacrittys();
 static void _command_capture_window();
+static void _command_animated_capture_window();
 static void _command_extract_window();
 static void _command_save_app_icon_to_png();
 static void _command_write_app_icon_from_png();
@@ -549,6 +551,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
     });
   },
+  [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'd',
+      .long_name = "duration",
+      .description = "Duration (seconds)",
+      .arg_name = "SECONDS",
+      .arg_data_type = DATA_TYPE_UINT,
+      .arg_dest = &(args->duration_seconds),
+    });
+  },
   [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)                                    {
     return((struct optparse_opt)                                                                            {
       .short_name = 'x',
@@ -670,6 +682,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH_GROUP].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WIDTH_GROUP].fxn,
       .arg_dest = &(args->width_or_height_group),
+    });
+  },
+  [COMMON_OPTION_FRAME_RATE] = ^ struct optparse_opt (struct args_t *args)                                  {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'F',
+      .long_name = "frame-rate",
+      .description = "Frame Rate",
+      .arg_name = "FRAME-RATE",
+      .arg_dest = &(args->frame_rate),
+      .arg_data_type = DATA_TYPE_INT,
     });
   },
   [COMMON_OPTION_WINDOW_HEIGHT_GROUP] = ^ struct optparse_opt (struct args_t *args)                         {
@@ -812,204 +834,209 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
 };
 
 struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
-  [COMMAND_MOVE_WINDOW] =           {
+  [COMMAND_MOVE_WINDOW] =             {
     .name = "move-window",           .icon = "🪟", .color = COLOR_WINDOW, .description = "Move Window",
     .fxn  = (*_command_move_window),
   },
-  [COMMAND_RESIZE_WINDOW] =         {
+  [COMMAND_RESIZE_WINDOW] =           {
     .name = "resize-window",           .icon = "💡", .color = COLOR_WINDOW, .description = "Resize Window",
     .fxn  = (*_command_resize_window),
   },
-  [COMMAND_HOTKEYS] =               {
+  [COMMAND_HOTKEYS] =                 {
     .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Hotkeys Daemon",
     .fxn  = (*_command_hotkeys),
   },
-  [COMMAND_WINDOW_LEVEL] =          {
+  [COMMAND_WINDOW_LEVEL] =            {
     .name        = "window-level",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window Level",
     .fxn         = (*_command_window_level),
   },
-  [COMMAND_WINDOW_LAYER] =          {
+  [COMMAND_WINDOW_LAYER] =            {
     .name        = "window-layer",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window Layer",
     .fxn         = (*_command_window_layer),
   },
-  [COMMAND_WINDOW_IS_MINIMIZED] =   {
+  [COMMAND_WINDOW_IS_MINIMIZED] =     {
     .name        = "window-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window is Minimized",
     .fxn         = (*_command_window_is_minimized),
   },
-  [COMMAND_PID_IS_MINIMIZED] =      {
+  [COMMAND_PID_IS_MINIMIZED] =        {
     .name        = "pid-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
     .description = "PID is Minimized",
     .fxn         = (*_command_pid_is_minimized),
   },
-  [COMMAND_MINIMIZE_WINDOW] =       {
+  [COMMAND_MINIMIZE_WINDOW] =         {
     .name        = "minimize-window",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Minimize Window",
     .fxn         = (*_command_minimize_window),
   },
-  [COMMAND_SET_WINDOW_SPACE] =      {
+  [COMMAND_SET_WINDOW_SPACE] =        {
     .fxn = (*_command_set_window_space)
   },
-  [COMMAND_FOCUS_SPACE] =           {
+  [COMMAND_FOCUS_SPACE] =             {
     .name = "focus-space",           .icon = "🔅", .color = COLOR_SPACE, .description = "Focus Space",
     .fxn  = (*_command_focus_space),
   },
-  [COMMAND_FOCUS_WINDOW] =          {
+  [COMMAND_FOCUS_WINDOW] =            {
     .name = "focus-window",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Focus Window",
     .fxn  = (*_command_focus_window),
   },
-  [COMMAND_SET_WINDOW_ALL_SPACES] = {
+  [COMMAND_SET_WINDOW_ALL_SPACES] =   {
     .fxn = (*_command_set_window_all_spaces)
   },
-  [COMMAND_SET_SPACE] =             {
+  [COMMAND_SET_SPACE] =               {
     .name = "set-space",           .icon = "💣", .color = COLOR_SPACE, .description = "Set Space",
     .fxn  = (*_command_set_space),
   },
-  [COMMAND_SET_SPACE_INDEX] =       {
+  [COMMAND_SET_SPACE_INDEX] =         {
     .fxn = (*_command_set_space_index)
   },
-  [COMMAND_WINDOWS] =               {
+  [COMMAND_WINDOWS] =                 {
     .name = "windows", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Windows",
     .fxn  = (*_command_windows)
   },
-  [COMMAND_WINDOW_ID_INFO] =        {
+  [COMMAND_WINDOW_ID_INFO] =          {
     .name        = "window-id-info",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
-  [COMMAND_SPACES] =                {
+  [COMMAND_SPACES] =                  {
     .name = "spaces", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Spaces",
     .fxn  = (*_command_spaces)
   },
-  [COMMAND_SECURITY] =              {
+  [COMMAND_SECURITY] =                {
     .name = "security", .icon = "🐾", .color = COLOR_WINDOW, .description = "Open Security",
     .fxn  = (*_command_open_security)
   },
-  [COMMAND_DISPLAYS] =              {
+  [COMMAND_DISPLAYS] =                {
     .name = "displays", .icon = "🐾", .color = COLOR_WINDOW, .description = "List Displays",
     .fxn  = (*_command_displays)
   },
-  [COMMAND_HTTPSERVER] =            {
+  [COMMAND_HTTPSERVER] =              {
     .fxn = (*_command_httpserver)
   },
-  [COMMAND_STICKY_WINDOW] =         {
+  [COMMAND_STICKY_WINDOW] =           {
     .name        = "sticky-window",     .icon = "🕰", .color = COLOR_WINDOW,
     .description = "Set Window Sticky",
     .fxn         = (*_command_sticky_window)
   },
-  [COMMAND_MENU_BAR] =              {
+  [COMMAND_MENU_BAR] =                {
     .name        = "menu-bar",      .icon = "📀", .color = COLOR_SHOW,
     .description = "Menu Bar Info",
     .fxn         = (*_command_menu_bar)
   },
-  [COMMAND_DOCK] =                  {
+  [COMMAND_DOCK] =                    {
     .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
     .description = "Dock Info",
     .fxn         = (*_command_dock)
   },
-  [COMMAND_FOCUSED_SPACE] =         {
+  [COMMAND_FOCUSED_SPACE] =           {
     .name        = "focused-space", .icon = "💮", .color = COLOR_LIST,
     .description = "Focused Space",
     .fxn         = (*_command_focused_space)
   },
-  [COMMAND_FOCUSED_WINDOW] =        {
+  [COMMAND_FOCUSED_WINDOW] =          {
     .name        = "focused-window", .icon = "💮", .color = COLOR_LIST,
     .description = "Focused Window",
     .fxn         = (*_command_focused_window)
   },
-  [COMMAND_FOCUSED_PID] =           {
+  [COMMAND_FOCUSED_PID] =             {
     .name        = "focused-pid", .icon = "🌈", .color = COLOR_LIST,
     .description = "Focused PID",
     .fxn         = (*_command_focused_pid)
   },
-  [COMMAND_APPS] =                  {
+  [COMMAND_APPS] =                    {
     .name        = "apps",         .icon = "📡", .color = COLOR_SHOW,
     .description = "Applications",
     .fxn         = (*_command_list_app)
   },
-  [COMMAND_FONTS] =                 {
+  [COMMAND_FONTS] =                   {
     .name        = "fonts", .icon = "🦓", .color = COLOR_SHOW,
     .description = "Fonts",
     .fxn         = (*_command_list_font)
   },
-  [COMMAND_KITTYS] =                {
+  [COMMAND_ANIMATED_CAPTURE_WINDOW] = {
+    .name        = "animate",                 .icon = "💤", .color = COLOR_LIST,
+    .description = "Animated Window Capture",
+    .fxn         = (*_command_animated_capture_window)
+  },
+  [COMMAND_KITTYS] =                  {
     .name        = "kittys", .icon = "💤", .color = COLOR_LIST,
     .description = "Kittys",
     .fxn         = (*_command_list_kitty)
   },
-  [COMMAND_IMAGE_CONVERSIONS] =     {
+  [COMMAND_IMAGE_CONVERSIONS] =       {
     .name        = "image-conversions", .icon = "💮", .color = COLOR_LIST,
     .description = "Image Conversions",
     .fxn         = (*_command_image_conversions)
   },
-  [COMMAND_PASTE] =                 {
+  [COMMAND_PASTE] =                   {
     .name        = "paste",           .icon = "💮", .color = COLOR_LIST,
     .description = "Clipboard Paste",
     .fxn         = (*_command_paste)
   },
-  [COMMAND_COPY] =                  {
+  [COMMAND_COPY] =                    {
     .name        = "copy",           .icon = "💮", .color = COLOR_LIST,
     .description = "Clipboard Copy",
     .fxn         = (*_command_copy)
   },
-  [COMMAND_LIST_HOTKEYS] =          {
+  [COMMAND_LIST_HOTKEYS] =            {
     .name        = "list-hotkeys", .icon = "💮", .color = COLOR_LIST,
     .description = "List Hotkeys",
     .fxn         = (*_command_list_hotkey)
   },
-  [COMMAND_ALACRITTYS] =            {
+  [COMMAND_ALACRITTYS] =              {
     .name        = "alacrittys", .icon = "💮", .color = COLOR_LIST,
     .description = "Alacrittys",
     .fxn         = (*_command_alacrittys)
   },
-  [COMMAND_USB_DEVICES] =           {
+  [COMMAND_USB_DEVICES] =             {
     .fxn = (*_command_list_usb)
   },
-  [COMMAND_MONITORS] =              {
+  [COMMAND_MONITORS] =                {
     .fxn = (*_command_list_monitor)
   },
-  [COMMAND_PROCESSES] =             {
+  [COMMAND_PROCESSES] =               {
     .fxn = (*_command_processes)
   },
-  [COMMAND_EXTRACT_WINDOW] =        {
+  [COMMAND_EXTRACT_WINDOW] =          {
     .fxn = (*_command_extract_window)
   },
-  [COMMAND_CAPTURE_WINDOW] =        {
+  [COMMAND_CAPTURE_WINDOW] =          {
     .fxn = (*_command_capture_window)
   },
-  [COMMAND_SAVE_APP_ICON_ICNS] =    {
+  [COMMAND_SAVE_APP_ICON_ICNS] =      {
     .fxn = (*_command_save_app_icon_to_icns)
   },
-  [COMMAND_SAVE_APP_ICON_PNG] =     {
+  [COMMAND_SAVE_APP_ICON_PNG] =       {
     .fxn = (*_command_save_app_icon_to_png)
   },
-  [COMMAND_SET_APP_ICON_PNG] =      {
+  [COMMAND_SET_APP_ICON_PNG] =        {
     .fxn = (*_command_write_app_icon_from_png)
   },
-  [COMMAND_SET_APP_ICON_ICNS] =     {
+  [COMMAND_SET_APP_ICON_ICNS] =       {
     .fxn = (*_command_write_app_icon_icns)
   },
-  [COMMAND_ICON_INFO] =             {
+  [COMMAND_ICON_INFO] =               {
     .fxn = (*_command_icon_info)
   },
-  [COMMAND_APP_PLIST_INFO_PATH] =   {
+  [COMMAND_APP_PLIST_INFO_PATH] =     {
     .fxn = (*_command_app_info_plist_path)
   },
-  [COMMAND_APP_ICNS_PATH] =         {
+  [COMMAND_APP_ICNS_PATH] =           {
     .fxn = (*_command_app_icns_path)
   },
-  [COMMAND_PARSE_XML_FILE] =        {
+  [COMMAND_PARSE_XML_FILE] =          {
     .fxn = (*_command_parse_xml_file)
   },
-  [COMMAND_GRAYSCALE_PNG_FILE] =    {
+  [COMMAND_GRAYSCALE_PNG_FILE] =      {
     .fxn = (*_command_grayscale_png)
   },
-  [COMMAND_CLEAR_ICONS_CACHE] =     {
+  [COMMAND_CLEAR_ICONS_CACHE] =       {
     .fxn = (*_command_clear_icons_cache)
   },
-  [COMMAND_TYPES_QTY] =             { 0},
+  [COMMAND_TYPES_QTY] =               { 0},
 };
 
 ////////////////////////////////////////////
@@ -1491,6 +1518,84 @@ static void _command_extract_window(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_animated_capture_window(){
+  args->frame_rate       = clamp(args->frame_rate, 1, 50);
+  args->width            = clamp(args->width, -1, 4000);
+  args->height           = clamp(args->height, -1, 4000);
+  args->concurrency      = clamp(args->concurrency, 1, args->limit);
+  args->concurrency      = clamp(args->concurrency, 1, MAX_CONCURRENCY);
+  args->duration_seconds = clamp(args->duration_seconds, 1, 300);
+  log_debug("frame rate :  %d", args->frame_rate);
+  log_debug("Duration sec :  %d", args->duration_seconds);
+  log_debug("window id :  %d", args->window_id);
+  log_debug("display :  %s", args->display_output_file?"Yes":"No");
+  log_debug("compress :  %s", args->compress?"Yes":"No");
+  log_debug("width :  %d", args->width);
+  log_debug("height :  %d", args->height);
+  log_debug("concurrency :  %d", args->concurrency);
+  unsigned long animation_started = timestamp();
+  unsigned long end_ts = animation_started + (args->duration_seconds * 1000);
+  unsigned long interval_ms = (unsigned long)(1000 * (float)(((float)1) / (float)(args->frame_rate))), expected_frames_qty = args->duration_seconds * args->frame_rate;
+  log_debug("Expected Frames :  %ld", expected_frames_qty);
+  log_debug("start ts :  %ld", animation_started);
+  log_debug("end ts :  %ld", end_ts);
+  log_debug("ms dur :  %ld", end_ts - animation_started);
+  log_debug("interval ms :  %ld", interval_ms);
+  struct capture_req_t *req = calloc(1, sizeof(struct capture_req_t));
+  req->ids          = vector_new();
+  req->concurrency  = args->concurrency;
+  req->type         = CAPTURE_TYPE_WINDOW;
+  req->format       = IMAGE_TYPE_GIF;
+  req->width        = args->width > 0 ? args->width : 0;
+  req->height       = args->height > 0 ? args->height : 0;
+  req->time.started = timestamp();
+  req->time.dur     = 0;
+  struct animated_capture_t *acap    = init_animated_capture(CAPTURE_TYPE_WINDOW, IMAGE_TYPE_GIF, args->window_id, interval_ms);
+  struct Vector             *results = NULL;
+  struct window_info_t      *w       = get_window_id_info((size_t)(args->window_id));
+  if (w && w->window_id == (size_t)(args->window_id)) {
+    vector_push(req->ids, (void *)(size_t)(args->window_id));
+  }else{
+    log_error("Window ID #%lu not found", (size_t)(args->window_id));
+    exit(EXIT_FAILURE);
+  }
+  unsigned long prev_ts = 0, last_ts = 0, delta_ms = 0;
+  while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > vector_size(acap->frames_v)) {
+    unsigned long s = timestamp();
+    results  = capture_windows(req);
+    prev_ts  = last_ts;
+    last_ts  = timestamp();
+    delta_ms = last_ts - prev_ts;
+    for (size_t i = 0; i < vector_size(results); i++) {
+      struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+      assert(new_animated_frame(acap, r) == true);
+      log_info("Frame #%lu/%lu> Received %lu Results in %s"
+               "\n\tID:%lu|File:%s|Size:%s|Delta ms:%s|Time left:%lldms|"
+               "\n\t" AC_RESETALL AC_YELLOW "Total Frames Size:%s" AC_RESETALL "|" AC_GREEN "Avg Frame Size:%s" AC_RESETALL "|"
+               "\n\t%s",
+               vector_size(acap->frames_v), expected_frames_qty,
+               vector_size(results),
+               milliseconds_to_string(last_ts - s),
+               r->id,
+               r->file,
+               bytes_to_string(fsio_file_size(r->file)),
+               (vector_size(acap->frames_v) > 1) ? milliseconds_to_string(delta_ms) : "0ms",
+               end_ts - timestamp(),
+               bytes_to_string(acap->total_size),
+               bytes_to_string(acap->total_size / vector_size(acap->frames_v)),
+               ""
+               );
+    }
+    while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5)))) {
+      usleep((interval_ms / 50) * 1000);
+    }
+  }
+  assert(end_animation(acap) == true);
+  timg_utils_image(acap->file);
+
+  exit(EXIT_SUCCESS);
+} /* _command_animated_capture_window */
+
 static void _command_capture_window(){
   args->width       = clamp(args->width, -1, 4000);
   args->height      = clamp(args->height, -1, 4000);
@@ -1532,6 +1637,7 @@ static void _command_capture_window(){
       vector_push(req->ids, (void *)(size_t)(args->window_id));
     }else{
       log_error("Window ID #%lu not found", (size_t)(args->window_id));
+      exit(EXIT_FAILURE);
     }
   }
   results = capture_windows(req);
