@@ -17,7 +17,7 @@ capture_utils_deps = [
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,window_utils_dep,process_utils_dep,
+  log_dep,process_utils_dep,
   ms_dep,
   bytes_dep,
 ]

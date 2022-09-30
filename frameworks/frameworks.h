@@ -986,5 +986,5 @@ extern void CGSWindowBackdropActivate(CGSWindowBackdropRef backdrop) AVAILABLE_M
 extern void CGSWindowBackdropDeactivate(CGSWindowBackdropRef backdrop) AVAILABLE_MAC_OS_X_VERSION_10_10_AND_LATER;
 extern void CGSWindowBackdropRelease(CGSWindowBackdropRef backdrop) AVAILABLE_MAC_OS_X_VERSION_10_10_AND_LATER;
 extern void CGSWindowBackdropSetSaturation(CGSWindowBackdropRef backdrop, CGFloat saturation) AVAILABLE_MAC_OS_X_VERSION_10_10_AND_LATER;
-
+AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
 #endif

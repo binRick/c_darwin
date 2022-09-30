@@ -46,14 +46,17 @@ struct window_info_t {
   size_t                   window_id, memory_usage, display_id, space_id;
   unsigned long            started, dur;
   int                      layer, sharing_state, store_type, connection_id;
-  bool                     is_onscreen, is_focused, is_minimized, is_visible;
+  bool                     is_onscreen, is_focused, is_minimized, is_visible, can_minimize, is_fullscreen;
   pid_t                    pid;
   CGRect                   rect;
   AXUIElementRef           *app;
   CFDictionaryRef          window;
   ProcessSerialNumber      *psn;
+  CFArrayRef               pid_app_list;
+  size_t                   pid_app_list_qty;
   struct kinfo_proc        pid_info;
-  struct Vector            *space_ids_v, *child_pids_v, *window_ids_above, *window_ids_below;
+  AXUIElementRef app_window;
+  struct Vector            *space_ids_v, *child_pids_v, *window_ids_above, *window_ids_below, *app_window_ids_v;
   struct window_info_dur_t durs[32];
 };
 #endif

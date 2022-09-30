@@ -84,6 +84,8 @@ int get_window_display_id(struct window_info_t *window);
 struct window_info_t *get_random_window_info(void);
 size_t get_random_window_info_id(void);
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
+CGImageRef capture_window_id_width(size_t window_id, size_t width);
+CGImageRef capture_window_id_height(size_t window_id, size_t height);
 struct window_info_t *get_pid_window(const int PID);
 int get_window_level(struct window_info_t *w);
 char *get_window_title(struct window_info_t *w);

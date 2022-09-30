@@ -1042,6 +1042,7 @@ bool get_window_id_is_minimized(size_t window_id){
   CFTypeRef            value;
   struct window_info_t *w = get_window_id_info(window_id);
 
+  log_debug("Checking if window %lu is minimized",window_id);
   if (w->window_id != window_id) {
     return(false);
   }
@@ -1235,6 +1236,29 @@ void print_all_window_items(FILE *rsp) {
             );
 } /* print_all_menu_items */
 
+CGImageRef capture_window_id_height(size_t window_id, size_t height){
+  CGImageRef img_ref = capture_window_id(window_id);
+  int w[2], h[2];
+  w[0] = CGImageGetWidth(img_ref);
+  h[0] = CGImageGetHeight(img_ref);
+  h[1] = height;
+  float factor = (float)(h[0])/(float)(h[1]);
+  log_debug("factor: %f",factor);
+  w[1] = (int)((float)w[0]/factor);
+  return(resize_cgimage(img_ref, w[1], h[1]));
+}
+
+CGImageRef capture_window_id_width(size_t window_id, size_t width){
+  CGImageRef img_ref = capture_window_id(window_id);
+  int w[2], h[2];
+  w[0] = CGImageGetWidth(img_ref);
+  h[0] = CGImageGetHeight(img_ref);
+  w[1] = width;
+  float factor = (float)(w[0])/(float)(w[1]);
+  log_debug("factor: %f",factor);
+  h[1] = (int)((float)h[0]/factor);
+  return(resize_cgimage(img_ref, w[1], h[1]));
+}
 CGImageRef preview_window_id(size_t window_id){
   CGImageRef img_ref = capture_window_id(window_id);
 

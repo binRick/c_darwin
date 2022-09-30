@@ -193,10 +193,6 @@ TEST t_vips_basics_test1(){
     gchar     *buf;
     gsize     len;
 
-    if (VIPS_INIT(infile)) {
-      FAIL();
-    }
-
     if (!g_file_get_contents(infile, &buf, &len, NULL)) {
       FAIL();
     }
@@ -236,6 +232,7 @@ SUITE(s_vips_basics_test3) {
 GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
+  VIPS_INIT(argv);
   fsio_write_binary_file(files[0], gcommunist_goalsData, gcommunist_goalsSize);
   timg_utils_image(files[0]);
   fsio_write_binary_file(files[1], gkitty_iconData, gkitty_iconSize);

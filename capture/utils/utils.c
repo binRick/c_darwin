@@ -16,7 +16,6 @@
 #include "display/utils/utils.h"
 #include "fs.c/fs.h"
 #include "image/utils/utils.h"
-#include "image/utils/utils.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "screen/utils/utils.h"
@@ -65,6 +64,8 @@ static struct capture_type_t capture_types[]          = {
       return(capture_window_id_rect((uint32_t)window_id, rect));
     },
     .preview   = ^ CGImageRef (size_t window_id){ return(preview_window_id((uint32_t)window_id)); },
+    .width   = ^ CGImageRef (size_t window_id, size_t width){ return(capture_window_id_width((uint32_t)window_id, width)); },
+    .height   = ^ CGImageRef (size_t window_id, size_t height){ return(capture_window_id_height((uint32_t)window_id, height)); },
     .get_items = ^ struct Vector *(void){ return(get_spaces_v());                               },
   },
 };
@@ -86,6 +87,12 @@ CGImageRef capture_type_id_or_default_capture_type_id(enum capture_type_id_t cap
   return(capture_type_capture(capture_type_id, capture_type_validate_id_or_get_default_id(capture_type_id, capture_id)));
 }
 
+CGImageRef capture_type_height(enum capture_type_id_t capture_type_id, size_t capture_id, size_t height){
+  return(capture_types[capture_type_id].height(capture_id, height));
+}
+CGImageRef capture_type_width(enum capture_type_id_t capture_type_id, size_t capture_id, size_t width){
+  return(capture_types[capture_type_id].width(capture_id, width));
+}
 CGImageRef capture_type_preview(enum capture_type_id_t capture_type_id, size_t capture_id){
   return(capture_types[capture_type_id].preview(capture_id));
 }

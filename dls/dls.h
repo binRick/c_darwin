@@ -48,6 +48,7 @@ enum common_option_width_or_height_t {
 struct args_t {
   bool                                 verbose, current_space_only, current_display_only;
   int                                  space_id, window_id;
+  int display_id;
   int                                  x, y;
   int                                  width, height;
   int                                  width_or_height_group;
@@ -64,7 +65,7 @@ struct args_t {
   bool                                 clear_icons_cache, minimized_only, non_minimized_only;
   bool                                 display_output_file, all_windows;
   bool                                 random_window_id, clear_screen, compress;
-  int                                  pid, display_id, width_greater, width_less, height_greater, height_less;
+  int                                  pid, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;
   char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *image_format;
   enum image_type_id_t                 image_format_type;

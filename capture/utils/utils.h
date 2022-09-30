@@ -29,6 +29,8 @@ struct capture_type_t {
   CGImageRef    (^capture)(size_t id);
   CGImageRef    (^capture_rect)(size_t id, CGRect rect);
   CGImageRef    (^preview)(size_t id);
+  CGImageRef    (^width)(size_t id, size_t width);
+  CGImageRef    (^height)(size_t id, size_t height);
   struct Vector *(^get_items)(void);
 };
 struct cached_capture_item_t {
@@ -36,6 +38,8 @@ struct cached_capture_item_t {
   size_t        size;
 };
 //////////////////////////////////////
+CGImageRef capture_type_width(enum capture_type_id_t capture_type_id, size_t capture_id, size_t width);
+CGImageRef capture_type_height(enum capture_type_id_t capture_type_id, size_t capture_id, size_t height);
 char *capture_type_capture_png_random_file(enum capture_type_id_t capture_type_id, size_t capture_id);
 bool capture_type_capture_png_file(enum capture_type_id_t capture_type_id, size_t capture_id, char *file);
 char *capture_type_hash_key(enum capture_type_id_t capture_type_id, size_t capture_id);
