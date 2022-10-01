@@ -6,4 +6,5 @@
 /******************************************************/
 int keylogger_exec();
 int keylogger_exec_with_callback(void ( *cb )(char *));
+const char *keylogger_convertKeyboardCode(int keyCode);
 /******************************************************/

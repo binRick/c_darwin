@@ -44,6 +44,42 @@ int get_focused_window_id();
 uint32_t ax_window_id(AXUIElementRef ref);
 pid_t ax_window_pid(AXUIElementRef ref);
 struct Vector *get_window_infos_v();
+struct Vector *get_window_infos_brief_v();
+struct Vector *get_window_infos_id_v(size_t ID);
 struct Vector *get_window_pid_infos(pid_t pid);
 int get_window_id_display_id(size_t window_id);
+#define SET_FILE                                           \
+  "tell application \"System Events\"\n"                   \
+  "    keystroke \"G\" using {command down, shift down}\n" \
+  "    delay 1\n"                                          \
+  "    keystroke \"/path/to/file\"\n"                      \
+  "    delay 1\n"                                          \
+  "    keystroke return\n"                                 \
+  "    delay 1\n"                                          \
+  "    keystroke return\n"                                 \
+  "    delay 1\n"                                          \
+  "end tell\n"
+
+#define CLOSE_SYSTEM_PREFERENCES                                         \
+  "if running of application \"System Preferences\" then\n"              \
+  "    try\n"                                                            \
+  "        tell application \"System Preferences\" to quit\n"            \
+  "    on error\n"                                                       \
+  "        do shell script \"killall 'System Preferences'\"\n"           \
+  "    end try\n"                                                        \
+  "    delay 0.01\n"                                                     \
+  "end if\n"                                                             \
+  "repeat while running of application \"System Preferences\" is true\n" \
+  "    delay 0.01\n"                                                     \
+  "end repeat\n"
+#define OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD \
+  "tell application \"System Preferences\"\n"                              \
+  "    set securityPane to pane id \"com.apple.preference.security\"\n"    \
+  "    tell securityPane to reveal anchor \"Privacy_Accessibility\"\n"     \
+  "    activate\n"                                                         \
+  "end tell\n"
+
+///////////////////////////////////////////////////////////////////////////////
+#define CLOSE_SYSTEM_PREFERENCES_AND_OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD \
+  CLOSE_SYSTEM_PREFERENCES OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD
 #endif

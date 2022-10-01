@@ -204,7 +204,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .columns     = { FONT_COLUMNS },
     .row         = ^ void (ft_table_t *table,                                                        size_t index,                          void *item){
       struct font_t *f = (struct font_t *)item;
-      term_width = get_terminal_width();
+      term_width = 120;//get_terminal_width();
       ft_printf_ln(table,
                    "%ld"
                    "|%.*s"
@@ -263,7 +263,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .columns     = { APP_COLUMNS },
     .row         = ^ void (ft_table_t *table,                                                        size_t index,                          void *item){
       struct app_t *app = (struct app_t *)item;
-      term_width = get_terminal_width();
+      term_width = 120;//get_terminal_width();
       ft_printf_ln(table,
                    "%ld"
                    "|%.*s"
@@ -454,7 +454,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .columns     = { SPACE_COLUMNS },
     .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
       struct space_t *space = (struct space_t *)item;
-      term_width = get_terminal_width();
+      term_width = 120;//get_terminal_width();
       ft_printf_ln(table,
                    "%d"
                    "|%s"

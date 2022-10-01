@@ -23,9 +23,9 @@ enum output_mode_type_t {
   OUTPUT_MODES_QTY,
 };
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE;
-const char *output_modes[OUTPUT_MODES_QTY + 1];
-#include "image/utils/utils.h"
+const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "dls/dls-commands.h"
+#include "image/utils/utils.h"
 struct args_t {
   bool                                 verbose, current_space_only, current_display_only;
   int                                  space_id, window_id;
@@ -54,7 +54,6 @@ struct args_t {
   int                                  frame_rate, duration_seconds;
 };
 struct args_t *args;
-#include "core/utils/utils.h"
 #include "alacritty/alacritty.h"
 #include "ansi-codes/ansi-codes.h"
 #include "app/utils/utils.h"
@@ -64,6 +63,7 @@ struct args_t *args;
 #include "c_vector/vector/vector.h"
 #include "capture/window/window.h"
 #include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "display/utils/utils.h"
 #include "dock/utils/utils.h"
 #include "focused/focused.h"

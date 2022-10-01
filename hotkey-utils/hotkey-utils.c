@@ -6,6 +6,7 @@
 #include "hotkey-utils/hotkey-utils.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "keylogger/keylogger.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
@@ -26,8 +27,101 @@
 ////////////////////////////////////////////
 static bool HOTKEY_UTILS_DEBUG_MODE = false, HOTKEY_UTILS_VERBOSE_DEBUG_MODE;
 static char *EXECUTABLE_PATH_DIRNAME;
-
+static libforks_ServerConn      conn;
+static pid_t fork_server_pid;
 ///////////////////////////////////////////////////////////////////////
+static void handle_sigterm(int signum) {
+  (void)signum;
+  log_info("Hotkey Server SIGTERM");
+  exit(EXIT_SUCCESS);
+}
+static CGEventMask kb_events = (
+  CGEventMaskBit(kCGEventKeyDown)
+  | CGEventMaskBit(kCGEventFlagsChanged)
+  );
+static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, __attribute__((unused)) CGEventType type, CGEventRef event, void *CALLBACK) {
+  unsigned long event_flags = (int)CGEventGetFlags(event);
+
+  if (event_flags > 0) {
+    CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+    if (keyCode > 0) {
+      char *ckc = keylogger_convertKeyboardCode(keyCode);
+      if (strlen(ckc) > 0) {
+        struct StringBuffer *event_flag_sb = stringbuffer_new();
+        if (event_flags & kCGEventFlagMaskAlternate) {
+          stringbuffer_append_string(event_flag_sb, "alt+");
+        }
+        if (event_flags & kCGEventFlagMaskSecondaryFn) {
+          stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
+        }
+        if (event_flags & kCGEventFlagMaskCommand) {
+          stringbuffer_append_string(event_flag_sb, "cmd+");
+        }
+        if (event_flags & kCGEventFlagMaskControl) {
+          stringbuffer_append_string(event_flag_sb, "ctrl+");
+        }
+        if (event_flags & kCGEventFlagMaskShift) {
+          stringbuffer_append_string(event_flag_sb, "shift+");
+        }
+        stringbuffer_append_string(event_flag_sb, ckc);
+
+        char *event_flag = stringbuffer_to_string(event_flag_sb);
+        stringbuffer_release(event_flag_sb);
+
+        if (stringfn_ends_with(event_flag, "+")) {
+          stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
+        }
+        stringfn_mut_trim(event_flag);
+        if (CALLBACK != NULL) {
+          if (((int (*)(char *)) CALLBACK)(event_flag) == EXIT_SUCCESS) {
+            return(NULL);
+          }
+        }
+      }
+    }
+  }
+  return(event);
+}  
+static int setup_event_tap_with_callback(void ( *cb )(char *key)){
+  CFMachPortRef event_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0, kb_events, event_handler, (void *)cb);
+
+  if (!event_tap) {
+    log_error("ERROR: Unable to create keyboard event tap.");
+    return(EXIT_FAILURE);
+  }
+  CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, event_tap, 0);
+
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
+  CGEventTapEnable(event_tap, true);
+  return(EXIT_SUCCESS);
+}
+static int tap_events(){
+  CFRunLoopRun();
+  return(EXIT_SUCCESS);
+}
+
+static int __hotkeys_server(void *P){
+
+}
+int hotkeys_exec_with_callback(void ( *cb )(char *)) {
+  assert(is_authorized_for_accessibility() == true);
+  assert(setup_event_tap_with_callback(cb) == 0);
+  log_info("Keylogger Event Tap Setup");
+  assert(tap_events() == 0);
+  log_info("Keylogger Events Tapped");
+  return(EXIT_SUCCESS);
+}
+
+static int hotkeys_server(libforks_ServerConn conn, void *P){
+  libforks_free_conn(conn);
+  struct hotkeys_libforks_param_t *p = (struct hotkeys_libforks_param_t *)P;
+  char                    *msg;
+  asprintf(&msg, "Starting Hotkeys Server");
+  log_info("%s", msg);
+
+  return(__hotkeys_server((void *)p));
+}
+
 size_t get_config_file_hash(char *CONFIG_FILE_PATH){
   char *config_contents = fsio_read_text_file(CONFIG_FILE_PATH);
   size_t config_hash = ((size_t)murmurhash(
@@ -360,5 +454,12 @@ static void __attribute__((constructor)) __constructor__hotkey_utils(void){
     log_debug("Enabling hotkey-utils Debug Mode");
     HOTKEY_UTILS_DEBUG_MODE = true;
   }
+  assert(libforks_start(&conn) == libforks_OK);
+  fork_server_pid = libforks_get_server_pid(conn);
+  assert(fork_server_pid > 0);
+  if (HOTKEY_UTILS_DEBUG_MODE) {
+    log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  }  
+  signal(SIGTERM, handle_sigterm);
 }
 #endif

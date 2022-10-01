@@ -8,18 +8,17 @@
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
-#include "vips/vips.h"
 #include "bytes/bytes.h"
-#include "core/utils/utils.h"
-#include "timg/utils/utils.h"
-#include "core/image/image.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "c_workqueue/include/workqueue.h"
 #include "capture/utils/utils.h"
+#include "capture/window/window.h"
 #include "chan/src/chan.h"
+#include "core/image/image.h"
+#include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
 #include "log/log.h"
@@ -28,25 +27,24 @@
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
 #include "tempdir.c/tempdir.h"
+#include "timg/utils/utils.h"
+#include "timg/utils/utils.h"
+#include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 ////////////////////////////////////////////
-static bool       TESSERACT_UTILS_DEBUG_MODE = false;
-static const char *tess_lang                 = "eng";
+static bool        TESSERACT_UTILS_DEBUG_MODE = false;
+static const char  *tess_lang                 = "eng";
+static TessBaseAPI *api;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__tesseract_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_tesseract_utils") != NULL) {
     log_debug("Enabling tesseract-utils Debug Mode");
     TESSERACT_UTILS_DEBUG_MODE = true;
   }
+  api = TessBaseAPICreate();
+  assert(api != NULL);
+  assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
 }
-static const long symbol_modes[] = {
-  RIL_SYMBOL,
-};
-
-static const long text_modes[] = {
-  RIL_WORD,
-  RIL_TEXTLINE,
-};
 struct Vector *get_security_words_v(){
   struct Vector *words = vector_new();
 
@@ -89,9 +87,6 @@ bool tesseract_security_preferences_logic(){
     if (minimize_window_id(window_id) != true) {
       return(false);
     }
-    if (stbi_info(r->source_file.file, &(r->source_file.width), &(r->source_file.height), &(r->source_file.stbi_format)) != 1) {
-      return(false);
-    }
   }
   {
     if (parse_tesseract_extraction_results(r) != true) {
@@ -99,6 +94,8 @@ bool tesseract_security_preferences_logic(){
     }
     report_tesseract_extraction_results(r);
   }
+
+  assert(run_osascript(CLOSE_SYSTEM_PREFERENCES) == true);
 
   return(true);
 
@@ -111,16 +108,21 @@ log_error:
 
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
+  char                    *file;
 
+  asprintf(&file, "%s%lld-%d.%s", gettempdir(), timestamp(), getpid(), stringfn_to_lowercase(image_type_name(r->image_type)));
+  fsio_write_binary_file(file, r->img, r->img_len);
+  timg_utils_image(file);
   fprintf(stdout,
           "\n\t|  %sDuration         :      %s" AC_RESETALL
           "\n\t|  %sWindow%s           :      PID:%d|%dx%d|%s"
+          "\n\t|  %sImage%s            :      |Size:%s|Type:%s|File:%s|"
           "\n\t|  %sTesseract%s        :      |%s%s%s|"
           "\n\t|                          Confidence:%d|Box:%d"
           "\n\t|                          %dx%x|Width:%d|Height:%d|Mode:%ld"
           "\n\t|  %sSpace%s            :      "AC_CYAN "%lu"AC_RESETALL
           "\n\t|  %sDisplay%s          :      %lu"
-          "\n\t|  %sScreenshot%s       :      %dx%d|%s|%s"
+          "\n\t|  %sScreenshot%s       :      %dx%d"
           "\n\t|  %sDetermined Area%s  :  "
           "\n\t|             Max x             %d  |"
           "\n\t|             Min x offset      %f  |"
@@ -134,11 +136,12 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
           "\n%s",
           AC_GREEN, milliseconds_to_string(timestamp() - r->started),
           AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
+          AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->image_type), file,
           AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC, lines.strings[0], AC_RESETALL,
           r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
           AC_BLUE, AC_RESETALL, r->window.space_id,
           AC_YELLOW, AC_RESETALL, r->window.display_id,
-          AC_CYAN, AC_RESETALL, r->source_file.width, r->source_file.height, bytes_to_string(fsio_file_size(r->source_file.file)), r->file,
+          AC_CYAN, AC_RESETALL, r->source_file.width, r->source_file.height,
           AC_GREEN, AC_RESETALL, r->determined_area.max_x,
           r->determined_area.x_min_offset_perc,
           r->determined_area.x_max_offset_perc,
@@ -150,6 +153,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
           r->determined_area.y_max_offset_window_pixels,
           ""
           );
+  stringfn_release_strings_struct(lines);
   return;
 } /* report_tesseract_extraction_results */
 
@@ -164,25 +168,20 @@ bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   r->determined_area.y_max_offset_window_pixels = (int)((r->determined_area.y_min_offset_perc) * (float)(r->window.rect.size.height));
   return(true);
 }
-#define CAPTURE_SCREEN_RECT    true
+#define CAPTURE_SCREEN_RECT             true
+#define TESSERACT_EXTRACT_IMAGE_TYPE    IMAGE_TYPE_GIF
 struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations(size_t window_id, struct Vector *words){
   struct Vector                     *extractions;
   struct tesseract_extract_result_t *r;
-  struct window_info_t              *window_info;
   CGRect                            rect, orig_rect;
-  char                              *s, *extract_file, *files[2];
-  int                               w, h;
-  CGImageRef                        image_refs[2];
+  char                              *s;
+  int                               w = 0, h = 0;
+  CGImageRef                        image_refs[1];
+  size_t                            img_len    = 0;
+  unsigned char                     *img       = NULL;
+  enum image_type_id_t              image_type = TESSERACT_EXTRACT_IMAGE_TYPE;
   {
-    window_info = get_window_id_info(window_id);
-    assert(window_id == window_info->window_id);
-  }
-  {
-    asprintf(&files[0], "%swindow-%lu.png", gettempdir(), window_id);
-    extract_file = files[0];
-    if (fsio_file_exists(extract_file) == true) {
-      assert(fsio_remove(extract_file) == true);
-    }
+    assert(get_window_id_display_id(window_id) > 0);
   }
   {
     if (CAPTURE_SCREEN_RECT == true) {
@@ -213,26 +212,30 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
     }else{
       image_refs[0] = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
     }
-    assert(save_cgref_to_png_file(image_refs[0], extract_file) == true);
-    assert(fsio_file_size(extract_file) > 1024);
-   // assert(stbi_info(extract_file, &w, &h, &f) == 1);
-    VipsImage *image;
-    assert((image = vips_image_new_from_file(extract_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL)) == 0);
-    w = vips_image_get_width(image);
-    h = vips_image_get_height(image);
+    w = CGImageGetWidth(image_refs[0]);
+    h = CGImageGetHeight(image_refs[0]);
     assert(w > 10 && h > 10);
+    img = save_cgref_to_image_type_memory(image_type, image_refs[0], &(img_len));
+    assert(img_len > 0);
+    assert(img);
   }
   {
-    extractions = tesseract_extract_file_mode(extract_file, RIL_TEXTLINE);
+    unsigned long ts = timestamp();
+    extractions = tesseract_extract_memory(img, img_len, RIL_TEXTLINE);
+    if (TESSERACT_UTILS_DEBUG_MODE) {
+      log_info("ran extract tess in %s", milliseconds_to_string(timestamp() - ts));
+    }
     for (size_t i = 0; i < vector_size(extractions); i++) {
       r = (struct tesseract_extract_result_t *)vector_get(extractions, i);
       for (size_t I = 0; I < vector_size(words); I++) {
         asprintf(&s, "*%s*", stringfn_to_lowercase((char *)vector_get(words, I)));
         if (wildcardcmp(s, stringfn_to_lowercase(r->text)) == 1) {
-          r->source_file.file   = extract_file;
           r->source_file.width  = w;
           r->source_file.height = h;
           r->window             = *get_window_id_info(window_id);
+          r->img                = img;
+          r->img_len            = img_len;
+          r->image_type         = image_type;
           assert(r->window.window_id == window_id);
           return(r);
         }
@@ -263,12 +266,13 @@ static void __tesseract_extract_window(void *ARGS){
 
   starteds[0] = timestamp();
   starteds[1] = timestamp();
-  if (!args->file || fsio_file_exists(args->file) == false) {
-    return;
-  }
   starteds[2] = timestamp();
-  log_info(AC_YELLOW "\tExtracting window #%lu %s File %s"AC_RESETALL, args->window_id, bytes_to_string(fsio_file_size(args->file)), args->file);
-  args->results_v = tesseract_extract_file_mode(args->file, RIL_TEXTLINE);
+  log_info(AC_YELLOW "\tExtracting window #%lu"AC_RESETALL, args->window_id);
+  log_info("%s", args->file);
+  unsigned char *png    = fsio_read_binary_file(args->file);
+  size_t        png_len = fsio_file_size(args->file);
+
+  args->results_v = tesseract_extract_memory(png, png_len, RIL_TEXTLINE);
   log_info(AC_GREEN "\tExtracted %lu items from %s in %s"AC_RESETALL,
            vector_size(args->results_v),
            args->file,
@@ -345,19 +349,16 @@ struct Vector *tesseract_extract_windows(struct Vector *v, size_t concurrency){
   }
   return(Args);
 } /* tesseract_extract_windows */
-struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE){
+struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data_len, unsigned long MODE){
+  unsigned long ts     = timestamp();
   struct Vector *words = vector_new();
   struct Boxa   *boxes;
   struct Pix    *img;
   BOX           *box;
   char          *c, *m;
   int           conf;
-  TessBaseAPI   *api;
   {
-    api = TessBaseAPICreate();
-    assert(api != NULL);
-    assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
-    img = pixRead(image_file);
+    img = pixReadMem(img_data, img_data_len);
     assert(img != NULL);
     TessBaseAPISetImage2(api, img);
     assert(TessBaseAPIGetInputImage(api) != NULL);
@@ -373,10 +374,10 @@ struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE)
       conf = TessBaseAPIMeanTextConf(api);
       if ((c != NULL) && (c[0] != '\0')) {
         asprintf(&m,
-                 "|file:" AC_YELLOW "%s" AC_RESETALL "|size:%s|mode:%lu|box#:%d/%d"
+                 "|size:%s|mode:%lu|box#:%d/%d"
                  "|x:%d|y:%d|w:%d|h:%d|confidence:%d"
                  "|text:" AC_GREEN "%s" AC_RESETALL "|",
-                 image_file, bytes_to_string(fsio_file_size(image_file)), MODE, box->refcount, boxes->n,
+                 bytes_to_string(img_data_len), MODE, box->refcount, boxes->n,
                  box->x, box->y, box->w, box->h, conf, c
                  );
         if (TESSERACT_UTILS_DEBUG_MODE) {
@@ -384,14 +385,13 @@ struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE)
         }
         struct tesseract_extract_result_t *r = calloc(1, sizeof(struct tesseract_extract_result_t));
         r->started = timestamp();
-        r->x      = box->x;
-        r->y      = box->y;
-        r->width  = box->w;
-        r->height = box->h;
+        r->x       = box->x;
+        r->y       = box->y;
+        r->width   = box->w;
+        r->height  = box->h;
         asprintf(&(r->text), "%s", c);
         r->mode       = MODE;
         r->box        = box->refcount;
-        r->file       = strdup(image_file);
         r->confidence = conf;
         vector_push(words, (void *)r);
       }
@@ -399,10 +399,9 @@ struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE)
   }
   pixDestroy(&img);
   TessBaseAPIEnd(api);
-  TessBaseAPIDelete(api);
   if (TESSERACT_UTILS_DEBUG_MODE) {
-    log_info("Returning %lu words", vector_size(words));
   }
+  log_info("Returning %lu words in %s", vector_size(words), milliseconds_to_string(timestamp() - ts));
   return(words);
 } /* tesseract_extract_file_mode */
 

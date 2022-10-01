@@ -50,6 +50,9 @@ struct tesseract_extract_result_t {
   struct tesseract_extract_result_source_file_t source_file;
   struct window_info_t                          window;
   struct tesseract_determined_area_t            determined_area;
+  enum image_type_id_t                          image_type;
+  unsigned char                                 *img;
+  size_t                                        img_len;
 };
 enum extract_mode_type_t {
   EXTRACT_MODE_TYPE_TEXT = 1,
@@ -59,7 +62,7 @@ struct Vector *tesseract_extract_windows(struct Vector *window_ids_v, size_t con
 struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations(size_t window_id, struct Vector *words);
 struct Vector *tesseract_extract_text(size_t window_id);
 void tesseract_extract_symbols(size_t window_id);
-struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE);
+struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data_len, unsigned long MODE);
 struct Vector *get_security_words_v();
 bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r);
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r);

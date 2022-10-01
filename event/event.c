@@ -2,8 +2,8 @@
 #ifndef EVENT_C
 #define EVENT_C
 ////////////////////////////////////////////
-#include "event/event.h"
 #include "core/utils/utils.h"
+#include "event/event.h"
 
 ////////////////////////////////////////////
 static bool EVENT_DEBUG_MODE = false;

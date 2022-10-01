@@ -76,7 +76,6 @@ static void _command_window_is_minimized();
 static void _command_window_layer();
 static void _command_window_level();
 static void _command_open_security();
-static void _command_hotkeys();
 static void _command_list_hotkey();
 ////////////////////////////////////////////
 static void _check_run_hotkeys(void);
@@ -695,7 +694,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = DATA_TYPE_INT,
     });
   },
-  [COMMON_OPTION_RUN_HOTKEYS] = ^ struct optparse_opt (struct args_t *args)                         {
+  [COMMON_OPTION_RUN_HOTKEYS] = ^ struct optparse_opt (struct args_t *args)                                 {
     return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "run",
@@ -743,7 +742,7 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .arg_data_type = DATA_TYPE_INT,
   },
   [CHECK_COMMAND_RUN_HOTKEYS] =         {
-    .fxn           = (void (*)(void))(*_check_run_hotkeys),
+    .fxn = (void (*)(void))(*_check_run_hotkeys),
   },
   [CHECK_COMMAND_CONCURRENCY] =         {
     .fxn           = (void (*)(void))(*_check_concurrency),
@@ -855,7 +854,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .fxn  = (*_command_resize_window),
   },
   [COMMAND_HOTKEYS] =               {
-    .name = "hotkeys",           .icon = "🔅", .color = COLOR_WINDOW, .description = "List Hotkeys",
+    .name = "hotkeys",               .icon = "🔅", .color = COLOR_WINDOW, .description = "List Hotkeys",
     .fxn  = (*_command_list_hotkey),
   },
   [COMMAND_WINDOW_LEVEL] =          {
@@ -1076,6 +1075,7 @@ static int hotkey_callback(char *KEYS){
   }
   return(EXIT_FAILURE);
 }
+
 ////////////////////////////////////////////
 static void _check_image_format(char *format){
   args->image_format_type = image_format_type(format);
@@ -1086,9 +1086,10 @@ static void _check_image_format(char *format){
 }
 
 static void _check_run_hotkeys(){
-  exit((keylogger_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((hotkeys_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
   return(EXIT_SUCCESS);
 }
+
 static void _check_sort_direction_desc(){
   args->sort_direction = "desc";
   return(EXIT_SUCCESS);
@@ -1506,7 +1507,7 @@ static void _command_extract_window(){
   struct Vector *v = vector_new();
 
   if (args->all_windows == true) {
-    struct Vector *a = get_window_infos_v();
+    struct Vector *a = get_window_infos_brief_v();
     for (size_t i = 0; i < vector_size(a); i++) {
       if ((size_t)args->limit > 0 && vector_size(v) >= (size_t)args->limit) {
         continue;

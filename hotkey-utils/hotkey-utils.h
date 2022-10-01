@@ -3,6 +3,7 @@
 #define HOTKEY_UTILS_H
 //////////////////////////////////////
 #include "libcyaml/include/cyaml/cyaml.h"
+#include "libforks/libforks.h"
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -11,6 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+struct hotkeys_libforks_param_t {
+  int socket_fd;
+  int websocket_server_port;
+};
+int hotkeys_exec_with_callback(void ( *cb )(char *));
 enum action_type_t {
   ACTION_TYPE_NONE,
   ////////////////////////////////////////////////////////

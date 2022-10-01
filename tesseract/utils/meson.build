@@ -27,7 +27,7 @@ tesseract_utils_deps = [
   stb_dep,
   space_utils_dep,
   display_utils_dep,
-  window_utils_dep,timg_utils_dep,vips_dep,
+  window_utils_dep,timg_utils_dep,vips_dep,timg_utils_dep,
   app_utils_dep,image_utils_dep,process_utils_dep,display_utils_dep,
   c_img_dep,
 ]

@@ -10,6 +10,7 @@ hotkey_utils_include_dirs = [
 ]
 
 hotkey_utils_deps = [
+  libforks_dep,keylogger_dep,
   ansi_codes_dep,
   c_vector_dep,
   c_fsio_dep,

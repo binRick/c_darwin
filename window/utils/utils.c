@@ -1145,7 +1145,7 @@ struct window_info_t *get_focused_window_info(){
   return(window_info);
 }
 struct window_info_t *get_window_id_info(size_t window_id){
-  struct Vector        *window_infos_v = get_window_infos_v();
+  struct Vector        *window_infos_v = get_window_infos_id_v(window_id);
   struct window_info_t *window_info    = NULL;
 
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {
