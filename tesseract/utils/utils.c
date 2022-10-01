@@ -28,22 +28,17 @@
 #include "stb/stb_image_write.h"
 #include "tempdir.c/tempdir.h"
 #include "timg/utils/utils.h"
-#include "timg/utils/utils.h"
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 ////////////////////////////////////////////
 static bool        TESSERACT_UTILS_DEBUG_MODE = false;
 static const char  *tess_lang                 = "eng";
-static TessBaseAPI *api;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__tesseract_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_tesseract_utils") != NULL) {
     log_debug("Enabling tesseract-utils Debug Mode");
     TESSERACT_UTILS_DEBUG_MODE = true;
   }
-  api = TessBaseAPICreate();
-  assert(api != NULL);
-  assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
 }
 struct Vector *get_security_words_v(){
   struct Vector *words = vector_new();
@@ -108,12 +103,10 @@ log_error:
 
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
-  char                    *file;
-
-  asprintf(&file, "%s%lld-%d.%s", gettempdir(), timestamp(), getpid(), stringfn_to_lowercase(image_type_name(r->image_type)));
-  fsio_write_binary_file(file, r->img, r->img_len);
-  timg_utils_image(file);
-  fprintf(stdout,
+  asprintf(&r->file, "%stesseract-extract-results-%d-%lld.%s", gettempdir(), getpid(), timestamp(), stringfn_to_lowercase(image_type_name(r->image_type)));
+  fsio_write_binary_file(r->file, r->img, r->img_len);
+  char *msg;
+  asprintf(&msg,
           "\n\t|  %sDuration         :      %s" AC_RESETALL
           "\n\t|  %sWindow%s           :      PID:%d|%dx%d|%s"
           "\n\t|  %sImage%s            :      |Size:%s|Type:%s|File:%s|"
@@ -136,7 +129,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
           "\n%s",
           AC_GREEN, milliseconds_to_string(timestamp() - r->started),
           AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
-          AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->image_type), file,
+          AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->image_type), r->file,
           AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC, lines.strings[0], AC_RESETALL,
           r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
           AC_BLUE, AC_RESETALL, r->window.space_id,
@@ -153,6 +146,9 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
           r->determined_area.y_max_offset_window_pixels,
           ""
           );
+  timg_utils_image(r->file);
+  fprintf(stdout,"%s",msg);
+  free(msg);
   stringfn_release_strings_struct(lines);
   return;
 } /* report_tesseract_extraction_results */
@@ -357,7 +353,11 @@ struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data
   BOX           *box;
   char          *c, *m;
   int           conf;
+  TessBaseAPI *api;
   {
+  api = TessBaseAPICreate();
+  assert(api != NULL);
+  assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
     img = pixReadMem(img_data, img_data_len);
     assert(img != NULL);
     TessBaseAPISetImage2(api, img);
@@ -399,9 +399,10 @@ struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data
   }
   pixDestroy(&img);
   TessBaseAPIEnd(api);
+  TessBaseAPIDelete(api);
   if (TESSERACT_UTILS_DEBUG_MODE) {
+    log_info("Returning %lu words in %s", vector_size(words), milliseconds_to_string(timestamp() - ts));
   }
-  log_info("Returning %lu words in %s", vector_size(words), milliseconds_to_string(timestamp() - ts));
   return(words);
 } /* tesseract_extract_file_mode */
 
