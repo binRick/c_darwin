@@ -2,7 +2,7 @@
 #ifndef CAPTURE_WINDOW_C
 #define CAPTURE_WINDOW_C
 #define THUMBNAIL_WIDTH    150
-#define WRITE_FILE         false
+#define WRITE_FILE         true
 #define WRITE_THUMBNAIL    false
 ////////////////////////////////////////////
 #include "capture/window/window.h"
@@ -22,6 +22,7 @@
 #include "libimagequant/libimagequant.h"
 #include "log/log.h"
 #include "ms/ms.h"
+#include "msf_gif/msf_gif.h"
 #include "qoi/qoi.h"
 #include "qoi_ci/QOI-stdio.h"
 #include "qoi_ci/transpiled/QOI.h"
@@ -35,6 +36,7 @@
 #include "window/utils/utils.h"
 #include <png.h>
 #include <pthread.h>
+#define info    log_info
 #define debug(M, ...)    { do {                               \
                              if (CAPTURE_WINDOW_DEBUG_MODE) { \
                                log_debug(M, ## __VA_ARGS__);  \
@@ -50,12 +52,12 @@ void png_receiver(void *ARGS);
 static bool analyze_image_pixels(struct capture_result_t *r);
 static char *get_image_type_filename(enum capture_type_id_t capture_type, enum image_type_id_t format, size_t id, bool thumbnail);
 static const struct cap_t *__caps[] = {
-  [CAPTURE_CHAN_TYPE_CGIMAGE] = &(struct cap_t)       {
+  [CAPTURE_CHAN_TYPE_CGIMAGE] = &(struct cap_t)          {
     .name          = "CGImage Capture",
     .enabled       = true, .format = IMAGE_TYPE_CGIMAGE,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_IDS,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct cgimage_recv_t *r = (struct cgimage_recv_t *)MSG;
       size_t window_id         = (size_t)vector_get(r->req->ids, (size_t)(r->index));
       debug("Capturing #%lu/%lu: %lu |type:%d|format:%d|w:%d|h:%d|",
@@ -63,66 +65,89 @@ static const struct cap_t *__caps[] = {
             r->req->type, r->req->format,
             r->req->width, r->req->height
             );
-      r->img_ref      = NULL;
-      r->time.started = timestamp();
-      if (r->req->width > 0)                          {
+      r->img_ref          = NULL;
+      r->time.started     = timestamp();
+      r->time.captured_ts = r->time.started;
+      if (r->req->width > 0)                             {
         r->img_ref = capture_type_width(r->req->type, window_id, r->req->width);
-      }else if (r->req->height > 0)                   {
+      }else if (r->req->height > 0)                      {
         r->img_ref = capture_type_height(r->req->type, window_id, r->req->height);
-      }else                                           {
+      }else                                              {
         r->img_ref = capture_type_capture(r->req->type, window_id);
       }
       debug("got img ref");
       r->width    = CGImageGetWidth(r->img_ref);
       r->height   = CGImageGetHeight(r->img_ref);
       r->time.dur = timestamp() - r->time.started;
+
+      /*
+       * size_t rgb_len;
+       * unsigned long s = timestamp();
+       * unsigned char *rgb = save_cgref_to_rgb_memory(r->img_ref,&rgb_len);
+       * assert(rgb != NULL);
+       * log_info("Allocated %s RGB Pixels in %s",
+       * bytes_to_string(rgb_len),
+       * milliseconds_to_string(timestamp() - s)
+       * );
+       * int w,h,f;
+       * unsigned char *rgb_pixels1 = stbi_load_from_memory(rgb, rgb_len, &w, &h, &f, STBI_rgb_alpha);
+       * assert(rgb_pixels1 != NULL);
+       * log_info("Loaded %s RGB Pixels %dx%d|%d",
+       *    bytes_to_string(r->len),
+       *    w,h,f
+       *    );
+       */
+
       debug("Captured %lux%lu Window #%lu in %s", r->width, r->height, window_id, milliseconds_to_string(r->time.dur));
       return((void *)r);
     },
   },
-  [CAPTURE_CHAN_TYPE_RGB] = &(struct cap_t)           {
+  [CAPTURE_CHAN_TYPE_RGB] = &(struct cap_t)              {
     .name          = "CGImage To RGB Pixels",
     .enabled       = true, .format = IMAGE_TYPE_RGB,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
-      r->msg          = (struct cgimage_recv_t *)MSG;
-      r->len          = 0;
-      r->time.started = timestamp();
-      r->pixels       = save_cgref_to_rgb_memory(r->msg->img_ref, &(r->len));
-      r->time.dur     = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                   {
-        log_error("Failed to analyze RGB");
-        //goto error;
-      }
-      debug("Converted CGImageRef to %s RGB Pixels in %s",
-            bytes_to_string(r->len),
-            milliseconds_to_string(r->time.dur)
-            );
+      r->msg              = (struct cgimage_recv_t *)MSG;
+      r->len              = 0;
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_rgb_memory(r->msg->img_ref, &(r->len));
+      r->analyze          = true;
+      r->time.dur         = timestamp() - r->time.started;
+      assert(r->pixels != NULL);
+
+      //if (!analyze_image_pixels(r))                   {
+      //  log_error("Failed to analyze RGB");
+      //}
+      log_info("Converted CGImageRef to %s RGB Pixels in %s",
+               bytes_to_string(r->len),
+               milliseconds_to_string(r->time.dur)
+               );
       return((void *)r);
     },
   },
-  [CAPTURE_CHAN_TYPE_QOI] = &(struct cap_t)           {
+  [CAPTURE_CHAN_TYPE_QOI] = &(struct cap_t)              {
     .name          = "CGImage To QOI Pixels",
     .enabled       = true, .format = IMAGE_TYPE_QOI,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
-      r->type = IMAGE_TYPE_QOI;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->type             = IMAGE_TYPE_QOI;
+      r->msg              = (struct cgimage_recv_t *)MSG;
+      r->time.captured_ts = r->msg->time.captured_ts;
       debug("Converting %lux%lu CGImageref to QOI", r->msg->width, r->msg->height);
       r->len          = 0;
       r->time.started = timestamp();
       r->pixels       = save_cgref_to_qoi_memory(r->msg->img_ref, &(r->len));
       r->time.dur     = timestamp() - r->time.started;
-
-      errno = 0;
-
-      if (!analyze_image_pixels(r))                   {
+      r->analyze      = true;
+      errno           = 0;
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze QOI");
         goto error;
       }
@@ -137,22 +162,24 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_GIF] = &(struct cap_t)           {
+  [CAPTURE_CHAN_TYPE_GIF] = &(struct cap_t)              {
     .name          = "CGImage To GIF Pixels",
     .enabled       = true, .format = IMAGE_TYPE_GIF,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
       r->type = IMAGE_TYPE_GIF;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to GIF", r->msg->width, r->msg->height);
-      r->len          = 0;
-      r->time.started = timestamp();
-      r->pixels       = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
-      r->time.dur     = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                   {
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->pixels           = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze GIF");
         goto error;
       }
@@ -166,13 +193,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_TIFF] = &(struct cap_t)          {
+  [CAPTURE_CHAN_TYPE_TIFF] = &(struct cap_t)             {
     .name          = "CGImage To TIFF Pixels",
     .enabled       = true, .format = IMAGE_TYPE_TIFF,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
       r->type = IMAGE_TYPE_TIFF;
       r->msg  = (struct cgimage_recv_t *)MSG;
@@ -181,7 +208,8 @@ static const struct cap_t *__caps[] = {
       r->time.started = timestamp();
       r->pixels       = save_cgref_to_tiff_memory(r->msg->img_ref, &(r->len));
       r->time.dur     = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                   {
+      r->analyze      = true;
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze TIFF");
         goto error;
       }
@@ -195,22 +223,25 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_BMP] = &(struct cap_t)           {
+  [CAPTURE_CHAN_TYPE_BMP] = &(struct cap_t)              {
     .name          = "CGImage To BMP Pixels",
     .enabled       = true, .format = IMAGE_TYPE_BMP,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
       r->type = IMAGE_TYPE_BMP;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to BMP", r->msg->width, r->msg->height);
-      r->len          = 0;
-      r->time.started = timestamp();
-      r->pixels       = save_cgref_to_bmp_memory(r->msg->img_ref, &(r->len));
-      r->time.dur     = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                   {
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_bmp_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze BMP");
         goto error;
       }
@@ -224,22 +255,267 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_JPEG] = &(struct cap_t)          {
+  [CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE] = &(struct cap_t){
+    .name          = "CGImage To Grayscale CGImage",
+    .enabled       = true, .format = IMAGE_TYPE_CGIMAGE_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct cgimage_recv_t *c   = calloc(1, sizeof(struct cgimage_recv_t));
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->msg = (struct capture_result_t *)MSG;
+      debug("Converting %lux%lu CGImageref to TIFF Grayscale", r->width, r->height);
+      r->len          = 0;
+      c->time.started = timestamp();
+      c->img_ref      = cgimageref_to_grayscale(r->msg->img_ref);
+      c->time.dur     = timestamp() - r->time.started;
+      c->width        = r->msg->width = CGImageGetWidth(r->msg->img_ref);
+      c->height       = r->msg->height = CGImageGetWidth(r->msg->img_ref);
+      c->req          = r->msg->req;
+      debug("Converted CGImageRef to %lux%lu Grayscale CGImage in %s",
+            c->width, c->height,
+            milliseconds_to_string(c->time.dur)
+            );
+
+      return((void *)c);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_BMP_GRAYSCALE] = &(struct cap_t)    {
+    .name          = "CGImage To BMP Grayscale Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_BMP_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->type = IMAGE_TYPE_BMP_GRAYSCALE;
+      r->msg  = (struct cgimage_recv_t *)MSG;
+      debug("Converting %lux%lu CGImageref to BMP Grayscale", r->msg->width, r->msg->height);
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_bmp_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      r->msg->req         = r->msg->req;
+      debug("Converted CGImageRef to %s Grayscale BMP in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze BMP");
+        goto error;
+      }
+      debug("Converted CGImageRef to %s BMP Grayscale Pixels in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_QOI_GRAYSCALE] = &(struct cap_t)    {
+    .name          = "CGImage To QOI Grayscale Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_QOI_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->type = IMAGE_TYPE_QOI_GRAYSCALE;
+      r->msg  = (struct cgimage_recv_t *)MSG;
+      debug("Converting %lux%lu CGImageref to QOI Grayscale", r->msg->width, r->msg->height);
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_qoi_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = false;
+      r->analyze          = true;
+      r->msg->req         = r->msg->req;
+      debug("Converted CGImageRef to %s Grayscale QOI in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze QOI");
+        goto error;
+      }
+      debug("Converted CGImageRef to %s QOI Grayscale Pixels in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_JPEG_GRAYSCALE] = &(struct cap_t)   {
+    .name          = "CGImage To JPEG Grayscale Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_JPEG_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->type = IMAGE_TYPE_JPEG_GRAYSCALE;
+      r->msg  = (struct cgimage_recv_t *)MSG;
+      debug("Converting %lux%lu CGImageref to JPEG Grayscale", r->msg->width, r->msg->height);
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_jpeg_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      r->msg->req         = r->msg->req;
+      debug("Converted CGImageRef to %s Grayscale JPEG in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze JPEG");
+        goto error;
+      }
+      debug("Converted CGImageRef to %s JPEG Grayscale Pixels in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_PNG_GRAYSCALE] = &(struct cap_t)    {
+    .name          = "CGImage To PNG Grayscale Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_PNG_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->type = IMAGE_TYPE_PNG_GRAYSCALE;
+      r->msg  = (struct cgimage_recv_t *)MSG;
+      debug("Converting %lux%lu CGImageref to PNG Grayscale", r->msg->width, r->msg->height);
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_png_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      r->msg->req         = r->msg->req;
+      debug("Converted CGImageRef to %s Grayscale PNG in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze PNG");
+        goto error;
+      }
+      debug("Converted CGImageRef to %s PNG Grayscale Pixels in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_GIF_GRAYSCALE] = &(struct cap_t)    {
+    .name          = "CGImage To GIF Grayscale Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_GIF_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->type = IMAGE_TYPE_GIF_GRAYSCALE;
+      r->msg  = (struct cgimage_recv_t *)MSG;
+      debug("Converting %lux%lu CGImageref to GIF Grayscale", r->msg->width, r->msg->height);
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      r->msg->req         = r->msg->req;
+      debug("Converted CGImageRef to %s Grayscale GIF in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze GIF");
+        goto error;
+      }
+      debug("Converted CGImageRef to %s GIF Grayscale Pixels in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_TIFF_GRAYSCALE] = &(struct cap_t)   {
+    .name          = "CGImage To TIFF Grayscale Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_TIFF_GRAYSCALE,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->type = IMAGE_TYPE_TIFF_GRAYSCALE;
+      r->msg  = (struct cgimage_recv_t *)MSG;
+      debug("Converting %lux%lu CGImageref to TIFF Grayscale", r->msg->width, r->msg->height);
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_tiff_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      r->analyze          = true;
+      r->msg->req         = r->msg->req;
+      debug("Converted CGImageRef to %s Grayscale Tiff in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze TIFF");
+        goto error;
+      }
+      debug("Converted CGImageRef to %s TIFF Grayscale Pixels in %s",
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
+  [CAPTURE_CHAN_TYPE_JPEG] = &(struct cap_t)             {
     .name          = "CGImage To JPEG Pixels",
     .enabled       = true, .format = IMAGE_TYPE_JPEG,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
       r->type = IMAGE_TYPE_JPEG;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to JPEG", r->msg->width, r->msg->height);
-      r->len          = 0;
-      r->time.started = timestamp();
-      r->pixels       = save_cgref_to_jpeg_memory(r->msg->img_ref, &(r->len));
-      r->time.dur     = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                   {
+      r->time.captured_ts = r->msg->time.captured_ts;
+      r->analyze          = true;
+      r->len              = 0;
+      r->time.started     = timestamp();
+      r->pixels           = save_cgref_to_jpeg_memory(r->msg->img_ref, &(r->len));
+      r->time.dur         = timestamp() - r->time.started;
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze JPEG");
         goto error;
       }
@@ -253,22 +529,24 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_PNG_COMPRESSED] = &(struct cap_t){
+  [CAPTURE_CHAN_TYPE_PNG_COMPRESSED] = &(struct cap_t)   {
     .name          = "CGImage To PNG Pixels",
     .enabled       = true, .format = IMAGE_TYPE_PNG_COMPRESSED,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
       r->type = IMAGE_TYPE_PNG_COMPRESSED;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to PNG", r->msg->width, r->msg->height);
       char *s;
+      r->time.captured_ts = r->msg->time.captured_ts;
       size_t window_id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
       asprintf(&s, "%sWindow-comp-%lu.png", gettempdir(), window_id);
       save_cgref_to_image_type_file(IMAGE_TYPE_PNG, r->msg->img_ref, s);
       r->len          = 0;
+      r->analyze      = true;
       r->time.started = timestamp();
 
       size_t rgb_len            = 0;
@@ -276,7 +554,7 @@ static const struct cap_t *__caps[] = {
       r->pixels = imagequant_encode_rgb_pixels_to_png_buffer(rgb_pixels, r->msg->width, r->msg->height, 10, 70, &(r->len));
       free(rgb_pixels);
       r->time.dur = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                   {
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze PNG");
         goto error;
       }
@@ -290,70 +568,48 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_PNG] = &(struct cap_t)           {
+  [CAPTURE_CHAN_TYPE_PNG] = &(struct cap_t)              {
     .name          = "CGImage To PNG Pixels",
     .enabled       = true, .format = IMAGE_TYPE_PNG,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)              {
+    .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
-      r->type = IMAGE_TYPE_PNG;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->type             = IMAGE_TYPE_PNG;
+      r->msg              = (struct cgimage_recv_t *)MSG;
+      r->time.captured_ts = r->msg->time.captured_ts;
       debug("Converting %lux%lu CGImageref to PNG", r->msg->width, r->msg->height);
       r->len          = 0;
       r->time.started = timestamp();
       size_t rgb_len = 0;
-      r->pixels = save_cgref_to_jpeg_memory(r->msg->img_ref, &(r->len));
+      r->pixels = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
       VipsImage *image;
-      vips_jpegload_buffer(r->pixels, r->len, &image, NULL);
+      vips_gifload_buffer(r->pixels, r->len, &image, NULL);
+      r->analyze  = true;
       r->time.dur = timestamp() - r->time.started;
-      log_debug("Loaded %s RGB Pixels to %dx%d %s PNG VIPImage in %s",
-                bytes_to_string(rgb_len),
-                vips_image_get_width(image), vips_image_get_height(image),
-                bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
-                milliseconds_to_string(r->time.dur)
-                );
+      debug("Loaded %s GIF Pixels to %dx%d %s PNG VIPImage in %s",
+            bytes_to_string(rgb_len),
+            vips_image_get_width(image), vips_image_get_height(image),
+            bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
+            milliseconds_to_string(r->time.dur)
+            );
       vips_pngsave_buffer(image, r->pixels, &(r->len), NULL);
       char *s;
       size_t window_id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
       asprintf(&s, "%sWindow-%lu.png", gettempdir(), window_id);
-//VipsTarget *target;
       vips_pngsave(image, s, NULL);
       VipsImage *image1;
       vips_pngload(s, &image1, NULL);
       vips_pngsave_buffer(image1, &(r->pixels), &(r->len), NULL);
-/*
- *      vips_image_write_to_target( image, ".png", target, NULL );
- *    vips_image_write_to_file(image,s,NULL);
- */
-      /*
-       * r->pixels = imagequant_encode_rgb_pixels_to_png_buffer(rgb_pixels, r->msg->width, r->msg->height, 10, 70, &(r->len));
-       * int           width = 0, height = 0, format = 0, req_format = STBI_rgb_alpha;
-       * unsigned char *rgb_pixels1 = stbi_load_from_memory(r->pixels, r->len, &width, &height, &format, req_format);
-       * log_info("%d,%d,%d",width,height,format);
-       * CGImageRef ir =     rgb_pixels_to_png_cgimage_ref(r->pixels,width,height);
-       * log_debug("%lux%lu",CGImageGetWidth(ir),CGImageGetHeight(ir));
-       * log_debug("%lux%lu",CGImageGetWidth(r->msg->img_ref),CGImageGetHeight(r->msg->img_ref));
-       * r->pixels = save_cgref_to_image_type_memory1(ir,&(r->len));
-       * //fsio_write_binary_file(s,r->pixels,r->len);
-       * save_cgref_to_png_file(ir,s);
-       *
-       */
-
-      //    r->pixels = save_cgref_to_png_memory(r->msg->img_ref, &(r->len));
-      if (!analyze_image_pixels(r))                   {
+      if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze PNG");
-        //goto error;
       }
       debug("Converted CGImageRef to %s PNG Pixels in %s",
             bytes_to_string(r->len),
             milliseconds_to_string(r->time.dur)
             );
       return((void *)r);
-
-      error :
-      return((void *)0);
     },
   },
 };
@@ -372,8 +628,8 @@ struct Vector *get_cap_providers(enum image_type_id_t format){
     }
   }
   if ((int)t == -1) {
-    log_error("Unable to find capture type for format %d", format);
-    return(v);
+    log_error("Unable to find capture type for format %s (%d)", image_type_name(format), format);
+    exit(EXIT_FAILURE);
   }
   debug("Found capture #%d", t);
   while (true) {
@@ -482,50 +738,54 @@ static bool analyze_image_pixels(struct capture_result_t *r){
   r->id             = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
   r->file           = get_image_type_filename(r->msg->req->type, r->type, r->id, false);
   r->thumbnail_file = get_image_type_filename(r->msg->req->type, r->type, r->id, true);
-  if (r->type == IMAGE_TYPE_QOI) {
-    QOIDecoder *qoi = QOIDecoder_New();
-    if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
-      r->width             = QOIDecoder_GetWidth(qoi);
-      r->height            = QOIDecoder_GetHeight(qoi);
-      r->has_alpha         = QOIDecoder_HasAlpha(qoi);
-      r->linear_colorspace = QOIDecoder_IsLinearColorspace(qoi);
-      fsio_write_binary_file(r->file, r->pixels, r->len);
-    }
-    QOIDecoder_Delete(qoi);
-  }else{
-    VipsImage *image = NULL;
-    errno = 0;
-    if (!(image = vips_image_new_from_buffer(r->pixels, r->len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
-      log_error("Failed to decode pixels");
-      return(false);
-    }
-    r->width             = vips_image_get_width(image);
-    r->height            = vips_image_get_height(image);
-    r->has_alpha         = vips_image_hasalpha(image);
-    r->linear_colorspace = vips_colourspace_issupported(image);
-    if (WRITE_FILE) {
-      vips_image_write_to_file(image, r->file, NULL);
-      if (fsio_file_size(r->file) == 0) {
-        fsio_remove(r->file);
+  if (r->analyze) {
+    if (r->type == IMAGE_TYPE_QOI) {
+      QOIDecoder *qoi = QOIDecoder_New();
+      if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
+        r->width             = QOIDecoder_GetWidth(qoi);
+        r->height            = QOIDecoder_GetHeight(qoi);
+        r->has_alpha         = QOIDecoder_HasAlpha(qoi);
+        r->linear_colorspace = QOIDecoder_IsLinearColorspace(qoi);
+        if (WRITE_FILE) {
+          fsio_write_binary_file(r->file, r->pixels, r->len);
+        }
       }
-    }
-    if (WRITE_THUMBNAIL) {
-      VipsImage *thumbnail;
-      vips_thumbnail_image(image, &thumbnail, clamp(THUMBNAIL_WIDTH, vips_image_get_width(image), THUMBNAIL_WIDTH), NULL);
-      vips_image_write_to_file(image, r->thumbnail_file, NULL);
-      log_info("wrote %s %dx%d thumbnail %s",
-               bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(thumbnail)),
-               vips_image_get_width(thumbnail),
-               vips_image_get_height(thumbnail),
-               r->thumbnail_file
-               );
-      if (fsio_file_size(r->thumbnail_file) == 0) {
-        fsio_remove(r->thumbnail_file);
+      QOIDecoder_Delete(qoi);
+    }else{
+      VipsImage *image = NULL;
+      errno = 0;
+      if (!(image = vips_image_new_from_buffer(r->pixels, r->len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+        log_error("Failed to decode pixels");
+        return(false);
       }
-      g_object_unref(thumbnail);
-    }
-    if (image) {
-      g_object_unref(image);
+      r->width             = vips_image_get_width(image);
+      r->height            = vips_image_get_height(image);
+      r->has_alpha         = vips_image_hasalpha(image);
+      r->linear_colorspace = vips_colourspace_issupported(image);
+      if (WRITE_FILE) {
+        vips_image_write_to_file(image, r->file, NULL);
+        if (fsio_file_size(r->file) == 0) {
+          fsio_remove(r->file);
+        }
+      }
+      if (WRITE_THUMBNAIL) {
+        VipsImage *thumbnail;
+        vips_thumbnail_image(image, &thumbnail, clamp(THUMBNAIL_WIDTH, vips_image_get_width(image), THUMBNAIL_WIDTH), NULL);
+        vips_image_write_to_file(image, r->thumbnail_file, NULL);
+        log_info("wrote %s %dx%d thumbnail %s",
+                 bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(thumbnail)),
+                 vips_image_get_width(thumbnail),
+                 vips_image_get_height(thumbnail),
+                 r->thumbnail_file
+                 );
+        if (fsio_file_size(r->thumbnail_file) == 0) {
+          fsio_remove(r->thumbnail_file);
+        }
+        g_object_unref(thumbnail);
+      }
+      if (image) {
+        g_object_unref(image);
+      }
     }
   }
   return(true);
@@ -539,8 +799,7 @@ static bool wait_cap(struct capture_req_t *req, struct cap_t *cap){
   return(true);
 }
 
-struct Vector *capture_windows(struct capture_req_t *req){
-  //CAPTURE_WINDOW_DEBUG_MODE=true;
+struct Vector *capture(struct capture_req_t *req){
   caps = __caps;
   struct Vector *v            = vector_new();
   chan_t        *results_chan = chan_init(vector_size(req->ids));
@@ -617,19 +876,27 @@ struct Vector *capture_windows(struct capture_req_t *req){
             r->has_alpha?"Yes":"No"
 
             );
+      r->time.captured_ts = timestamp();
+      msg                 = (void *)r;
       vector_push(v, msg);
     }
   }
   for (size_t i = 0; i < vector_size(providers); i++) {
     enum capture_chan_type_t c = (enum capture_chan_type_t)(size_t)vector_get(providers, i);
-    if (caps[c]->recv_chan) {
-      chan_dispose(caps[c]->recv_chan);
+    if (chan_is_closed(results_chan) == 0) {
+      chan_close(results_chan);
     }
-    // if(caps[c]->send_chan)
-    //   chan_dispose(caps[c]->send_chan);
-    if (caps[c]->done_chan) {
-      chan_dispose(caps[c]->done_chan);
+    if (chan_is_closed(caps[c]->done_chan) == 0) {
+      chan_close(caps[c]->done_chan);
     }
+    if (chan_is_closed(caps[c]->send_chan) == 0) {
+      chan_close(caps[c]->send_chan);
+    }
+    if (chan_is_closed(caps[c]->recv_chan) == 0) {
+      chan_close(caps[c]->recv_chan);
+    }
+    chan_dispose(caps[c]->recv_chan);
+    chan_dispose(caps[c]->done_chan);
     caps[c]->recv_chan = NULL;
     caps[c]->send_chan = NULL;
     caps[c]->done_chan = NULL;
@@ -639,15 +906,20 @@ struct Vector *capture_windows(struct capture_req_t *req){
       }
     }
   }
-  //chan_dispose(results_chan);
+  chan_dispose(results_chan);
+  results_chan = NULL;
   return(v);
 
 fail:
   return(vector_new());
-} /* capture_windows */
+} /* capture*/
 
 bool end_animation(struct animated_capture_t *acap){
-  errno        = 0;
+  errno = 0;
+  size_t msf_size = get_gif_size(acap->gif);
+  size_t qty = 0, bytes = 0;
+  size_t frames_qty = get_gif_frames_qty(acap->gif);
+  log_info("gif_size:%s|frames:%lu|%lu Buffers totaling %s|", bytes_to_string(msf_size), frames_qty, qty, bytes_to_string(bytes));
   acap->result = msf_gif_end(acap->gif);
   if (acap->file) {
     if (acap->result.data) {
@@ -689,22 +961,54 @@ int poll_new_animated_frame(void *VOID){
 }
 
 bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t *r){
+//  CAPTURE_WINDOW_DEBUG_MODE = true;
   struct animated_frame_t *n = calloc(1, sizeof(struct animated_frame_t));
 
   n->height = r->height;
   n->width  = r->width;
   n->len    = r->len;
-  n->ts     = r->time.started - (r->time.dur / 2);
+  n->ts     = r->time.captured_ts;
   int           f = 0, w = 0, h = 0;
-  FILE          *fp     = fmemopen(r->pixels, r->len, "rb");
-  unsigned long s       = timestamp();
-  unsigned char *pixels = stbi_load_from_file(fp, &w, &h, &f, STBI_rgb_alpha);
+  unsigned long s;
+  unsigned char *pixels = NULL;
 
-  fclose(fp);
-  if (CAPTURE_WINDOW_DEBUG_MODE) {
-    log_info("STBI in %s",
-             milliseconds_to_string(timestamp() - s)
-             );
+  if (r->type == IMAGE_TYPE_QOI) {
+    debug("QOI Decoding!");
+    s = timestamp();
+    QOIDecoder *qoi = QOIDecoder_New();
+    if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
+      w         = QOIDecoder_GetWidth(qoi);
+      h         = QOIDecoder_GetHeight(qoi);
+      n->width  = w;
+      n->height = h;
+      f         = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
+      pixels    = QOIDecoder_GetPixels(qoi);
+      if (true || CAPTURE_WINDOW_DEBUG_MODE) {
+        debug("QOI in %s|%dx%d|f:%d|alpha:%d|colorsp:%d|",
+              milliseconds_to_string(timestamp() - s),
+              w, h, f,
+              QOIDecoder_HasAlpha(qoi),
+              QOIDecoder_IsLinearColorspace(qoi)
+              );
+        acap->max_bit_depth = (int)((QOIDecoder_HasAlpha(qoi)) ?  32 : 24);
+        acap->pitch_bytes   = (4 * w);
+      }
+    }
+    QOIDecoder_Delete(qoi);
+  }else if (r->type == IMAGE_TYPE_BMP) {
+    pixels = r->pixels;
+  }else{
+    s = timestamp();
+    FILE *fp = fmemopen(r->pixels, r->len, "rb");
+    pixels = stbi_load_from_file(fp, &w, &h, &f, STBI_rgb_alpha);
+    fclose(fp);
+    if (true || CAPTURE_WINDOW_DEBUG_MODE) {
+      log_info("STBI in %s",
+               milliseconds_to_string(timestamp() - s)
+               );
+    }
+    acap->max_bit_depth = (int)((f == 4) ?  32 : 24);
+    acap->pitch_bytes   = (int)((f == 4) ? (4 * w) : (3 * w));
   }
 
   if (vector_size(acap->frames_v) == 0) {
@@ -713,27 +1017,37 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
     acap->started = n->ts;
     msf_gif_begin(acap->gif, w, h);
   }
-  acap->max_bit_depth = (int)((f == 4) ?  32 : 24);
-  acap->pitch_bytes   = (int)((f == STBI_rgb_alpha) ? (4 * w) : (3 * w));
-  if (CAPTURE_WINDOW_DEBUG_MODE) {
-    log_info("%d|%d|%d|%d|%s|%s|%dx%d",
-             f,
-             acap->max_bit_depth,
-             acap->pitch_bytes,
-             STBI_rgb_alpha,
-             bytes_to_string(r->len),
-             r->file,
-             w, h
-             );
+  debug("req type:%d|f:%d|max bit:%d|pitch bytes:%d|stbi rgb alpha:%d|size:%s|file:%s|%dx%d",
+        r->type,
+        f,
+        acap->max_bit_depth,
+        acap->pitch_bytes,
+        STBI_rgb_alpha,
+        bytes_to_string(r->len),
+        r->file,
+        w, h
+        );
+  int cs;
+
+  if (vector_size(acap->frames_v) > 0) {
+    cs = (int)(r->delta_ms / 10);
+    if (CAPTURE_WINDOW_DEBUG_MODE) {
+      log_debug("cs:%d|cs per frame:%d|delta:%lu|",
+                cs,
+                (int)(acap->ms_per_frame / 10),
+                r->delta_ms
+                );
+    }
+  }else{
+    cs = (int)((acap->ms_per_frame) / 10);
   }
   msf_gif_frame(acap->gif, pixels,
-                (int)(acap->ms_per_frame / 10),
+                cs,
                 acap->max_bit_depth,
                 acap->pitch_bytes
                 );
   vector_push(acap->frames_v, (void *)n);
   acap->total_size = animated_frames_len(acap);
-  free(pixels);
   return(true);
 } /* new_animated_frame */
 
@@ -756,11 +1070,11 @@ bool inspect_frames(struct animated_capture_t *acap){
     while (gd_get_frame(gif)) {
       ts = timestamp();
       gd_render_frame(gif, buffer);
-      log_debug("Loaded %s Buffer from frame #%d/%d in %s",
-                bytes_to_string(len),
-                looped, gif->loop_count,
-                milliseconds_to_string(timestamp() - ts)
-                );
+      debug("Loaded %s Buffer from frame #%d/%d in %s",
+            bytes_to_string(len),
+            looped, gif->loop_count,
+            milliseconds_to_string(timestamp() - ts)
+            );
     }
     if (looped == gif->loop_count) {
       break;

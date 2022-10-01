@@ -35,6 +35,8 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
+subdir('core')
+subdir('event')
 subdir('icons')
 subdir('frameworks')
 subdir('timg')

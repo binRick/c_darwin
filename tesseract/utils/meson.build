@@ -11,6 +11,7 @@ tesseract_utils_include_dirs = [
 ]
 
 tesseract_utils_deps = [
+  core_utils_dep, core_image_dep,
   ansi_codes_dep,capture_utils_dep,tempdir_dep,
   c_vector_dep,
   c_fsio_dep,
@@ -26,7 +27,7 @@ tesseract_utils_deps = [
   stb_dep,
   space_utils_dep,
   display_utils_dep,
-  window_utils_dep,timg_utils_dep,
+  window_utils_dep,timg_utils_dep,vips_dep,
   app_utils_dep,image_utils_dep,process_utils_dep,display_utils_dep,
   c_img_dep,
 ]

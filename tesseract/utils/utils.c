@@ -8,7 +8,11 @@
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "vips/vips.h"
 #include "bytes/bytes.h"
+#include "core/utils/utils.h"
+#include "timg/utils/utils.h"
+#include "core/image/image.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
@@ -109,6 +113,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
   struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
 
   fprintf(stdout,
+          "\n\t|  %sDuration         :      %s" AC_RESETALL
           "\n\t|  %sWindow%s           :      PID:%d|%dx%d|%s"
           "\n\t|  %sTesseract%s        :      |%s%s%s|"
           "\n\t|                          Confidence:%d|Box:%d"
@@ -127,6 +132,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
           "\n\t|             Window min y offset pixels: %d"
           "\n\t|             Window max y offset pixels: %d"
           "\n%s",
+          AC_GREEN, milliseconds_to_string(timestamp() - r->started),
           AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
           AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC, lines.strings[0], AC_RESETALL,
           r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
@@ -165,7 +171,7 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
   struct window_info_t              *window_info;
   CGRect                            rect, orig_rect;
   char                              *s, *extract_file, *files[2];
-  int                               w, h, f;
+  int                               w, h;
   CGImageRef                        image_refs[2];
   {
     window_info = get_window_id_info(window_id);
@@ -209,8 +215,12 @@ struct tesseract_extract_result_t *tesseract_find_window_matching_word_locations
     }
     assert(save_cgref_to_png_file(image_refs[0], extract_file) == true);
     assert(fsio_file_size(extract_file) > 1024);
-    assert(stbi_info(extract_file, &w, &h, &f) == 1);
-    assert(w > 10 && h > 10 && f > 0);
+   // assert(stbi_info(extract_file, &w, &h, &f) == 1);
+    VipsImage *image;
+    assert((image = vips_image_new_from_file(extract_file, "access", VIPS_ACCESS_SEQUENTIAL, NULL)) == 0);
+    w = vips_image_get_width(image);
+    h = vips_image_get_height(image);
+    assert(w > 10 && h > 10);
   }
   {
     extractions = tesseract_extract_file_mode(extract_file, RIL_TEXTLINE);
@@ -373,6 +383,7 @@ struct Vector *tesseract_extract_file_mode(char *image_file, unsigned long MODE)
           log_info("%s", m);
         }
         struct tesseract_extract_result_t *r = calloc(1, sizeof(struct tesseract_extract_result_t));
+        r->started = timestamp();
         r->x      = box->x;
         r->y      = box->y;
         r->width  = box->w;

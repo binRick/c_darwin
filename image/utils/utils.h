@@ -39,7 +39,15 @@ enum image_type_id_t {
   IMAGE_TYPE_BMP,
   IMAGE_TYPE_QOI,
   IMAGE_TYPE_RGB,
+  IMAGE_TYPE_TIFF_GRAYSCALE,
+  IMAGE_TYPE_PNG_GRAYSCALE,
+  IMAGE_TYPE_RGB_GRAYSCALE,
+  IMAGE_TYPE_JPEG_GRAYSCALE,
+  IMAGE_TYPE_BMP_GRAYSCALE,
+  IMAGE_TYPE_QOI_GRAYSCALE,
+  IMAGE_TYPE_GIF_GRAYSCALE,
   IMAGE_TYPE_CGIMAGE,
+  IMAGE_TYPE_CGIMAGE_GRAYSCALE,
   IMAGE_TYPES_QTY,
 };
 unsigned char *save_cgref_to_image_type_memory1(CGImageRef image, size_t *len);
@@ -91,6 +99,7 @@ bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file);
 bool save_cgref_to_tiff_file(CGImageRef image, char *image_file);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char *save_cgref_to_rgb_memory(CGImageRef image_ref, size_t *len);
+unsigned char *save_cgref_to_rgb_memory1(CGImageRef image_ref, size_t *len);
 bool save_cgref_to_qoi_file(CGImageRef image_ref, char *image_file);
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

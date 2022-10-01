@@ -22,7 +22,7 @@ image_utils_deps = [
   string_utils_dep,
   timestamp_dep,
   stb_dep,
-  qoi_dep,
+  qoi_ci_dep,
   timg_utils_dep,
   c_workqueue_dep,
   fancy_progress_dep,

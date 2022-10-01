@@ -8,6 +8,9 @@ darwin_ls_include_dirs = [
   inc,
 ]
 darwin_ls_deps = [
+  core_utils_dep,
+  core_image_dep,
+  optparse99_dep,
   font_utils_dep,
   memory_leak_detector_dep,kitty_dep,alacritty_dep,c_stringfn_dep,c_string_buffer_dep,
   c_vector_dep,
@@ -18,7 +21,6 @@ darwin_ls_deps = [
   timestamp_dep,
   ms_dep,
   bytes_dep,
-  optparse99_dep,parson_dep,
   core_utils_dep,
   window_utils_dep,
   app_utils_dep,font_utils_dep,
@@ -71,8 +73,8 @@ test_args = [
   ['focused-window'],
   ['focused-pid'],
   ['focused-space'],
-  ['capture-window','-r','-o','/tmp/test-capture.png'],
-  ['extract-window','--all-windows','--concurrency','10','--limit','10'],
+  ['capture','-r','-o','/tmp/test-capture.png'],
+  ['extract','--all-windows','--concurrency','10','--limit','10'],
   ['security','--retries','2'],
   ['app-icns-file','-P','/Applications/kitty.app'],
   ['get-icon-png','-P','/Applications/kitty.app','-s','512','-f','/tmp/kitty-icon-512.png'],

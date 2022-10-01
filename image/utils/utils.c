@@ -25,6 +25,8 @@
 #include "process/utils/utils.h"
 #include "process/utils/utils.h"
 #include "qoi/qoi.h"
+#include "qoi_ci/QOI-stdio.h"
+#include "qoi_ci/transpiled/QOI.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log.h/log.h"
@@ -146,7 +148,14 @@ char *image_type_name(enum image_type_id_t type){
   switch (type) {
   case IMAGE_TYPE_PNG: return("PNG"); break;
   case IMAGE_TYPE_PNG_COMPRESSED: return("COMPRESSED.PNG"); break;
+  case IMAGE_TYPE_PNG_GRAYSCALE: return("GRAYSCALE.PNG"); break;
+  case IMAGE_TYPE_GIF_GRAYSCALE: return("GRAYSCALE.GIF"); break;
+  case IMAGE_TYPE_BMP_GRAYSCALE: return("GRAYSCALE.BMP"); break;
+  case IMAGE_TYPE_QOI_GRAYSCALE: return("GRAYSCALE.QOI"); break;
+  case IMAGE_TYPE_JPEG_GRAYSCALE: return("GRAYSCALE.JPEG"); break;
   case IMAGE_TYPE_TIFF: return("TIFF"); break;
+  case IMAGE_TYPE_TIFF_GRAYSCALE: return("GRAYSCALE.TIFF"); break;
+  case IMAGE_TYPE_CGIMAGE_GRAYSCALE: return("GRAYSCALE.CGIMAGE"); break;
   case IMAGE_TYPE_CGIMAGE: return("CGIMAGE"); break;
   case IMAGE_TYPE_GIF: return("GIF"); break;
   case IMAGE_TYPE_RGB: return("RGB"); break;
@@ -535,34 +544,77 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   return((ok && (size_t)fsio_file_size(image_file) == (size_t)qoi_len) ? true : false);
 }
 
-unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
+unsigned char *save_cgref_to_qoi_memory1(CGImageRef image_ref, size_t *qoi_len){
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
   size_t        rgb_len     = 0;
   unsigned char *rgb_pixels = save_cgref_to_rgb_memory(image_ref, &rgb_len);
 
-  if (rgb_len < 1 || !rgb_pixels) {
+  log_info("encoding %lu", rgb_len);
+  QOIEncoder *qoi = QOIEncoder_New();
+
+  if (qoi == NULL) {
+    log_error("QOI err");
     return(NULL);
   }
-  void *qoi_pixels = qoi_encode(rgb_pixels, &(qoi_desc){
-    .width      = w,
-    .height     = h,
-    .channels   = 4,
-    .colorspace = QOI_SRGB
-  }, qoi_len);
+
+  if (!QOIEncoder_Encode(qoi, w, h, rgb_pixels, true, false)) {
+    log_error("QOI encode err");
+    QOIDecoder_Delete(qoi);
+    return(NULL);
+  }
+
+  unsigned char *pixels = QOIEncoder_GetEncoded(qoi);
+
+  *qoi_len = QOIEncoder_GetEncodedSize(qoi);
+  QOIDecoder_Delete(qoi);
+  log_info("encoded %lu to %lu", rgb_len, *qoi_len);
+  return(pixels);
+}
+
+unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
+  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
+  size_t        len  = 0;
+  unsigned char *gif = save_cgref_to_gif_memory(image_ref, &len);
+
+  if (len < 1 || !gif) {
+    log_error("Failed to convert cgref to gif");
+    return(NULL);
+  }
+
+  unsigned char *rgb = stbi_load_from_memory(gif, len, &width, &height, &compression, STBI_rgb_alpha);
 
   if (IMAGE_UTILS_DEBUG_MODE) {
-    log_info("encoded %dx%d %s RGB to qoi %s",
-             w, h,
-             bytes_to_string(rgb_len),
-             bytes_to_string(*qoi_len)
-
-             );
+    log_debug("decoded %dx%d %d",
+              width, height, compression);
   }
-  if (rgb_pixels) {
-    free(rgb_pixels);
+
+  unsigned long s     = timestamp();
+  qoi_desc      *desc = &(qoi_desc){
+    .width      = width,
+    .height     = height,
+    .channels   = compression,
+    .colorspace = QOI_SRGB,
+  };
+  void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
+
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
+              w, h,
+              bytes_to_string(len), width, height,
+              bytes_to_string(*qoi_len),
+              desc->width, desc->height,
+              milliseconds_to_string(timestamp() - s)
+
+              );
+  }
+  if (rgb) {
+    free(rgb);
+  }
+  if (gif) {
+    free(gif);
   }
   return(qoi_pixels);
-}
+} /* save_cgref_to_qoi_memory */
 
 ///////////////////////////////////////////////////////////////////////////////
 CGImageRef resize_cgimage_factor(CGImageRef imageRef, double resize_factor){
@@ -643,6 +695,33 @@ unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, 
   CFRelease(data);
 
   return(buf);
+}
+
+unsigned char *save_cgref_to_rgb_memory1(CGImageRef img_ref, size_t *len){
+  unsigned char *pixels = NULL;
+  CGRect        newRect = CGRectIntegral(CGRectMake(0, 0, CGImageGetWidth(img_ref), CGImageGetHeight(img_ref)));
+  CGContextRef  context = CGBitmapContextCreate(NULL, CGImageGetWidth(img_ref), CGImageGetHeight(img_ref),
+                                                CGImageGetBitsPerComponent(img_ref),
+                                                CGImageGetBytesPerRow(img_ref),
+                                                CGImageGetColorSpace(img_ref),
+                                                CGImageGetBitmapInfo(img_ref));
+
+  if (!context) {
+    log_error("Failed to create context");
+    return(NULL);
+  }
+
+  CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+  CGContextDrawImage(context, newRect, img_ref);
+  CGImageRef rgb_ref  = CGBitmapContextCreateImage(context);
+  CFDataRef  data_ref = CGDataProviderCopyData(CGImageGetDataProvider(rgb_ref));
+
+  *len   = CFDataGetLength(rgb_ref);
+  pixels = calloc(1, *len);
+
+  CFDataGetBytes(data_ref, CFRangeMake(0, *len), pixels);
+  CFRelease(context);
+  return(pixels);
 }
 
 unsigned char *save_cgref_to_rgb_memory(CGImageRef image_ref, size_t *len){

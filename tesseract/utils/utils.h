@@ -40,7 +40,7 @@ struct tesseract_determined_area_t {
   int   y_max_offset_window_pixels;
 };
 struct tesseract_extract_result_t {
-  unsigned long                                 mode;
+  unsigned long                                 mode, started;
   int                                           box;
   int                                           x, y;
   int                                           width, height;

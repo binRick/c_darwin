@@ -1,6 +1,6 @@
 #pragma once
-#ifndef OUTPUT_UTILS_H
-#define OUTPUT_UTILS_H
+#ifndef CORE_IMAGE_H
+#define CORE_IMAGE_H
 //////////////////////////////////////
 #include <assert.h>
 #include <ctype.h>
@@ -12,6 +12,4 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-#include "dls/dls.h"
-void output_utils_fxn1(void);
 #endif
