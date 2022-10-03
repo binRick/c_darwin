@@ -1,5 +1,11 @@
 mt_srcs = [
   'mt.c',
+  'mt-embedded.c',
+  'mt-args.c',
+  'mt-globals.c',
+  'mt-ema.c',
+  'mt-market.c',
+  'mt-commands.c',
 ]
 
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
@@ -10,6 +16,7 @@ mt_include_dirs = [
 ]
 
 mt_deps = [
+  kitty_msg_dep,
   csv_parser_dep,timelib_dep,
   optparse99_dep,
   ansi_codes_dep,
@@ -26,6 +33,7 @@ mt_deps = [
 
 mt_c_args = [
   '-DINCBIN_SILENCE_BITCODE_WARNING',
+  '-Wno-missing-field-initializers',
 ]
 
 mt_link_args = [

@@ -11,6 +11,14 @@
 #define KITTY_DELETE_IMAGES                                "\x1b_Ga=d\x1b\\"
 #define KITTY_DELETE_IMAGE_ID                              "\x1b_Ga=d=Z,i=%lu\x1b\\"
 #define LOCAL_DEBUG_MODE                                   KITTY_MSG_DEBUG_MODE
+#define KITTYQUERY "\x1b_Gi=1,a=q;\x1b\\"
+// request kitty keyboard protocol features 1, 2, and 8, first pushing current.
+// see https://sw.kovidgoyal.net/kitty/keyboard-protocol/#progressive-enhancement
+#define KKBDSUPPORT "\x1b[=11u"
+// the kitty keyboard protocol allows unambiguous, complete identification of
+// input events. this queries for the level of support. we want to do this
+// because the "keyboard pop" control code is mishandled by kitty < 0.20.0.
+#define KKBDQUERY "\x1b[?u"
 ////////////////////////////////////////////
 static bool KITTY_MSG_DEBUG_MODE = false;
 static char *kitty_msg_get_vips_image_msg(VipsImage *image);
@@ -19,7 +27,29 @@ static VipsImage *image_path_to_vips_image(char *image_path);
 static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len);
 static char *save_restore_msg(char *msg, int row, int col);
 static bool kitty_write_msg(char *msg);
+static void kitty_set_position(int x, int y)
+{
+    printf("\x1B[%d;%dH", y, x);
+    fflush(stdout);
+}
+struct pos  { int x, y; };
 
+static struct pos kitty_get_position(){
+    struct pos p;
+   // line l = kitty_send_term("\x1B[6n");
+   // int r = sscanf(l.buf+1, "[%d;%dR", &p.y, &p.x);
+    return p;
+}
+
+static void kitty_hide_cursor()
+{
+    puts("\x1B[?25l");
+}
+
+static void kitty_show_cursor()
+{
+    puts("\x1B[?25h");
+}
 ///////////////////////////////////////////////////////////////////////
 static bool kitty_write_msg(char *msg){
   int len = fprintf(stdout, "%s\n", msg);

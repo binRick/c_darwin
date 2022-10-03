@@ -1,69 +1,9 @@
-#include "mt/mt.h"
-////////
-#include "csv_parser/csv.h"
-#include "timelib/timelib.h"
-#ifdef INCBIN_STYLE
-#undef INCBIN_STYLE
-#endif
-#ifdef INCBIN_PREFIX
-#undef INCBIN_PREFIX
-#endif
-#define MAX_CSV_LINE_LENGTH    1024
-#define MIN_CSV_LINE_LENGTH    CSV_COLUMNS_QTY *2
-#include "incbin/incbin.h"
-#define MARKET_CSV_FILE        "XRPUSD240.csv"
-INCBIN(market_csv, MARKET_CSV_FILE);
-struct market_period_t;
+#ifndef MT_C
+#define MT_C
+#include "mt/mt-include.h"
+/*
 static int new_market_period(char **items, size_t items_qty);
 static int print_market_period(struct market_period_t *p);
-enum csv_column_t {
-  CSV_COLUMN_YEAR_MONTH_DAY,
-  CSV_COLUMN_HOUR_MINUTE,
-  CSV_COLUMN_OPEN,
-  CSV_COLUMN_HIGH,
-  CSV_COLUMN_LOW,
-  CSV_COLUMN_CLOSE,
-  CSV_COLUMN_VOLUME,
-  CSV_COLUMNS_QTY,
-};
-enum market_period_length_type_t {
-  MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS = 4,
-};
-enum ema_moving_average_type_t {
-  EMA_MOVING_AVERAGE_TYPE_EXPONENTIAL_AVERAGE,
-};
-enum ema_timeframe_type_t {
-  EMA_TIMEFRAME_TYPE_CURRENT,
-};
-enum ema_shift_type_t {
-  EMA_SHIFT_TYPE_CURRENT,
-};
-enum ema_applied_price_type_t {
-  EMA_APPLIED_PRICE_TYPE_CLOSE,
-};
-enum ema_period_duration_type_t {
-  MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS,
-  MARKET_PERIOD_DURATION_TYPE_LAST_TWELVE_HOURS,
-  MARKET_PERIOD_DURATION_TYPE_LAST_DAY,
-  MARKET_PERIOD_DURATION_TYPE_LAST_TWO_DAYS,
-  MARKET_PERIOD_DURATION_TYPE_LAST_WEEK,
-  MARKET_PERIOD_DURATION_TYPE_LAST_MONTH,
-  MARKET_PERIOD_DURATION_TYPE_LAST_THREE_MONTHS,
-  MARKET_PERIOD_DURATION_TYPE_LAST_SIX_MONTHS,
-  MARKET_PERIOD_DURATION_TYPE_LAST_YEAR,
-  MARKET_PERIOD_DURATION_TYPES_QTY,
-};
-static char *market_period_duration_type_names[] = {
-  [MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS]  = "Last 8 Hours",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_TWELVE_HOURS] = "Last 12 Hours",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_DAY]          = "Last Day",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_TWO_DAYS]     = "Last Two Days",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_WEEK]         = "Last Week",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_MONTH]        = "Last Month",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_THREE_MONTHS] = "Last Three Months",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_SIX_MONTHS]   = "Last Six Months",
-  [MARKET_PERIOD_DURATION_TYPE_LAST_YEAR]         = "Last Year",
-};
 
 char *market_period_durations_csv(){
   struct StringBuffer *sb = stringbuffer_new();
@@ -77,17 +17,6 @@ char *market_period_durations_csv(){
   }
   return(stringbuffer_to_string(sb));
 }
-static int market_period_duration_type_hours[] = {
-  [MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS]  = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 2,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_TWELVE_HOURS] = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 3,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_DAY]          = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 6,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_TWO_DAYS]     = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 12,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_WEEK]         = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 42,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_MONTH]        = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 180,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_THREE_MONTHS] = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 540,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_SIX_MONTHS]   = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 1080,
-  [MARKET_PERIOD_DURATION_TYPE_LAST_YEAR]         = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 2160,
-};
 struct list_args_t {
   bool all_items, enabled_items;
 };
@@ -152,7 +81,8 @@ static int release_market_moving_average(struct market_period_t *p, enum ema_per
   }
   return(EXIT_SUCCESS);
 }
-
+*/
+/*
 static struct args_t *args = &(struct args_t){
   .verbose_mode = false,
   .debug_mode   = false,
@@ -222,7 +152,7 @@ static int new_market_period(char **items, size_t items_qty){
   p->age_ms    = timestamp() - p->timestamp * 1000;
   vector_push(market_stats->periods_v, (void *)p);
   return(EXIT_SUCCESS);
-} /* new_market_period */
+} 
 
 static float avg_float_pointers_v(struct Vector *v){
   float total = 0;
@@ -245,7 +175,8 @@ static struct Vector *get_past_market_period_closes_v(size_t period_index, size_
   }
   return(v);
 }
-
+*/
+/*
 static void _command_parse_csv(){
   size_t                 items_qty = 0;
   struct StringFNStrings csv_lines = stringfn_split_lines_and_trim(gmarket_csvData);
@@ -314,7 +245,9 @@ static void _command_parse_csv(){
     }
   }
   exit(EXIT_SUCCESS);
-} /* _command_parse_csv */
+}
+*/
+/* _command_parse_csv */
 //    struct Vector *past_weekly_close_values = get_past_market_period_closes_v(i, market_period_duration_type_hours[MARKET_PERIOD_DURATION_TYPE_LAST_WEEK]/MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS);
 /*
  * new_marker_period_moving_average(p, MARKET_PERIOD_DURATION_TYPE_LAST_DAY, 5);
@@ -333,7 +266,6 @@ static void _command_parse_csv(){
  *  newAvg = movingAvg(sensor_av, sample[i]);
  *  printf("The new average is %d\n", newAvg);
  * }
- */
 
 static void _command_list(){
   log_info(
@@ -364,6 +296,7 @@ static void _command_debug_args(){
     );
   exit(EXIT_SUCCESS);
 }
+ */
 
 int main(int argc, char **argv) {
   market_stats->periods_v = vector_new();
@@ -402,6 +335,15 @@ int main(int argc, char **argv) {
         .operands    = "COMMAND",
         .about       = "Command Help",
         .function    = optparse_print_help_subcmd,
+      },
+      {
+        .name        = "ema",
+        .description = "EMA Info",
+        .function    = _command_ema_info,
+        .about       = "EMA Information",
+        .options     = (struct optparse_opt[]){
+          { END_OF_OPTIONS },
+        },
       },
       {
         .name        = "parse",
@@ -449,3 +391,5 @@ int main(int argc, char **argv) {
   optparse_print_help();
   return(EXIT_FAILURE);
 } /* main */
+
+#endif
