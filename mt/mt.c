@@ -52,6 +52,28 @@ enum ema_period_duration_type_t {
   MARKET_PERIOD_DURATION_TYPE_LAST_YEAR,
   MARKET_PERIOD_DURATION_TYPES_QTY,
 };
+static char *market_period_duration_type_names[] = {
+  [MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS] = "Last 8 Hours",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_TWELVE_HOURS] = "Last 12 Hours",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_DAY] = "Last Day",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_TWO_DAYS] = "Last Two Days",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_WEEK] = "Last Week",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_MONTH] = "Last Month",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_THREE_MONTHS] = "Last Three Months",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_SIX_MONTHS] = "Last Six Months",
+  [MARKET_PERIOD_DURATION_TYPE_LAST_YEAR] = "Last Year",
+};
+char *market_period_durations_csv(){
+  struct StringBuffer *sb = stringbuffer_new();
+  for(size_t i=0;i<MARKET_PERIOD_DURATION_TYPES_QTY;i++){
+    stringbuffer_append_string(sb,"\t\t\t - ");
+    stringbuffer_append_string(sb,market_period_duration_type_names[i]);
+    if(i<MARKET_PERIOD_DURATION_TYPES_QTY-1)
+      stringbuffer_append_string(sb,"\n");
+  }
+  return stringbuffer_to_string(sb);
+
+}
 static int market_period_duration_type_hours[] = {
   [MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS] = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 2,
   [MARKET_PERIOD_DURATION_TYPE_LAST_TWELVE_HOURS] = MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS * 3,
@@ -72,10 +94,12 @@ struct market_stats_t {
   struct market_period_t *newest_period, *oldest_period;
 };
 struct market_period_t {
+  char *ymdhm;
   unsigned int year, month, day, hour, minute;
   float open, high, low, close;
   unsigned long timestamp, age_ms, volume;
   timelib_time *time;
+  struct Vector *close_values[MARKET_PERIOD_DURATION_TYPES_QTY];
   struct stat_t {
     enum ema_applied_price_type_t applied_price_type;
     enum ema_shift_type_t shift_type;
@@ -135,6 +159,7 @@ static struct market_stats_t *market_stats = &(struct market_stats_t){
   .max_volume = 0,
   .periods_v = NULL,
 };
+
 static int print_market_period(struct market_period_t *p){
     fprintf(stderr,
               " [%.4d-%.2d-%.2d %.2d:%.2d] (" AC_GREEN AC_BOLD "%3s ago" AC_RESETALL ")"
@@ -151,7 +176,6 @@ static int print_market_period(struct market_period_t *p){
 static int new_market_period(char **items, size_t items_qty){
   char *item;
   struct market_period_t *p = calloc(1,sizeof(struct market_period_t));
-  char *year_month_day_hour_minute;
   if(items_qty!= CSV_COLUMNS_QTY){
     log_error("Invalid CSV Line (%lu items)", items_qty);
     return(EXIT_FAILURE);
@@ -182,13 +206,33 @@ static int new_market_period(char **items, size_t items_qty){
     }
   }
   market_stats->max_volume = (p->volume > market_stats->max_volume) ? p->volume : market_stats->max_volume;
-  asprintf(&year_month_day_hour_minute,"%.4d-%.2d-%.2d %.2d:%.2d", p->year,p->month,p->day,p->hour,p->minute);
-  p->time = timelib_strtotime(year_month_day_hour_minute, strlen(year_month_day_hour_minute), NULL, timelib_builtin_db(), timelib_parse_tzfile);
+  asprintf(&p->ymdhm,"%.4d-%.2d-%.2d %.2d:%.2d", p->year,p->month,p->day,p->hour,p->minute);
+  p->time = timelib_strtotime(p->ymdhm, strlen(p->ymdhm), NULL, timelib_builtin_db(), timelib_parse_tzfile);
   timelib_update_ts(p->time, NULL);
   p->timestamp = p->time->sse;
   p->age_ms = timestamp() - p->timestamp * 1000;
   vector_push(market_stats->periods_v,(void*)p);
   return(EXIT_SUCCESS);
+}
+
+static float avg_float_pointers_v(struct Vector *v){
+  float total = 0;
+  for(size_t i=0;i<vector_size(v);i++){
+    total += *((float*)vector_get(v,i));
+  }
+  return((float)total/vector_size(v));
+}
+
+static struct Vector *get_past_market_period_closes_v(size_t period_index, size_t past_periods_qty){
+  struct Vector *v = vector_new();
+  size_t index = 0;
+  struct market_period_t *pp;
+  for(size_t i=1; i <= past_periods_qty;i++){
+    index = period_index - i;
+    pp = (struct market_period_t*)(vector_get(market_stats->periods_v,index));
+    vector_push(v,(void*)&(pp->close));
+  }
+  return(v);
 }
 
 static void _command_parse_csv(){
@@ -205,25 +249,66 @@ static void _command_parse_csv(){
     assert(new_market_period(items,items_qty) == EXIT_SUCCESS);
   }
 
-  log_info("Loaded %lu csv items in %s|Max Volume:%ld|",vector_size(market_stats->periods_v), milliseconds_to_string(timestamp() - started), market_stats->max_volume);
+  fprintf(stderr, "Loaded %lu CSV Items\n\t\tCSV File Size: %s\n\t\tCSV Data Lines: %d\n\t\tTime Spent: %s\n",vector_size(market_stats->periods_v),bytes_to_string(gmarket_csvSize), csv_lines.count, milliseconds_to_string(timestamp() - started));
+  struct market_period_t *p, *pp, *first = NULL, *last = NULL;
+  int hours = 0; size_t periods = 0, close_values_averaged = 0, checked_periods_qty = 0;
+  started = timestamp();
   for(size_t i=0;i<vector_size(market_stats->periods_v);i++){
-    struct market_period_t *p = (struct market_period_t*)vector_get(market_stats->periods_v,i);
+    p = (struct market_period_t*)vector_get(market_stats->periods_v,i);
+    for(int q=0;q<MARKET_PERIOD_DURATION_TYPES_QTY;q++){
+      hours = market_period_duration_type_hours[q];
+      periods = (size_t)(hours/MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS);
+      if(i >= periods){
+        if(!first)
+          first = (struct market_period_t*)vector_get(market_stats->periods_v,i);
+        checked_periods_qty += periods;
+        p->close_values[q] = get_past_market_period_closes_v(i, periods);
+        close_values_averaged++;
+        if(i==vector_size(market_stats->periods_v)-1)
+        if(args->debug_mode){
+          pp = (struct market_period_t*)vector_get(market_stats->periods_v,i-periods);
+          log_debug("Period #%lu/%lu (%s - %s) has %lu close values averaging %f for duration \"%s\" which consists of %d hours and %lu periods",
+            i, vector_size(market_stats->periods_v),
+            p->ymdhm,pp->ymdhm,
+            vector_size(p->close_values[q]),
+            avg_float_pointers_v(p->close_values[q]),
+            market_period_duration_type_names[q],hours,periods
+          );
+        }
+      }
+    }
+  }
+  last = (struct market_period_t*)vector_get(market_stats->periods_v, vector_size(market_stats->periods_v)-1);
+  fprintf(stderr, "Performed EMA Calculations for Average Close Price\n\t\tCalculations Performed:%lu\n\t\tQuantity EMA Duration Types: %d\n%s\n\t\tMarket Period Close Values Analyzed: %lu\n\t\tMarket Periods: %lu\n\t\tStart Date: %s\n\t\tEnd Date: %s\n\t\tDuration: %s\n\t\tTime Spent: %s\n",
+      close_values_averaged,
+      MARKET_PERIOD_DURATION_TYPES_QTY,
+      market_period_durations_csv(),
+      checked_periods_qty,
+      vector_size(market_stats->periods_v),
+      first->ymdhm,last->ymdhm,milliseconds_to_string((last->timestamp - first->timestamp) * 1000),
+     milliseconds_to_long_string(timestamp()-started)
+      );
+  if(args->debug_mode){
+    for(size_t i=0;i<vector_size(market_stats->periods_v);i++){
+      p = (struct market_period_t*)vector_get(market_stats->periods_v,i);
+      print_market_period(p);
+    }
+  }
+  exit(EXIT_SUCCESS);
+}
+//    struct Vector *past_weekly_close_values = get_past_market_period_closes_v(i, market_period_duration_type_hours[MARKET_PERIOD_DURATION_TYPE_LAST_WEEK]/MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS);
     /*
     new_marker_period_moving_average(p, MARKET_PERIOD_DURATION_TYPE_LAST_DAY, 5);
     for(int i = 0; i < (market_period_duration_type_hours[MARKET_PERIOD_DURATION_TYPE_LAST_DAY]/MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS); i++){
         int newAvg = calculate_market_period_moving_average(p, i);
         printf("The new average is %d\n", newAvg);
     }
-    */
-    if(args->debug_mode)
-      print_market_period(p);
-  }
 
 
    int sample[] = {50, 10, 20, 18, 20, 100, 18, 10, 13, 500, 50, 40, 10};
    int newAvg = 0;
    int count = sizeof(sample) / sizeof(int);
-/*   struct moving_average_t *sensor_av = allocate_moving_average(5);
+   struct moving_average_t *sensor_av = allocate_moving_average(5);
 
     for(int i = 0; i < count; i++){
         newAvg = movingAvg(sensor_av, sample[i]);
@@ -231,8 +316,6 @@ static void _command_parse_csv(){
     }
 */
 
-  exit(EXIT_SUCCESS);
-}
 static void _command_list(){
   log_info(
     "\t" AC_YELLOW AC_UNDERLINE "Debug Arguments" AC_RESETALL
