@@ -28,7 +28,7 @@ kitty_msg_c_args = [
 kitty_msg_link_args = [
 ]
 
-kitty_msg_lib = library('kitty_msg',
+kitty_msg_lib = static_library('kitty-msg',
   kitty_msg_srcs,
   install: false,
   dependencies: kitty_msg_deps,

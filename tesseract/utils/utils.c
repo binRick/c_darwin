@@ -10,6 +10,7 @@
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "ansi-utils/ansi-utils.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
@@ -23,15 +24,13 @@
 #include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
+#include "kitty/msg/msg.h"
 #include "log/log.h"
 #include "ms/ms.h"
-#include "stb/stb_image.h"
-#include "stb/stb_image_resize.h"
-#include "stb/stb_image_write.h"
 #include "tempdir.c/tempdir.h"
-#include "timg/utils/utils.h"
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "window/utils/utils.h"
 ////////////////////////////////////////////
 static bool TESSERACT_UTILS_DEBUG_MODE = false;
 static const char *tess_lang = "eng";
@@ -118,44 +117,50 @@ log_error:
 } /* tesseract_security_preferences_logic */
 
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
+  struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
+  char                    *msg;
+
   if (TESSERACT_UTILS_DEBUG_MODE) {
     log_debug("Extracted Text: %s", r->text);
   }
-  struct  StringFNStrings lines = stringfn_split_lines_and_trim(r->text);
+  int term_width = 0, term_height = 0;
 
-  asprintf(&r->file, "%stesseract-extract-results-%d-%lld.%s", gettempdir(), getpid(), timestamp(), stringfn_to_lowercase(image_type_name(r->image_type)));
-  fsio_write_binary_file(r->file, r->img, r->img_len);
-  char *msg;
-
+  au_term_size(&term_width, &term_height);
   asprintf(&msg,
-           "\n\t|  %sDuration         :      %s" AC_RESETALL
-           "\n\t|  %sWindow%s           :      PID:%d|%dx%d|%s"
-           "\n\t|  %sImage%s            :      |Size:%s|Type:%s|File:%s|"
-           "\n\t|  %sTesseract%s        :      |%s%s%s|"
-           "\n\t|                          Confidence:%d|Box:%d"
-           "\n\t|                          %dx%x|Width:%d|Height:%d|Mode:%ld"
-           "\n\t|  %sSpace%s            :      "AC_CYAN "%lu"AC_RESETALL
-           "\n\t|  %sDisplay%s          :      %lu"
-           "\n\t|  %sScreenshot%s       :      %dx%d"
-           "\n\t|  %sDetermined Area%s  :  "
-           "\n\t|             Max x             %d  |"
-           "\n\t|             Min x offset      %f  |"
-           "\n\t|             Max x offset      %f  |"
-           "\n\t|             Min y offset      %f  |"
-           "\n\t|             Max y offset      %f  |"
-           "\n\t|             Window min x offset pixels: %d"
-           "\n\t|             Window max x offset pixels: %d"
-           "\n\t|             Window min y offset pixels: %d"
-           "\n\t|             Window max y offset pixels: %d"
+           "---------------------------------------------------"
+           "\n|  %sCapture%s          :  |Duration:%s|" AC_RESETALL
+           "\n|  %sWindow%s           :  |PID:%d|Size:%dx%d|Name:%s|"
+           "\n|  %sImage%s            :  |Size:%s|Type:%s"
+           "\n|  %sTesseract%s        "
+           "\n|                          |%s%s%s|"
+           "\n|                          |Confidence:%d|Box:%d|"
+           "\n|                          |Size:%dx%x|Width:%d|Height:%d|Mode:%ld|"
+           "\n|  %sSpace%s            :  "AC_CYAN "%lu"AC_RESETALL
+           "\n|  %sDisplay%s          :  |Index:%d|"
+           "\n|  %sTerminal%s         :  |Width:%d|Height:%d|"
+           "\n|  %sScreenshot%s       :  %dx%d %s %s"
+           "\n|  %sDetermined Area%s  :  "
+           "\n|      Max x             %d  "
+           "\n|      Min x offset      %f  "
+           "\n|      Max x offset      %f  "
+           "\n|      Min y offset      %f  "
+           "\n|      Max y offset      %f  "
+           "\n|      Window min x offset pixels: %d"
+           "\n|      Window max x offset pixels: %d"
+           "\n|      Window min y offset pixels: %d"
+           "\n|      Window max y offset pixels: %d"
+           "\n"
+           "---------------------------------------------------"
            "\n%s",
-           AC_GREEN, milliseconds_to_string(timestamp() - r->started),
+           AC_GREEN, AC_RESETALL, milliseconds_to_string(timestamp() - r->started),
            AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
-           AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->image_type), r->file,
-           AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC, lines.strings[0], AC_RESETALL,
+           AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->image_type),
+           AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC AC_INVERSE, stringfn_trim(lines.strings[0]), AC_RESETALL,
            r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
            AC_BLUE, AC_RESETALL, r->window.space_id,
-           AC_YELLOW, AC_RESETALL, r->window.display_id,
-           AC_CYAN, AC_RESETALL, r->source_file.width, r->source_file.height,
+           AC_YELLOW, AC_RESETALL, get_display_id_index(r->window.display_id),
+           AC_MAGENTA, AC_RESETALL, term_width, term_height,
+           AC_CYAN, AC_RESETALL, r->source_file.width, r->source_file.height, bytes_to_string(r->img_len), get_capture_type_name(r->image_type),
            AC_GREEN, AC_RESETALL, r->determined_area.max_x,
            r->determined_area.x_min_offset_perc,
            r->determined_area.x_max_offset_perc,
@@ -167,7 +172,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
            r->determined_area.y_max_offset_window_pixels,
            ""
            );
-  timg_utils_image(r->file);
+  kitty_display_image_buffer(r->img, r->img_len);
   fprintf(stdout, "%s", msg);
   free(msg);
   stringfn_release_strings_struct(lines);

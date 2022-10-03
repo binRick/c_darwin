@@ -112,6 +112,15 @@ int hotkeys_exec_with_callback(void ( *cb )(char *)) {
   return(EXIT_SUCCESS);
 }
 
+int run_hotkeys_server(){
+  assert(libforks_start(&conn) == libforks_OK);
+  fork_server_pid = libforks_get_server_pid(conn);
+  assert(fork_server_pid > 0);
+  if (HOTKEY_UTILS_DEBUG_MODE) {
+    log_info(AC_YELLOW "Hotkey Utils> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
+  }  
+  signal(SIGTERM, handle_sigterm);
+}
 static int hotkeys_server(libforks_ServerConn conn, void *P){
   libforks_free_conn(conn);
   struct hotkeys_libforks_param_t *p = (struct hotkeys_libforks_param_t *)P;
@@ -454,12 +463,5 @@ static void __attribute__((constructor)) __constructor__hotkey_utils(void){
     log_debug("Enabling hotkey-utils Debug Mode");
     HOTKEY_UTILS_DEBUG_MODE = true;
   }
-  assert(libforks_start(&conn) == libforks_OK);
-  fork_server_pid = libforks_get_server_pid(conn);
-  assert(fork_server_pid > 0);
-  if (HOTKEY_UTILS_DEBUG_MODE) {
-    log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
-  }  
-  signal(SIGTERM, handle_sigterm);
 }
 #endif

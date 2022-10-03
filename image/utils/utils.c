@@ -11,6 +11,7 @@
 #include "c_vector/vector/vector.h"
 #include "c_workqueue/include/workqueue.h"
 #include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "fancy-progress/src/fancy-progress.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
@@ -23,10 +24,9 @@
 #include "parson/parson.h"
 #include "process/process.h"
 #include "process/utils/utils.h"
-#include "process/utils/utils.h"
-#include "qoi_ci/transpiled/QOI.h"
-#include "qoi_ci/QOI-stdio.h"
 #include "qoi/qoi.h"
+#include "qoi_ci/QOI-stdio.h"
+#include "qoi_ci/transpiled/QOI.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log/log.h"
@@ -556,21 +556,23 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
     return(NULL);
   }
 
-  bool alpha = (CGImageGetBitsPerPixel(image_ref)/8) == 4 ? true : false;
+  bool alpha = (CGImageGetBitsPerPixel(image_ref) / 8) == 4 ? true : false;
+
   if (!QOIEncoder_Encode(qoi, w, h, rgb_pixels, alpha, false)) {
     log_error("QOI encode err");
     QOIEncoder_Delete(qoi);
     return(NULL);
   }
-  Dbg(CGImageGetBitsPerPixel(image_ref),%lu);
-  Dbg(CGImageGetBytesPerRow(image_ref),%lu);
-  Dbg(CGImageGetBitsPerComponent(image_ref),%lu);
-  Dbg(alpha,%d);
-  size_t qw = QOIDecoder_GetWidth(qoi),qh = QOIDecoder_GetHeight(qoi);
+  Dbg(CGImageGetBitsPerPixel(image_ref), %u);
+  Dbg(CGImageGetBytesPerRow(image_ref), %u);
+  Dbg(CGImageGetBitsPerComponent(image_ref), %u);
+  Dbg(alpha, %d);
+  size_t        qw = QOIDecoder_GetWidth(qoi), qh = QOIDecoder_GetHeight(qoi);
   unsigned char *pixels = QOIEncoder_GetEncoded(qoi);
+
   *qoi_len = QOIEncoder_GetEncodedSize(qoi);
   QOIEncoder_Delete(qoi);
-  log_info("encoded %dx%d %s RGB to %lux%lu %s QOI", w,h,bytes_to_string(rgb_len),qw,qh,bytes_to_string( *qoi_len));
+  log_info("encoded %dx%d %s RGB to %lux%lu %s QOI", w, h, bytes_to_string(rgb_len), qw, qh, bytes_to_string(*qoi_len));
   return(pixels);
 }
 
@@ -578,26 +580,27 @@ unsigned char *save_cgref_to_qoi_memory1(CGImageRef image_ref, size_t *qoi_len){
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
   size_t        len  = 0;
   unsigned char *rgb = save_cgref_to_rgb_memory(image_ref, &len);
+
   /*
-  unsigned char *png = save_cgref_to_png_memory(image_ref, &len);
-
-  if (len < 1 || !png) {
-    log_error("Failed to convert cgref to png");
-    return(NULL);
-  }
-
-  unsigned char *rgb = stbi_load_from_memory(png, len, &width, &height, &compression, STBI_rgb_alpha);
-  if (png) {
-    free(png);
-  }
-  */
+   * unsigned char *png = save_cgref_to_png_memory(image_ref, &len);
+   *
+   * if (len < 1 || !png) {
+   * log_error("Failed to convert cgref to png");
+   * return(NULL);
+   * }
+   *
+   * unsigned char *rgb = stbi_load_from_memory(png, len, &width, &height, &compression, STBI_rgb_alpha);
+   * if (png) {
+   * free(png);
+   * }
+   */
 
   if (IMAGE_UTILS_DEBUG_MODE) {
     log_debug("decoded %dx%d %d RGB",
               width, height, compression);
   }
 
-  unsigned long s = timestamp();
+  unsigned long s     = timestamp();
   qoi_desc      *desc = &(qoi_desc){
     .width      = width,
     .height     = height,
@@ -647,10 +650,10 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   if (IMAGE_UTILS_DEBUG_MODE) {
     log_debug("resize_cgimage %dx%d", width, height);
   }
-  CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width,height));
-  CGContextRef context = CGBitmapContextCreate(NULL, 
-      width,height,
-      //CGImageGetWidth(imageRef),CGImageGetHeight(imageRef), 
+  CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
+  CGContextRef context = CGBitmapContextCreate(NULL,
+                                               width, height,
+                                               //CGImageGetWidth(imageRef),CGImageGetHeight(imageRef),
                                                CGImageGetBitsPerComponent(imageRef),
                                                CGImageGetBytesPerRow(imageRef),
                                                CGImageGetColorSpace(imageRef),
@@ -705,28 +708,30 @@ unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, 
 }
 
 unsigned char *save_cgref_to_rgb_memory(CGImageRef img_ref, size_t *len){
-  unsigned char *buffer = NULL;
-  int width = CGImageGetWidth(img_ref), height = CGImageGetHeight(img_ref);
-    CGRect rect = CGRectMake(0, 0, width,height );
-    CGImageRef image_ref = CGDisplayCreateImageForRect(kCGDirectMainDisplay, rect);
-    CGDataProviderRef provider_ref = CGImageGetDataProvider(image_ref);
-    CFDataRef data_ref = CGDataProviderCopyData(provider_ref);
+  unsigned char     *buffer = NULL;
+  int               width = CGImageGetWidth(img_ref), height = CGImageGetHeight(img_ref);
+  CGRect            rect         = CGRectMake(0, 0, width, height);
+  CGImageRef        image_ref    = CGDisplayCreateImageForRect(kCGDirectMainDisplay, rect);
+  CGDataProviderRef provider_ref = CGImageGetDataProvider(image_ref);
+  CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
 
-    size_t bpp = CGImageGetBitsPerPixel(image_ref) / 8;
-*len = width*height*bpp;
+  size_t            bpp = CGImageGetBitsPerPixel(image_ref) / 8;
 
-Dbg(width,%d);
-Dbg(height,%d);
-Dbg(*len,%lu);
-Dbg(bpp,%lu);
-    buffer = calloc(*len, sizeof(int8_t));
-    memcpy(buffer, CFDataGetBytePtr(data_ref), *len);
+  *len = width * height * bpp;
 
-    CFRelease(data_ref);
-    CGImageRelease(image_ref);
+  Dbg(width, %d);
+  Dbg(height, %d);
+  Dbg(*len, %u);
+  Dbg(bpp, %u);
+  buffer = calloc(*len, sizeof(int8_t));
+  memcpy(buffer, CFDataGetBytePtr(data_ref), *len);
+
+  CFRelease(data_ref);
+  CGImageRelease(image_ref);
 
   return(buffer);
 }
+
 unsigned char *save_cgref_to_rgb_memory1(CGImageRef img_ref, size_t *len){
   unsigned char *pixels = NULL;
   CGRect        newRect = CGRectIntegral(CGRectMake(0, 0, CGImageGetWidth(img_ref), CGImageGetHeight(img_ref)));

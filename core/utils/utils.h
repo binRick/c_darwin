@@ -26,6 +26,11 @@
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
 #include "timestamp/timestamp.h"
+#include "whereami/src/whereami.h"
 #include "wildcardcmp/wildcardcmp.h"
 //////////////////////////////////////
+struct whereami_report_t {
+  const char *executable, *executable_directory, *executable_basename;
+};
+struct whereami_report_t *core_utils_whereami_report(void);
 #endif

@@ -3,6 +3,7 @@
 #define TESSERACT_UTILS_H
 //////////////////////////////////////
 #include "c_vector/vector/vector.h"
+#include "capture/utils/utils.h"
 #include "tesseract/capi.h"
 #include "window/utils/utils.h"
 #include <assert.h>
@@ -50,7 +51,7 @@ struct tesseract_extract_result_t {
   struct tesseract_extract_result_source_file_t source_file;
   struct window_info_t                          window;
   struct tesseract_determined_area_t            determined_area;
-  enum image_type_id_t                          image_type;
+  enum capture_type_id_t                        image_type;
   unsigned char                                 *img;
   size_t                                        img_len;
 };

@@ -1,8 +1,9 @@
 #include "dls/dls.h"
 #include "vips/vips.h"
 static void __attribute__((constructor)) __constructor__dls(void);
-const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
-struct args_t                 *args               = &(struct args_t){
+const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
+static bool                   DARWIN_LS_DEBUG_MODE = false;
+struct args_t                 *args                = &(struct args_t){
   .verbose             = false,
   .space_id            = -1,
   .display_id          = -1,
@@ -705,6 +706,20 @@ int main(int argc, char **argv) {
   return(EXIT_SUCCESS);
 } /* main */
 static void __attribute__((constructor)) __constructor__dls(void){
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS") != NULL) {
+    DARWIN_LS_DEBUG_MODE = true;
+  }
+  errno    = 0;
+  whereami = core_utils_whereami_report();
+  if (whereami) {
+    if (DARWIN_LS_DEBUG_MODE) {
+      log_debug("  >Whereami Report<\n\tExecutable:%s\n\tDirectory:%s\n\tBasename:%s\n",
+                whereami->executable, whereami->executable_directory, whereami->executable_basename
+                );
+    }
+  }else{
+    log_error("Whereami Error");
+  }
   errno = 0;
   if (is_authorized_for_accessibility() == false) {
     log_error("Not Authorized for Accessibility");

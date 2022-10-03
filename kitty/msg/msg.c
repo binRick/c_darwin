@@ -2,10 +2,10 @@
 #ifndef KITTY_MSG_C
 #define KITTY_MSG_C
 #include "kitty/msg/msg.h"
-#include "vips/vips.h"
+//#include "qoi_ci/QOI-stdio.h"
 #include "qoi/qoi.h"
 #include "qoi_ci/transpiled/QOI.h"
-#include "qoi_ci/QOI-stdio.h"
+#include "vips/vips.h"
 #define KITTY_MSG_FILE_PREFIX                              "tty-graphics-protocol-kitty-msg-vips-image"
 #define KITTY_SHM_SHM_ENCODED_PNG_IMAGE_PATH_DIMENSIONS    "\x1b_Ga=T,f=100,s=%d,v=%d,t=t;%s\x1b\\"
 #define KITTY_DELETE_IMAGES                                "\x1b_Ga=d\x1b\\"
@@ -19,53 +19,70 @@ static VipsImage *image_path_to_vips_image(char *image_path);
 static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len);
 static char *save_restore_msg(char *msg, int row, int col);
 static bool kitty_write_msg(char *msg);
+
 ///////////////////////////////////////////////////////////////////////
 static bool kitty_write_msg(char *msg){
-  int len = fprintf(stdout,"%s\n", msg);
+  int len = fprintf(stdout, "%s\n", msg);
+
   fflush(stdout);
-  return(len>0 ? true : false);
+  return(len > 0 ? true : false);
 }
+
 bool kitty_display_image_path(char *image_path){
   return(kitty_write_msg(kitty_msg_display_image_path(image_path)));
 }
+
 bool kitty_display_image_path_resized_height(char *image_path, size_t height){
-  return(kitty_write_msg(kitty_msg_display_image_path_resized_height(image_path,height)));
+  return(kitty_write_msg(kitty_msg_display_image_path_resized_height(image_path, height)));
 }
+
 bool kitty_display_image_path_resized_width(char *image_path, size_t width){
-  return(kitty_write_msg(kitty_msg_display_image_path_resized_width(image_path,width)));
+  return(kitty_write_msg(kitty_msg_display_image_path_resized_width(image_path, width)));
 }
+
 bool kitty_display_image_buffer(unsigned char *buf, size_t len){
-  return(kitty_write_msg(kitty_msg_display_image_buffer(buf,len)));
+  return(kitty_write_msg(kitty_msg_display_image_buffer(buf, len)));
 }
+
 bool kitty_display_image_buffer_resized_width(unsigned char *buf, size_t len, size_t width){
-  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_width(buf,len,width)));
+  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_width(buf, len, width)));
 }
+
 bool kitty_display_image_buffer_resized_height(unsigned char *buf, size_t len, size_t height){
-  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_height(buf,len,height)));
+  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_height(buf, len, height)));
 }
+
 bool kitty_display_image_path_at_row_col(char *image_path, int row, int col){
-  return(kitty_write_msg(kitty_msg_display_image_path_at_row_col(image_path,row,col)));
+  return(kitty_write_msg(kitty_msg_display_image_path_at_row_col(image_path, row, col)));
 }
+
 bool kitty_display_image_path_resized_height_at_row_col(char *image_path, size_t height, int row, int col){
-  return(kitty_write_msg(kitty_msg_display_image_path_resized_height_at_row_col(image_path,height,row,col)));
+  return(kitty_write_msg(kitty_msg_display_image_path_resized_height_at_row_col(image_path, height, row, col)));
 }
+
 bool kitty_display_image_path_resized_width_at_row_col(char *image_path, size_t width, int row, int col){
-  return(kitty_write_msg(kitty_msg_display_image_path_resized_width_at_row_col(image_path,width,row,col)));
+  return(kitty_write_msg(kitty_msg_display_image_path_resized_width_at_row_col(image_path, width, row, col)));
 }
+
 bool kitty_display_image_buffer_at_row_col(unsigned char *buf, size_t len, int row, int col){
-  return(kitty_write_msg(kitty_msg_display_image_buffer_at_row_col(buf,len,row,col)));
+  return(kitty_write_msg(kitty_msg_display_image_buffer_at_row_col(buf, len, row, col)));
 }
+
 bool kitty_display_image_buffer_resized_width_at_row_col(unsigned char *buf, size_t len, size_t width, int row, int col){
-  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_width_at_row_col(buf,len,width,row,col)));
+  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_width_at_row_col(buf, len, width, row, col)));
 }
+
 bool kitty_display_image_buffer_resized_height_at_row_col(unsigned char *buf, size_t len, size_t height, int row, int col){
-  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_height_at_row_col(buf,len,height,row,col)));
+  return(kitty_write_msg(kitty_msg_display_image_buffer_resized_height_at_row_col(buf, len, height, row, col)));
 }
+
 char *kitty_msg_display_image_path_resized_height_at_row_col(char *image_path, size_t height, int row, int col){
   VipsImage *image = image_path_to_vips_image(image_path);
+
   kitty_msg_resize_image(&image, KITTY_MSG_RESIZE_TYPE_HEIGHT, height);
   return(save_restore_msg(kitty_msg_get_vips_image_msg(image), row, col));
 }
+
 char *kitty_msg_display_image_path_resized_width_at_row_col(char *image_path, size_t width, int row, int col){
   VipsImage *image = image_path_to_vips_image(image_path);
 
@@ -208,51 +225,47 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
 
 static VipsImage *image_path_to_vips_image(char *image_path){
   VipsImage *image;
-  Dbg(fsio_file_extension(image_path),%s);
-  if(stringfn_equal(fsio_file_extension(image_path),".qoi")){
-    char *qoi_file;
-    errno=0;
-    Dbg(image_path,%s);
-    QOIDecoder *qoi = QOIDecoder_LoadFile(image_path);
-    if (!qoi){
-        log_error("QOI Loader failed");
-        return NULL;
-    }
-    errno=0;
-    unsigned char *rgb = QOIDecoder_GetPixels(qoi);
-    int bands = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
-    int width = QOIDecoder_GetWidth(qoi),height = QOIDecoder_GetHeight(qoi);
-    int len = width * height * bands;
-    if(!rgb||len<1){
-        log_error("QOI Decoder failed");
-        return NULL;
 
+  Dbg(fsio_file_extension(image_path), %s);
+  if (stringfn_equal(fsio_file_extension(image_path), ".qoi")) {
+    char *qoi_file;
+    errno = 0;
+    Dbg(image_path, %s);
+    QOIDecoder *qoi = QOIDecoder_New();
+    if (!QOIDecoder_Decode(qoi, fsio_read_binary_file(image_path), fsio_file_size(image_path))) {
+      log_error("QOI Loader failed");
+      return(NULL);
     }
-    Dbg(len,%d);
-    asprintf(&qoi_file,"%s.png", stringfn_substring(image_path,0,strlen(image_path)-4));
-    Dbg(image_path,%s);
-    Dbg(qoi_file,%s);
+    errno = 0;
+    unsigned char *rgb = QOIDecoder_GetPixels(qoi);
+    int           bands = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
+    int           width = QOIDecoder_GetWidth(qoi), height = QOIDecoder_GetHeight(qoi);
+    int           len = width * height * bands;
+    if (!rgb || len < 1) {
+      log_error("QOI Decoder failed");
+      return(NULL);
+    }
+    Dbg(len, %d);
+    asprintf(&qoi_file, "%s.png", stringfn_substring(image_path, 0, strlen(image_path) - 4));
+    Dbg(image_path, %s);
+    Dbg(qoi_file, %s);
     QOIDecoder_Delete(qoi);
 
-  errno = 0;
-  if(!(image = vips_image_new_from_memory(rgb, len, width, height, bands, VIPS_FORMAT_UCHAR))){
-    log_error("Failed to read file %s", image_path);                                             \
-    return(NULL);
-  }
-
-
-    
+    errno = 0;
+    if (!(image = vips_image_new_from_memory(rgb, len, width, height, bands, VIPS_FORMAT_UCHAR))) {
+      log_error("Failed to read file %s", image_path); \
+      return(NULL);
+    }
   }else{
-
-  errno = 0;
-  if (!(image = vips_image_new_from_file(image_path, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) { \
-    log_error("Failed to read file %s", image_path);                                             \
-    return(NULL);
-  }
+    errno = 0;
+    if (!(image = vips_image_new_from_file(image_path, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) { \
+      log_error("Failed to read file %s", image_path);                                             \
+      return(NULL);
+    }
   }
 
   return(image);
-}
+} /* image_path_to_vips_image */
 
 static char *save_restore_msg(char *msg, int row, int col){
   char *s;

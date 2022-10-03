@@ -433,20 +433,9 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       if ((args->display_id > -1) && (int32_t)(args->display_id) != (int32_t)get_display_id_index(w->display_id)) {
         skip_row = true;
       }
-      //log_debug("cd: %d", get_active_display_id());
-      /*
-       * if ((args->current_display_only)
-       *  && (int32_t)(get_display_id_index(get_active_display_id())) != (int32_t)get_display_id_index(w->display_id)){
-       * skip_row = true;
-       * }
-       */
       if ((args->space_id > -1) && (w->space_id != (size_t)args->space_id)) {
         skip_row = true;
       }
-      Dbg(get_current_space_id(),                                                                    % d);
-      Dbg(get_current_display_id(),                                                                  % d);
-      Dbg(get_current_display_index(),                                                               % d);
-      Dbg(w->display_id,                                                                             % lu);
       if (args->not_minimized_only == true && w->is_minimized == true) {
         skip_row = true;
       }

@@ -188,6 +188,7 @@ struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key);
 int execute_hotkey_config_key(struct key_t *key);
 bool disable_hotkey_config_key(struct key_t *key);
 bool enable_hotkey_config_key(struct key_t *key);
+int run_hotkeys_server();
 //////////////////////////////////////
 static struct action_type_handler_t __attribute__((unused)) action_type_handlers[] = {
 ////////////////////////////////////////////////////////////

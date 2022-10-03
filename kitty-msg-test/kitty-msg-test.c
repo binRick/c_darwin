@@ -142,17 +142,19 @@ TEST t_kitty_msg_cursor(){
 TEST t_kitty_image_buffers(){
   for (size_t i = 0; i < files_qty; i++) {
     bool ok = kitty_display_image_buffer(fsio_read_binary_file(files[i]), fsio_file_size(files[i]));
-    ASSERT_EQ(ok,true);
+    ASSERT_EQ(ok, true);
   }
   PASS();
 }
+
 TEST t_kitty_image_files(){
   for (size_t i = 0; i < files_qty; i++) {
     bool ok = kitty_display_image_path(files[i]);
-    ASSERT_EQ(ok,true);
+    ASSERT_EQ(ok, true);
   }
   PASS();
 }
+
 TEST t_kitty_msg_image_files(){
   char *msg;
 
@@ -197,13 +199,15 @@ GREATEST_MAIN_DEFS();
 int main(int argc, char **argv) {
   __init();
   GREATEST_MAIN_BEGIN();
-  RUN_SUITE(s_kitty_test_files);
-  RUN_SUITE(s_kitty_test_buffers);
-  RUN_SUITE(s_kitty_msg_test_files);
-  RUN_SUITE(s_kitty_msg_test_delete_images);
-  RUN_SUITE(s_kitty_msg_test_buffers);
-  RUN_SUITE(s_kitty_msg_test_files_resized);
-  RUN_SUITE(s_kitty_msg_test_buffers_resized);
-  RUN_SUITE(s_kitty_msg_test_cursor);
+  if (isatty(STDOUT_FILENO)) {
+    RUN_SUITE(s_kitty_test_files);
+    RUN_SUITE(s_kitty_test_buffers);
+    RUN_SUITE(s_kitty_msg_test_files);
+    RUN_SUITE(s_kitty_msg_test_delete_images);
+    RUN_SUITE(s_kitty_msg_test_buffers);
+    RUN_SUITE(s_kitty_msg_test_files_resized);
+    RUN_SUITE(s_kitty_msg_test_buffers_resized);
+    RUN_SUITE(s_kitty_msg_test_cursor);
+  }
   GREATEST_MAIN_END();
 }

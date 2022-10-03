@@ -1,11 +1,10 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_C
 #define LS_WIN_COMMANDS_C
-#define OPEN_SECURITY_RETRY_INTERVAL_MS      500
+#define OPEN_SECURITY_RETRY_INTERVAL_MS      1000
 #define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
-#include "kitty/msg/msg.h"
 #include "capture/window/window.h"
 #include "clamp/clamp.h"
 #include "dls/dls-commands.h"
@@ -14,6 +13,7 @@
 #include "httpserver-utils/httpserver-utils.h"
 #include "httpserver/httpserver.h"
 #include "keylogger/keylogger.h"
+#include "kitty/msg/msg.h"
 #include "pasteboard/pasteboard.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
@@ -1337,13 +1337,11 @@ static void _command_open_security(){
       break;
     }
     tries++;
-    log_error("tesseract_security_preferences_logic Returned %d> Attempt #%d/%d", ret, tries, args->retries);
+    log_warn("tesseract_security_preferences_logic Returned %d> Attempt #%d/%d", ret, tries, args->retries);
     usleep(1000 * OPEN_SECURITY_RETRY_INTERVAL_MS);
   }
   if (ret) {
     log_error("tesseract_security_preferences_logic Failed");
-  }else{
-    log_info(AC_GREEN "tesseract_security_preferences_logic Success"AC_RESETALL);
   }
   exit(ret);
 }
@@ -1709,11 +1707,11 @@ static void _command_capture(){
              );
     if (args->output_file) {
       fsio_write_binary_file(args->output_file, r->pixels, r->len);
-      Dbg(args->output_file,%s);
-      Dbg(r->len,%lu);
-      if (args->display_output_file) {
-        kitty_display_image_path(args->output_file);
-      }
+      Dbg(args->output_file, %s);
+      Dbg(r->len, %u);
+    }
+    if (args->display_output_file && r->len > 0 && r->pixels) {
+      kitty_display_image_buffer(r->pixels, r->len);
     }
   }
   exit(EXIT_SUCCESS);

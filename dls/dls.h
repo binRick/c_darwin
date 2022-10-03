@@ -30,6 +30,7 @@ enum output_mode_type_t {
 };
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE;
 const char                    *output_modes[OUTPUT_MODES_QTY + 1];
+#include "core/utils/utils.h"
 #include "dls/dls-aliases.h"
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
@@ -89,4 +90,5 @@ struct args_t *args;
 #include "usbdevs-utils/usbdevs-utils.h"
 #include "window/utils/utils.h"
 //////////////////////////////////////
+struct whereami_report_t *whereami;
 #endif

@@ -23,7 +23,7 @@ core_utils_deps = [
   optparse99_dep,
   parson_dep,
   c_eventemitter_dep,
-  glib_dep,b64_dep,
+  glib_dep,b64_dep,whereami_dep,
   wildcardcmp_dep,
 ]
 
@@ -33,7 +33,7 @@ core_utils_c_args = [
 core_utils_link_args = [
 ]
 
-core_utils_lib = library('core-utils',
+core_utils_lib = static_library('core-utils',
   core_utils_srcs,
   install: false,
   dependencies: core_utils_deps,
