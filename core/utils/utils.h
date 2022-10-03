@@ -14,6 +14,7 @@
 #include "core/core.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
+#include "b64.c/b64.h"
 #include "bytes/bytes.h"
 #include "c_eventemitter/include/eventemitter.h"
 #include "c_fsio/include/fsio.h"
@@ -25,5 +26,6 @@
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"
 #include "timestamp/timestamp.h"
+#include "wildcardcmp/wildcardcmp.h"
 //////////////////////////////////////
 #endif

@@ -161,6 +161,81 @@ void get_display_bounds(int *x, int *y, int *w, int *h){
   *h = bounds.size.height;
 }
 
+int get_space_display_id(int sid){
+  CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
+
+  if (!uuid_string) {
+    return(0);
+  }
+
+  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
+  uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
+
+  CFRelease(uuid);
+  CFRelease(uuid_string);
+
+  return((int)id);
+}
+
+uint64_t get_dsid_from_sid(uint32_t sid) {
+  uint64_t   result      = 0;
+  int        desktop_cnt = 1;
+
+  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);
+  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);
+
+  for (int i = 0; i < display_spaces_count; ++i) {
+    CFDictionaryRef display_ref  = CFArrayGetValueAtIndex(display_spaces_ref, i);
+    CFArrayRef      spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
+    int             spaces_count = CFArrayGetCount(spaces_ref);
+
+    for (int j = 0; j < spaces_count; ++j) {
+      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
+      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
+      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &result);
+      if (sid == (uint32_t)desktop_cnt) {
+        goto out;
+      }
+
+      ++desktop_cnt;
+    }
+  }
+
+  result = 0;
+out:
+  CFRelease(display_spaces_ref);
+  return(result);
+}
+
+int get_display_id_for_space(uint32_t sid) {
+  uint64_t dsid = get_dsid_from_sid(sid);
+
+  if (!dsid) {
+    return(0);
+  }
+  CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, dsid);
+
+  if (!uuid_string) {
+    return(0);
+  }
+
+  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
+  uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
+
+  CFRelease(uuid);
+  CFRelease(uuid_string);
+
+  return(id);
+}
+
+int get_current_display_index(void){
+  return(get_display_id_index(get_current_display_id()));
+}
+
+int get_current_display_id(void){
+  return(get_space_display_id(SLSGetActiveSpace(g_connection)));
+}
+
 int get_display_id_index(size_t display_id){
   int               index               = -1;
   size_t            displays_qty        = 0;

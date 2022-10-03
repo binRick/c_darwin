@@ -1,5 +1,5 @@
 #include "core-utils/core-utils.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "process/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "system/utils/utils.h"
@@ -204,39 +204,40 @@ static const char *display_name_from_displayID(CGDirectDisplayID displayID, CFSt
 
   return(displayProductName);
 }
-
-CGDirectDisplayID get_current_display_id() {
-  // displays[] Quartz display ID's
-  CGDirectDisplayID *displays;
-  CGDisplayCount    displayCount;
-
-  // get number of active displays
-  if (CGGetActiveDisplayList(0, NULL, &displayCount) != CGDisplayNoErr) {
-    fprintf(stderr, "%s: Could not get the number of active displays.\n", __func__);
-    return(-1);
-  }
-
-  // allocate enough memory to hold all the display IDs we have
-  displays = calloc((size_t)displayCount, sizeof(CGDirectDisplayID));
-
-  // get the list of all active displays
-  if (CGGetActiveDisplayList(displayCount, displays, &displayCount) != CGDisplayNoErr) {
-    fprintf(stderr, "%s: Could not get active display list.\n", __func__);
-    return(-1);
-  }
-
-  CGDirectDisplayID mainDisplay             = CGMainDisplayID();
-  const char        *mainDisplayProductName = display_name_from_displayID(mainDisplay, NULL);
-
-  printf("%s: Main Display ID: %d has product name: %s.\n", __func__, mainDisplay, mainDisplayProductName);
-
-  for (int i = 0; i < displayCount; i++) {
-    const char *displayProductName = display_name_from_displayID(displays[i], NULL);
-    printf("%s: Display ID: %d has product name: %s.\n", __func__, displays[i], displayProductName);
-  }
-
-  return(mainDisplay);
-}
+/*
+ * CGDirectDisplayID get_current_display_id() {
+ * // displays[] Quartz display ID's
+ * CGDirectDisplayID *displays;
+ * CGDisplayCount    displayCount;
+ *
+ * // get number of active displays
+ * if (CGGetActiveDisplayList(0, NULL, &displayCount) != CGDisplayNoErr) {
+ *  fprintf(stderr, "%s: Could not get the number of active displays.\n", __func__);
+ *  return(-1);
+ * }
+ *
+ * // allocate enough memory to hold all the display IDs we have
+ * displays = calloc((size_t)displayCount, sizeof(CGDirectDisplayID));
+ *
+ * // get the list of all active displays
+ * if (CGGetActiveDisplayList(displayCount, displays, &displayCount) != CGDisplayNoErr) {
+ *  fprintf(stderr, "%s: Could not get active display list.\n", __func__);
+ *  return(-1);
+ * }
+ *
+ * CGDirectDisplayID mainDisplay             = CGMainDisplayID();
+ * const char        *mainDisplayProductName = display_name_from_displayID(mainDisplay, NULL);
+ *
+ * printf("%s: Main Display ID: %d has product name: %s.\n", __func__, mainDisplay, mainDisplayProductName);
+ *
+ * for (int i = 0; i < displayCount; i++) {
+ *  const char *displayProductName = display_name_from_displayID(displays[i], NULL);
+ *  printf("%s: Display ID: %d has product name: %s.\n", __func__, displays[i], displayProductName);
+ * }
+ *
+ * return(mainDisplay);
+ * }
+ */
 
 struct DarwinDisplayResolution * get_display_resolution(CGDirectDisplayID display_id){
   struct DarwinDisplayResolution *res = malloc(sizeof(struct DarwinDisplayResolution));

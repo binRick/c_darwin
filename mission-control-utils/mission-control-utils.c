@@ -20,7 +20,7 @@
 #include "process/process.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
-#include "submodules/log.h/log.h"
+#include "submodules/log/log.h"
 #include "timestamp/timestamp.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>

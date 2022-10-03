@@ -23,6 +23,7 @@ capture_window_deps = [
   window_utils_dep,clamp_dep,stb_dep,msf_gif_dep,gifdec_dep,
   leptonica_dep,
   timg_utils_dep,c_workqueue_dep,vips_dep,
+  core_dep,core_debug_dep,core_utils_dep,
 ]
 
 capture_window_c_args = [

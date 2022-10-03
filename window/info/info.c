@@ -22,7 +22,7 @@
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
-#include "submodules/log.h/log.h"
+#include "submodules/log/log.h"
 #include "table/utils/utils.h"
 #include "timestamp/timestamp.h"
 static bool WINDOW_INFO_DEBUG_MODE = false;

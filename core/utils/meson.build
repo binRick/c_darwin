@@ -23,7 +23,8 @@ core_utils_deps = [
   optparse99_dep,
   parson_dep,
   c_eventemitter_dep,
-  glib_dep,
+  glib_dep,b64_dep,
+  wildcardcmp_dep,
 ]
 
 core_utils_c_args = [

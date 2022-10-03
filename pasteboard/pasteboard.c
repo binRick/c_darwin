@@ -1,4 +1,4 @@
-#include "log.h/log.h"
+#include "log/log.h"
 #include "pasteboard/pasteboard.h"
 #include <stdbool.h>
 static bool PASTEBOARD_DEBUG_MODE = false;

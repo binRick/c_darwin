@@ -154,7 +154,6 @@ struct window_info_t *get_pid_window(const int PID);
 bool resize_window(struct window_info_t *w, const int WIDTH, const int HEIGHT);
 bool move_window(struct window_info_t *w, const int X, const int Y);
 struct window_info_t *get_focused_window();
-uint32_t display_active_display_id(void);
 ProcessSerialNumber get_window_ProcessSerialNumber(struct window_info_t *w);
 int get_window_id_pid(int window_id);
 int get_window_id_level(size_t window_id);

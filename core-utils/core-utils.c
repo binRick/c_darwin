@@ -8,7 +8,7 @@
 #include "frameworks/frameworks.h"
 #include "hash/hash.h"
 #include "iokit-utils/iokit-utils.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "ms/ms.h"
 #include "osx-keys/osx-keys.h"
 #include "parson/parson.h"

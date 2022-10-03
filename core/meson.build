@@ -1,3 +1,4 @@
+subdir('debug')
 subdir('utils')
 subdir('image')
 
@@ -13,7 +14,7 @@ core_include_dirs = [
 ]
 
 core_deps = [
-  core_utils_dep,core_image_dep,
+  core_utils_dep,core_image_dep,core_debug_dep,
 ]
 
 core_c_args = [
@@ -22,7 +23,7 @@ core_c_args = [
 core_link_args = [
 ]
 
-core_lib = library('core',
+core_lib = static_library('core',
   core_srcs,
   install: false,
   dependencies: core_deps,

@@ -4,6 +4,7 @@
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "core/core.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
 #include "ms/ms.h"
@@ -12,7 +13,7 @@
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
-#include "submodules/log.h/log.h"
+#include "submodules/log/log.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
@@ -56,7 +57,7 @@ bool minimize_window_id(size_t window_id){
   errno = 0;
   if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
     if (WINDOW_UTILS_DEBUG_MODE) {
-      log_info("Set minimized property");
+      log_info("Set minimized property on window id");
     }
   }else{
     log_error("Failed to set minimized property");
@@ -563,7 +564,7 @@ void minimize_window(struct window_info_t *w){
     log_error("Failed to copy minimized attribute");
   }
   if (AXUIElementSetAttributeValue(w->app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
-    log_info("Set minimized property");
+    log_info("Set minimized property on window");
   }else{
     log_error("Failed to set minimized property");
   }
@@ -1307,17 +1308,6 @@ void window_move(struct window_info_t *window, CGPoint point) {
 
 CFStringRef display_active_display_uuid(void) {
   return(SLSCopyActiveMenuBarDisplayIdentifier(g_connection));
-}
-
-uint32_t display_active_display_id(void) {
-  uint32_t    result   = 0;
-  CFStringRef uuid     = display_active_display_uuid();
-  CFUUIDRef   uuid_ref = CFUUIDCreateFromString(NULL, uuid);
-
-  result = CGDisplayGetDisplayIDFromUUID(uuid_ref);
-  CFRelease(uuid_ref);
-  CFRelease(uuid);
-  return(result);
 }
 
 ProcessSerialNumber get_window_ProcessSerialNumber(__attribute__((unused)) struct window_info_t *w){

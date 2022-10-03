@@ -1,6 +1,7 @@
 darwin_ls_srcs = [
   'dls.c',
   'dls-commands.c',
+  'dls-aliases.c',
 ]
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
@@ -8,6 +9,7 @@ darwin_ls_include_dirs = [
   inc,
 ]
 darwin_ls_deps = [
+  kitty_msg_dep,
   core_utils_dep,
   core_image_dep,
   optparse99_dep,
@@ -37,7 +39,7 @@ darwin_ls_deps = [
   url_h_dep,pasteboard_dep,
   querystring_c_dep,tempdir_dep,vips_dep,
   b64_dep,screen_utils_dep,msf_gif_dep,
-  leptonica_dep,timg_utils_dep,
+  leptonica_dep,
   c_img_dep,image_utils_dep,config_utils_dep,tesseract_dep,tesseract_utils_dep,
   httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,table_sort_dep,
   capture_window_deps,
@@ -55,27 +57,35 @@ darwin_ls_link_args = [
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
 test_args = [
-  ['spaces'],
-  ['dock'],
-  ['menu-bar'],
-  ['displays'],
-  ['apps','-l','5'],
-  ['fonts','-l','5'],
-  ['windows'],
-  ['usb'],
-  ['monitors'],
-  ['processes'],
-  ['paste'],
-  ['copy','-c','test123'],
-  ['paste'],
-  ['kittys'],
-  ['alacrittys'],
-  ['focused-window'],
-  ['focused-pid'],
-  ['focused-space'],
-  ['capture','-r','-o','/tmp/test-capture.png'],
-  ['extract','--all-windows','--concurrency','10','--limit','10'],
-  ['security','--retries','2'],
+  { 'name': 'List Up to 10 Spaces', 'command': 'spaces', 'args': ['--limit','10'], 'timeout': 5, },
+  { 'name': 'Show Dock Info', 'command': 'dock', 'args': [], 'timeout': 5, },
+  { 'name': 'Show Menu Bar Info', 'command': 'menu-bar', 'args': [],  'timeout': 5,},
+  { 'name': 'List Up to 10 Displays', 'command': 'displays', 'args': ['--limit','10'], 'timeout': 5,  },
+  { 'name': 'List Up to 10 Installed Applications Sorted By Name Ascending', 'command': 'apps', 'args': ['--sort-by','name','--asc','--limit','10'],   'timeout': 30,},
+  { 'name': 'List 10 Largest Fonts', 'command': 'fonts', 'args': ['--sort-by','size','--desc','--limit','10'],   'timeout': 30,},
+  { 'name': 'List 10 Newest Windows', 'command': 'windows', 'args': ['--sort-by','id','--desc','--limit','10'],   'timeout': 3,},
+  { 'name': 'List Windows Not on Currently Focused Display', 'command': 'windows', 'args': ['--not-current-display'],   'timeout': 3,},
+  { 'name': 'List Windows On Currently Focused Display', 'command': 'windows', 'args': ['--current-display'],   'timeout': 3,},
+  { 'name': 'List Windows Not on Currently Focused Space', 'command': 'windows', 'args': ['--not-current-space'],   'timeout': 3,},
+  { 'name': 'List Windows On Currently Focused Space', 'command': 'windows', 'args': ['--current-space'],   'timeout': 3,},
+  { 'name': 'List Minimized Windows', 'command': 'windows', 'args': ['--minimized'],   'timeout': 3,},
+  { 'name': 'List Non Minimized Windows', 'command': 'windows', 'args': ['--non-minimized'],   'timeout': 3,},
+  { 'name': 'List USB Devices', 'command': 'usb', 'args': [],   'timeout': 1,},
+  { 'name': 'List Monitors', 'command': 'monitors', 'args': [],   'timeout': 1,},
+  { 'name': 'List Processes', 'command': 'processes', 'args': [],   'timeout': 5,},
+  { 'name': 'Copy Contents to Clipboard', 'command': 'copy', 'args': ['--content','test123'],   'timeout': 1,},
+  { 'name': 'Paste Clipboard Contents', 'command': 'paste', 'args': [],   'timeout': 1,},
+  { 'name': 'List Kitty Processes', 'command': 'kittys', 'args': [],   'timeout': 1,},
+  { 'name': 'List Alacritty Processes', 'command': 'alacrittys', 'args': [],   'timeout': 2,},
+  { 'name': 'Show Focused Window Info', 'command': 'focused-window', 'args': [],   'timeout': 1,},
+  { 'name': 'Show Focused Space Info', 'command': 'focused-space', 'args': [],   'timeout': 1,},
+  { 'name': 'Show Focused PID Info', 'command': 'focused-pid', 'args': [],   'timeout': 1,},
+  { 'name': 'Capture a Random Window ID to Specified File','command':'capture', 'args': ['--random-window-id','--output-file','/tmp/test-capture.png'], 'timeout': 5, },
+  { 'name': 'Capture 10 Window Images Concurrently','command':'capture', 'args': ['--all-windows','--limit','10','--concurrency','10'], 'timeout': 5, },
+  { 'name': 'Extract Text Content from 10 Window Images Concurrently', 'command':'extract', 'args': ['--all-windows','--limit','10','--concurrency','10'], 'timeout': 30, },
+  { 'name': 'Open System Preferences and Configure Security', 'command':'security', 'args': ['--retries','3'], 'timeout': 15, },
+  ]
+xxxx = [
   ['app-icns-file','-P','/Applications/kitty.app'],
   ['get-icon-png','-P','/Applications/kitty.app','-s','512','-f','/tmp/kitty-icon-512.png'],
   ['get-icon','-P','/Applications/kitty.app','-f','/tmp/kitty.icns'],
@@ -93,11 +103,7 @@ if get_option('enable-binaries')
      c_args: darwin_ls_c_args,
      install: false,
   )
-  test('dls help 1', darwin_ls_exec, args: ['--help'], workdir: darwin_ls_dir,timeout: 1)
-  test('dls help 2', darwin_ls_exec, args: ['-h'], workdir: darwin_ls_dir,timeout: 1)
-  test('dls help 3', darwin_ls_exec, args: ['help'], workdir: darwin_ls_dir,timeout: 1)
   foreach a : test_args
-    test('dls ' + a[0] + ' help', darwin_ls_exec, args: ['help',a[0]], workdir: darwin_ls_dir, timeout: 1)
-    test('dls ' + a[0], darwin_ls_exec, args: a, workdir: darwin_ls_dir, timeout: 30)
+    test('dls ' + a['name'], darwin_ls_exec, args: [a['command'], a['args']], workdir: darwin_ls_dir, timeout: a['timeout'])
   endforeach
 endif

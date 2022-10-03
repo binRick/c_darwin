@@ -1,5 +1,5 @@
 #pragma once
-#include "log.h/log.h"
+#include "log/log.h"
 #include "osx-keys/osx-keys.h"
 static bool OSX_KEYS_DEBUG_MODE = false;
 

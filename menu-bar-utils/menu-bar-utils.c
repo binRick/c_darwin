@@ -1,6 +1,6 @@
 #include "display/utils/utils.h"
 #include "frameworks/frameworks.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "space/utils/utils.h"
 static bool MENU_BAR_UTILS_DEBUG_MODE = false;

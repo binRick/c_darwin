@@ -5,6 +5,7 @@
 #define MAX_QUEUES      24
 #include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
+#include "core/core.h"
 #include "image/utils/utils.h"
 #include "libimagequant/libimagequant.h"
 #include "msf_gif/msf_gif.h"

@@ -10,6 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+enum common_option_capture_type_t {
+  COMMON_OPTION_CAPTURE_TYPE_WINDOW = 0,
+  COMMON_OPTION_CAPTURE_TYPE_DISPLAY,
+  COMMON_OPTION_CAPTURE_TYPE_SPACE,
+  COMMON_OPTION_CAPTURE_TYPES_QTY,
+};
 enum common_option_width_or_height_t {
   COMMON_OPTION_WIDTH_OR_HEIGHT_UNKNOWN = 0,
   COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT,
@@ -24,10 +30,11 @@ enum output_mode_type_t {
 };
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE;
 const char                    *output_modes[OUTPUT_MODES_QTY + 1];
+#include "dls/dls-aliases.h"
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
 struct args_t {
-  bool                                 verbose, current_space_only, current_display_only;
+  bool                                 verbose, current_space_only, current_display_only, not_current_display_only, not_current_space_only;
   int                                  space_id, window_id;
   int                                  display_id;
   int                                  x, y;
@@ -43,7 +50,7 @@ struct args_t {
   int                                  concurrency, limit;
   double                               resize_factor;
   char                                 *xml_file_path, *content;
-  bool                                 clear_icons_cache, minimized_only, non_minimized_only;
+  bool                                 clear_icons_cache, minimized_only, not_minimized_only;
   bool                                 display_output_file, all_windows;
   bool                                 random_window_id, clear_screen, compress;
   int                                  pid, width_greater, width_less, height_greater, height_less;

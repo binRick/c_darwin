@@ -1,9 +1,10 @@
 #pragma once
 #ifndef CAPTURE_WINDOW_C
 #define CAPTURE_WINDOW_C
-#define THUMBNAIL_WIDTH    150
-#define WRITE_FILE         true
-#define WRITE_THUMBNAIL    false
+#define LOCAL_DEBUG_MODE    CAPTURE_WINDOW_DEBUG_MODE
+#define THUMBNAIL_WIDTH     150
+#define WRITE_FILE          true
+#define WRITE_THUMBNAIL     false
 ////////////////////////////////////////////
 #include "capture/window/window.h"
 ////////////////////////////////////////////
@@ -17,6 +18,7 @@
 #include "capture/utils/utils.h"
 #include "chan/src/chan.h"
 #include "clamp/clamp.h"
+#include "core/debug/debug.h"
 #include "gifdec/gifdec.h"
 #include "image/utils/utils.h"
 #include "libimagequant/libimagequant.h"
@@ -37,11 +39,14 @@
 #include <png.h>
 #include <pthread.h>
 #define info    log_info
-#define debug(M, ...)    { do {                               \
-                             if (CAPTURE_WINDOW_DEBUG_MODE) { \
-                               log_debug(M, ## __VA_ARGS__);  \
-                             }                                \
-                           } while (0); }
+#ifdef LOCAL_DEBUG_MODE
+#define debug(M, ...)    {            \
+    do {                              \
+      if (LOCAL_DEBUG_MODE) {         \
+        log_debug(M, ## __VA_ARGS__); \
+      }                               \
+    } while (0); }
+#endif
 static bool CAPTURE_WINDOW_DEBUG_MODE = false;
 #define QTY(X)           (sizeof(X) / sizeof(X[0]))
 void cgimage_provider(void *ARGS);
@@ -333,7 +338,7 @@ static const struct cap_t *__caps[] = {
       r->time.started     = timestamp();
       r->pixels           = save_cgref_to_qoi_memory(r->msg->img_ref, &(r->len));
       r->time.dur         = timestamp() - r->time.started;
-      r->analyze          = false;
+      r->analyze          = true;
       r->analyze          = true;
       r->msg->req         = r->msg->req;
       debug("Converted CGImageRef to %s Grayscale QOI in %s",
@@ -874,7 +879,6 @@ struct Vector *capture(struct capture_req_t *req){
             r->file,
             r->linear_colorspace?"Yes":"No",
             r->has_alpha?"Yes":"No"
-
             );
       r->time.captured_ts = timestamp();
       msg                 = (void *)r;
@@ -1113,10 +1117,12 @@ struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, en
 static void __attribute__((constructor)) __constructor__capture_window(void){
   setenv("TMPDIR", "/tmp/", 1);
   setenv("VIPS_WARNING", "1", 1);
+
   if (getenv("DEBUG") != NULL || getenv("CAPTURE_WINDOW_DEBUG_MODE") != NULL) {
     log_debug("Enabling capture_window Debug Mode");
     CAPTURE_WINDOW_DEBUG_MODE = true;
   }
 }
 ////////////////////////////////////////////
+#undef LOCAL_DEBUG_MODE
 #endif

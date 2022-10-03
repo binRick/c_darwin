@@ -59,6 +59,7 @@ struct action_type_handler_t {
 };
 struct key_t {
   const char         *name, *key, *action;
+  const char         **actions;
   bool               enabled;
   enum action_type_t action_type;
 };

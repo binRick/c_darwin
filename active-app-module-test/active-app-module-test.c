@@ -1,5 +1,5 @@
 #include "active-app-module-test.h"
-#include "submodules/log.h/log.h"
+#include "submodules/log/log.h"
 //////////////////////////////////////////
 #define WATCH_INTERVAL_MS    100
 #define TEST_ITERATIONS      1

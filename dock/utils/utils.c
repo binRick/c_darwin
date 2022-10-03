@@ -1,7 +1,7 @@
 #include "display/utils/utils.h"
 #include "dock/utils/utils.h"
 #include "frameworks/frameworks.h"
-#include "log.h/log.h"
+#include "log/log.h"
 static bool DOCK_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__dock_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DOCK_UTILS") != NULL) {

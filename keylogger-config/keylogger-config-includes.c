@@ -6,7 +6,7 @@
 #include "keylogger-config/keylogger-config-types.h"
 #include "keylogger-config/keylogger-config.h"
 #include "keylogger-db/keylogger-db.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "process/utils/utils.h"
 #include "window/utils/test/test.h"
 #include "window/utils/utils.h"

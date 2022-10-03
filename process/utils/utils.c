@@ -15,7 +15,7 @@
 #include "reproc/reproc/include/reproc/reproc.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
-#include "submodules/log.h/log.h"
+#include "submodules/log/log.h"
 #include "timestamp/timestamp.h"
 #include "which/src/which.h"
 #include "wildcardcmp/wildcardcmp.h"

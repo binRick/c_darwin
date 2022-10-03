@@ -12,7 +12,7 @@
 #include "display/utils/utils.h"
 #include "generic-print/print.h"
 #include "keylogger-db/keylogger-db.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "pasteboard/pasteboard.h"
 #include "process/utils/utils.h"
 #include "window/utils/test/test.h"

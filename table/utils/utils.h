@@ -17,7 +17,6 @@
 ///////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "app/utils/utils.h"
-#include "app/utils/utils.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
@@ -25,7 +24,6 @@
 #include "window/info/info.h"
 #include "window/utils/utils.h"
 ///////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
 #define LIST_TABLE_ITEMS()                                             \
   LIST_TABLE(list_window_table, "Windows", WINDOW, window_info_t)      \
   LIST_TABLE(list_process_table, "Processes", PROCESS, process_info_t) \
@@ -99,7 +97,8 @@ enum table_order_direction_type_t {
 };
 struct list_table_t {
   struct Vector *windows_v;
-  bool          current_space_only, current_display_only, exact_match, case_sensitive, duplicate, non_duplicate;
+  bool          minimized_only, not_minimized_only;
+  bool          current_space_only, current_display_only, exact_match, case_sensitive, duplicate, non_duplicate, not_current_display_only, not_current_space_only;
   int           display_id;
   int           space_id, window_id;
   char          *sort_key, *sort_direction, *application_name, *font_family, *font_name, *font_type, *font_style;

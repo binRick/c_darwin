@@ -5,6 +5,7 @@
 #define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
+#include "kitty/msg/msg.h"
 #include "capture/window/window.h"
 #include "clamp/clamp.h"
 #include "dls/dls-commands.h"
@@ -20,7 +21,6 @@
 #include "table/sort/sort.h"
 #include "table/utils/utils.h"
 #include "tesseract/utils/utils.h"
-#include "timg/utils/utils.h"
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
@@ -192,7 +192,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
-      .description = "", //get_app_sort_types_description(),
+      .description = get_sort_type_by_description(SORT_TYPE_APP),
       .arg_name = "SORT-BY",
       .arg_dest = &(args->sort_key),
       .arg_data_type = DATA_TYPE_STR,
@@ -259,20 +259,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->display_output_file),
     });
   },
-  [COMMON_OPTION_NON_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                               {
+  [COMMON_OPTION_NOT_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                               {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'm',
       .long_name = "non-minimized",
       .description = "Show Non Minimized Only",
-      .arg_data_type = check_cmds[CHECK_COMMAND_PID].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_PID].fxn,
       .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->non_minimized_only),
+      .flag = &(args->not_minimized_only),
     });
   },
   [COMMON_OPTION_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                                   {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'm',
       .long_name = "minimized",
       .description = "Show Minimized Only",
       .flag_type = FLAG_TYPE_SET_TRUE,
@@ -310,19 +306,34 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->clear_screen),
     });
   },
+  [COMMON_OPTION_NOT_CURRENT_DISPLAY] = ^ struct optparse_opt (struct args_t *args)                         {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "not-current-display",
+      .description = "Windows not on Currently Focused Display only",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->not_current_display_only),
+    });
+  },
   [COMMON_OPTION_CURRENT_DISPLAY] = ^ struct optparse_opt (struct args_t *args)                             {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'X',
       .long_name = "current-display",
-      .description = "Windows in Display only",
+      .description = "Windows on Currently Focused Display only",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->current_display_only),
+    });
+  },
+  [COMMON_OPTION_NOT_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                           {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "not-current-space",
+      .description = "Windows not on Currently Focused Space only",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->not_current_space_only),
     });
   },
   [COMMON_OPTION_CURRENT_SPACE] = ^ struct optparse_opt (struct args_t *args)                               {
     return((struct optparse_opt)                                                                            {
       .long_name = "current-space",
-      .description = "Windows in current space only",
+      .description = "Windows on Currently Focused Space only",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->current_space_only),
     });
@@ -498,7 +509,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_LIMIT].fxn,
     });
   },
-  [COMMON_OPTION_NON_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                               {
+  [COMMON_OPTION_NOT_DUPLICATE] = ^ struct optparse_opt (struct args_t *args)                               {
     return((struct optparse_opt)                                                                            {
       .long_name = "non-duplicate",
       .description = "Show Non Duplicate Fonts",
@@ -1217,7 +1228,6 @@ static void _check_limit(int c){
 static void _check_concurrency(int c){
   args->concurrency = (c > MAX_CONCURRENCY) ? MAX_CONCURRENCY : c;
   args->concurrency = (args->concurrency < 1) ? 1 : args->concurrency;
-  log_info("c:%d", args->concurrency);
 }
 
 static void _check_xml_file(char *xml_file_path){
@@ -1635,7 +1645,7 @@ static void _command_animated_capture(){
       fsio_copy_file(acap->file, args->output_file);
     }
     if (args->display_output_file) {
-      timg_utils_titled_image(acap->file);
+      kitty_display_image_path(acap->file);
     }
   }
 
@@ -1699,8 +1709,10 @@ static void _command_capture(){
              );
     if (args->output_file) {
       fsio_write_binary_file(args->output_file, r->pixels, r->len);
+      Dbg(args->output_file,%s);
+      Dbg(r->len,%lu);
       if (args->display_output_file) {
-        timg_utils_titled_image(args->output_file);
+        kitty_display_image_path(args->output_file);
       }
     }
   }
@@ -1805,17 +1817,21 @@ static void _command_windows(){
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
     list_window_table(&(struct list_table_t){
-      .sort_key             = args->sort_key, .sort_direction = args->sort_direction,
-      .current_space_only   = args->current_space_only,
-      .current_display_only = args->current_display_only,
-      .space_id             = args->space_id,
-      .display_id           = args->display_id,
-      .window_id            = args->window_id,
-      .pid                  = args->pid,
-      .height_greater       = args->height_greater, .height_less = args->height_less,
-      .width_greater        = args->width_greater, .width_less = args->width_less,
-      .application_name     = args->application_name,
-      .width                = args->width, .height = args->height, .limit = args->limit,
+      .sort_key                 = args->sort_key, .sort_direction = args->sort_direction,
+      .current_space_only       = args->current_space_only,
+      .current_display_only     = args->current_display_only,
+      .not_minimized_only       = args->not_minimized_only,
+      .minimized_only           = args->minimized_only,
+      .not_current_display_only = args->not_current_display_only,
+      .not_current_space_only   = args->not_current_space_only,
+      .space_id                 = args->space_id,
+      .display_id               = args->display_id,
+      .window_id                = args->window_id,
+      .pid                      = args->pid,
+      .height_greater           = args->height_greater, .height_less = args->height_less,
+      .width_greater            = args->width_greater, .width_less = args->width_less,
+      .application_name         = args->application_name,
+      .width                    = args->width, .height = args->height, .limit = args->limit,
     });
     break;
   case OUTPUT_MODE_JSON:

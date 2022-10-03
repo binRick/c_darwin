@@ -5,7 +5,7 @@
 #include "display/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include <ApplicationServices/ApplicationServices.h>
@@ -269,22 +269,6 @@ int get_total_spaces(void){
   return(cols);
 }
 
-int get_space_display_id(int sid){
-  CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
-
-  if (!uuid_string) {
-    return(0);
-  }
-
-  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
-  uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
-
-  CFRelease(uuid);
-  CFRelease(uuid_string);
-
-  return((int)id);
-}
-
 bool get_space_is_fullscreen(uint64_t sid){
   return(SLSSpaceGetType(g_connection, sid) == 4);
 }
@@ -310,57 +294,28 @@ uint64_t get_display_space_id(uint32_t did){
   return(sid);
 }
 
-uint64_t get_dsid_from_sid(uint32_t sid) {
-  uint64_t   result      = 0;
-  int        desktop_cnt = 1;
-
-  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);
-  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);
-
-  for (int i = 0; i < display_spaces_count; ++i) {
-    CFDictionaryRef display_ref  = CFArrayGetValueAtIndex(display_spaces_ref, i);
-    CFArrayRef      spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
-    int             spaces_count = CFArrayGetCount(spaces_ref);
-
-    for (int j = 0; j < spaces_count; ++j) {
-      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
-      CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
-      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &result);
-      if (sid == (uint32_t)desktop_cnt) {
-        goto out;
-      }
-
-      ++desktop_cnt;
-    }
-  }
-
-  result = 0;
-out:
-  CFRelease(display_spaces_ref);
-  return(result);
-}
-
-uint32_t get_display_id_for_space(uint32_t sid) {
-  uint64_t dsid = get_dsid_from_sid(sid);
-
-  if (!dsid) {
-    return(0);
-  }
-  CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, dsid);
-
-  if (!uuid_string) {
-    return(0);
-  }
-
-  CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
-  uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
-
-  CFRelease(uuid);
-  CFRelease(uuid_string);
-
-  return(id);
-}
-
+/*
+ * uint32_t get_display_id_for_space(uint32_t sid) {
+ * uint64_t dsid = get_dsid_from_sid(sid);
+ *
+ * if (!dsid) {
+ *  return(0);
+ * }
+ * CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, dsid);
+ *
+ * if (!uuid_string) {
+ *  return(0);
+ * }
+ *
+ * CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
+ * uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
+ *
+ * CFRelease(uuid);
+ * CFRelease(uuid_string);
+ *
+ * return(id);
+ * }
+ */
 int get_current_space_id(void){
   return(SLSGetActiveSpace(g_connection));
 }

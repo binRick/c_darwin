@@ -9,7 +9,7 @@
 #include "display/utils/utils.h"
 #include "dock/utils/utils.h"
 #include "focused/focused.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "menu-bar-utils/menu-bar-utils.h"
 #include "ms/ms.h"
 #include "msgbox/msgbox/msgbox.h"

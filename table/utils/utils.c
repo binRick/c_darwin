@@ -1,6 +1,7 @@
 #pragma once
 #ifndef TABLE_UTILS_C
 #define TABLE_UTILS_C
+#define LOCAL_DEBUG_MODE       TABLE_UTILS_DEBUG_MODE
 #define DEFAULT_FONTS_LIMIT    50
 #define DEFAULT_APPS_LIMIT     50
 #define MONITOR_COLUMNS        "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
@@ -30,7 +31,7 @@
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
-#include "submodules/log.h/log.h"
+#include "submodules/log/log.h"
 #include "table/sort/sort.h"
 #include "table/table.h"
 #include "table/utils/utils.h"
@@ -39,7 +40,7 @@
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
 ///////////////////////////////////////////////////////////////////////////////
-static size_t               term_width = 80, cur_display_id, cur_space_id;
+static size_t term_width = 80, cur_display_id, cur_space_id;
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive);
 static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 #define VECTOR_ITEM(VECTOR,                                                                          TYPE,                                  INDEX)    (struct TYPE)vector_get(VECTOR, INDEX)
@@ -259,7 +260,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     },
   },
   [TABLE_TYPE_APP] = &(struct table_logic_t){
-    .query_items = get_installed_fonts_v,
+    .query_items = get_installed_apps_v,
     .columns     = { APP_COLUMNS },
     .row         = ^ void (ft_table_t *table,                                                        size_t index,                          void *item){
       struct app_t *app = (struct app_t *)item;
@@ -387,6 +388,8 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
+      cur_display_id = get_current_display_id();
+      cur_space_id   = get_current_space_id();
       if (string_compare_skip_row(args->application_name,                                            w->name,                               args->exact_match,                        args->case_sensitive)) {
         skip_row = true;
       }
@@ -440,7 +443,23 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       if ((args->space_id > -1) && (w->space_id != (size_t)args->space_id)) {
         skip_row = true;
       }
-      if (args->current_display_only == true && w->space_id != cur_space_id) {
+      Dbg(get_current_space_id(),                                                                    % d);
+      Dbg(get_current_display_id(),                                                                  % d);
+      Dbg(get_current_display_index(),                                                               % d);
+      Dbg(w->display_id,                                                                             % lu);
+      if (args->not_minimized_only == true && w->is_minimized == true) {
+        skip_row = true;
+      }
+      if (args->minimized_only == true && w->is_minimized == false) {
+        skip_row = true;
+      }
+      if (args->not_current_space_only == true && w->space_id == cur_space_id) {
+        skip_row = true;
+      }
+      if (args->not_current_display_only == true && w->display_id == cur_display_id) {
+        skip_row = true;
+      }
+      if (args->current_display_only == true && (size_t)(w->display_id) != (size_t)(cur_display_id)) {
         skip_row = true;
       }
       if (args->current_space_only == true && w->space_id != cur_space_id) {
@@ -679,4 +698,6 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
 LIST_TABLE_ITEMS()
 #undef LIST_TABLE
 
+////////////////////////////////////
+#undef LOCAL_DEBUG_MODE
 #endif

@@ -56,4 +56,9 @@ CGPoint get_display_center(uint32_t did);
 CGRect get_display_rect(uint32_t did);
 //////////////////////////////////////
 struct Vector *get_display_id_space_ids_v(uint32_t did);
+int get_current_display_id(void);
+int get_display_id_for_space(uint32_t sid);
+uint64_t get_dsid_from_sid(uint32_t sid);
+int get_space_display_id(int sid);
+int get_current_display_index(void);
 #endif

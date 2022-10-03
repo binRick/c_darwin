@@ -136,10 +136,7 @@ static struct sort_t __attribute__((unused)) * sort_types[SORT_TYPES_QTY] = {
     .enabled              = true,
     .handlers             =                                                                 {
       [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
-        .functions              =                                                           {
-          [SORT_DIRECTION_ASC]  = app_sort_name_asc,
-          [SORT_DIRECTION_DESC] = app_sort_name_desc,
-        },
+        .functions =                                                                        { app_sort_name_asc, app_sort_name_desc                   },
       },
     },
   },
@@ -153,7 +150,7 @@ static struct sort_t __attribute__((unused)) * sort_types[SORT_TYPES_QTY] = {
         },
       },
       [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { window_sort_name_desc,      window_sort_name_desc              },
+        .functions =                                                                        { window_sort_name_asc,       window_sort_name_desc              },
       },
       [SORT_BY_TYPE_DISPLAY] = &(struct sort_handler_t)                                     {
         .functions =                                                                        { window_sort_display_id_asc, window_sort_space_id_desc          },

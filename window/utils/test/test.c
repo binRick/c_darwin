@@ -14,7 +14,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_timer/include/c_timer.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "ms/ms.h"
 #include "string-utils/string-utils.h"
 #include "submodules/libfort/src/fort.h"

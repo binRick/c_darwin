@@ -1,7 +1,7 @@
 #pragma once
 #include "frameworks/frameworks.h"
 #include "iokit-utils/iokit-utils.h"
-#include "log.h/log.h"
+#include "log/log.h"
 static bool IOKIT_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__iokit_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_IOKIT_UTILS") != NULL) {

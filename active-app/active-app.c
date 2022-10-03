@@ -2,7 +2,7 @@
 #include "active-app.h"
 #include "app/utils/utils.h"
 #include "core-utils/core-utils.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "process/utils/utils.h"
 static bool ACTIVE_APP_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__active_app_utils(void){

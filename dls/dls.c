@@ -61,7 +61,9 @@ int main(int argc, char **argv) {
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
+          common_options_b[COMMON_OPTION_NOT_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),
+          common_options_b[COMMON_OPTION_NOT_CURRENT_DISPLAY](args),
           common_options_b[COMMON_OPTION_PID](args),
           common_options_b[COMMON_OPTION_LIMIT](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
@@ -72,7 +74,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),
           common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
           common_options_b[COMMON_OPTION_MINIMIZED](args),
-          common_options_b[COMMON_OPTION_NON_MINIMIZED](args),
+          common_options_b[COMMON_OPTION_NOT_MINIMIZED](args),
           common_options_b[COMMON_OPTION_WIDTH](args),
           common_options_b[COMMON_OPTION_HEIGHT](args),
           common_options_b[COMMON_OPTION_HEIGHT_GREATER](args),
@@ -305,7 +307,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_EXACT_MATCH](args),
           common_options_b[COMMON_OPTION_CASE_SENSITIVE](args),
           common_options_b[COMMON_OPTION_DUPLICATE](args),
-          common_options_b[COMMON_OPTION_NON_DUPLICATE](args),
+          common_options_b[COMMON_OPTION_NOT_DUPLICATE](args),
           { END_OF_OPTIONS },
         },
       },
@@ -713,4 +715,12 @@ static void __attribute__((constructor)) __constructor__dls(void){
     log_error("Not Authorized for Screen Recording");
     exit(EXIT_FAILURE);
   }
+  /*
+   * char *window = dls_get_alias_type_name(ALIAS_TYPE_WINDOW);
+   * Dbg(window,%s);
+   * Dbg(dls_get_alias_wildcard_glob_name("w"), %s);
+   * Dbg(dls_get_alias_wildcard_glob_name("sp"), %s);
+   * Dbg(dls_get_alias_wildcard_glob_name("s"), %s);
+   * Dbg(dls_get_alias_wildcard_glob_name("d"), %s);
+   */
 }

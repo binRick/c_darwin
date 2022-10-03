@@ -36,7 +36,7 @@
 #include "keylogger/keylogger.h"
 #include "libusb/libusb/libusb.h"
 #include "libusb/libusb/os/darwin_usb.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "pbpaste/pbpaste.h"
 #include "process/process.h"
 #include "sqldbal/src/sqldbal.h"

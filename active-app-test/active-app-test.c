@@ -2,7 +2,7 @@
 #include "active-app-test/active-app-test.h"
 #include "app/utils/utils.h"
 #include "c_greatest/greatest/greatest.h"
-#include "log.h/log.h"
+#include "log/log.h"
 #include "process/utils/utils.h"
 #include "window/utils/utils.h"
 bool RUNNING = true;

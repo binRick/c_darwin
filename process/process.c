@@ -1,5 +1,5 @@
 #pragma once
-#include "log.h/log.h"
+#include "log/log.h"
 #include "process.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <dlfcn.h>

@@ -21,6 +21,7 @@ table_deps = [
   log_dep,
   ms_dep,
   bytes_dep,table_utils_dep,table_sort_dep,
+  core_utils_dep,
 ]
 
 table_c_args = [
