@@ -1,7 +1,8 @@
 #pragma once
 #ifndef MT_ENUM_H
 #define MT_ENUM_H
-
+#include <stdint.h>
+#include <stdlib.h>
 enum csv_column_t {
   CSV_COLUMN_YEAR_MONTH_DAY,
   CSV_COLUMN_HOUR_MINUTE,
@@ -12,9 +13,7 @@ enum csv_column_t {
   CSV_COLUMN_VOLUME,
   CSV_COLUMNS_QTY,
 };
-enum market_period_length_type_t {
-  MARKET_PERIOD_LENGTH_TYPE_FOUR_HOURS = 4,
-};
+static const size_t MARKET_PERIOD_LENGTH_HOURS = 4;
 enum ema_moving_average_type_t {
   EMA_MOVING_AVERAGE_TYPE_EXPONENTIAL_AVERAGE,
 };
@@ -28,7 +27,7 @@ enum ema_applied_price_type_t {
   EMA_APPLIED_PRICE_TYPE_CLOSE,
 };
 enum ema_period_duration_type_t {
-  MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS,
+  MARKET_PERIOD_DURATION_TYPE_LAST_EIGHT_HOURS = 0,
   MARKET_PERIOD_DURATION_TYPE_LAST_TWELVE_HOURS,
   MARKET_PERIOD_DURATION_TYPE_LAST_DAY,
   MARKET_PERIOD_DURATION_TYPE_LAST_TWO_DAYS,

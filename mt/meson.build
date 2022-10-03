@@ -4,6 +4,7 @@ mt_srcs = [
   'mt-args.c',
   'mt-globals.c',
   'mt-ema.c',
+  'mt-ma.c',
   'mt-market.c',
   'mt-commands.c',
 ]
@@ -33,6 +34,8 @@ mt_deps = [
 
 mt_c_args = [
   '-DINCBIN_SILENCE_BITCODE_WARNING',
+  '-DINCBIN_PREFIX=inc_',
+  '-DINCBIN_STYLE=INCBIN_STYLE_SNAKE',
   '-Wno-missing-field-initializers',
 ]
 
@@ -50,8 +53,7 @@ if get_option('enable-binaries')
      c_args: mt_c_args,
      install: false,
   )
-  #test('mt', 
-  #  mt_exec, args: ['--help'],
-  #  workdir: mt_test_dir,
-  #)
+  test('mt> Help', mt_exec, args: ['help'])
+  test('mt> Parse Embedded CSV', mt_exec, args: ['parse'])
+  test('mt> List Embedded CSVs', mt_exec, args: ['csvs'])
 endif

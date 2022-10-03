@@ -1,11 +1,11 @@
 #pragma once
-#ifndef MT_EMBEDDED_C
-#define MT_EMBEDDED_C
-#include "mt/mt-define.h"
-#define INCBIN_PREFIX inc_
-#define INCBIN_STYLE INCBIN_STYLE_SNAKE
 #include "incbin/incbin.h"
-INCTXT(market_csv, "assets/XRPUSD240.csv");
+#include "mt/mt-define.h"
 
-#undef INCBIN_PREFIX
-#endif
+INCBIN(ema_cpp, "assets/ema.cpp");
+INCBIN(xrpusd240_csv, "assets/XRPUSD240.csv");
+INCBIN(ema_png, "assets/ema.png");
+INCBIN(ema1_png, "assets/ema1.png");
+INCBIN(xrpusd_columns_csv, "assets/XRPUSD_COLUMNS.csv");
+INCBIN(xrpusd_2020_csv, "assets/XRPUSD-2020.csv");
+INCBIN(xrpusd_2021_csv, "assets/XRPUSD-2021.csv");
