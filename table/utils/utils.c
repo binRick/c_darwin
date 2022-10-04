@@ -4,6 +4,7 @@
 #define LOCAL_DEBUG_MODE       TABLE_UTILS_DEBUG_MODE
 #define DEFAULT_FONTS_LIMIT    50
 #define DEFAULT_APPS_LIMIT     50
+#define CAPTURED_WINDOW_COLUMNS "ID","Width","Height","Dur","Size","Compressed","Application","File","Format"
 #define MONITOR_COLUMNS        "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
 #define PROCESS_COLUMNS        "PID", "Open Ports", "Open Files", "Open Connections", "Dur"
 #define KITTY_COLUMNS          "PID"
@@ -19,6 +20,7 @@
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
+#include "window/db/db.h"
 #include "font-utils/font-utils.h"
 #include "frameworks/frameworks.h"
 #include "hotkey-utils/hotkey-utils.h"
@@ -297,6 +299,23 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       return(
         string_compare_skip_row(args->application_name,                                              app->name,                             args->exact_match,                        args->case_sensitive)
         );
+    },
+  },
+  [TABLE_TYPE_CAPTURED_WINDOW] = &(struct table_logic_t){
+    .query_items = get_captured_window_infos_v,
+    .columns     = { CAPTURED_WINDOW_COLUMNS },
+    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
+      return;
+    },
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+      size_t row              = ft_row_count(table) - 1;
+      struct window_info_t *w = (struct window_info_t *)item;
+      return;
+    },
+    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
+      struct window_info_t *w = (struct window_info_t *)item;
+      bool skip_row           = false;
+      return skip_row;
     },
   },
   [TABLE_TYPE_WINDOW] = &(struct table_logic_t){

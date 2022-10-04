@@ -6,6 +6,8 @@
 #include <ApplicationServices/ApplicationServices.h>
 #include <Availability.h>
 #include <CoreFoundation/CFString.h>
+#include "reproc/reproc/include/reproc/export.h"
+#include "reproc/reproc/include/reproc/reproc.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <dirent.h>
@@ -30,6 +32,7 @@
 #include <mach/host_info.h>
 #include <mach/host_priv.h>
 #include <mach/kern_return.h>
+#include "tinydir/tinydir.h"
 #include <mach/mach.h>
 #include <mach/mach_error.h>
 #include <pthread.h>
@@ -55,6 +58,8 @@ static void __attribute__((constructor)) __constructor__system_utils(void){
     SYSTEM_UTILS_DEBUG_MODE = true;
   }
 }
+
+
 static const struct {
   const char *ctls;
   const char *names;

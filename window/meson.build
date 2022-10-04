@@ -1,6 +1,7 @@
 subdir('info')
 subdir('utils')
 subdir('utils/test')
+subdir('db')
 
 window_srcs = [
   'window.c',
@@ -18,7 +19,7 @@ window_deps = [
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
-  c_string_buffer_dep,
+  c_string_buffer_dep,window_db_dep,
   timestamp_dep,
   log_dep,
   ms_dep,

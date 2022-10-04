@@ -43,6 +43,7 @@ size_t run_osascript_system_prefs();
 int get_focused_window_id();
 uint32_t ax_window_id(AXUIElementRef ref);
 pid_t ax_window_pid(AXUIElementRef ref);
+bool process_utils_move_directory_contents(const char *SOURCE_DIRECTORY, const char *DESTINATION_DIRECTORY);
 struct Vector *get_window_infos_v();
 struct Vector *get_window_infos_brief_v();
 struct Vector *get_window_infos_id_v(size_t ID);

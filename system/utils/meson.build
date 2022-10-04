@@ -2,8 +2,8 @@ system_utils_srcs = [
   'utils.c',
 ]
 system_utils_deps = [
-  c_stringfn_dep,
-  pasteboard_dep,
+  c_stringfn_dep,reproc_dep,
+  pasteboard_dep,tinydir_dep,
   core_utils_dep,string_utils_dep,display_utils_dep,log_dep,
 ]
 

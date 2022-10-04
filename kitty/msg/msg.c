@@ -28,6 +28,18 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len);
 static char *save_restore_msg(char *msg, int row, int col);
 static bool kitty_write_msg(char *msg);
 
+  static int kitty_fprintf(FILE *fd, char *fmt, char *msg, ...){
+  va_list vargs;
+  va_start(vargs, msg);
+  va_end(vargs);
+    int len = fprintf(fd, fmt, msg, vargs);
+    fflush(fd);
+    return(len);
+  }
+
+static bool kitty_write_msg(char *msg){
+  return(kitty_fprintf(stdout,"%s\n",msg) > 0 ? true : false);
+}
 static void kitty_set_position(int x, int y){
   printf("\x1B[%d;%dH", y, x);
   fflush(stdout);
@@ -42,6 +54,12 @@ static struct pos kitty_get_position(){
   return(p);
 }
 
+static struct winsize *kitty_get_terminal_size(void){
+  struct winsize *sz = calloc(1, sizeof(struct winsize));
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, sz);
+  return(sz);
+}
+
 static void kitty_hide_cursor(){
   puts("\x1B[?25l");
 }
@@ -51,11 +69,14 @@ static void kitty_show_cursor(){
 }
 
 ///////////////////////////////////////////////////////////////////////
-static bool kitty_write_msg(char *msg){
-  int len = fprintf(stdout, "%s", msg);
-
-  fflush(stdout);
-  return(len > 0 ? true : false);
+bool kitty_write_terminal_corner(int corner, char *msg){
+        unsigned long ts = timestamp();
+        struct winsize *ws = get_terminal_size();
+        Dbg(ws->ws_ypixel,%d);
+        Dbg(ws->ws_xpixel,%d);
+        Dbg(ws->ws_col,%d);
+        Dbg(ws->ws_row,%d);
+        Dbg(milliseconds_to_string(timestamp()-ts),%s);
 }
 
 bool kitty_display_image_path(char *image_path){
@@ -234,7 +255,6 @@ static char *kitty_msg_get_vips_image_msg(VipsImage *image){
   free(file);
   return(msg);
 }
-///
 static void __attribute__((constructor)) __constructor__kitty_msg(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_kitty_msg") != NULL) {
     log_debug("Enabling kitty_msg Debug Mode");
@@ -255,12 +275,9 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
 
 static VipsImage *image_path_to_vips_image(char *image_path){
   VipsImage *image;
-
-  Dbg(fsio_file_extension(image_path), % s);
   if (stringfn_equal(fsio_file_extension(image_path), ".qoi")) {
     char *qoi_file;
     errno = 0;
-    Dbg(image_path, % s);
     QOIDecoder *qoi = QOIDecoder_New();
     if (!QOIDecoder_Decode(qoi, fsio_read_binary_file(image_path), fsio_file_size(image_path))) {
       log_error("QOI Loader failed");
@@ -277,8 +294,6 @@ static VipsImage *image_path_to_vips_image(char *image_path){
     }
     Dbg(len, % d);
     asprintf(&qoi_file, "%s.png", stringfn_substring(image_path, 0, strlen(image_path) - 4));
-    Dbg(image_path, % s);
-    Dbg(qoi_file, % s);
     QOIDecoder_Delete(qoi);
 
     errno = 0;

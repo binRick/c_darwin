@@ -3,6 +3,7 @@
 #define TABLE_SORT_H
 #define MAX_SORT_TYPES        32
 #define WINDOW_SORT_STRUCT    window_info_t
+#define CAPTURED_WINDOW_SORT_STRUCT    window_info_t
 #define FONT_SORT_STRUCT      font_t
 #define APP_SORT_STRUCT       app_t
 #define SORT_PARAMS           const void __attribute__((unused)) * i0, const void __attribute__((unused)) * i1
@@ -38,6 +39,7 @@ typedef int (*sort_function)(SORT_PARAMS);
   SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, pid)        \
   SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, display_id) \
   SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, space_id)   \
+  SORT_FUNCTION_INT(captured_window, CAPTURED_WINDOW_SORT_STRUCT *, window_id)   \
 
 #define SORT_FUNCTION_STR(NAME, TYPE, ITEM)        \
   int NAME ## _sort_ ## ITEM ## _asc(SORT_PARAMS); \
@@ -61,6 +63,7 @@ enum sort_type_t {
   SORT_TYPE_SPACE,
   SORT_TYPE_DISPLAY,
   SORT_TYPE_MONITOR,
+  SORT_TYPE_CAPTURED_WINDOW,
   SORT_TYPE_WINDOW,
   SORT_TYPE_USB,
   SORT_TYPE_HOTKEY,
@@ -137,6 +140,29 @@ static struct sort_t __attribute__((unused)) * sort_types[SORT_TYPES_QTY] = {
     .handlers             =                                                                 {
       [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
         .functions =                                                                        { app_sort_name_asc, app_sort_name_desc                   },
+      },
+    },
+  },
+  [SORT_TYPE_CAPTURED_WINDOW] = &(struct sort_t)                                                     {
+    .enabled               = true,
+    .handlers              =                                                                {
+      [SORT_BY_TYPE_SPACE] = &(struct sort_handler_t)                                       {
+        .functions              =                                                           {
+          [SORT_DIRECTION_ASC]  = window_sort_space_id_asc,
+          [SORT_DIRECTION_DESC] = window_sort_space_id_desc,
+        },
+      },
+      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
+        .functions =                                                                        { window_sort_name_asc,       window_sort_name_desc              },
+      },
+      [SORT_BY_TYPE_DISPLAY] = &(struct sort_handler_t)                                     {
+        .functions =                                                                        { window_sort_display_id_asc, window_sort_space_id_desc          },
+      },
+      [SORT_BY_TYPE_PID] = &(struct sort_handler_t)                                         {
+        .functions =                                                                        { window_sort_pid_asc,        window_sort_pid_desc               },
+      },
+      [SORT_BY_TYPE_ID] = &(struct sort_handler_t)                                          {
+        .functions =                                                                        { window_sort_window_id_asc,  window_sort_window_id_desc         },
       },
     },
   },

@@ -59,3 +59,7 @@ tmp
 *.qoi
 *.gif.[0-9]*
 .new
+*/unc-backup*
+**/unc-backup*
+*/**/unc-backup*
+**/**/*unc-backup*

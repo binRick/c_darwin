@@ -28,7 +28,7 @@ darwin_ls_deps = [
   app_utils_dep,font_utils_dep,
   capture_window_dep,
   focused_dep,
-  space_utils_dep,
+  space_utils_dep,tinydir_dep,system_utils_dep,
   display_utils_dep,
   dock_utils_dep,output_utils_dep,
   menu_bar_utils_dep, table_utils_dep,string_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,kitty_dep,vips_dep,clamp_dep,

@@ -588,21 +588,31 @@ static const struct cap_t *__caps[] = {
       debug("Converting %lux%lu CGImageref to PNG", r->msg->width, r->msg->height);
       r->len          = 0;
       r->time.started = timestamp();
-      size_t rgb_len = 0;
+      errno=0;
       r->pixels = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
       VipsImage *image;
       vips_gifload_buffer(r->pixels, r->len, &image, NULL);
       r->analyze  = true;
       r->time.dur = timestamp() - r->time.started;
       debug("Loaded %s GIF Pixels to %dx%d %s PNG VIPImage in %s",
-            bytes_to_string(rgb_len),
+            bytes_to_string(r->len),
             vips_image_get_width(image), vips_image_get_height(image),
             bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
             milliseconds_to_string(r->time.dur)
             );
-      vips_pngsave_buffer(image, r->pixels, &(r->len), NULL);
       char *s;
-      size_t window_id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
+      size_t window_id = r->id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
+      errno=0;
+      if(r->len==0){
+        log_error("Failed to acquire Pixel Data (%luB) for Window #%lu",r->len,r->id);
+        return((void *)r);
+      }
+      errno=0;
+      if(vips_pngsave_buffer(image, r->pixels, &(r->len), NULL)){
+        log_error("Failed to save %s png buffer",bytes_to_string(r->len));
+        return((void *)r);
+      }
+
       asprintf(&s, "%sWindow-%lu.png", gettempdir(), window_id);
       vips_pngsave(image, s, NULL);
       VipsImage *image1;
@@ -615,6 +625,7 @@ static const struct cap_t *__caps[] = {
             bytes_to_string(r->len),
             milliseconds_to_string(r->time.dur)
             );
+      free(s);
       return((void *)r);
     },
   },
@@ -819,7 +830,6 @@ static bool start_com(struct capture_req_t *req){
   if (req->compress) {
     for (int i = 0; i < req->concurrency; i++) {
       debug("%d", req->compress);
-      Dbg(req->concurrency, % d);
       int q = i % req->concurrency;
       debug("Creating recv compress chan with index:   %d", q);
       if (pthread_create(req->comp->threads[i], NULL, run_compress_recv, (void *)(req->comp->chans[q])) != 0) {
@@ -1096,8 +1106,6 @@ struct Vector *capture(struct capture_req_t *req){
       c->max_quality    = MAX_QUALITY;
       c->min_quality    = MIN_QUALITY;
       c->capture_result = r;
-      Dbg(req->concurrency, % d);
-      Dbg(i, % lu);
       int q = (i % req->concurrency);
       debug("q:%d", q);
       debug("Sending compression #%lu/%lu", i + 1, vector_size(v));
@@ -1238,7 +1246,7 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
       n->height = h;
       f         = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
       pixels    = QOIDecoder_GetPixels(qoi);
-      if (true || CAPTURE_WINDOW_DEBUG_MODE) {
+      if (CAPTURE_WINDOW_DEBUG_MODE) {
         debug("QOI in %s|%dx%d|f:%d|alpha:%d|colorsp:%d|",
               milliseconds_to_string(timestamp() - s),
               w, h, f,
@@ -1356,7 +1364,10 @@ int poll_new_animated_frame(void *VOID){
   //fflush(stdout);
   //AC_SAVE_PRIVATE_PALETTE);
   //"\x1b]11;#000000\x1b");
-  //\]10;#ffffff\]12;#7c54b0\]4;0;#000000\]4;1;#571dc2\]4;2;#14db49\]4;3;#403d70\]4;4;#385a70\]4;5;#384894\]4;6;#4f3a5e\]4;7;#999999\]4;8;#38372c\]4;9;#571dc2\]4;10;#14db49\]4;11;#403d70\]4;12;#385a70\]4;13;#384894\]4;14;#4f3a5e\]4;15;#999999\n");
+    //\]10;#ffffff\]12;#7c54b0\]4;0;#000000\]4;1;#571dc2\]4;2;#14db49\]4;3;#403d70\]4;4;#385a70\]4;5;#384894\]4;6;#4f3a5e\]4;7;#999999\]4;8;#38372c\]4;9;#571dc2\]4;10;#14db49\]4;11;#403d70\]4;12;#385a70\]4;13;#384894\]4;14;#4f3a5e\]4;15;#999999\n");
+    //
+  bool bar_enabled = (CAPTURE_WINDOW_DEBUG_MODE == false) ? false : true;
+    bar_enabled = false;
   asprintf(&bar_msg,
            "$E BOLD; $ECapturing %lu %s %s Frames at %luFPS: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
            "%s",
@@ -1418,7 +1429,8 @@ struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, en
 
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__capture_window(void){
-  setenv("TMPDIR", "/tmp/", 1);
+//  if(!getenv("TMPDIR") || !stringfn_starts_with(getenv("TMPDIR"),"/tmp/"))
+//    setenv("TMPDIR", "/tmp/", 1);
   setenv("VIPS_WARNING", "1", 1);
 
   if (getenv("DEBUG") != NULL || getenv("CAPTURE_WINDOW_DEBUG_MODE") != NULL) {

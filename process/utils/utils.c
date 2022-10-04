@@ -35,6 +35,7 @@ extern struct Vector *get_window_infos_v();
 static bool       PROCESS_UTILS_DEBUG_MODE         = false;
 static bool       PROCESS_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void);
+static const bool EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED = true;
 static const char *EXCLUDED_WINDOW_INFO_NAMES[] = {
   "Window Server",
   "com.apple.appkit.xpc.open",
@@ -458,6 +459,9 @@ int get_focused_window_id(){
         }                                                                                                                        \
       }                                                                                                                          \
     }                                                                                                                            \
+    if(EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED && i->can_minimize ==false){\
+      continue;\
+    }\
     vector_push(window_infos_v, (void *)i);                                                                                      \
   }
 
@@ -680,6 +684,54 @@ size_t run_osascript_system_prefs(){
   return(wid);
 } /* run_osascript_system_prefs */
 
+bool process_utils_move_directory_contents(const char *SOURCE_DIRECTORY, const char *DESTINATION_DIRECTORY){
+  unsigned long ts       = timestamp();
+  bool          ok       = false;
+  reproc_t      *process = NULL;
+  int           r        = REPROC_ENOMEM;
+  const char    *mv;
+
+  mv = which("mv");
+  if (!mv) {
+    char *PATH = getenv("PATH");
+    setenv("PATH", "/usr/bin:/usr/local/bin:/usr/local/opt/coreutils/libexec/gnubin/mv", 1);
+    mv = which("mv");
+    setenv("PATH", PATH, 1);
+  }
+  assert(mv);
+
+  const char *cmd[] = { mv, SOURCE_DIRECTORY, DESTINATION_DIRECTORY, NULL };
+
+  process = reproc_new();
+  if (process == NULL) {
+    log_error("reproc new failed");
+    goto finish;
+  }
+  r = reproc_start(process, cmd, (reproc_options){ .redirect.err.type = REPROC_REDIRECT_STDOUT, .deadline = 1000 });
+  if (r < 0) {
+    log_error("reproc start failed with code %d", r);
+    goto finish;
+  }
+  r = reproc_close(process, REPROC_STREAM_IN);
+  assert(r == 0);
+  r = reproc_wait(process, REPROC_INFINITE);
+  if (r < 0) {
+    goto finish;
+  }
+  ok = true;
+
+finish:
+  reproc_destroy(process);
+
+  if (r < 0) {
+    fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
+  }
+  if (PROCESS_UTILS_DEBUG_MODE) {
+    log_info("ran move command with result %d in %s", r, milliseconds_to_string(timestamp() - ts));
+  }
+  return(ok);
+
+}
 bool run_osascript(char *OSASCRIPT_CONTENTS){
   unsigned long ts       = timestamp();
   bool          ok       = false;

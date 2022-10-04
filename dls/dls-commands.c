@@ -4,8 +4,11 @@
 #define OPEN_SECURITY_RETRY_INTERVAL_MS      1000
 #define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #include "c_vector/vector/vector.h"
+#include "tinydir/tinydir.h"
 #include "capture/utils/utils.h"
 #include "capture/window/window.h"
+#include "system/utils/utils.h"
+#include "process/utils/utils.h"
 #include "clamp/clamp.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
@@ -52,6 +55,7 @@ static void _command_sticky_window();
 static void _command_menu_bar();
 static void _command_list_usb();
 static void _command_httpserver();
+static void _check_purge_write_directory(void);
 static void _command_dock();
 static void _command_processes();
 static void _command_list_app();
@@ -107,6 +111,17 @@ static void _check_xml_file(char *xml_file_path);
 static void _check_icon_size(size_t icon_size);
 static void _check_pid(int pid);
 ////////////////////////////////////////////
+#if 0
+  CHECK_COMMAND_DISPLAY_SIZE_ROWS_GROUP,
+  CHECK_COMMAND_DISPLAY_SIZE_COLS_GROUP,
+  CHECK_COMMAND_DISPLAY_SIZE_PERCENT_GROUP,
+  CHECK_COMMAND_DISPLAY_SIZE_PIXELS_GROUP,
+  CHECK_COMMAND_DISPLAY_HEIGHT_GROUP,
+  CHECK_COMMAND_DISPLAY_WIDTH_GROUP,
+  CHECK_COMMAND_DISPLAY_TOP_LEFT_CORNER_GROUP,
+  CHECK_COMMAND_DISPLAY_TOP_RIGHT_CORNER_GROUP,
+  CHECK_COMMAND_DISPLAY_BOTTOM_RIGHT_CORNER_GROUP,
+#endif
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                                 {
     return((struct optparse_opt)                                                                            {
@@ -366,6 +381,15 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].fxn,
       .arg_dest = &(args->write_directory),
+    });
+  },
+  [COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "purge",
+      .description = "Purge Contents of Write Directory Before any Writes. Must Prefix --dir",
+      .function = check_cmds[CHECK_COMMAND_PURGE_WRITE_DIRECTORY].fxn,
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->purge_write_directory_before_write),
     });
   },
   [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args)                            {
@@ -711,6 +735,24 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height),
     });
   },
+  [COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'P',
+      .long_name = "progress",
+      .description = "Enable Progress Bar Mode",
+      .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
+      .arg_dest = &(args->progress_bar_mode),
+    });
+  },
+  [COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args)                          {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'p',
+      .long_name = "progress",
+      .description = "Enable Progress Bar Mode",
+      .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
+      .arg_dest = &(args->progress_bar_mode),
+    });
+  },
   [COMMON_OPTION_WINDOW_WIDTH_GROUP] = ^ struct optparse_opt (struct args_t *args)                          {
     return((struct optparse_opt)                                                                            {
       .short_name = 'W',
@@ -776,6 +818,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
+  [CHECK_COMMAND_PURGE_WRITE_DIRECTORY] =               {
+    .fxn           = (void (*)(void))(*_check_purge_write_directory),
+    .arg_data_type = FLAG_TYPE_SET_TRUE,
+  },
   [CHECK_COMMAND_WRITE_DIRECTORY] =               {
     .fxn           = (void (*)(void))(*_check_write_directory),
     .arg_data_type = DATA_TYPE_STR,
@@ -1325,8 +1371,27 @@ static void _check_width_group(uint16_t width){
   return(EXIT_SUCCESS);
 }
 
+static void _check_purge_write_directory(void){
+}
+
 static void _check_write_directory(void){
   char *test_files[3];
+  if(args->purge_write_directory_before_write && fsio_dir_exists(args->write_directory)){
+    char *new_dir;
+    asprintf(&new_dir,"%s/.%s-%lld-dls-purged-dir",
+        dirname(args->write_directory),
+        basename(args->write_directory),
+        timestamp()
+        );
+    if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+      log_info("moving %s to %s",args->write_directory,new_dir);
+    errno=0;
+    if(!process_utils_move_directory_contents(args->write_directory,new_dir)){
+      log_error("Failed to move \"%s\" to \"%s\"",args->write_directory,new_dir);
+      exit(EXIT_FAILURE);
+    }
+    free(new_dir);
+  }
   if(!stringfn_starts_with(args->write_directory,"/")){
     asprintf(&(args->write_directory),"%s/%s",
         gettempdir(),
@@ -1339,10 +1404,14 @@ static void _check_write_directory(void){
 
   errno=0;
   if(!fsio_dir_exists(args->write_directory) && 
-    (!fsio_mkdirs(args->write_directory,S_IRWXU)||!fsio_dir_exists(args->write_directory)))
+    (!fsio_mkdirs(args->write_directory,S_IRWXU | S_IRWXG | S_IRWXO)||!fsio_dir_exists(args->write_directory)))
      goto fail;
   if(!fsio_write_text_file(test_files[1],test_files[2])|| (atoi(fsio_read_text_file(test_files[1]))!=getpid())|| !fsio_remove(test_files[1]))
      goto fail;
+
+  char td[PATH_MAX];
+  asprintf(&td,"%s/",args->write_directory);
+  setenv("TMPDIR",td,true);
 
   return(EXIT_SUCCESS);
 fail:
@@ -1609,6 +1678,7 @@ static void _command_animated_capture(){
     log_debug("Duration sec :  %d", args->duration_seconds);
     log_debug("window id :  %d", args->window_id);
     log_debug("display :  %s", args->display_output_file?"Yes":"No");
+    log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
     log_debug("compress :  %s", args->compress?"Yes":"No");
     log_debug("width :  %d", args->width);
     log_debug("height :  %d", args->height);
@@ -1679,8 +1749,8 @@ static void _command_animated_capture(){
                    ""
                    );
         }else{
-          fprintf(stderr, ".");
-          fflush(stderr);
+//          fprintf(stderr, ".");
+  //        fflush(stderr);
         }
       }
       while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5)))) {
@@ -1709,15 +1779,20 @@ static void _command_animated_capture(){
 
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
-
+#define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
 static void _command_capture(){
   args->width       = clamp(args->width, -1, 4000);
   args->height      = clamp(args->height, -1, 4000);
   args->limit       = clamp(args->limit, 1, 999);
   args->concurrency = clamp(args->concurrency, 1, args->limit);
   args->concurrency = clamp(args->concurrency, 1, MAX_CONCURRENCY);
+  if (IS_COMMAND_DEBUG_MODE){
     log_debug("all windows:  %s", args->all_windows?"Yes":"No");
     log_debug("display :  %s", args->display_output_file?"Yes":"No");
+    log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
+    log_debug("write dir :  %s", args->write_directory);
     log_debug("compress :  %s", args->compress?"Yes":"No");
     log_debug("width :  %d", args->width);
     log_debug("concurrency :  %d", args->concurrency);
@@ -1726,7 +1801,6 @@ static void _command_capture(){
     log_debug("format :  %s", args->image_format);
     log_debug("limit :  %d", args->limit);
     log_debug("format type:  %d", args->image_format_type);
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
   }
   struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
 
@@ -1759,9 +1833,13 @@ static void _command_capture(){
   req->time.started = timestamp();
   req->time.dur     = 0;
   results           = capture(req);
+  char *__writable_dir_file = NULL;
+  size_t wrote_bytes_total = 0;
+  size_t wrote_files_qty = 0;
+  unsigned long _started = timestamp();
   for (size_t i = 0; i < vector_size(results); i++) {
     struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
-    if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+    if(IS_COMMAND_DEBUG_MODE)
       log_info(AC_GREEN "\t|%lux%lu|size:%s|file:%s|dur:%s|" AC_RESETALL
              "%s",
              r->width, r->height,
@@ -1771,20 +1849,64 @@ static void _command_capture(){
              ""
              );
     if(r->len < 1 || !r->pixels){
-      log_error("Failed to acquire Image for ID #%lu", r->id);
+      log_error("Failed to acquire Image Data for ID #%lu", r->id);
     }else{
-      if (args->output_file) {
+      if (args->output_file && r->id == args->window_id) {
         if(!fsio_write_binary_file(args->output_file, r->pixels, r->len)){
           log_error("Failed to write file %s", args->output_file);
         }
       }
+      if(args->write_directory){
+        asprintf(&__writable_dir_file,"%s/window-%lu.%s",args->write_directory,r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
+        if(!fsio_write_binary_file(__writable_dir_file,r->pixels,r->len)){
+          log_error("Failed to write %s to File file %s", bytes_to_string(r->len),__writable_dir_file);
+        }else{
+          wrote_bytes_total += fsio_file_size(__writable_dir_file);
+          wrote_files_qty++;
+          if(IS_COMMAND_VERBOSE_OR_DEBUG_MODE)
+            fprintf(stderr,"\t- Wrote %5s to Item #"AC_GREEN AC_BOLD "%6.lu"AC_RESETALL " %s File "AC_YELLOW AC_ITALIC"%s"AC_RESETALL"\n",
+                bytes_to_string(r->len),
+                r->id,
+                image_type_name(args->image_format_type),
+                __writable_dir_file
+                );
+        }
+      }
       if (args->display_output_file && r->len > 0 && r->pixels) {
-        kitty_display_image_buffer(r->pixels, r->len);
+//        kitty_display_image_buffer(r->pixels, r->len);
+        kitty_display_image_buffer_resized_width(r->pixels, r->len,800);
+        //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
       }
     }
   }
+
+  struct list_table_t *filter = &(struct list_table_t){
+    .sort_key       = stringfn_to_lowercase(args->sort_key),
+    .sort_direction = stringfn_to_lowercase(args->sort_direction),
+    .limit          = args->limit, 
+  };
+
+  switch (args->output_mode) {
+  case OUTPUT_MODE_TABLE:
+    list_captured_window_table(filter);
+    break;
+  case OUTPUT_MODE_JSON:
+    break;
+  case OUTPUT_MODE_TEXT:
+    break;
+  }
+
+
+  if(IS_COMMAND_VERBOSE_OR_DEBUG_MODE)
+    fprintf(stderr,"Wrote %s to %lu Files in %s\n",
+                bytes_to_string(wrote_bytes_total),
+                wrote_files_qty,
+                milliseconds_to_string(timestamp()-_started)
+    );
+  if(__writable_dir_file)free(__writable_dir_file);
   exit(EXIT_SUCCESS);
 } /* _command_capture*/
+
 
 static void _command_list_font(){
   struct list_table_t *filter = &(struct list_table_t){

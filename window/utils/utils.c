@@ -1244,11 +1244,22 @@ CGImageRef capture_window_id_height(size_t window_id, size_t height){
   w[0] = CGImageGetWidth(img_ref);
   h[0] = CGImageGetHeight(img_ref);
   h[1] = height;
-  float factor = (float)(h[0]) / (float)(h[1]);
+  float factor = 1;
+  if(h[0] > 100){
+    factor = (float)(h[0]) / (float)(h[1]);
+  }
 
   w[1] = (int)((float)w[0] / factor);
   return(resize_cgimage(img_ref, w[1], h[1]));
 }
+
+struct Vector *get_captured_window_infos_v(){
+  struct Vector *v = vector_new();
+  log_info("get_captured_window_infos_v");
+  return(v);
+
+}
+
 
 CGImageRef capture_window_id_width(size_t window_id, size_t width){
   CGImageRef img_ref = capture_window_id(window_id);

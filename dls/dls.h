@@ -39,7 +39,7 @@ struct args_t {
   int                                  *ilist;
   size_t                               ilist_size;
 
-  bool                                 verbose_mode, debug_mode;
+  bool                                 verbose_mode, debug_mode, progress_bar_mode;
   bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
   int                                  space_id, window_id;
   int                                  display_id;
@@ -63,7 +63,7 @@ struct args_t {
   char                                 *sort_direction, *application_name;
   char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *image_format;
   enum image_type_id_t                 image_format_type;
-  bool                                 exact_match, case_sensitive, duplicate, non_duplicate, write_file, write_thumbnail;
+  bool                                 exact_match, case_sensitive, duplicate, non_duplicate, write_file, write_thumbnail, purge_write_directory_before_write;
   int                                  frame_rate, duration_seconds;
 };
 struct args_t *args;

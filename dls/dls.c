@@ -1,5 +1,6 @@
 #include "dls/dls.h"
 #include "vips/vips.h"
+#define DEFAULT_PROGRESS_BAR_ENABLED true
 static void __attribute__((constructor)) __constructor__dls(void);
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 static bool                   DARWIN_LS_DEBUG_MODE = false;
@@ -7,7 +8,9 @@ struct args_t                 *args                = &(struct args_t){
   .verbose_mode        = false, .debug_mode = false,
   .space_id            = -1,
   .display_id          = -1,
+  .purge_write_directory_before_write = false,
   .window_id           = 0,
+  .progress_bar_mode = DEFAULT_PROGRESS_BAR_ENABLED,
   .output_mode         = DEFAULT_OUTPUT_MODE,
   .sort_key            = NULL,
   .sort_direction      = "asc",
@@ -45,6 +48,10 @@ int main(int argc, char **argv) {
       common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
       common_options_b[COMMON_OPTION_DEBUG_MODE](args),
       common_options_b[COMMON_OPTION_OUTPUT_MODE](args),
+      common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),
+      common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
+      common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),
+      common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args),
       { END_OF_OPTIONS },
     },
     .subcommands     = (struct optparse_cmd[]) {
@@ -115,7 +122,6 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_DEBUG_MODE](args),
           common_options_b[COMMON_OPTION_COMPRESS](args),
           common_options_b[COMMON_OPTION_LIMIT](args),
-          common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
           common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),

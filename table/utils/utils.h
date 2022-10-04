@@ -35,6 +35,7 @@
   LIST_TABLE(list_hotkey_table, "Hotkeys", HOTKEY, key_t)              \
   LIST_TABLE(list_monitor_table, "Monitors", MONITOR, monitor_t)       \
   LIST_TABLE(list_font_table, "Fonts", FONT, font_t)                   \
+  LIST_TABLE(list_captured_window_table, "CapturedWindows", CAPTURED_WINDOW, window_info_t)                   \
 ////////////////////////////////////////////////////////////////////////
 enum table_dur_type_t {
   TABLE_DUR_TYPE_COLORS,
