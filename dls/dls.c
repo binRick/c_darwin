@@ -34,7 +34,7 @@ struct args_t                 *args                = &(struct args_t){
 
 ////////////////////////////////////////////
 int main(int argc, char **argv) {
-  VIPS_INIT(argv);
+  VIPS_INIT(argv[0]);
   struct optparse_cmd main_cmd = {
     .about       = "dls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
@@ -113,6 +113,9 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
           common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
           common_options_b[COMMON_OPTION_DEBUG_MODE](args),
+          common_options_b[COMMON_OPTION_COMPRESS](args),
+          common_options_b[COMMON_OPTION_LIMIT](args),
+          common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
           common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
@@ -128,7 +131,6 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_HEIGHT](args),
           common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
           common_options_b[COMMON_OPTION_DISPLAY_ID](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
           common_options_b[COMMON_OPTION_COMPRESS](args),
           common_options_b[COMMON_OPTION_CONCURRENCY](args),
           { END_OF_OPTIONS },
@@ -142,6 +144,7 @@ int main(int argc, char **argv) {
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
           common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
+          common_options_b[COMMON_OPTION_LIMIT](args),
           common_options_b[COMMON_OPTION_DEBUG_MODE](args),
           common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
@@ -161,18 +164,6 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_COMPRESS](args),
           common_options_b[COMMON_OPTION_CONCURRENCY](args),
           common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = cmds[COMMAND_QUANT].name,
-        .description = cmds[COMMAND_QUANT].description,
-        .function    = cmds[COMMAND_QUANT].fxn,
-        .about       = get_command_about(COMMAND_QUANT),
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_INPUT_PNG_FILE](args),
-          common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
           { END_OF_OPTIONS },
         },
       },
@@ -221,7 +212,7 @@ int main(int argc, char **argv) {
         .about       = get_command_about(COMMAND_DOCK),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_ILIST](args),
+//          common_options_b[COMMON_OPTION_ILIST](args),
           { END_OF_OPTIONS },
         },
       },
@@ -730,6 +721,7 @@ int main(int argc, char **argv) {
   return(EXIT_SUCCESS);
 } /* main */
 static void __attribute__((constructor)) __constructor__dls(void){
+  return;
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS") != NULL) {
     DARWIN_LS_DEBUG_MODE = true;
   }

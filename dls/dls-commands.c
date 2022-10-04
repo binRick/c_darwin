@@ -34,6 +34,7 @@ static void _command_resize_window();
 static void _command_minimize_window();
 static void _command_set_window_space();
 static void _command_set_space();
+static void _check_write_directory(char *dir);
 static void _command_copy();
 static void _command_paste();
 static void _command_image_conversions();
@@ -92,6 +93,7 @@ static void _check_width_greater(int width_greater);
 static void _check_concurrency(int concurrency);
 static void _check_limit(int limit);
 static void _check_width_less(int width_less);
+static void _check_write_directory(char *dir);
 static void _check_height_group(uint16_t window_id);
 static void _check_output_mode(char *output_mode);
 static void _check_output_file(char *output_file);
@@ -357,6 +359,16 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->icon_size),
     });
   },
+  [COMMON_OPTION_WRITE_DIRECTORY] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "dir",
+      .description = "Write Files to Specified Directory",
+      .arg_name = "DIRECTORY",
+      .function = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].fxn,
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->write_directory),
+    });
+  },
   [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args)                            {
     return((struct optparse_opt)                                                                            {
       .short_name = 'a',
@@ -542,6 +554,15 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->exact_match),
     });
   },
+  [COMMON_OPTION_DEBUG_MODE] = ^ struct optparse_opt (struct args_t *args)                                     {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'd',
+      .long_name = "debug",
+      .description = "debug",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->debug_mode),
+    });
+  },
   [COMMON_OPTION_VERBOSE_MODE] = ^ struct optparse_opt (struct args_t *args)                                     {
     return((struct optparse_opt)                                                                            {
       .short_name = 'v',
@@ -560,6 +581,14 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->window_id),
       .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
+    });
+  },
+  [COMMON_OPTION_GRAYSCALE_MODE] = ^ struct optparse_opt (struct args_t *args)                            {
+    return((struct optparse_opt)                                                                            {
+      .long_name = "grayscale",
+      .description = "Grayscale Mode",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->grayscale_mode),
     });
   },
   [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args)                            {
@@ -1293,6 +1322,11 @@ static void _check_width_group(uint16_t width){
   return(EXIT_SUCCESS);
 }
 
+static void _check_write_directory(char *dir){
+  Dbg(dir,%s);
+  return(EXIT_SUCCESS);
+
+}
 static void _check_window_id(uint16_t window_id){
   if (window_id < 1) {
     log_error("Window ID too small");
@@ -1656,15 +1690,17 @@ static void _command_capture(){
   args->limit       = clamp(args->limit, 1, 999);
   args->concurrency = clamp(args->concurrency, 1, args->limit);
   args->concurrency = clamp(args->concurrency, 1, MAX_CONCURRENCY);
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
     log_debug("all windows:  %s", args->all_windows?"Yes":"No");
     log_debug("display :  %s", args->display_output_file?"Yes":"No");
     log_debug("compress :  %s", args->compress?"Yes":"No");
     log_debug("width :  %d", args->width);
     log_debug("concurrency :  %d", args->concurrency);
+    log_debug("write dir :  %s", args->write_directory);
     log_debug("height :  %d", args->height);
     log_debug("format :  %s", args->image_format);
+    log_debug("limit :  %d", args->limit);
     log_debug("format type:  %d", args->image_format_type);
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
   }
   struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
 
@@ -1689,17 +1725,18 @@ static void _command_capture(){
   req->ids          = ids;
   req->concurrency  = args->concurrency;
   req->type         = CAPTURE_TYPE_WINDOW;
+  req->compress         = args->compress;
   req->format       = args->image_format_type;
   req->width        = args->width > 0 ? args->width : 0;
   req->height       = args->height > 0 ? args->height : 0;
   req->compress = args->compress;
   req->time.started = timestamp();
   req->time.dur     = 0;
-  exit(0);
   results           = capture(req);
   for (size_t i = 0; i < vector_size(results); i++) {
     struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
-    log_info(AC_GREEN "\t|%lux%lu|size:%s|file:%s|dur:%s|" AC_RESETALL
+    if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+      log_info(AC_GREEN "\t|%lux%lu|size:%s|file:%s|dur:%s|" AC_RESETALL
              "%s",
              r->width, r->height,
              bytes_to_string(r->len),
@@ -1707,13 +1744,17 @@ static void _command_capture(){
              milliseconds_to_string(r->time.dur),
              ""
              );
-    if (args->output_file) {
-      fsio_write_binary_file(args->output_file, r->pixels, r->len);
-      Dbg(args->output_file, %s);
-      Dbg(r->len, %u);
-    }
-    if (args->display_output_file && r->len > 0 && r->pixels) {
-      kitty_display_image_buffer(r->pixels, r->len);
+    if(r->len < 1 || !r->pixels){
+      log_error("Failed to acquire Image for ID #%lu", r->id);
+    }else{
+      if (args->output_file) {
+        if(!fsio_write_binary_file(args->output_file, r->pixels, r->len)){
+          log_error("Failed to write file %s", args->output_file);
+        }
+      }
+      if (args->display_output_file && r->len > 0 && r->pixels) {
+        kitty_display_image_buffer(r->pixels, r->len);
+      }
     }
   }
   exit(EXIT_SUCCESS);

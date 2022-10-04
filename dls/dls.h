@@ -35,6 +35,7 @@ const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
 struct args_t {
+  char *write_directory;
   int                                  *ilist;
   size_t                               ilist_size;
 

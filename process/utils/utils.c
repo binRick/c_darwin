@@ -412,7 +412,7 @@ int get_focused_window_id(){
       i->space_id = (size_t)(space_id);                                                                                  \
     }                                                                                                                    \
     if (PROCESS_UTILS_VERBOSE_DEBUG_MODE) {                                                                              \
-      log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);                                   \
+      /*log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);                                 */  \
     }                                                                                                                    \
   }                                                                                                                      \
   i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].dur = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started;             \
@@ -432,7 +432,7 @@ int get_focused_window_id(){
           AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
           i->pid_app_list_qty = CFArrayGetCount(i->pid_app_list);                                                                \
           if (PROCESS_UTILS_DEBUG_MODE) {                                                                                        \
-            log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);                                           \
+            /*log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);                                           */\
           }                                                                                                                      \
           for (size_t x = 0; x < i->pid_app_list_qty; x++) {                                                                     \
             AXUIElementRef appWindow = CFArrayGetValueAtIndex(i->pid_app_list, x);                                               \
@@ -444,9 +444,6 @@ int get_focused_window_id(){
               CFBooleanRef is_fullscreen_ref;                                                                                    \
               if (AXUIElementCopyAttributeValue(i->app_window, CFSTR("AXFullScreen"), &is_fullscreen_ref) == kAXErrorSuccess) {  \
                 i->is_fullscreen = CFBooleanGetValue(is_fullscreen_ref);                                                         \
-                if (PROCESS_UTILS_DEBUG_MODE) {                                                                                  \
-                  log_info("%s> got fs: %d", i->name, i->is_fullscreen);                                                         \
-                }                                                                                                                \
                 CFRelease(is_fullscreen_ref);                                                                                    \
               }                                                                                                                  \
               if (AXUIElementIsAttributeSettable(i->app_window, kAXMinimizedAttribute, &(i->can_minimize)) == kAXErrorSuccess) { \
@@ -454,10 +451,6 @@ int get_focused_window_id(){
                 if (AXUIElementCopyAttributeValue(i->app_window, kAXMinimizedAttribute, &is_minimized_ref) == kAXErrorSuccess) { \
                   i->is_minimized = CFBooleanGetValue(is_minimized_ref);                                                         \
                   CFRelease(is_minimized_ref);                                                                                   \
-                  if (PROCESS_UTILS_DEBUG_MODE) {                                                                                \
-                    if (i->is_minimized)                                                                                         \
-                    log_debug("found minimized window min: %s", i->name);                                                        \
-                  }                                                                                                              \
                 }                                                                                                                \
               }                                                                                                                  \
             }                                                                                                                    \

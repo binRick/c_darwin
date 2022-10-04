@@ -1174,7 +1174,7 @@ bool end_animation(struct animated_capture_t *acap){
   size_t frames_qty = get_gif_frames_qty(acap->gif), msf_size = get_gif_size(acap->gif);
 //    fprintf(stdout, "%s                                                         %s", AC_UP(1), AC_LEFT(acap->term_width));
   //  fflush(stdout);
-  log_info("|size:%s|frames:%lu|", bytes_to_string(msf_size), frames_qty);
+  //log_info("|size:%s|frames:%lu|", bytes_to_string(msf_size), frames_qty);
   acap->result = msf_gif_end(acap->gif);
 
   char *msg;
