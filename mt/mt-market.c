@@ -54,7 +54,7 @@ int new_market_period(char **items, size_t items_qty){
     case CSV_COLUMN_VOLUME: p->volume = atoi(item); break;
     }
   }
-  asprintf(&p->ymdhm, "%.4d-%.2d-%.2d %.2d:%.2d", p->year, p->month, p->day, p->hour, p->minute);
+  asprintf(&p->ymdhm, "%.4d-%.2d-%.2d %.2d:%.2d %s", p->year, p->month, p->day, p->hour, p->minute, MT4_TIMEZONE);
   p->time = timelib_strtotime(p->ymdhm, strlen(p->ymdhm), NULL, timelib_builtin_db(), timelib_parse_tzfile);
   timelib_update_ts(p->time, NULL);
   p->timestamp = p->time->sse;
@@ -151,5 +151,42 @@ struct Vector *get_past_market_period_closes_v(size_t period_index, size_t past_
     }
   }
   return(v);
+}
+
+bool create_market_periods_table(void){
+  ft_table_t *table = ft_create_table();
+
+  ft_set_border_style(table, FT_NICE_STYLE);
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+
+  ft_u8write_ln(table, "#", "Period Type", "Date", "Closed", "Hours", "Periods", "Avg", "Moving Avg");
+  ft_add_separator(table);
+  ft_u8write_ln(table, "1", "x", "y", "n-body", "1000", "1.6", "1,500,000", "✔");
+  ft_u8write_ln(table, "1", "x", "y", "n-body", "1000", "1.6", "1,500,000", "✖");
+
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, 8, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+
+  ft_set_cell_prop(table, FT_ANY_ROW, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 2, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 3, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+  ft_set_cell_prop(table, 8, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+
+  ft_set_cell_prop(table, 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+  ft_set_cell_prop(table, 2, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+
+  ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+  ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 10);
+
+  const char *table_str = ft_to_u8string(table);
+
+  printf("%s", table_str);
+  ft_destroy_table(table);
+  return(true);
 }
 #endif

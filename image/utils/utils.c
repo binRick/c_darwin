@@ -1,4 +1,5 @@
 #pragma once
+#include "pngquant/rwpng.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_resize.h"
 #include "stb/stb_image_write.h"
@@ -18,7 +19,7 @@
 #include "libfort/lib/fort.h"
 #include "libimagequant/libimagequant.h"
 #include "libspng/spng/spng.h"
-#include "lodepng.h"
+#include "lodepng/lodepng.h"
 #include "ms/ms.h"
 #include "msf_gif/msf_gif.h"
 #include "parson/parson.h"
@@ -35,9 +36,85 @@
 #include "timg/utils/utils.h"
 #include "vips/vips.h"
 #include "window/info/info.h"
+#define LODEPNG_MIN_QUALITY    5
+#define LODEPNG_MAX_QUALITY    20
+#define LODEPNG_BIT_DEPTH      8
 static bool IMAGE_UTILS_DEBUG_MODE = false;
 static bool FANCY_PROGRESS_ENABLED = false;
 static struct Vector *get_image_format_names_v();
+
+bool compress_png_buffer(unsigned char *buf, size_t *len){
+  errno = 0;
+  if (!buf || len < 1) {
+    log_error("Invalid Input PNG Buffer");
+    goto fail;
+  }
+  unsigned long started = timestamp();
+  unsigned int  width, height;
+  unsigned char *raw_rgba_pixels;
+  errno = 0;
+  unsigned int  status = lodepng_decode32(&raw_rgba_pixels, &width, &height, buf, *len);
+  if (status) {
+    log_error("Can't load %s: %s", buf, lodepng_error_text(status));
+    goto fail;
+  }
+  liq_attr   *handle      = liq_attr_create();
+  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
+  liq_result *quantization_result;
+  liq_set_quality(handle, LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY);
+  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
+    log_error("Quantization failed");
+    goto fail;
+  }
+  size_t        pixels_size      = width * height;
+  unsigned char *raw_8bit_pixels = malloc(pixels_size);
+  liq_set_dithering_level(quantization_result, 1.0);
+  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, pixels_size);
+  const liq_palette *palette = liq_get_palette(quantization_result);
+  LodePNGState      state;
+  lodepng_state_init(&state);
+  state.info_raw.colortype       = LCT_PALETTE;
+  state.info_raw.bitdepth        = LODEPNG_BIT_DEPTH;
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth  = LODEPNG_BIT_DEPTH;
+  for (int i = 0; i < palette->count; i++) {
+    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+  }
+  unsigned char *out_buf;
+  size_t        out_len    = 0;
+  unsigned int  out_status = lodepng_encode(&out_buf, &out_len, raw_8bit_pixels, width, height, &state);
+  if (out_status) {
+    log_error("Can't encode image: %s", lodepng_error_text(out_status));
+    goto fail;
+  }
+
+  unsigned char *new_buf = calloc(out_len, sizeof(unsigned char));
+  memcpy(new_buf, out_buf, out_len);
+  free(buf);
+  buf = new_buf;
+  liq_result_destroy(quantization_result);
+  liq_image_destroy(input_image);
+  liq_attr_destroy(handle);
+
+  free(raw_8bit_pixels);
+  lodepng_state_cleanup(&state);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("Compressed %dx%d %s PNG Buffer from to %s %d bit PNG Buffer in %s using min quality %d and max quality %d",
+              width, height,
+              bytes_to_string(*len),
+              bytes_to_string(out_len),
+              LODEPNG_BIT_DEPTH,
+              milliseconds_to_string(timestamp() - started),
+              LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY
+              );
+  }
+  *len = out_len;
+  return(true);
+
+fail:
+  return(EXIT_FAILURE);
+} /* compress_png_buffer */
 
 bool compress_png_file(char *file){
   unsigned long s = timestamp();
@@ -543,7 +620,7 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   return((ok && (size_t)fsio_file_size(image_file) == (size_t)qoi_len) ? true : false);
 }
 
-unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
+unsigned char *save_cgref_to_qoi_memory1(CGImageRef image_ref, size_t *qoi_len){
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
   size_t        rgb_len     = 0;
   unsigned char *rgb_pixels = save_cgref_to_rgb_memory(image_ref, &rgb_len);
@@ -563,10 +640,10 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
     QOIEncoder_Delete(qoi);
     return(NULL);
   }
-  Dbg(CGImageGetBitsPerPixel(image_ref), %u);
-  Dbg(CGImageGetBytesPerRow(image_ref), %u);
-  Dbg(CGImageGetBitsPerComponent(image_ref), %u);
-  Dbg(alpha, %d);
+  Dbg(CGImageGetBitsPerPixel(image_ref), % u);
+  Dbg(CGImageGetBytesPerRow(image_ref), % u);
+  Dbg(CGImageGetBitsPerComponent(image_ref), % u);
+  Dbg(alpha, % d);
   size_t        qw = QOIDecoder_GetWidth(qoi), qh = QOIDecoder_GetHeight(qoi);
   unsigned char *pixels = QOIEncoder_GetEncoded(qoi);
 
@@ -576,7 +653,59 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   return(pixels);
 }
 
-unsigned char *save_cgref_to_qoi_memory1(CGImageRef image_ref, size_t *qoi_len){
+unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
+  unsigned long _ts[2];
+  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
+  size_t        len  = 0;
+  unsigned char *png = save_cgref_to_png_memory(image_ref, &len);
+
+  if (len < 1 || !png) {
+    log_error("Failed to convert cgref to png");
+    return(NULL);
+  }
+
+  _ts[0] = timestamp();
+  unsigned char *rgb = stbi_load_from_memory(png, len, &width, &height, &compression, STBI_rgb_alpha);
+
+  _ts[1] = timestamp() - _ts[0];
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("decoded %dx%d %d RGB in %s",
+              width, height, compression,
+              milliseconds_to_string(_ts[1])
+              );
+  }
+  if (png) {
+    free(png);
+  }
+
+  qoi_desc *desc = &(qoi_desc){
+    .width      = width,
+    .height     = height,
+    .channels   = compression,
+    .colorspace = QOI_SRGB,
+  };
+
+  _ts[0] = timestamp();
+  void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
+
+  _ts[1] = timestamp() - _ts[0];
+
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
+              w, h,
+              bytes_to_string(len), width, height,
+              bytes_to_string(*qoi_len),
+              desc->width, desc->height,
+              milliseconds_to_string(_ts[1])
+              );
+  }
+  if (rgb) {
+    free(rgb);
+  }
+  return(qoi_pixels);
+} /* save_cgref_to_qoi_memory */
+
+unsigned char *save_cgref_to_qoi_memory2(CGImageRef image_ref, size_t *qoi_len){
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
   size_t        len  = 0;
   unsigned char *rgb = save_cgref_to_rgb_memory(image_ref, &len);
@@ -719,10 +848,10 @@ unsigned char *save_cgref_to_rgb_memory(CGImageRef img_ref, size_t *len){
 
   *len = width * height * bpp;
 
-  Dbg(width, %d);
-  Dbg(height, %d);
-  Dbg(*len, %u);
-  Dbg(bpp, %u);
+  Dbg(width, % d);
+  Dbg(height, % d);
+  Dbg(*len, % u);
+  Dbg(bpp, % u);
   buffer = calloc(*len, sizeof(int8_t));
   memcpy(buffer, CFDataGetBytePtr(data_ref), *len);
 
@@ -833,6 +962,83 @@ bool write_cgimage_ref_to_tif_file_path(CGImageRef im, char *tif_file_path){
   return(true);
 }
 
+void pngquant_test1(char *input_png_file_path){
+  unsigned long _s = timestamp();
+  unsigned int  width, height;
+  unsigned char *raw_rgba_pixels;
+
+  input_png_file_path = "/tmp/162.png";
+  Dbg(input_png_file_path, % s);
+  unsigned int status = lodepng_decode32_file(&raw_rgba_pixels, &width, &height, input_png_file_path);
+
+  if (status) {
+    fprintf(stderr, "Can't load %s: %s\n", input_png_file_path, lodepng_error_text(status));
+    return(EXIT_FAILURE);
+  }
+
+  liq_attr   *handle      = liq_attr_create();
+  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
+  liq_result *quantization_result;
+
+  liq_set_quality(handle, 20, 60);
+  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
+    fprintf(stderr, "Quantization failed\n");
+    return(EXIT_FAILURE);
+  }
+
+  // Use libimagequant to make new image pixels from the palette
+
+  size_t        pixels_size      = width * height;
+  unsigned char *raw_8bit_pixels = malloc(pixels_size);
+
+  liq_set_dithering_level(quantization_result, 1.0);
+
+  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, pixels_size);
+  const liq_palette *palette = liq_get_palette(quantization_result);
+
+  LodePNGState      state;
+
+  lodepng_state_init(&state);
+  state.info_raw.colortype       = LCT_PALETTE;
+  state.info_raw.bitdepth        = 8;
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth  = 8;
+
+  for (int i = 0; i < palette->count; i++) {
+    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+  }
+
+  unsigned char *output_file_data;
+  size_t        output_file_size;
+  unsigned int  out_status = lodepng_encode(&output_file_data, &output_file_size, raw_8bit_pixels, width, height, &state);
+
+  if (out_status) {
+    fprintf(stderr, "Can't encode image: %s\n", lodepng_error_text(out_status));
+    return(EXIT_FAILURE);
+  }
+
+  const char *output_png_file_path = "quantized_example.png";
+  FILE       *fp                   = fopen(output_png_file_path, "wb");
+
+  if (!fp) {
+    fprintf(stderr, "Unable to write to %s\n", output_png_file_path);
+    return(EXIT_FAILURE);
+  }
+  fwrite(output_file_data, 1, output_file_size, fp);
+  fclose(fp);
+
+  printf("Written %s\n", output_png_file_path);
+
+  liq_result_destroy(quantization_result);   // Must be freed only after you're done using the palette
+  liq_image_destroy(input_image);
+  liq_attr_destroy(handle);
+
+  free(raw_8bit_pixels);
+  lodepng_state_cleanup(&state);
+  log_debug("Finished pngquant in %s", milliseconds_to_string(timestamp() - _s));
+} /* pngquant_test1 */
+
 unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgba_pixels, int width, int height, int min_quality, int max_quality, size_t *len){
   liq_attr   *handle      = liq_attr_create();
   liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
@@ -927,6 +1133,7 @@ int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int
 
   free(raw_8bit_pixels);
   lodepng_state_cleanup(&state);
+
   return(EXIT_SUCCESS);
 
 fail:

@@ -46,6 +46,8 @@ void _command_ema_test_int(void){
   }
 }
 
+#define MT4_TIMEZONE    "UTC"
+
 void _command_ema_test(void){
   _command_ema_test_int();
   _command_ema_test_float();
@@ -53,7 +55,7 @@ void _command_ema_test(void){
 }
 
 void _command_set_csv_end_date(){
-  asprintf(&args->csv->end_date, "%s %.2d:%.2d", args->csv->end_date, 0, 0);
+  asprintf(&args->csv->end_date, "%s %.2d:%.2d %s", args->csv->end_date, 0, 0, MT4_TIMEZONE);
   args->csv->end = timelib_strtotime(args->csv->end_date, strlen(args->csv->end_date), NULL, timelib_builtin_db(), timelib_parse_tzfile);
   if (!args->csv->end) {
     log_error("Invalid End Date");
@@ -67,7 +69,7 @@ void _command_set_csv_end_date(){
 }
 
 void _command_set_csv_start_date(){
-  asprintf(&args->csv->start_date, "%s %.2d:%.2d", args->csv->start_date, 0, 0);
+  asprintf(&args->csv->start_date, "%s %.2d:%.2d %s", args->csv->start_date, 0, 0, MT4_TIMEZONE);
   args->csv->start = timelib_strtotime(args->csv->start_date, strlen(args->csv->start_date), NULL, timelib_builtin_db(), timelib_parse_tzfile);
   if (!args->csv->start) {
     log_error("Invalid Start Date");
@@ -185,7 +187,7 @@ void _command_parse_csv(){
 
   struct market_period_t *p, *prev_p, *first = NULL, *last = NULL;
   int                    hours = 0; size_t periods = 0, close_values_averaged = 0, checked_periods_qty = 0;
-  unsigned long          _ts = 0;
+  unsigned long          _ts     = 0;
   struct market_period_t *next_p = NULL;
 
   started = timestamp();
@@ -222,39 +224,38 @@ void _command_parse_csv(){
     }
   }
   market_stats->time_spent.total = timestamp() - time_spent_started;
-  if (args->verbose_mode) {
-    last   = (struct market_period_t *)vector_get(market_stats->periods_v, vector_size(market_stats->periods_v) - 1);
-    for (size_t i = 0; i < vector_size(market_stats->periods_v); i++) {
-      p = (struct market_period_t *)vector_get(market_stats->periods_v, i);
-      if (i == 0) {
-        first  = p;
-        prev_p = NULL;
-      }else{
-
-      }
-      next_p = (i < vector_size(market_stats->periods_v)-1) ? (struct market_period_t *)vector_get(market_stats->periods_v, i+1) : NULL;
+  last                           = (struct market_period_t *)vector_get(market_stats->periods_v, vector_size(market_stats->periods_v) - 1);
+  for (size_t i = 0; i < vector_size(market_stats->periods_v); i++) {
+    p = (struct market_period_t *)vector_get(market_stats->periods_v, i);
+    if (i == 0) {
+      first  = p;
+      prev_p = NULL;
+    }else{
+    }
+    next_p = (i < vector_size(market_stats->periods_v) - 1) ? (struct market_period_t *)vector_get(market_stats->periods_v, i + 1) : NULL;
+    if (args->verbose_mode) {
       for (int q = 0; q < MARKET_PERIOD_DURATION_TYPES_QTY; q++) {
-          fprintf(stderr,
-            "Market Period                      :      #%lu/%lu"
-            "\n\tPeriod type                    :      %s"
-            "\n\tDate Range                     :      %s - %s (%s)"
-            "\n\tClose Values/Hours/Periods     :      %lu/%d/%lu"
-            "\n\tAverage                        :      %f"
-            "\n\tMoving Average                 :      "AC_GREEN"%f" AC_RESETALL
-            "%s",
-            i + 1, vector_size(market_stats->periods_v),
-            market_period_duration_type_names[q],
-            p->ymdhm, 
-            ((next_p != NULL) ? next_p->ymdhm : "None"), 
-            ((next_p != NULL) ? milliseconds_to_string((next_p->timestamp-p->timestamp)*1000) : "None"), 
-            vector_size(p->close_values[q]),
-            hours,
-            periods,
-            p->averages[q],
-            p->moving_averages[q]->average,
-            "\n"
-            );
-        }
+        fprintf(stderr,
+                "Market Period                      :      #%lu/%lu"
+                "\n\tPeriod type                    :      %s"
+                "\n\tDate Range                     :      %s - %s (%s)"
+                "\n\tClose Values/Hours/Periods     :      %lu/%d/%lu"
+                "\n\tAverage                        :      %f"
+                "\n\tMoving Average                 :      "AC_GREEN "%f" AC_RESETALL
+                "%s",
+                i + 1, vector_size(market_stats->periods_v),
+                market_period_duration_type_names[q],
+                p->ymdhm,
+                ((next_p != NULL) ? next_p->ymdhm : "None"),
+                ((next_p != NULL) ? milliseconds_to_string((next_p->timestamp - p->timestamp) * 1000) : "None"),
+                vector_size(p->close_values[q]),
+                hours,
+                periods,
+                p->averages[q],
+                p->moving_averages[q]->average,
+                "\n"
+                );
+      }
     }
   }
   fprintf(stderr,
@@ -293,4 +294,40 @@ void _command_parse_csv(){
   exit(EXIT_SUCCESS);
 } /* _command_parse_csv */
 
+void _command_table(void){
+  ft_table_t *table = ft_create_table();
+
+  ft_set_border_style(table, FT_NICE_STYLE);
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+
+  ft_u8write_ln(table, "#", "Period Type", "Date", "Closed", "Hours", "Periods", "Avg", "Moving Avg");
+  ft_add_separator(table);
+  ft_u8write_ln(table, "1", "x", "y", "n-body", "1000", "1.6", "1,500,000", "✔");
+  ft_u8write_ln(table, "1", "x", "y", "n-body", "1000", "1.6", "1,500,000", "✖");
+
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, 8, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+
+  ft_set_cell_prop(table, FT_ANY_ROW, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 2, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 3, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+  ft_set_cell_prop(table, 8, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+
+  ft_set_cell_prop(table, 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+  ft_set_cell_prop(table, 2, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+
+  ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+  ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 10);
+
+  const char *table_str = ft_to_u8string(table);
+
+  printf("%s", table_str);
+  ft_destroy_table(table);
+  exit(EXIT_SUCCESS);
+}
 #endif

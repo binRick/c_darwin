@@ -11,6 +11,7 @@ capture_window_include_dirs = [
 
 capture_window_deps = [
   ansi_codes_dep,
+  kitty_msg_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,

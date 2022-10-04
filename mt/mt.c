@@ -106,6 +106,15 @@ int main(int argc, char **argv) {
         },
       },
       {
+        .name        = "table",
+        .description = "Table",
+        .function    = _command_table,
+        .about       = "Table",
+        .options     = (struct optparse_opt[]){
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = "args",
         .description = "Debug Arguments",
         .function    = _command_debug_args,

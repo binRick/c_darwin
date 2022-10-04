@@ -21,6 +21,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "cbars/include/cbars/cbars.h"
 #include "hashmap.h/hashmap.h"
 #include "log/log.h"
 #include "ms/ms.h"

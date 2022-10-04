@@ -85,8 +85,8 @@ char *kitty_shm_get_shm_image_path_msg(char *image_path){
   memcpy(addr, data, len + 1);
   char *msg = kitty_shm_fmt_msg(shm_path, len);
 
-  Dbg(shm_path, %s);
-  Dbg(b64_encode(msg, strlen(msg)), %s);
+  Dbg(shm_path, % s);
+  Dbg(b64_encode(msg, strlen(msg)), % s);
   return(msg);
 }
 

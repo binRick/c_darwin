@@ -35,7 +35,11 @@ const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
 struct args_t {
-  bool                                 verbose, current_space_only, current_display_only, not_current_display_only, not_current_space_only;
+  int                                  *ilist;
+  size_t                               ilist_size;
+
+  bool                                 verbose_mode, debug_mode;
+  bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
   int                                  space_id, window_id;
   int                                  display_id;
   int                                  x, y;

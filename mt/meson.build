@@ -30,6 +30,7 @@ mt_deps = [
   ms_dep,
   bytes_dep,
   incbin_dep,
+  fort_dep,
 ]
 
 mt_c_args = [

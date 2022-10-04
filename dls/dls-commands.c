@@ -542,13 +542,13 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->exact_match),
     });
   },
-  [COMMON_OPTION_VERBOSE] = ^ struct optparse_opt (struct args_t *args)                                     {
+  [COMMON_OPTION_VERBOSE_MODE] = ^ struct optparse_opt (struct args_t *args)                                     {
     return((struct optparse_opt)                                                                            {
       .short_name = 'v',
       .long_name = "verbose",
       .description = "Increase verbosity",
       .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->verbose),
+      .flag = &(args->verbose_mode),
     });
   },
   [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                                   {
@@ -1692,8 +1692,10 @@ static void _command_capture(){
   req->format       = args->image_format_type;
   req->width        = args->width > 0 ? args->width : 0;
   req->height       = args->height > 0 ? args->height : 0;
+  req->compress = args->compress;
   req->time.started = timestamp();
   req->time.dur     = 0;
+  exit(0);
   results           = capture(req);
   for (size_t i = 0; i < vector_size(results); i++) {
     struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);

@@ -4,7 +4,7 @@ static void __attribute__((constructor)) __constructor__dls(void);
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 static bool                   DARWIN_LS_DEBUG_MODE = false;
 struct args_t                 *args                = &(struct args_t){
-  .verbose             = false,
+  .verbose_mode        = false, .debug_mode = false,
   .space_id            = -1,
   .display_id          = -1,
   .window_id           = 0,
@@ -42,7 +42,8 @@ int main(int argc, char **argv) {
     .operands    = "[COMMAND...]",
     .options     = (struct optparse_opt[]) {
       common_options_b[COMMON_OPTION_HELP](args),
-      common_options_b[COMMON_OPTION_VERBOSE](args),
+      common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
+      common_options_b[COMMON_OPTION_DEBUG_MODE](args),
       common_options_b[COMMON_OPTION_OUTPUT_MODE](args),
       { END_OF_OPTIONS },
     },
@@ -92,6 +93,9 @@ int main(int argc, char **argv) {
         .about       = "🙀" "\t" COLOR_CAPTURE "Extract Screenshot Data" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
+          common_options_b[COMMON_OPTION_DEBUG_MODE](args),
+          common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_CONCURRENCY](args),
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
@@ -107,6 +111,9 @@ int main(int argc, char **argv) {
         .about       = "🙀" "\t" COLOR_CAPTURE "Capture Window Screenshot" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
+          common_options_b[COMMON_OPTION_DEBUG_MODE](args),
+          common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
@@ -134,6 +141,9 @@ int main(int argc, char **argv) {
         .about       = get_command_about(COMMAND_ANIMATED_CAPTURE),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
+          common_options_b[COMMON_OPTION_DEBUG_MODE](args),
+          common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
@@ -151,6 +161,18 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_COMPRESS](args),
           common_options_b[COMMON_OPTION_CONCURRENCY](args),
           common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
+        .name        = cmds[COMMAND_QUANT].name,
+        .description = cmds[COMMAND_QUANT].description,
+        .function    = cmds[COMMAND_QUANT].fxn,
+        .about       = get_command_about(COMMAND_QUANT),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_INPUT_PNG_FILE](args),
+          common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
           { END_OF_OPTIONS },
         },
       },
@@ -199,6 +221,7 @@ int main(int argc, char **argv) {
         .about       = get_command_about(COMMAND_DOCK),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_ILIST](args),
           { END_OF_OPTIONS },
         },
       },
@@ -684,6 +707,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_INPUT_PNG_FILE](args),
+          common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
           { END_OF_OPTIONS },
         },
       },

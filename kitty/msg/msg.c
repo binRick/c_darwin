@@ -52,7 +52,7 @@ static void kitty_show_cursor(){
 
 ///////////////////////////////////////////////////////////////////////
 static bool kitty_write_msg(char *msg){
-  int len = fprintf(stdout, "%s\n", msg);
+  int len = fprintf(stdout, "%s", msg);
 
   fflush(stdout);
   return(len > 0 ? true : false);
@@ -256,11 +256,11 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
 static VipsImage *image_path_to_vips_image(char *image_path){
   VipsImage *image;
 
-  Dbg(fsio_file_extension(image_path), %s);
+  Dbg(fsio_file_extension(image_path), % s);
   if (stringfn_equal(fsio_file_extension(image_path), ".qoi")) {
     char *qoi_file;
     errno = 0;
-    Dbg(image_path, %s);
+    Dbg(image_path, % s);
     QOIDecoder *qoi = QOIDecoder_New();
     if (!QOIDecoder_Decode(qoi, fsio_read_binary_file(image_path), fsio_file_size(image_path))) {
       log_error("QOI Loader failed");
@@ -275,10 +275,10 @@ static VipsImage *image_path_to_vips_image(char *image_path){
       log_error("QOI Decoder failed");
       return(NULL);
     }
-    Dbg(len, %d);
+    Dbg(len, % d);
     asprintf(&qoi_file, "%s.png", stringfn_substring(image_path, 0, strlen(image_path) - 4));
-    Dbg(image_path, %s);
-    Dbg(qoi_file, %s);
+    Dbg(image_path, % s);
+    Dbg(qoi_file, % s);
     QOIDecoder_Delete(qoi);
 
     errno = 0;

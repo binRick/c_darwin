@@ -12,5 +12,6 @@ void _command_set_csv_start_date(void);
 void _command_set_csv_end_date(void);
 void _command_load_csv_name_data(void);
 void _command_ema_test(void);
+void _command_table(void);
 
 #endif

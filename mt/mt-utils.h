@@ -20,6 +20,7 @@
 #include "c_vector/vector/vector.h"
 #include "csv_parser/csv.h"
 #include "kitty/msg/msg.h"
+#include "libfort/lib/fort.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "optparse99/optparse99.h"

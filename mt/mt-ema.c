@@ -11,6 +11,7 @@ const char *get_largest_embedded_csv_name(){
   for (size_t i = 0; i < EMBEDDED_CSV_NAMES_QTY; i++) {
     if (strlen(EMBEDDED_CSV_VARS[i]) > size) {
       name = EMBEDDED_CSV_NAMES[i];
+      size = strlen(EMBEDDED_CSV_VARS[i]);
     }
   }
   return(name);

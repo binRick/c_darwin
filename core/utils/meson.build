@@ -11,6 +11,7 @@ core_utils_include_dirs = [
 
 core_utils_deps = [
   ansi_codes_dep,
+  cbars_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,

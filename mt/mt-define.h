@@ -5,4 +5,6 @@
 #define MAX_CSV_LINE_LENGTH    1024
 #define MIN_CSV_LINE_LENGTH    CSV_COLUMNS_QTY *2
 
+#define MT4_TIMEZONE           "UTC"
+
 #endif

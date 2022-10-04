@@ -44,6 +44,8 @@ struct capture_req_t {
   enum capture_type_id_t type;
   enum image_type_id_t   format;
   struct capture_time_t  time;
+  struct compress_req_t  *comp;
+  cbar_t                 *bar;
 };
 struct animated_frame_t {
   unsigned char *pixels;
@@ -53,11 +55,14 @@ struct animated_frame_t {
 struct animated_capture_t {
   MsfGifState            *gif;
   MsfGifResult           result;
+  cbar_t                 bar;
+  size_t                 expected_frames_qty;
   char                   *file;
   struct Vector          *frames_v;
   size_t                 width, height, len, id, ms_per_frame, bit_depth, total_size;
   enum capture_type_id_t type;
   enum image_type_id_t   format;
+  int                    term_width;
   unsigned long          started;
   int                    max_bit_depth, pitch_bytes;
   chan_t                 *chan, *done;
@@ -106,16 +111,35 @@ enum capture_provider_type_t {
   CAPTURE_PROVIDER_TYPE_CAP,
   CAPTURE_PROVIDER_TYPE_IDS,
 };
+struct compress_req_t {
+  pthread_t *threads[MAX_QUEUES];
+  pthread_t *waiter;
+  chan_t    *chans[MAX_QUEUES], *done;
+  chan_t    *chan;
+  chan_t    *waiter_chan;
+  cbar_t    *bar;
+};
+struct compress_t {
+  unsigned char           *pixels;
+  size_t                  len;
+  size_t                  prev_len;
+  int                     min_quality, max_quality;
+  enum image_type_id_t    type;
+  size_t                  id;
+  struct capture_result_t *capture_result;
+  unsigned long           started, dur;
+};
 struct cap_t {
   char                         *name;
   enum image_type_id_t         format;
   chan_t                       *recv_chan, *send_chan, *done_chan;
-  bool                         enabled, debug;
+  bool                         enabled, debug, compress;
   pthread_t                    *threads[MAX_QUEUES];
-  size_t                       qty;
+  size_t                       qty, total_qty;
   enum capture_provider_type_t provider_type;
   enum capture_chan_type_t     provider;
   recv_msg_b                   recv_msg;
+  cbar_t                       *bar;
 };
 struct capture_windows_t {
   struct Vector            *window_ids;

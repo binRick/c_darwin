@@ -112,4 +112,6 @@ const char *color_type_str(enum spng_color_type color_type);
 struct spng_info_t *spng_test(FILE *fp);
 bool compress_png_file(char *file);
 char *get_image_format_names_csv();
+void pngquant_test1(char *input_png_file_path);
+bool compress_png_buffer(unsigned char *buf, size_t *len);
 #endif

@@ -10,3 +10,5 @@ INCBIN_EXTERN(ema1_png);
 INCBIN_EXTERN(xrpusd_columns_csv);
 INCBIN_EXTERN(xrpusd_2020_csv);
 INCBIN_EXTERN(xrpusd_2021_csv);
+INCBIN_EXTERN(july2_txt);
+INCBIN_EXTERN(mt_log_file_2_csv);
