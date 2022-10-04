@@ -34,7 +34,7 @@ static void _command_resize_window();
 static void _command_minimize_window();
 static void _command_set_window_space();
 static void _command_set_space();
-static void _check_write_directory(char *dir);
+static void _check_write_directory(void);
 static void _command_copy();
 static void _command_paste();
 static void _command_image_conversions();
@@ -93,7 +93,6 @@ static void _check_width_greater(int width_greater);
 static void _check_concurrency(int concurrency);
 static void _check_limit(int limit);
 static void _check_width_less(int width_less);
-static void _check_write_directory(char *dir);
 static void _check_height_group(uint16_t window_id);
 static void _check_output_mode(char *output_mode);
 static void _check_output_file(char *output_file);
@@ -364,8 +363,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "dir",
       .description = "Write Files to Specified Directory",
       .arg_name = "DIRECTORY",
+      .arg_data_type = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].fxn,
-      .arg_data_type = DATA_TYPE_STR,
       .arg_dest = &(args->write_directory),
     });
   },
@@ -777,6 +776,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
+  [CHECK_COMMAND_WRITE_DIRECTORY] =               {
+    .fxn           = (void (*)(void))(*_check_write_directory),
+    .arg_data_type = DATA_TYPE_STR,
+  },
   [CHECK_COMMAND_LIMIT] =               {
     .fxn           = (void (*)(void))(*_check_limit),
     .arg_data_type = DATA_TYPE_INT,
@@ -1322,10 +1325,33 @@ static void _check_width_group(uint16_t width){
   return(EXIT_SUCCESS);
 }
 
-static void _check_write_directory(char *dir){
-  Dbg(dir,%s);
-  return(EXIT_SUCCESS);
+static void _check_write_directory(void){
+  char *test_files[3];
+  if(!stringfn_starts_with(args->write_directory,"/")){
+    asprintf(&(args->write_directory),"%s/%s",
+        gettempdir(),
+        args->write_directory
+        );
+  }
+  asprintf(&test_files[0],".dls-test-file-%lld-%d.%s",timestamp(),getpid(),"txt");
+  asprintf(&test_files[1],"%s/%s",args->write_directory,test_files[0]);
+  asprintf(&test_files[2],"%d",getpid());
 
+  errno=0;
+  if(!fsio_dir_exists(args->write_directory) && 
+    (!fsio_mkdirs(args->write_directory,S_IRWXU)||!fsio_dir_exists(args->write_directory)))
+     goto fail;
+  if(!fsio_write_text_file(test_files[1],test_files[2])|| (atoi(fsio_read_text_file(test_files[1]))!=getpid())|| !fsio_remove(test_files[1]))
+     goto fail;
+
+  return(EXIT_SUCCESS);
+fail:
+  fprintf(stderr, "Invalid \"Write Directory\" "AC_YELLOW "%s"AC_RESETALL": "AC_RED"%s"AC_RESETALL
+      "\n",  
+      args->write_directory,
+      strerror(errno) ? strerror(errno) : "Unknown Error"
+      );
+  exit(EXIT_FAILURE);
 }
 static void _check_window_id(uint16_t window_id){
   if (window_id < 1) {
