@@ -28,7 +28,7 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len);
 static char *save_restore_msg(char *msg, int row, int col);
 static bool kitty_write_msg(char *msg);
 
-  static int kitty_fprintf(FILE *fd, char *fmt, char *msg, ...){
+static int kitty_fprintf(FILE *fd, char *fmt, char *msg, ...){
   va_list vargs;
   va_start(vargs, msg);
   va_end(vargs);
@@ -38,12 +38,14 @@ static bool kitty_write_msg(char *msg);
   }
 
 static bool kitty_write_msg(char *msg){
-  return(kitty_fprintf(stdout,"%s",msg) > 0 ? true : false);
+  int len = kitty_fprintf(stdout,"%s\n",msg);
+  fflush(stdout);
+  return((len>0));
+
 }
 
 static void kitty_set_position(int x, int y){
   printf("\x1B[%d;%dH", y, x);
-  //fflush(stdout);
 }
 struct pos { int x, y; };
 

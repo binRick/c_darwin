@@ -1,7 +1,16 @@
 #include "dls/dls.h"
 #include "vips/vips.h"
+#define DEBUG_ARGV false
+#define NORMALIZE_ARGV false
 #define DEFAULT_PROGRESS_BAR_ENABLED true
+struct normalized_argv_t {
+  char *mode, *executable;
+  struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
+};
 static void __attribute__((constructor)) __constructor__dls(void);
+static bool dls_normalize_arguments(int *argc, char *argv[]);
+static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
+static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 static bool                   DARWIN_LS_DEBUG_MODE = false;
 struct args_t                 *args                = &(struct args_t){
@@ -24,8 +33,8 @@ struct args_t                 *args                = &(struct args_t){
   .width               = -1, .height = -1,
   .output_file         = NULL,
   .concurrency         = 1,
-  .display_output_file = false,
-  .all_windows         = false,
+  .display_mode = false,
+  .all_mode         = false,
   .limit               = 50,
   .font_name           = NULL, .font_family = NULL, .font_style = NULL,
   .exact_match         = false, .case_sensitive = false,
@@ -37,8 +46,14 @@ struct args_t                 *args                = &(struct args_t){
 };
 
 ////////////////////////////////////////////
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
   VIPS_INIT(argv[0]);
+  if(DEBUG_ARGV)
+    dls_print_arg_v("pre",AC_YELLOW,argc, argv);
+  if(NORMALIZE_ARGV)
+    dls_normalize_arguments(&argc, argv);
+  if(DEBUG_ARGV)
+    dls_print_arg_v("post",AC_MAGENTA,argc, argv);
   struct optparse_cmd main_cmd = {
     .about       = "dls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
@@ -101,7 +116,7 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_DEBUG_MODE](args),
           common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_CONCURRENCY](args),
-          common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
+          common_options_b[COMMON_OPTION_ALL_MODE](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_LIMIT](args),
@@ -123,7 +138,6 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_LIMIT](args),
           common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
@@ -143,6 +157,7 @@ int main(int argc, char **argv) {
       common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),
       common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
       common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
+          common_options_b[COMMON_OPTION_ALL_MODE](args),
           { END_OF_OPTIONS },
         },
       },
@@ -157,7 +172,6 @@ int main(int argc, char **argv) {
           common_options_b[COMMON_OPTION_LIMIT](args),
           common_options_b[COMMON_OPTION_DEBUG_MODE](args),
           common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
-          common_options_b[COMMON_OPTION_ALL_WINDOWS](args),
           common_options_b[COMMON_OPTION_WINDOW_ID](args),
           common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
           common_options_b[COMMON_OPTION_DURATION_SECONDS](args),
@@ -179,6 +193,7 @@ int main(int argc, char **argv) {
       common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),
       common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
       common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
+          common_options_b[COMMON_OPTION_ALL_MODE](args),
           { END_OF_OPTIONS },
         },
       },
@@ -769,4 +784,71 @@ static void __attribute__((constructor)) __constructor__dls(void){
    * Dbg(dls_get_alias_wildcard_glob_name("s"), %s);
    * Dbg(dls_get_alias_wildcard_glob_name("d"), %s);
    */
+}
+static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]){
+  printf(AC_GREEN "%s\n" AC_RESETALL,title);
+  for(int i=0;i<argc;i++){
+    printf("#%d> %s%s"AC_RESETALL "\n", i, color,argv[i]);
+  }
+  char *cmd = stringfn_join(argv," ",0,argc);
+  printf("\t\t\t%s%s"AC_RESETALL "\n", color,cmd);
+  free(cmd);
+
+}
+static struct normalized_argv_t *dls_argv_normalized_argv_t(int argc, char *argv[]){
+  struct normalized_argv_t *r = calloc(1,sizeof(struct normalized_argv_t));
+  r->arg_v = dls_argv_to_arg_v(argc,argv);
+  char *cur = NULL;
+  struct Vector *prev_v = vector_new();
+  for(size_t i=0;i<vector_size(r->arg_v);i++){
+    cur = (char*)vector_get(r->arg_v,i);
+  log_info("%lu", vector_size(prev_v));
+    if(!cur)continue;
+    if(i==0){
+        r->executable = cur;
+    }
+    for(size_t x=0;x<vector_size(prev_v);x++){
+      char *prev = (x>0) ? (char*)vector_get(prev_v,x-1) : NULL;
+      Dbg(prev,%s);
+      if(prev && dls_get_arg_is_ordered(cur,prev)){
+        log_info("#%lu> args need to be swapped: %s should be after %s",i, prev,cur);
+        vector_set(r->arg_v,x,strdup(cur));
+        vector_set(r->arg_v,i,strdup(prev));
+      }
+    }
+    vector_push(prev_v,(void*)cur);
+    if(i > 0 && !r->mode && !stringfn_starts_with(cur,"-")){
+      char *aliased = dls_get_alias_wildcard_glob_name(cur);
+      if(aliased){
+        r->mode = strdup(aliased);
+        vector_set(r->arg_v,i,(void*)r->mode);
+        argv[i] = r->mode;
+      }else{
+        r->mode = cur;
+      }
+    }else{
+      if(!r->mode)
+        vector_push(r->pre_mode_arg_v,cur);
+      else
+        vector_push(r->post_mode_arg_v,cur);
+    }
+  }
+  for(size_t i=0;i<vector_size(r->arg_v);i++){
+    char *s = (char*)vector_get(r->arg_v,i);
+    if(strcmp(argv[i],s) != 0)
+      argv[i] = s;
+  }
+  return(r);
+}
+static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]){
+  struct Vector *arg_v = vector_new();
+  for(int i=0;i<argc;i++){
+    vector_push(arg_v,(void*)strdup(argv[i]));
+  }
+  return(arg_v);
+}
+static bool dls_normalize_arguments(int *argc, char *argv[]){
+  struct normalized_argv_t *r = dls_argv_normalized_argv_t(*argc,argv);
+  log_info("Mode: %s", r->mode);
+  *argc = vector_size(r->arg_v);
 }

@@ -13,4 +13,5 @@ enum alias_name_type_t;
 char *dls_get_alias_type_name(enum alias_type_t type);
 char *dls_get_alias_name(char *);
 char *dls_get_alias_wildcard_glob_name(char *text);
+bool dls_get_arg_is_ordered(char *arg1,char *arg2);
 #endif

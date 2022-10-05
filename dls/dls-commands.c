@@ -36,20 +36,26 @@ static void __attribute__((constructor)) __constructor__darwin_ls_commands(void)
 static void debug_dls_arguments(){
   if (!IS_COMMAND_DEBUG_MODE)
     return;
-  log_debug("all windows:  %s", args->all_windows?"Yes":"No");
-  log_debug("display :  %s", args->display_output_file?"Yes":"No");
+  log_debug("All Mode:  %s", args->all_mode?"Yes":"No");
+  log_debug("display :  %s", args->display_mode?"Yes":"No");
   log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
   log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
   log_debug("write dir :  %s", args->write_directory);
   log_debug("compress :  %s", args->compress?"Yes":"No");
   log_debug("width :  %d", args->width);
+  log_debug("height :  %d", args->height);
   log_debug("concurrency :  %d", args->concurrency);
   log_debug("write dir :  %s", args->write_directory);
-  log_debug("height :  %d", args->height);
   log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
   log_debug("format :  %s", args->image_format);
   log_debug("limit :  %d", args->limit);
   log_debug("format type:  %d", args->image_format_type);
+    log_debug("frame rate :  %d", args->frame_rate);
+    log_debug("Duration sec :  %d", args->duration_seconds);
+    log_debug("window id :  %d", args->window_id);
+    log_debug("display :  %s", args->display_mode?"Yes":"No");
+    log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
+    log_debug("compress :  %s", args->compress?"Yes":"No");
 }
 ////////////////////////////////////////////
 static void _command_move_window();
@@ -278,13 +284,13 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = check_cmds[CHECK_COMMAND_SORT_DIRECTION_DESC].fxn,
     });
   },
-  [COMMON_OPTION_ALL_WINDOWS] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_ALL_MODE] = ^ struct optparse_opt (struct args_t *args)                                 {
     return((struct optparse_opt)                                                                            {
       .short_name = 'A',
-      .long_name = "all-windows",
-      .description = "All Windows",
+      .long_name = "all",
+      .description = "All Items",
       .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->all_windows),
+      .flag = &(args->all_mode),
     });
   },
   [COMMON_OPTION_DISPLAY_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                         {
@@ -293,7 +299,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "display-output-file",
       .description = "Display Output File",
       .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->display_output_file),
+      .flag = &(args->display_mode),
     });
   },
   [COMMON_OPTION_NOT_MINIMIZED] = ^ struct optparse_opt (struct args_t *args)                               {
@@ -1676,7 +1682,7 @@ static void _command_set_space_index(){
 static void _command_extract_window(){
   struct Vector *v = vector_new();
 
-  if (args->all_windows == true) {
+  if (args->all_mode ){
     struct Vector *a = get_window_infos_brief_v();
     for (size_t i = 0; i < vector_size(a); i++) {
       if ((size_t)args->limit > 0 && vector_size(v) >= (size_t)args->limit) {
@@ -1706,25 +1712,9 @@ static void _command_animated_capture(){
   unsigned long animation_started = timestamp();
   unsigned long end_ts = animation_started + (args->duration_seconds * 1000);
   unsigned long interval_ms = (unsigned long)(1000 * (float)(((float)1) / (float)(args->frame_rate))), expected_frames_qty = args->duration_seconds * args->frame_rate;
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-    log_debug("frame rate :  %d", args->frame_rate);
-    log_debug("Duration sec :  %d", args->duration_seconds);
-    log_debug("window id :  %d", args->window_id);
-    log_debug("display :  %s", args->display_output_file?"Yes":"No");
-    log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
-    log_debug("compress :  %s", args->compress?"Yes":"No");
-    log_debug("width :  %d", args->width);
-    log_debug("height :  %d", args->height);
-    log_debug("concurrency :  %d", args->concurrency);
-    log_debug("Expected Frames :  %ld", expected_frames_qty);
-    log_debug("start ts :  %ld", animation_started);
-    log_debug("end ts :  %ld", end_ts);
-    log_debug("ms dur :  %ld", end_ts - animation_started);
-    log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
-    log_debug("interval ms :  %ld", interval_ms);
-  }
+  debug_dls_arguments();
   struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
-  if (args->all_windows == true) {
+  if (args->all_mode) {
     all_windows = get_window_infos_v();
     for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(ids) < (size_t)(args->limit))  : true); i++) {
       struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
@@ -1801,7 +1791,7 @@ static void _command_animated_capture(){
     if (args->output_file) {
       fsio_copy_file(acap->file, args->output_file);
     }
-    if (args->display_output_file) {
+    if (args->display_mode) {
       kitty_display_image_path(acap->file);
     }
   }
@@ -1817,7 +1807,7 @@ static void _command_capture(){
   struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
   debug_dls_arguments();
 
-  if (args->all_windows == true) {
+  if (args->all_mode == true) {
     all_windows = get_window_infos_v();
     for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(ids) < (size_t)(args->limit))  : true); i++) {
       struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
@@ -1905,12 +1895,15 @@ static void _command_capture(){
                 );
         }
       }
-      if (args->display_output_file && r->len > 0 && r->pixels) {
-//        kitty_display_image_buffer(r->pixels, r->len);
-//        kitty_display_image_buffer_resized_width(r->pixels, r->len,800);
-        //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
-      }
     }
+  }
+  for (size_t i = 0; i < vector_size(results); i++) {
+    struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+      if (args->display_mode && r->len > 0 && r->pixels) {
+//      kitty_display_image_buffer(r->pixels, r->len);
+        //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
+        kitty_display_image_buffer_resized_width(r->pixels, r->len,300);
+      }
   }
 
   struct list_table_t *filter = &(struct list_table_t){

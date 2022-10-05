@@ -57,7 +57,7 @@ struct args_t {
   double                               resize_factor;
   char                                 *xml_file_path, *content;
   bool                                 clear_icons_cache, minimized_only, not_minimized_only;
-  bool                                 display_output_file, all_windows;
+  bool                                 display_mode, all_mode;
   bool                                 random_window_id, clear_screen, compress;
   int                                  pid, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;

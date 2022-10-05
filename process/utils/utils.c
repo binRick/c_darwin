@@ -34,7 +34,7 @@
 static bool       PROCESS_UTILS_DEBUG_MODE         = false;
 static bool       PROCESS_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void);
-static const bool EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED = true;
+static const bool EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED = false;
 static const char *EXCLUDED_WINDOW_INFO_NAMES[] = {
   "Window Server",
   "com.apple.appkit.xpc.open",
