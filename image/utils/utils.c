@@ -843,60 +843,15 @@ unsigned char *save_cgref_to_rgb_memory(CGImageRef img_ref, size_t *len){
   CGImageRef        image_ref    = CGDisplayCreateImageForRect(kCGDirectMainDisplay, rect);
   CGDataProviderRef provider_ref = CGImageGetDataProvider(image_ref);
   CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
-
   size_t            bpp = CGImageGetBitsPerPixel(image_ref) / 8;
-
   *len = width * height * bpp;
-
-  Dbg(width, % d);
-  Dbg(height, % d);
-  Dbg(*len, % u);
-  Dbg(bpp, % u);
   buffer = calloc(*len, sizeof(int8_t));
   memcpy(buffer, CFDataGetBytePtr(data_ref), *len);
-
   CFRelease(data_ref);
   CGImageRelease(image_ref);
-
   return(buffer);
 }
 
-unsigned char *save_cgref_to_rgb_memory1(CGImageRef img_ref, size_t *len){
-  unsigned char *pixels = NULL;
-  CGRect        newRect = CGRectIntegral(CGRectMake(0, 0, CGImageGetWidth(img_ref), CGImageGetHeight(img_ref)));
-  CGContextRef  context = CGBitmapContextCreate(NULL, CGImageGetWidth(img_ref), CGImageGetHeight(img_ref),
-                                                CGImageGetBitsPerComponent(img_ref),
-                                                CGImageGetBytesPerRow(img_ref),
-                                                CGImageGetColorSpace(img_ref),
-                                                CGImageGetBitmapInfo(img_ref));
-
-  if (!context) {
-    log_error("Failed to create context");
-    return(NULL);
-  }
-
-  CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
-  CGContextDrawImage(context, newRect, img_ref);
-  CGImageRef rgb_ref  = CGBitmapContextCreateImage(context);
-  CFDataRef  data_ref = CGDataProviderCopyData(CGImageGetDataProvider(rgb_ref));
-
-  *len   = CFDataGetLength(rgb_ref);
-  pixels = calloc(1, *len);
-
-  CFDataGetBytes(data_ref, CFRangeMake(0, *len), pixels);
-  CFRelease(context);
-  return(pixels);
-}
-
-unsigned char *save_cgref_to_rgb_memory3(CGImageRef image_ref, size_t *len){
-  CFDataRef data_ref = CGDataProviderCopyData(CGImageGetDataProvider(image_ref));
-
-  *len = CFDataGetLength(data_ref);
-  unsigned char *buf = calloc(1, *len);
-
-  CFDataGetBytes(data_ref, CFRangeMake(0, *len), buf);
-  return(buf);
-}
 
 CGImageRef rgb_pixels_to_png_cgimage_ref(unsigned char *rgb_pixels, int width, int height){
   CFMutableDataRef      data     = CFDataCreateMutable(kCFAllocatorDefault, 0);
