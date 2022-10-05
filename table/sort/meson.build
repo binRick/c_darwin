@@ -10,6 +10,7 @@ table_sort_include_dirs = [
 ]
 
 table_sort_deps = [
+  core_dep,
   ansi_codes_dep,
   c_vector_dep,
   c_fsio_dep,

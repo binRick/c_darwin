@@ -17,7 +17,7 @@ monitor_utils_deps = [
   c_string_buffer_dep,
   libmonitors_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,core_dep,
   ms_dep,
   bytes_dep,
 ]

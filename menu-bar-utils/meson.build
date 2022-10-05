@@ -12,7 +12,7 @@ menu_bar_utils_deps = [
   c_stringfn_dep,
   ansi_codes_dep,
   display_utils_dep,
-  log_dep,
+  log_dep,core_dep,
   timestamp_dep,
   ms_dep,
   space_utils_dep,

@@ -12,7 +12,7 @@ mission_control_utils_deps = [
   c_stringfn_dep,
   frameworks_dep,
   parson_dep,
-  log_dep,
+  log_dep,core_dep,
   ansi_codes_dep,
   c_vector_dep,
   bytes_dep,

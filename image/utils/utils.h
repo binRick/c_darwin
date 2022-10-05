@@ -21,6 +21,8 @@
 #include "c_vector/vector/vector.h"
 #include "libspng/spng/spng.h"
 #include "tesseract/capi.h"
+#include "image/image.h"
+#include "image/type/type.h"
 ///////////////////////////////////////////////////
 #define PREVIEW_FACTOR      2
 #define THUMBNAIL_FACTOR    5
@@ -29,26 +31,6 @@ struct spng_info_t {
   int           filter_method, interlace_method, width, height, bit_depth, color_type, compression_method;
   char          *color_name;
   unsigned long started, dur;
-};
-enum image_type_id_t {
-  IMAGE_TYPE_PNG = 1,
-  IMAGE_TYPE_PNG_COMPRESSED,
-  IMAGE_TYPE_GIF,
-  IMAGE_TYPE_TIFF,
-  IMAGE_TYPE_JPEG,
-  IMAGE_TYPE_BMP,
-  IMAGE_TYPE_QOI,
-  IMAGE_TYPE_RGB,
-  IMAGE_TYPE_TIFF_GRAYSCALE,
-  IMAGE_TYPE_PNG_GRAYSCALE,
-  IMAGE_TYPE_RGB_GRAYSCALE,
-  IMAGE_TYPE_JPEG_GRAYSCALE,
-  IMAGE_TYPE_BMP_GRAYSCALE,
-  IMAGE_TYPE_QOI_GRAYSCALE,
-  IMAGE_TYPE_GIF_GRAYSCALE,
-  IMAGE_TYPE_CGIMAGE,
-  IMAGE_TYPE_CGIMAGE_GRAYSCALE,
-  IMAGE_TYPES_QTY,
 };
 unsigned char *save_cgref_to_image_type_memory1(CGImageRef image, size_t *len);
 struct image_type_t {

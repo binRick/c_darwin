@@ -11,7 +11,7 @@ system_utils_test_deps = [
   system_utils_dep,
   c_string_buffer_dep,
   process_dep,
-  log_dep,
+  log_dep,core_dep,
   c_stringfn_dep,
   module_dep,
   system_utils_dep,

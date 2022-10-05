@@ -11,7 +11,7 @@ process_utils_dirs = [
 process_utils_deps = [
   c_stringfn_dep,
   parson_dep,
-  log_dep,
+  log_dep,core_dep,
   ansi_codes_dep,
   c_vector_dep,
   fort_dep,

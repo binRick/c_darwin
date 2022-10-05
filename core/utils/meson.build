@@ -17,7 +17,7 @@ core_utils_deps = [
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,glib_dep,vips_dep,
   ms_dep,
   bytes_dep,
   hashmap_h_dep,

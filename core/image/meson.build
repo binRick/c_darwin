@@ -10,6 +10,7 @@ core_image_include_dirs = [
 ]
 
 core_image_deps = [
+  glib_dep,
   core_utils_dep,
   vips_dep,
   msf_gif_dep,

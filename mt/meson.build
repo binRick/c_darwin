@@ -26,7 +26,7 @@ mt_deps = [
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,core_dep,
   ms_dep,
   bytes_dep,
   incbin_dep,
@@ -55,6 +55,6 @@ if get_option('enable-binaries')
      install: false,
   )
   test('mt> Help', mt_exec, args: ['help'])
-  test('mt> Parse Embedded CSV', mt_exec, args: ['parse'])
+  #test('mt> Parse Embedded CSV', mt_exec, args: ['parse'])
   test('mt> List Embedded CSVs', mt_exec, args: ['csvs'])
 endif

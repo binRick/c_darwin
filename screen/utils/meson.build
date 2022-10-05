@@ -10,12 +10,13 @@ screen_utils_dirs = [
     inc,
   ]
 screen_utils_deps = [
+  glib_dep,vips_dep,
   core_utils_dep,
   c_vector_dep,
   active_app_dep,
   c_stringfn_dep,
   parson_dep,image_utils_dep,
-  log_dep,
+  log_dep,core_dep,
   ansi_codes_dep,
   timestamp_dep,
   bytes_dep, ms_dep,

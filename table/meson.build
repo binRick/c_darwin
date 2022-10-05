@@ -18,7 +18,7 @@ table_deps = [
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,core_dep,
   ms_dep,
   bytes_dep,table_utils_dep,table_sort_dep,
   core_utils_dep,

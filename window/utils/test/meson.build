@@ -6,6 +6,7 @@ window_utils_test_include_dirs = [
        '.',
 ]
 window_utils_test_deps = [
+  core_dep,glib_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
   string_utils_dep,

@@ -8,6 +8,7 @@ kitty_srcs = [
 kitty_link_flags = []
 kitty_c_args = []
 kitty_deps = [
+  core_dep,image_dep,
   c_vector_dep,
   djbhash_dep,
   socket99_dep,

@@ -22,6 +22,7 @@ config_utils_deps = [
   capture_utils_dep,
   display_utils_dep,
   space_utils_dep,
+  glib_dep,vips_dep,
   window_utils_dep,
 ]
 

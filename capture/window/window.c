@@ -1046,7 +1046,7 @@ struct Vector *capture(struct capture_req_t *req){
     req->bar->progress = (float)1.00;
     cbar_display_bar(req->bar);
     cbar_show_cursor();
-    printf("\n");
+//    printf("\n");
     fflush(stdout);
     free(req->bar);
   }
@@ -1184,14 +1184,15 @@ bool end_animation(struct animated_capture_t *acap){
 //fprintf(stdout,"%s",m);
 //  fflush(stdout);
 //free(m);
-if(acap->progress_bar_mode){
+/*
+  if(acap->progress_bar_mode){
   acap->bar->progress = (float)1.00;
   cbar_display_bar((acap->bar));
   cbar_show_cursor();
  // printf("\n");
   fflush(stdout);
 }
-
+*/
   return(true);
 } /* end_animation */
 
@@ -1236,7 +1237,7 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
     FILE *fp = fmemopen(r->pixels, r->len, "rb");
     pixels = stbi_load_from_file(fp, &w, &h, &f, STBI_rgb_alpha);
     fclose(fp);
-    if (true || CAPTURE_WINDOW_DEBUG_MODE) {
+    if (CAPTURE_WINDOW_DEBUG_MODE) {
       log_info("STBI in %s",
                milliseconds_to_string(timestamp() - s)
                );
@@ -1338,22 +1339,30 @@ int poll_new_animated_frame(void *VOID){
            (size_t)((float)((float)1 / (float)acap->ms_per_frame) * (float)(100 * 10)),
            ""
            );
-  acap->bar = &(cbar(clamp((int)((float)acap->term_width * (float)(.4)), 20, 60), bar_msg));
+  if(vector_size(acap->frames_v)==0)
+    acap->bar = &(cbar(clamp((int)((float)acap->term_width * (float)(.4)), 20, 60), bar_msg));
   cbar_hide_cursor();
     }
 
   while (chan_recv(acap->chan, &msg) == 0) {
     struct capture_result_t *r = (struct capture_result_t *)msg;
     pthread_mutex_lock(acap->mutex);
+    float bar_progress  = vector_size(acap->frames_v) == 0 ? 0 : (float)((float)(vector_size(acap->frames_v) / (float)(acap->expected_frames_qty)) / (float)1);
     if (CAPTURE_WINDOW_DEBUG_MODE) {
-      log_info("msg %s|%lu|%lu", r->file, r->len, vector_size(acap->frames_v));
+      log_info("msg %s|%lu|progress:%f|frames:%lu|expected frames:%lu|bar mode:%d|", 
+          r->file, r->len, 
+          bar_progress,
+          vector_size(acap->frames_v), 
+          acap->expected_frames_qty,
+          acap->progress_bar_mode
+          );
     }
     new_animated_frame(acap, r);
     if(acap->progress_bar_mode){
-       acap->bar->progress = vector_size(acap->frames_v) == 0 ? 0 : (float)((float)(vector_size(acap->frames_v) / (float)(acap->expected_frames_qty)) / (float)1);
-    cbar_display_bar((acap->bar));
-    fflush(stdout);
-}
+       acap->bar->progress = bar_progress; 
+      cbar_display_bar((acap->bar));
+      fflush(stdout);
+    }
     pthread_mutex_unlock(acap->mutex);
   }
   chan_send(acap->done, (void *)0);

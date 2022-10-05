@@ -38,7 +38,7 @@ static int kitty_fprintf(FILE *fd, char *fmt, char *msg, ...){
   }
 
 static bool kitty_write_msg(char *msg){
-  int len = kitty_fprintf(stdout,"%s\n",msg);
+  int len = kitty_fprintf(stdout,"%s",msg);
   fflush(stdout);
   return((len>0));
 

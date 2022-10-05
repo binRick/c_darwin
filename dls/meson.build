@@ -19,7 +19,7 @@ darwin_ls_deps = [
   c_fsio_dep,
   c_stringfn_dep,
   ansi_codes_dep,
-  log_dep,
+  log_dep,core_dep,
   timestamp_dep,
   ms_dep,
   bytes_dep,
@@ -80,9 +80,9 @@ test_args = [
   { 'name': 'Show Focused Window Info', 'command': 'focused-window', 'args': [],   'timeout': 3,},
   { 'name': 'Show Focused Space Info', 'command': 'focused-space', 'args': [],   'timeout': 3,},
   { 'name': 'Show Focused PID Info', 'command': 'focused-pid', 'args': [],   'timeout': 3,},
-  { 'name': 'Capture a Random Window ID to Specified File','command':'capture', 'args': ['--random-window-id','--output-file','/tmp/test-capture.png'], 'timeout': 5, },
-  { 'name': 'Capture 10 Window Images Concurrently','command':'capture', 'args': ['--all-windows','--limit','10','--concurrency','10'], 'timeout': 5, },
-  { 'name': 'Extract Text Content from 2 Window Images Concurrently', 'command':'extract', 'args': ['--all-windows','--limit','2','--concurrency','2'], 'timeout': 60, },
+  { 'name': 'Capture a Random Window ID to Specified File','command':'capture', 'args': ['--window','--random-id','--output-file','/tmp/test-capture.png'], 'timeout': 5, },
+  { 'name': 'Capture 10 Window Images Concurrently','command':'capture', 'args': ['--window','--all','--limit','10','--concurrency','10'], 'timeout': 5, },
+  { 'name': 'Extract Text Content from 2 Window Images Concurrently', 'command':'extract', 'args': ['--window','--all','--limit','2','--concurrency','2'], 'timeout': 60, },
   { 'name': 'Open System Preferences and Configure Security', 'command':'security', 'args': ['--retries','3'], 'timeout': 30, },
   ]
 xxxx = [

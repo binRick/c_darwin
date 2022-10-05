@@ -34,14 +34,17 @@ const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "dls/dls-aliases.h"
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
+#include "capture/window/window.h"
 struct args_t {
   char *write_directory;
+  enum capture_type_id_t capture_type;
   int                                  *ilist;
   size_t                               ilist_size;
-
+  bool capture_mode[999];
   bool                                 verbose_mode, debug_mode, progress_bar_mode, write_images_mode;
+  bool                                 capture_window_mode, capture_space_mode, capture_display_mode;
   bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
-  int                                  space_id, window_id;
+  int                                  space_id, capture_id;
   int                                  display_id;
   int                                  x, y;
   int                                  width, height;
@@ -58,7 +61,7 @@ struct args_t {
   char                                 *xml_file_path, *content;
   bool                                 clear_icons_cache, minimized_only, not_minimized_only;
   bool                                 display_mode, all_mode;
-  bool                                 random_window_id, clear_screen, compress;
+  bool                                 clear_screen, compress;
   int                                  pid, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;
   char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *image_format;

@@ -12,5 +12,4 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-void image_fxn1(void);
 #endif

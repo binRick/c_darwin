@@ -10,13 +10,13 @@ output_utils_include_dirs = [
 ]
 
 output_utils_deps = [
-  ansi_codes_dep,
+  ansi_codes_dep,glib_dep,vips_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,core_dep,
   ms_dep,
   bytes_dep,
 ]

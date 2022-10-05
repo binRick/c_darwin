@@ -7,6 +7,7 @@ struct normalized_argv_t {
   char *mode, *executable;
   struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
 };
+#define DEFAULT_CAPTURE_TYPE CAPTURE_TYPE_WINDOW
 static void __attribute__((constructor)) __constructor__dls(void);
 static bool dls_normalize_arguments(int *argc, char *argv[]);
 static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
@@ -18,7 +19,9 @@ struct args_t                 *args                = &(struct args_t){
   .space_id            = -1,
   .display_id          = -1,
   .purge_write_directory_before_write = false,
-  .window_id           = 0,
+  .capture_id           = 0,
+  .capture_type         = DEFAULT_CAPTURE_TYPE,
+  .capture_mode[DEFAULT_CAPTURE_TYPE] = true,
   .progress_bar_mode = DEFAULT_PROGRESS_BAR_ENABLED,
   .output_mode         = DEFAULT_OUTPUT_MODE,
   .sort_key            = NULL,
@@ -74,34 +77,86 @@ int main(int argc, char *argv[]) {
         .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
         .function    = optparse_print_help_subcmd,
       },
+#define COMMON_OPTIONS_BASE          \
+        common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+#define COMMON_OPTIONS_UI          \
+        common_options_b[COMMON_OPTION_VERBOSE_MODE](args),\
+        common_options_b[COMMON_OPTION_DEBUG_MODE](args),\
+        common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),\
+        common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args),\
+        common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_IMAGE_OPTIONS          \
+        common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_FILE_OPTIONS          \
+        common_options_b[COMMON_OPTION_OUTPUT_FILE](args),\
+        common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS          \
+        common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),\
+        common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),\
+        COMMON_OPTIONS_CAPTURE_RESULT_FILE_OPTIONS \
+        COMMON_OPTIONS_CAPTURE_RESULT_IMAGE_OPTIONS
+#define COMMON_OPTIONS_CAPTURE_SIZE_FILTERS          \
+        common_options_b[COMMON_OPTION_HEIGHT_GREATER](args),\
+        common_options_b[COMMON_OPTION_HEIGHT_LESS](args),\
+        common_options_b[COMMON_OPTION_WIDTH_GREATER](args),\
+        common_options_b[COMMON_OPTION_WIDTH_LESS](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_FILTERS          \
+        common_options_b[COMMON_OPTION_CURRENT_SPACE](args),\
+        common_options_b[COMMON_OPTION_NOT_CURRENT_SPACE](args),\
+        common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),\
+        common_options_b[COMMON_OPTION_NOT_CURRENT_DISPLAY](args),\
+        common_options_b[COMMON_OPTION_SPACE_ID](args),\
+        common_options_b[COMMON_OPTION_APPLICATION_NAME](args),\
+        common_options_b[COMMON_OPTION_DISPLAY_ID](args),\
+        common_options_b[COMMON_OPTION_PID](args),\
+        common_options_b[COMMON_OPTION_APPLICATION_NAME](args),\
+        common_options_b[COMMON_OPTION_NOT_MINIMIZED](args),\
+        common_options_b[COMMON_OPTION_MINIMIZED](args),\
+        COMMON_OPTIONS_CAPTURE_SIZE_FILTERS
+#define COMMON_OPTIONS_LIMIT_OPTIONS          \
+        common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS          \
+        common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),\
+        common_options_b[COMMON_OPTION_IMAGE_FORMAT](args),
+#define COMMON_OPTIONS_CAPTURE_OPTIONS          \
+        common_options_b[COMMON_OPTION_COMPRESS](args),\
+        common_options_b[COMMON_OPTION_CONCURRENCY](args),\
+        COMMON_OPTIONS_LIMIT_OPTIONS \
+        COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS
+#define COMMON_OPTIONS_ID\
+        common_options_b[COMMON_OPTION_CAPTURE_ID](args),\
+        common_options_b[COMMON_OPTION_RANDOM_CAPTURE_ID](args),\
+        common_options_b[COMMON_OPTION_ALL_MODE](args),
+#define COMMON_OPTIONS_CAPTURE_TYPE\
+        common_options_b[COMMON_OPTION_CAPTURE_WINDOW_MODE](args),\
+        common_options_b[COMMON_OPTION_CAPTURE_SPACE_MODE](args),\
+        common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
+        COMMON_OPTIONS_ID
+#define COMMON_OPTIONS_ANIMATION \
+          common_options_b[COMMON_OPTION_DURATION_SECONDS](args),\
+          common_options_b[COMMON_OPTION_FRAME_RATE](args),
+#define COMMON_OPTIONS_SORT \
+          common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
+          common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
+#define COMMON_OPTIONS_SIZE \
+        common_options_b[COMMON_OPTION_WIDTH](args),\
+        common_options_b[COMMON_OPTION_HEIGHT](args),
+#define COMMON_OPTIONS_CAPTURE \
+        COMMON_OPTIONS_SIZE
+#define COMMON_OPTIONS_TABLE\
+        COMMON_OPTIONS_SORT \
+        COMMON_OPTIONS_SIZE\
+        COMMON_OPTIONS_LIMIT_OPTIONS
       {
         .name        = cmds[COMMAND_WINDOWS].name,
         .description = cmds[COMMAND_WINDOWS].description,
         .function    = cmds[COMMAND_WINDOWS].fxn,
         .about       = get_command_about(COMMAND_WINDOWS),
         .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
-          common_options_b[COMMON_OPTION_NOT_CURRENT_SPACE](args),
-          common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),
-          common_options_b[COMMON_OPTION_NOT_CURRENT_DISPLAY](args),
-          common_options_b[COMMON_OPTION_PID](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
-          common_options_b[COMMON_OPTION_SPACE_ID](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_DISPLAY_ID](args),
-          common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
+                  COMMON_OPTIONS_BASE 
+                  COMMON_OPTIONS_CAPTURE_RESULT_FILTERS
+                  COMMON_OPTIONS_TABLE
           common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args),
-          common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),
-          common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
-          common_options_b[COMMON_OPTION_MINIMIZED](args),
-          common_options_b[COMMON_OPTION_NOT_MINIMIZED](args),
-          common_options_b[COMMON_OPTION_WIDTH](args),
-          common_options_b[COMMON_OPTION_HEIGHT](args),
-          common_options_b[COMMON_OPTION_HEIGHT_GREATER](args),
-          common_options_b[COMMON_OPTION_HEIGHT_LESS](args),
-          common_options_b[COMMON_OPTION_WIDTH_GREATER](args),
-          common_options_b[COMMON_OPTION_WIDTH_LESS](args),
           { END_OF_OPTIONS },
         },
       },
@@ -111,17 +166,11 @@ int main(int argc, char *argv[]) {
         .function    = cmds[COMMAND_EXTRACT_WINDOW].fxn,
         .about       = "🙀" "\t" COLOR_CAPTURE "Extract Screenshot Data" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
-          common_options_b[COMMON_OPTION_DEBUG_MODE](args),
-          common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
-          common_options_b[COMMON_OPTION_CONCURRENCY](args),
-          common_options_b[COMMON_OPTION_ALL_MODE](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
-      common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),
-      common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args),
+          COMMON_OPTIONS_BASE
+          COMMON_OPTIONS_UI
+          COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS
+          COMMON_OPTIONS_CAPTURE_OPTIONS
+          COMMON_OPTIONS_CAPTURE_TYPE
           { END_OF_OPTIONS },
         },
       },
@@ -131,33 +180,12 @@ int main(int argc, char *argv[]) {
         .function    = cmds[COMMAND_CAPTURE].fxn,
         .about       = "🙀" "\t" COLOR_CAPTURE "Capture Window Screenshot" AC_RESETALL,
         .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
-          common_options_b[COMMON_OPTION_DEBUG_MODE](args),
-          common_options_b[COMMON_OPTION_COMPRESS](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
-          common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
-          common_options_b[COMMON_OPTION_SPACE_ID](args),
-          common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
-          common_options_b[COMMON_OPTION_PID](args),
-          common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
-          common_options_b[COMMON_OPTION_IMAGE_FORMAT](args),
-          common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-          common_options_b[COMMON_OPTION_WIDTH](args),
-          common_options_b[COMMON_OPTION_HEIGHT](args),
-          common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
-          common_options_b[COMMON_OPTION_DISPLAY_ID](args),
-          common_options_b[COMMON_OPTION_COMPRESS](args),
-          common_options_b[COMMON_OPTION_CONCURRENCY](args),
-      common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),
-      common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args),
-      common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),
-      common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
-      common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
-          common_options_b[COMMON_OPTION_ALL_MODE](args),
+          COMMON_OPTIONS_BASE
+          COMMON_OPTIONS_UI
+          COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS
+          COMMON_OPTIONS_CAPTURE_OPTIONS
+          COMMON_OPTIONS_CAPTURE_TYPE
+          COMMON_OPTIONS_CAPTURE
           { END_OF_OPTIONS },
         },
       },
@@ -167,33 +195,12 @@ int main(int argc, char *argv[]) {
         .function    = cmds[COMMAND_ANIMATED_CAPTURE].fxn,
         .about       = get_command_about(COMMAND_ANIMATED_CAPTURE),
         .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
-          common_options_b[COMMON_OPTION_DEBUG_MODE](args),
-          common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
-          common_options_b[COMMON_OPTION_DURATION_SECONDS](args),
-          common_options_b[COMMON_OPTION_FRAME_RATE](args),
-          common_options_b[COMMON_OPTION_WIDTH](args),
-          common_options_b[COMMON_OPTION_HEIGHT](args),
-          common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
-          common_options_b[COMMON_OPTION_DISPLAY_ID](args),
-          common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_PID](args),
-          common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
-          common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
-          common_options_b[COMMON_OPTION_SPACE_ID](args),
-          common_options_b[COMMON_OPTION_COMPRESS](args),
-          common_options_b[COMMON_OPTION_CONCURRENCY](args),
-          common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-      common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),
-      common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args),
-      common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),
-      common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),
-      common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
-          common_options_b[COMMON_OPTION_ALL_MODE](args),
+          COMMON_OPTIONS_BASE
+          COMMON_OPTIONS_UI
+          COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS
+          COMMON_OPTIONS_CAPTURE_OPTIONS
+          COMMON_OPTIONS_CAPTURE_TYPE
+          COMMON_OPTIONS_ANIMATION
           { END_OF_OPTIONS },
         },
       },
@@ -215,8 +222,8 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_FOCUS_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_RANDOM_CAPTURE_ID](args),
           common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_DISPLAY_ID](args),
@@ -401,7 +408,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_MOVE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_X](args),
           common_options_b[COMMON_OPTION_WINDOW_Y](args),
           { END_OF_OPTIONS },
@@ -414,8 +421,8 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_RESIZE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
-          common_options_b[COMMON_OPTION_RANDOM_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_RANDOM_CAPTURE_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_WIDTH](args),
           common_options_b[COMMON_OPTION_WINDOW_HEIGHT](args),
           { END_OF_OPTIONS },
@@ -428,7 +435,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_IS_MINIMIZED),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -439,7 +446,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_ID_INFO),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -450,7 +457,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_LEVEL),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -461,7 +468,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_LAYER),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -483,7 +490,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_MINIMIZE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -494,7 +501,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_STICKY_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -505,7 +512,7 @@ int main(int argc, char *argv[]) {
         .about       = "👽" "\t" COLOR_WINDOW "Set Window To All Spaces" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -547,7 +554,7 @@ int main(int argc, char *argv[]) {
         .about       = "💫" "\t" COLOR_WINDOW "Set Window Space" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_WINDOW_ID](args),
+          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },

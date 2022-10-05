@@ -52,7 +52,7 @@ static void debug_dls_arguments(){
   log_debug("format type:  %d", args->image_format_type);
     log_debug("frame rate :  %d", args->frame_rate);
     log_debug("Duration sec :  %d", args->duration_seconds);
-    log_debug("window id :  %d", args->window_id);
+    log_debug("window id :  %d", args->capture_id);
     log_debug("display :  %s", args->display_mode?"Yes":"No");
     log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
     log_debug("compress :  %s", args->compress?"Yes":"No");
@@ -111,12 +111,15 @@ static void _command_open_security();
 static void _command_list_hotkey();
 ////////////////////////////////////////////
 static void _check_run_hotkeys(void);
-static void _check_window_id(uint16_t window_id);
+static void _check_capture_id(uint16_t capture_id);
 static void _check_clear_screen(void);
 static void _check_image_format(char *format);
 static void _check_sort_direction_desc(void);
+static void _check_capture_window_mode(void);
+static void _check_capture_space_mode(void);
+static void _check_capture_display_mode(void);
 static void _check_sort_direction_asc(void);
-static void _check_random_window_id(void);
+static void _check_random_capture_id(void);
 static void _check_width_group(uint16_t window_id);
 static void _check_height_greater(int height_greater);
 static void _check_height_less(int height_less);
@@ -288,7 +291,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                                            {
       .short_name = 'A',
       .long_name = "all",
-      .description = "All Items",
+      .description = "All IDs",
+      .group = COMMON_OPTION_GROUP_ID,
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->all_mode),
     });
@@ -318,14 +322,13 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .flag = &(args->minimized_only),
     });
   },
-  [COMMON_OPTION_RANDOM_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_RANDOM_CAPTURE_ID] = ^ struct optparse_opt (struct args_t *args)                            {
     return((struct optparse_opt)                                                                            {
       .short_name = 'r',
-      .long_name = "random-window-id",
-      .description = "Random Window ID",
-      .function = check_cmds[CHECK_COMMAND_RANDOM_WINDOW_ID].fxn,
-      .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->random_window_id),
+      .long_name = "random-id",
+      .description = "Random Capture ID",
+      .function = check_cmds[CHECK_COMMAND_RANDOM_CAPTURE_ID].fxn,
+      .group = COMMON_OPTION_GROUP_ID,
     });
   },
   [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args)                                         {
@@ -513,6 +516,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "input-file",
       .description = "Input File",
       .arg_name = "INPUT-FILE",
+      .group = COMMON_OPTION_GROUP_ID,
       .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_INPUT_FILE].fxn,
       .arg_dest = &(args->input_file),
@@ -553,7 +557,6 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_CLEAR_ICONS_CACHE] = ^ struct optparse_opt (struct args_t *args)                           {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'c',
       .long_name = "clear-icons-cache",
       .description = "Clear Icons Cache",
       .flag_type = FLAG_TYPE_SET_TRUE,
@@ -608,7 +611,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                                            {
       .short_name = 'd',
       .long_name = "debug",
-      .description = "debug",
+      .description = "Debug Mode",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->debug_mode),
     });
@@ -617,28 +620,20 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                                            {
       .short_name = 'v',
       .long_name = "verbose",
-      .description = "Increase verbosity",
+      .description = "Verbose Mode",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->verbose_mode),
     });
   },
-  [COMMON_OPTION_WINDOW_ID] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_CAPTURE_ID] = ^ struct optparse_opt (struct args_t *args)                                   {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'w',
-      .long_name = "window-id",
-      .description = "window id",
-      .arg_name = "WINDOW-ID",
-      .arg_dest = &(args->window_id),
-      .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_ID].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_WINDOW_ID].fxn,
-    });
-  },
-  [COMMON_OPTION_GRAYSCALE_MODE] = ^ struct optparse_opt (struct args_t *args)                            {
-    return((struct optparse_opt)                                                                            {
-      .long_name = "grayscale",
-      .description = "Grayscale Mode",
-      .flag_type = FLAG_TYPE_SET_TRUE,
-      .flag = &(args->grayscale_mode),
+      .short_name = 'i',
+      .long_name = "capture-id",
+      .description = "Capture ID",
+      .arg_name = "CAPTURE-ID",
+      .arg_dest = &(args->capture_id),
+      .arg_data_type = check_cmds[CHECK_COMMAND_CAPTURE_ID].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_CAPTURE_ID].fxn,
     });
   },
   [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args)                            {
@@ -762,10 +757,51 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->height),
     });
   },
-  [COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args)                          {
+  [COMMON_OPTION_GRAYSCALE_MODE] = ^ struct optparse_opt (struct args_t *args)                            {
     return((struct optparse_opt)                                                                            {
+      .long_name = "grayscale",
+      .description = "Grayscale",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->grayscale_mode),
+    });
+  },
+  [COMMON_OPTION_CAPTURE_DISPLAY_MODE] = ^ struct optparse_opt (struct args_t *args){
+    return((struct optparse_opt){
+      .long_name = "display",
+      .group = COMMON_OPTION_GROUP_CAPTURE_MODE,
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->capture_mode[CAPTURE_TYPE_DISPLAY]),
+      .function = check_cmds[CHECK_COMMAND_CAPTURE_DISPLAY_MODE].fxn,
+      .description =   COLOR_CAPTURE_MODE "Capture" AC_RESETALL " " 
+               COLOR_CAPTURE_DISPLAY_MODE "Display" AC_RESETALL,
+    });
+  },
+  [COMMON_OPTION_CAPTURE_SPACE_MODE] = ^ struct optparse_opt (struct args_t *args){
+    return((struct optparse_opt){
+      .long_name = "space",
+      .group = COMMON_OPTION_GROUP_CAPTURE_MODE,
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->capture_mode[CAPTURE_TYPE_SPACE]),
+      .function = check_cmds[CHECK_COMMAND_CAPTURE_SPACE_MODE].fxn,
+      .description =     COLOR_CAPTURE_MODE "Capture" AC_RESETALL " " 
+                   COLOR_CAPTURE_SPACE_MODE "Space" AC_RESETALL,
+    });
+  },
+  [COMMON_OPTION_CAPTURE_WINDOW_MODE] = ^ struct optparse_opt (struct args_t *args){
+    return((struct optparse_opt){
+      .long_name = "window",
+      .description = COLOR_CAPTURE_MODE "Capture" AC_RESETALL " " 
+              COLOR_CAPTURE_WINDOW_MODE "Window" AC_RESETALL,
+      .group = COMMON_OPTION_GROUP_CAPTURE_MODE,
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->capture_mode[CAPTURE_TYPE_WINDOW]),
+      .function = check_cmds[CHECK_COMMAND_CAPTURE_WINDOW_MODE].fxn,
+    });
+  },
+  [COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args){
+    return((struct optparse_opt){
       .long_name = "no-progress",
-      .description = "Enable Progress Bar Mode",
+      .description = "Disable Progress Bar",
       .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
       .flag_type = FLAG_TYPE_SET_FALSE,
       .flag = &(args->progress_bar_mode),
@@ -774,7 +810,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_WRITE_IMAGES_MODE] = ^ struct optparse_opt (struct args_t *args){
     return((struct optparse_opt)                                                                            {
       .long_name = "write",
-      .description = "Enable Write Images Mode",
+      .description = "Write Images",
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->write_images_mode),
     });
@@ -783,7 +819,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
     return((struct optparse_opt)                                                                            {
       .short_name = 'p',
       .long_name = "progress",
-      .description = "Enable Progress Bar Mode",
+      .description = "Enable Progress Bar",
       .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
       .flag_type = FLAG_TYPE_SET_TRUE,
       .flag = &(args->progress_bar_mode),
@@ -862,10 +898,16 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_write_directory),
     .arg_data_type = DATA_TYPE_STR,
   },
+  [CHECK_COMMAND_RANDOM_CAPTURE_ID] =               {
+    .fxn           = (void (*)(void))(*_check_random_capture_id),
+  },
   [CHECK_COMMAND_LIMIT] =               {
     .fxn           = (void (*)(void))(*_check_limit),
     .arg_data_type = DATA_TYPE_INT,
   },
+  [CHECK_COMMAND_CAPTURE_WINDOW_MODE] = { .fxn = (void (*)(void))(*_check_capture_window_mode), },
+  [CHECK_COMMAND_CAPTURE_SPACE_MODE] = { .fxn = (void (*)(void))(*_check_capture_space_mode), },
+  [CHECK_COMMAND_CAPTURE_DISPLAY_MODE] = { .fxn = (void (*)(void))(*_check_capture_display_mode), },
   [CHECK_COMMAND_RUN_HOTKEYS] =         {
     .fxn = (void (*)(void))(*_check_run_hotkeys),
   },
@@ -889,16 +931,12 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_width_greater),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_RANDOM_WINDOW_ID] =    {
-    .fxn           = (void (*)(void))(*_check_random_window_id),
+  [CHECK_COMMAND_CAPTURE_ID] =    {
+    .fxn           = (void (*)(void))(*_check_capture_id),
     .arg_data_type = DATA_TYPE_INT,
   },
   [CHECK_COMMAND_PID] =                 {
     .fxn           = (void (*)(void))(*_check_pid),
-    .arg_data_type = DATA_TYPE_INT,
-  },
-  [CHECK_COMMAND_WINDOW_ID] =           {
-    .fxn           = (void (*)(void))(*_check_window_id),
     .arg_data_type = DATA_TYPE_INT,
   },
   [CHECK_COMMAND_ICON_SIZE] =           {
@@ -1317,14 +1355,14 @@ static void _check_clear_screen(void){
   return(EXIT_SUCCESS);
 }
 
-static void _check_random_window_id(void){
-  args->window    = get_random_window_info();
-  args->window_id = args->window->window_id;
+static void _check_random_capture_id(void){
+  switch(args->capture_type){
+    case CAPTURE_TYPE_WINDOW: args->capture_id = get_random_window_info()->window_id; break;
+    default: log_error("Invalid capture type"); return(EXIT_FAILURE); break;
+  }
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
-    log_debug("%d|%d|%dx%d|",
-              args->window_id, args->random_window_id,
-              (int)args->window->rect.size.width,
-              (int)args->window->rect.size.height
+    log_debug("random id:%d|",
+              args->capture_id
               );
   }
   return(EXIT_SUCCESS);
@@ -1342,6 +1380,15 @@ static void _check_limit(int c){
   args->limit = c;
 }
 
+static void _check_capture_mode(enum capture_type_id_t type){
+  if(IS_COMMAND_DEBUG_MODE)
+    log_info("Setting capture mode to %d|%s", type, get_capture_type_name(type));
+  args->capture_type = type;
+  return;
+}
+static void _check_capture_space_mode(void){ return(_check_capture_mode(CAPTURE_TYPE_SPACE)); }
+static void _check_capture_display_mode(void){ return(_check_capture_mode(CAPTURE_TYPE_DISPLAY)); }
+static void _check_capture_window_mode(void){ return(_check_capture_mode(CAPTURE_TYPE_WINDOW)); }
 static void _check_concurrency(int c){
   args->concurrency = (c > MAX_CONCURRENCY) ? MAX_CONCURRENCY : c;
   args->concurrency = (args->concurrency < 1) ? 1 : args->concurrency;
@@ -1461,28 +1508,29 @@ fail:
       );
   exit(EXIT_FAILURE);
 }
-static void _check_window_id(uint16_t window_id){
-  if (window_id < 1) {
-    log_error("Window ID too small");
+static void _check_capture_id(uint16_t capture_id){
+  log_info("Checking capture ID %d of type %d|%s",capture_id,args->capture_type,get_capture_type_name(args->capture_type));
+  if (capture_id < 1) {
+    log_error("Capture ID too small");
     goto do_error;
   }
-  args->window_id = (int)window_id;
-  args->window    = get_window_id_info((size_t)window_id);
+  args->capture_id = (int)capture_id;
+  args->window    = get_window_id_info((size_t)capture_id);
 
   if (!args->window) {
     if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
       log_error("Window is Null");
     }
   }else{
-    if ((size_t)args->window_id != (size_t)window_id) {
-      log_error("Window id mismatch: %lu|%lu", (size_t)window_id, args->window->window_id);
+    if ((size_t)args->capture_id != (size_t)capture_id) {
+      log_error("Window id mismatch: %lu|%lu", (size_t)capture_id, args->window->window_id);
       goto do_error;
     }
   }
   return(EXIT_SUCCESS);
 
 do_error:
-  log_error("Invalid Window ID %lu", (size_t)window_id);
+  log_error("Invalid Capture ID %lu", (size_t)capture_id);
   exit(EXIT_FAILURE);
 }
 
@@ -1680,8 +1728,8 @@ static void _command_set_space_index(){
 }
 
 static void _command_extract_window(){
+  log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
   struct Vector *v = vector_new();
-
   if (args->all_mode ){
     struct Vector *a = get_window_infos_brief_v();
     for (size_t i = 0; i < vector_size(a); i++) {
@@ -1691,8 +1739,8 @@ static void _command_extract_window(){
       struct window_info_t *w = (struct window_info_t *)vector_get(a, i);
       vector_push(v, (void *)(w->window_id));
     }
-  }else if (args->window_id > 0) {
-    vector_push(v, (void *)(size_t)(args->window_id));
+  }else if (args->capture_id > 0) {
+    vector_push(v, (void *)(size_t)(args->capture_id));
   }
   log_info("%lu Windows", vector_size(v));
   struct Vector *r = tesseract_extract_windows(v, args->concurrency);
@@ -1722,31 +1770,31 @@ static void _command_animated_capture(){
         vector_push(ids, (void *)(w->window_id));
       }
     }
-  }else if (args->window_id > 0) {
-    struct window_info_t *w = get_window_id_info((size_t)(args->window_id));
-    if (w && w->window_id == (size_t)(args->window_id)) {
-      vector_push(ids, (void *)(size_t)(args->window_id));
+  }else if (args->capture_id > 0) {
+    struct window_info_t *w = get_window_id_info((size_t)(args->capture_id));
+    if (w && w->window_id == (size_t)(args->capture_id)) {
+      vector_push(ids, (void *)(size_t)(args->capture_id));
     }else{
-      log_error("Window ID #%lu not found", (size_t)(args->window_id));
+      log_error("Window ID #%lu not found", (size_t)(args->capture_id));
       exit(EXIT_FAILURE);
     }
   }
   for (size_t x = 0; x < vector_size(ids); x++) {
     struct capture_req_t *req = calloc(1, sizeof(struct capture_req_t));
     req->ids        = vector_new();
-    args->window_id = (size_t)vector_get(ids, x);
+    args->capture_id = (size_t)vector_get(ids, x);
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
     req->concurrency  = args->concurrency;
     req->type         = CAPTURE_TYPE_WINDOW;
-    req->progress_bar_mode = args->progress_bar_mode;
+    req->progress_bar_mode = false;//args->progress_bar_mode;
     req->compress = args->compress;
     req->format       = IMAGE_TYPE_GIF;
-    req->format       = IMAGE_TYPE_QOI;
     req->width        = args->width > 0 ? args->width : 0;
     req->height       = args->height > 0 ? args->height : 0;
     req->time.started = timestamp();
     req->time.dur     = 0;
-    struct animated_capture_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->window_id, interval_ms, args->progress_bar_mode);
+    struct animated_capture_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->capture_id, interval_ms, args->progress_bar_mode);
+    acap->expected_frames_qty = expected_frames_qty;
     unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
     size_t                    qty = vector_size(acap->frames_v);
     while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > qty) {
@@ -1793,6 +1841,7 @@ static void _command_animated_capture(){
     }
     if (args->display_mode) {
       kitty_display_image_path(acap->file);
+      printf("\n");
     }
   }
 
@@ -1815,12 +1864,12 @@ static void _command_capture(){
         vector_push(ids, (void *)(w->window_id));
       }
     }
-  }else if (args->window_id > 0) {
-    struct window_info_t *w = get_window_id_info((size_t)(args->window_id));
-    if (w && w->window_id == (size_t)(args->window_id)) {
-      vector_push(ids, (void *)(size_t)(args->window_id));
+  }else if (args->capture_id > 0) {
+    struct window_info_t *w = get_window_id_info((size_t)(args->capture_id));
+    if (w && w->window_id == (size_t)(args->capture_id)) {
+      vector_push(ids, (void *)(size_t)(args->capture_id));
     }else{
-      log_error("Window ID #%lu not found", (size_t)(args->window_id));
+      log_error("Window ID #%lu not found", (size_t)(args->capture_id));
       exit(EXIT_FAILURE);
     }
   }
@@ -1829,7 +1878,8 @@ static void _command_capture(){
   req->concurrency  = args->concurrency;
   req->type         = CAPTURE_TYPE_WINDOW;
   req->compress         = args->compress;
-  req->progress_bar_mode = args->progress_bar_mode;     
+  req->progress_bar_mode = true;
+  //args->progress_bar_mode;     
   req->format       = args->image_format_type;
   req->width        = args->width > 0 ? args->width : 0;
   req->height       = args->height > 0 ? args->height : 0;
@@ -1864,14 +1914,53 @@ static void _command_capture(){
         asprintf(&s, "%sxWindow-%lu.png", gettempdir(), r->id);
         vips_pngsave(image, s, NULL);
 */
+    if(args->output_file){
+        char *ext = fsio_file_extension(args->output_file);
+        char *saver = vips_foreign_find_save_target(ext);
+        log_info("ext:%s",
+            ext
+            );
+        if(!stringfn_equal(stringfn_to_lowercase(ext),stringfn_to_lowercase(image_type_name(args->image_format_type)))){
+asprintf(&args->output_file,"%s.%s", 
+    stringfn_substring(args->output_file,0,strlen(args->output_file)-strlen(ext)),
+    stringfn_to_lowercase(image_type_name(args->image_format_type))
+    );
+log_info("\nchanged extension: %s|saver: %s|",args->output_file,saver);
+        }
+        VipsImage *image;
+        char *loader = vips_foreign_find_load_buffer(r->pixels,r->len);
+        image = vips_image_new_from_buffer(r->pixels,r->len,"",NULL);
+        r->time.dur = timestamp() - r->time.started;
+        log_info("Loaded %s PNG Pixels to %dx%d %s PNG VIPImage in %s using loader %s",
+              bytes_to_string(r->len),
+              vips_image_get_width(image), vips_image_get_height(image),
+              bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
+              milliseconds_to_string(r->time.dur),
+              loader
+              );
+        errno=0;
+        if(r->len==0){
+          log_error("Failed to acquire Pixel Data (%luB) for Window #%lu using loader %s",r->len,r->id,loader);
+          return((void *)r);
+        }
+        char *s;
+        asprintf(&s, "%sxWindow-%lu.png", gettempdir(), r->id);
+        image_target_file_savers[args->image_format_type](image, args->output_file, NULL);
+
+    }
 
     if(IS_COMMAND_DEBUG_MODE)
-      log_info(AC_GREEN "\t|%lux%lu|size:%s|file:%s|dur:%s|" AC_RESETALL
+      log_info(AC_GREEN "\n\t|capture type:%d (%s)|%lux%lu|size:%s|output file:%s"
+          "\n\t|dur:%s|write dir:%s|write images mode:%s|image format: %d (%s)|" AC_RESETALL
              "%s",
+             args->capture_type,get_capture_type_name(args->capture_type),
              r->width, r->height,
              bytes_to_string(r->len),
              args->output_file ? args->output_file : "(none)",
              milliseconds_to_string(r->time.dur),
+             args->write_directory,
+             args->write_images_mode ? "Yes":"No",
+             args->image_format_type,image_type_name(args->image_format_type),
              ""
              );
     if(r->len < 1 || !r->pixels){
@@ -1903,6 +1992,7 @@ static void _command_capture(){
 //      kitty_display_image_buffer(r->pixels, r->len);
         //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
         kitty_display_image_buffer_resized_width(r->pixels, r->len,300);
+      printf("\n");
       }
   }
 
@@ -1957,16 +2047,16 @@ static void _command_list_font(){
 }
 
 static void _command_move_window(){
-  struct window_info_t *w = get_window_id_info(args->window_id);
+  struct window_info_t *w = get_window_id_info(args->capture_id);
 
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
     log_debug("moving window %lu to %dx%d", w->window_id, args->x, args->y);
   }
-  exit((move_window_id(args->window_id, args->x, args->y) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((move_window_id(args->capture_id, args->x, args->y) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_resize_window(){
-  struct window_info_t *w = get_window_id_info(args->window_id);
+  struct window_info_t *w = get_window_id_info(args->capture_id);
 
   log_debug("resizing window %lu to %dx%d", w->window_id, args->width, args->height);
   resize_window_info(w, args->width, args->height);
@@ -2041,7 +2131,7 @@ static void _command_windows(){
       .not_current_space_only   = args->not_current_space_only,
       .space_id                 = args->space_id,
       .display_id               = args->display_id,
-      .window_id                = args->window_id,
+      .window_id                = args->capture_id,
       .pid                      = args->pid,
       .height_greater           = args->height_greater, .height_less = args->height_less,
       .width_greater            = args->width_greater, .width_less = args->width_less,
@@ -2061,28 +2151,28 @@ static void _command_windows(){
 }
 
 static void _command_window_level(){
-  int level = get_window_id_level((size_t)args->window_id);
+  int level = get_window_id_level((size_t)args->capture_id);
 
-  log_debug("Window #%d Level: %d", args->window_id, level);
+  log_debug("Window #%d Level: %d", args->capture_id, level);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_window_layer(){
-  int layer = get_window_layer(get_window_id_info((size_t)args->window_id));
+  int layer = get_window_layer(get_window_id_info((size_t)args->capture_id));
 
-  log_debug("Window #%d Layer: %d", args->window_id, layer);
+  log_debug("Window #%d Layer: %d", args->capture_id, layer);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_window_is_minimized(){
-  bool is_minimized = get_window_id_is_minimized((size_t)args->window_id);
+  bool is_minimized = get_window_id_is_minimized((size_t)args->capture_id);
 
-  log_debug("Window #%d is Minimized? %s", args->window_id, (is_minimized == true) ? "Yes" : "No");
+  log_debug("Window #%d is Minimized? %s", args->capture_id, (is_minimized == true) ? "Yes" : "No");
   exit(EXIT_SUCCESS);
 }
 
 static void _command_window_id_info(){
-  struct window_info_t *w = get_window_id_info(args->window_id);
+  struct window_info_t *w = get_window_id_info(args->capture_id);
 
   log_debug("window ID %lu", w->window_id);
   exit(EXIT_SUCCESS);
@@ -2096,7 +2186,7 @@ static void _command_pid_is_minimized(){
 }
 
 static void _command_minimize_window(){
-  exit((minimize_window_id(args->window_id) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((minimize_window_id(args->capture_id) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_set_window_all_spaces(){
@@ -2104,8 +2194,8 @@ static void _command_set_window_all_spaces(){
 }
 
 static void _command_set_window_space(){
-  log_info("%d|%d", args->window_id, args->space_id);
-  exit(((set_window_id_to_space((size_t)(args->window_id), (int)(args->space_id))) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+  log_info("%d|%d", args->capture_id, args->space_id);
+  exit(((set_window_id_to_space((size_t)(args->capture_id), (int)(args->space_id))) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_set_space(){
@@ -2201,7 +2291,7 @@ static void _command_focus_space(){
 }
 
 static void _command_focus_window(){
-  focus_window_id(args->window_id);
+  focus_window_id(args->capture_id);
   exit(EXIT_SUCCESS);
 }
 

@@ -15,7 +15,7 @@ kitty_msg_test_deps = [
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,
-  log_dep,
+  log_dep,core_dep,
   ms_dep,
   bytes_dep,
   kitty_msg_dep,

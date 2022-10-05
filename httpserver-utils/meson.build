@@ -12,6 +12,7 @@ httpserver_utils_include_dirs = [
 ]
 
 httpserver_utils_deps = [
+  glib_dep,vips_dep,
   log_dep,wslay_dep,tempdir_dep,parson_dep,c_img_dep,
   timestamp_dep,chan_dep,
   ansi_codes_dep,

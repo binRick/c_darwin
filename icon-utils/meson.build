@@ -11,6 +11,7 @@ icon_utils_include_dirs = [
 ]
 
 icon_utils_deps = [
+  glib_dep,vips_dep,
   ansi_codes_dep,string_utils_dep,
   c_vector_dep,icns_dep,stb_dep,
   c_fsio_dep,

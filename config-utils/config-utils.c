@@ -20,7 +20,6 @@
 #include "c_fsio/include/fsio.h"
 #include "c_img/src/img.h"
 #include "c_stringfn/include/stringfn.h"
-#include "image/utils/utils.h"
 #include "log/log.h"
 #include "parson/parson.h"
 #include "submodules/b64.c/b64.h"
