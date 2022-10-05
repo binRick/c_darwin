@@ -28,8 +28,29 @@
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
 #define MAX_CONCURRENCY    25
+#define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
+static void debug_dls_arguments(){
+  if (!IS_COMMAND_DEBUG_MODE)
+    return;
+  log_debug("all windows:  %s", args->all_windows?"Yes":"No");
+  log_debug("display :  %s", args->display_output_file?"Yes":"No");
+  log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
+  log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
+  log_debug("write dir :  %s", args->write_directory);
+  log_debug("compress :  %s", args->compress?"Yes":"No");
+  log_debug("width :  %d", args->width);
+  log_debug("concurrency :  %d", args->concurrency);
+  log_debug("write dir :  %s", args->write_directory);
+  log_debug("height :  %d", args->height);
+  log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
+  log_debug("format :  %s", args->image_format);
+  log_debug("limit :  %d", args->limit);
+  log_debug("format type:  %d", args->image_format_type);
+}
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_window_id_info();
@@ -737,20 +758,29 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args)                          {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'P',
-      .long_name = "progress",
+      .long_name = "no-progress",
       .description = "Enable Progress Bar Mode",
       .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
-      .arg_dest = &(args->progress_bar_mode),
+      .flag_type = FLAG_TYPE_SET_FALSE,
+      .flag = &(args->progress_bar_mode),
     });
   },
-  [COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args)                          {
+  [COMMON_OPTION_WRITE_IMAGES_MODE] = ^ struct optparse_opt (struct args_t *args){
+    return((struct optparse_opt)                                                                            {
+      .long_name = "write",
+      .description = "Enable Write Images Mode",
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->write_images_mode),
+    });
+  },
+  [COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args){
     return((struct optparse_opt)                                                                            {
       .short_name = 'p',
       .long_name = "progress",
       .description = "Enable Progress Bar Mode",
       .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
-      .arg_dest = &(args->progress_bar_mode),
+      .flag_type = FLAG_TYPE_SET_TRUE,
+      .flag = &(args->progress_bar_mode),
     });
   },
   [COMMON_OPTION_WINDOW_WIDTH_GROUP] = ^ struct optparse_opt (struct args_t *args)                          {
@@ -886,6 +916,9 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   [CHECK_COMMAND_WIDTH_GROUP] =         {
     .fxn           = (void (*)(void))(*_check_width_group),
     .arg_data_type = DATA_TYPE_INT,
+  },
+  [CHECK_COMMAND_PROGRESS_BAR_MODE] =        {
+    .arg_data_type = FLAG_TYPE_SET_TRUE,
   },
   [CHECK_COMMAND_HEIGHT_GROUP] =        {
     .fxn           = (void (*)(void))(*_check_height_group),
@@ -1411,7 +1444,7 @@ static void _check_write_directory(void){
 
   char td[PATH_MAX];
   asprintf(&td,"%s/",args->write_directory);
-  setenv("TMPDIR",td,true);
+//  setenv("TMPDIR",td,true);
 
   return(EXIT_SUCCESS);
 fail:
@@ -1687,6 +1720,7 @@ static void _command_animated_capture(){
     log_debug("start ts :  %ld", animation_started);
     log_debug("end ts :  %ld", end_ts);
     log_debug("ms dur :  %ld", end_ts - animation_started);
+    log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
     log_debug("interval ms :  %ld", interval_ms);
   }
   struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
@@ -1714,13 +1748,15 @@ static void _command_animated_capture(){
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
     req->concurrency  = args->concurrency;
     req->type         = CAPTURE_TYPE_WINDOW;
+    req->progress_bar_mode = args->progress_bar_mode;
+    req->compress = args->compress;
     req->format       = IMAGE_TYPE_GIF;
     req->format       = IMAGE_TYPE_QOI;
     req->width        = args->width > 0 ? args->width : 0;
     req->height       = args->height > 0 ? args->height : 0;
     req->time.started = timestamp();
     req->time.dur     = 0;
-    struct animated_capture_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->window_id, interval_ms);
+    struct animated_capture_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->window_id, interval_ms, args->progress_bar_mode);
     unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
     size_t                    qty = vector_size(acap->frames_v);
     while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > qty) {
@@ -1748,9 +1784,6 @@ static void _command_animated_capture(){
                    end_ts - timestamp(),
                    ""
                    );
-        }else{
-//          fprintf(stderr, ".");
-  //        fflush(stderr);
         }
       }
       while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5)))) {
@@ -1759,10 +1792,6 @@ static void _command_animated_capture(){
       pthread_mutex_lock(acap->mutex);
       qty = vector_size(acap->frames_v);
       pthread_mutex_unlock(acap->mutex);
-    }
-    if (!DARWIN_LS_COMMANDS_DEBUG_MODE) {
-      fprintf(stderr, "\n");
-      fflush(stderr);
     }
     chan_close(acap->chan);
     chan_recv(acap->done, NULL);
@@ -1779,30 +1808,14 @@ static void _command_animated_capture(){
 
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
-#define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
-#define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
-#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
 static void _command_capture(){
   args->width       = clamp(args->width, -1, 4000);
   args->height      = clamp(args->height, -1, 4000);
   args->limit       = clamp(args->limit, 1, 999);
   args->concurrency = clamp(args->concurrency, 1, args->limit);
   args->concurrency = clamp(args->concurrency, 1, MAX_CONCURRENCY);
-  if (IS_COMMAND_DEBUG_MODE){
-    log_debug("all windows:  %s", args->all_windows?"Yes":"No");
-    log_debug("display :  %s", args->display_output_file?"Yes":"No");
-    log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
-    log_debug("write dir :  %s", args->write_directory);
-    log_debug("compress :  %s", args->compress?"Yes":"No");
-    log_debug("width :  %d", args->width);
-    log_debug("concurrency :  %d", args->concurrency);
-    log_debug("write dir :  %s", args->write_directory);
-    log_debug("height :  %d", args->height);
-    log_debug("format :  %s", args->image_format);
-    log_debug("limit :  %d", args->limit);
-    log_debug("format type:  %d", args->image_format_type);
-  }
   struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
+  debug_dls_arguments();
 
   if (args->all_windows == true) {
     all_windows = get_window_infos_v();
@@ -1826,6 +1839,7 @@ static void _command_capture(){
   req->concurrency  = args->concurrency;
   req->type         = CAPTURE_TYPE_WINDOW;
   req->compress         = args->compress;
+  req->progress_bar_mode = args->progress_bar_mode;     
   req->format       = args->image_format_type;
   req->width        = args->width > 0 ? args->width : 0;
   req->height       = args->height > 0 ? args->height : 0;
@@ -1839,6 +1853,28 @@ static void _command_capture(){
   unsigned long _started = timestamp();
   for (size_t i = 0; i < vector_size(results); i++) {
     struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+
+
+/*
+        VipsImage *image;
+        vips_pngload_buffer(r->pixels, r->len, &image, NULL);
+        r->time.dur = timestamp() - r->time.started;
+        log_info("Loaded %s PNG Pixels to %dx%d %s PNG VIPImage in %s",
+              bytes_to_string(r->len),
+              vips_image_get_width(image), vips_image_get_height(image),
+              bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
+              milliseconds_to_string(r->time.dur)
+              );
+        errno=0;
+        if(r->len==0){
+          log_error("Failed to acquire Pixel Data (%luB) for Window #%lu",r->len,r->id);
+          return((void *)r);
+        }
+        char *s;
+        asprintf(&s, "%sxWindow-%lu.png", gettempdir(), r->id);
+        vips_pngsave(image, s, NULL);
+*/
+
     if(IS_COMMAND_DEBUG_MODE)
       log_info(AC_GREEN "\t|%lux%lu|size:%s|file:%s|dur:%s|" AC_RESETALL
              "%s",
@@ -1851,13 +1887,10 @@ static void _command_capture(){
     if(r->len < 1 || !r->pixels){
       log_error("Failed to acquire Image Data for ID #%lu", r->id);
     }else{
-      if (args->output_file && r->id == args->window_id) {
-        if(!fsio_write_binary_file(args->output_file, r->pixels, r->len)){
-          log_error("Failed to write file %s", args->output_file);
-        }
-      }
-      if(args->write_directory){
+      if(args->write_directory && args->write_images_mode){
         asprintf(&__writable_dir_file,"%s/window-%lu.%s",args->write_directory,r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
+
+
         if(!fsio_write_binary_file(__writable_dir_file,r->pixels,r->len)){
           log_error("Failed to write %s to File file %s", bytes_to_string(r->len),__writable_dir_file);
         }else{
@@ -1874,7 +1907,7 @@ static void _command_capture(){
       }
       if (args->display_output_file && r->len > 0 && r->pixels) {
 //        kitty_display_image_buffer(r->pixels, r->len);
-        kitty_display_image_buffer_resized_width(r->pixels, r->len,800);
+//        kitty_display_image_buffer_resized_width(r->pixels, r->len,800);
         //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
       }
     }
@@ -1888,7 +1921,7 @@ static void _command_capture(){
 
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-    list_captured_window_table(filter);
+   // list_captured_window_table(filter);
     break;
   case OUTPUT_MODE_JSON:
     break;

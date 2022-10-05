@@ -33,16 +33,17 @@ static bool kitty_write_msg(char *msg);
   va_start(vargs, msg);
   va_end(vargs);
     int len = fprintf(fd, fmt, msg, vargs);
-    fflush(fd);
+    //fflush(fd);
     return(len);
   }
 
 static bool kitty_write_msg(char *msg){
-  return(kitty_fprintf(stdout,"%s\n",msg) > 0 ? true : false);
+  return(kitty_fprintf(stdout,"%s",msg) > 0 ? true : false);
 }
+
 static void kitty_set_position(int x, int y){
   printf("\x1B[%d;%dH", y, x);
-  fflush(stdout);
+  //fflush(stdout);
 }
 struct pos { int x, y; };
 

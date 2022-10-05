@@ -5,6 +5,14 @@
 #define THUMBNAIL_WIDTH     150
 #define WRITE_FILE          true
 #define WRITE_THUMBNAIL     false
+#define MAX_QUALITY    70
+#define MIN_QUALITY    20
+#define BAR_TERMINAL_WIDTH_PERCENTAGE .8
+#define BAR_MIN_WIDTH 20
+#define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE .5
+#define BAR_MESSAGE_COMPRESSION_TEMPLATE "Compressing %lu Images of %s"
+#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu Windows"
+#define BAR_MESSAGE_TEMPLATE "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
 #include "capture/window/window.h"
 ////////////////////////////////////////////
@@ -582,6 +590,7 @@ static const struct cap_t *__caps[] = {
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      r->analyze  = true;
       r->type             = IMAGE_TYPE_PNG;
       r->msg              = (struct cgimage_recv_t *)MSG;
       r->time.captured_ts = r->msg->time.captured_ts;
@@ -589,43 +598,15 @@ static const struct cap_t *__caps[] = {
       r->len          = 0;
       r->time.started = timestamp();
       errno=0;
-      r->pixels = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
-      VipsImage *image;
-      vips_gifload_buffer(r->pixels, r->len, &image, NULL);
-      r->analyze  = true;
-      r->time.dur = timestamp() - r->time.started;
-      debug("Loaded %s GIF Pixels to %dx%d %s PNG VIPImage in %s",
-            bytes_to_string(r->len),
-            vips_image_get_width(image), vips_image_get_height(image),
-            bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
-            milliseconds_to_string(r->time.dur)
-            );
-      char *s;
-      size_t window_id = r->id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
-      errno=0;
-      if(r->len==0){
-        log_error("Failed to acquire Pixel Data (%luB) for Window #%lu",r->len,r->id);
-        return((void *)r);
-      }
-      errno=0;
-      if(vips_pngsave_buffer(image, r->pixels, &(r->len), NULL)){
-        log_error("Failed to save %s png buffer",bytes_to_string(r->len));
-        return((void *)r);
-      }
-
-      asprintf(&s, "%sWindow-%lu.png", gettempdir(), window_id);
-      vips_pngsave(image, s, NULL);
-      VipsImage *image1;
-      vips_pngload(s, &image1, NULL);
-      vips_pngsave_buffer(image1, &(r->pixels), &(r->len), NULL);
+      r->pixels = save_cgref_to_png_memory(r->msg->img_ref, &(r->len));
       if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze PNG");
       }
-      debug("Converted CGImageRef to %s PNG Pixels in %s",
+      debug("Converted CGImageRef to %s %lux%lu %s Pixels in %s",
             bytes_to_string(r->len),
+            r->width,r->height,image_type_name(r->type),
             milliseconds_to_string(r->time.dur)
             );
-      free(s);
       return((void *)r);
     },
   },
@@ -761,6 +742,10 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
   while (vector_size(compressed_results) < vector_size(req->ids) && chan_recv(compression_wait_chan, &msg) == 0) {
     qty++;
     debug("waiter compression recvd #%lu/#%lu", qty, vector_size(req->ids));
+    if (req->bar) {
+      req->bar->progress += (float)((float)1 / (float)(vector_size(req->ids)));
+      cbar_display_bar(req->bar);
+    }
     vector_push(compressed_results, msg);
   }
   debug("compression recv waited");
@@ -776,7 +761,6 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
 }
 
 static int run_compress_recv(void __attribute__((unused)) *CHAN){
-//  struct compress_req_t *req = (struct compress_req_t *)REQ;
   struct chan_t *chan = (struct chan_t *)CHAN;
   void          *msg;
   size_t        qty = 0;
@@ -788,11 +772,12 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
     debug("> Got compress msg #%lu!", qty);
     struct compress_t *c = (struct compress_t *)msg;
     c->started = timestamp();
-    bool              did_compress = false;
-    debug("type:%d|%s|PNG:%d|%s", c->type, image_type_name(c->type), IMAGE_TYPE_PNG, image_type_name(IMAGE_TYPE_PNG));
+    bool              did_compress = false, tried_to_compress = false;
+    debug("Run Compress Recv:   type:%d|%s|PNG:%d|%s", c->type, image_type_name(c->type), IMAGE_TYPE_PNG, image_type_name(IMAGE_TYPE_PNG));
     switch (c->type) {
     case IMAGE_TYPE_PNG:
       errno = 0;
+      tried_to_compress = true;
       if (!compress_png_buffer(c->pixels, &(c->len))) {
         log_error("Failed to compress #%lu", c->id);
       }
@@ -803,9 +788,12 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
     did_compress = (c->len < c->prev_len);
-    if (!did_compress) {
-      log_warn("Did not compress Item #%lu", c->id);
-    }else{
+    if (!did_compress && tried_to_compress) {
+      log_warn("Did not compress Item #%lu (New Size is %s, Old is %s)", c->id,
+         bytes_to_string(c->len),
+         bytes_to_string(c->prev_len)
+         );
+    }else if(tried_to_compress && did_compress){
       debug("Compressed #%lu from %s to %s in %s",
                 c->id,
                 bytes_to_string(c->prev_len),
@@ -813,12 +801,6 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
                 milliseconds_to_string(c->dur)
                 );
     }
-    /*
-     *    if(bar_enabled){
-     *     bar.progress = (float)((float)i / (float)(vector_size(ids)))/(float)1;
-     *     cbar_display_bar(&bar);
-     *    }
-     */
   }
   debug("recv compresses ended in %s, processed %lu items. sending to done", milliseconds_to_string(timestamp() - s), qty);
   chan_send(compression_done_chan, (void *)0);
@@ -930,33 +912,21 @@ static bool wait_cap(struct capture_req_t *req, struct cap_t *cap){
 }
 
 struct Vector *capture(struct capture_req_t *req){
-  caps = __caps;
-  struct Vector *v             = vector_new();
-  chan_t        *results_chan  = chan_init(vector_size(req->ids));
-  chan_t        *compress_done = NULL;
-  if (req->compress) {
-    compress_done = chan_init(10);
-  }
-  bool bar_enabled = false;
+  struct Vector *capture_results_v             = vector_new();
   char *bar_msg;
+  size_t bar_msg_len,bar_len;
+  int term_width = clamp(get_terminal_width(), 40, 160);
+  chan_t        *results_chan  = chan_init(vector_size(req->ids));
+  caps = __caps;
 
-  asprintf(&bar_msg, "Capturing %lu Windows", vector_size(req->ids));
-  size_t bar_msg_len = strlen(bar_msg), bar_len;
-  int    term_width = 80;
-  req->bar = calloc(1, sizeof(struct cbar_t));
-  if (!CAPTURE_WINDOW_DEBUG_MODE) {
-    bar_enabled = true;
-  }
-
-  if (bar_enabled) {
+  if(req->progress_bar_mode){
+    req->bar = calloc(1, sizeof(struct cbar_t));
+    asprintf(&bar_msg, BAR_MESSAGE_CAPTURE_TEMPLATE,vector_size(req->ids));
+    bar_msg_len  = strlen(bar_msg);
     term_width = get_terminal_width();
-    term_width = clamp(term_width, 40, 160);
-    asprintf(&bar_msg,
-             "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E",
-             bar_msg
-             );
-    bar_len     = term_width * .8 - bar_msg_len;
-    *(req->bar) = cbar(clamp(bar_len, 20, term_width * .5), bar_msg);
+    asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);
+    bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
+    *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
     cbar_hide_cursor();
     req->bar->progress = 0.00;
     cbar_display_bar(req->bar);
@@ -971,7 +941,7 @@ struct Vector *capture(struct capture_req_t *req){
     if (i > 0) {
       enum capture_chan_type_t prev_c = (enum capture_chan_type_t)(size_t)vector_get(providers, i - 1);
       caps[c]->recv_chan = caps[prev_c]->send_chan;
-      if (bar_enabled) {
+      if (req->progress_bar_mode) {
         caps[c]->bar = req->bar;
       }
     }
@@ -1026,11 +996,13 @@ struct Vector *capture(struct capture_req_t *req){
     debug("\tWaited capture #%d: %s", c, caps[c]->name);
   }
   struct capture_result_t *r;
+  size_t captured_images_len = 0;
 
   for (size_t i = 0; i < vector_size(req->ids); i++) {
     void *msg;
     if (chan_recv(results_chan, &msg) == 0) {
       r = (struct capture_result_t *)msg;
+      captured_images_len += r->len;
       debug("Received Result #%lu/%lu | %lux%lu | %s | %s | %s | Linear Colorspace: %s | Has Alpha: %s |",
                 i + 1, vector_size(req->ids),
                 r->width, r->height, bytes_to_string(r->len), milliseconds_to_string(r->time.dur),
@@ -1040,7 +1012,7 @@ struct Vector *capture(struct capture_req_t *req){
                 );
       r->time.captured_ts = timestamp();
       msg                 = (void *)r;
-      vector_push(v, msg);
+      vector_push(capture_results_v, msg);
     }
   }
   for (size_t i = 0; i < vector_size(providers); i++) {
@@ -1070,9 +1042,31 @@ struct Vector *capture(struct capture_req_t *req){
   }
   chan_dispose(results_chan);
   results_chan = NULL;
+  if (req->progress_bar_mode) {
+    req->bar->progress = (float)1.00;
+    cbar_display_bar(req->bar);
+    cbar_show_cursor();
+    printf("\n");
+    fflush(stdout);
+    free(req->bar);
+  }
+
   if (req->compress) {
+    void *compressed_images_msg;
+    struct Vector *compressed_images_msg_v = NULL, *compressed_images_v = vector_new();
+    struct compress_t *compressed_image_msg;
+    if(req->progress_bar_mode){
+      req->bar = calloc(1, sizeof(struct cbar_t));
+      asprintf(&bar_msg, BAR_MESSAGE_COMPRESSION_TEMPLATE,vector_size(req->ids),bytes_to_string(captured_images_len));
+      bar_msg_len  = strlen(bar_msg);
+      asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);
+      bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
+      *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
+      cbar_hide_cursor();
+      req->bar->progress = 0.00;
+      cbar_display_bar(req->bar);
+    }
     req->comp = calloc(1, sizeof(struct compress_req_t));
-    debug("checking compr %d", req->compress);
     for (int i = 0; i < req->concurrency; i++) {
       req->comp->chans[i]   = chan_init(vector_size(req->ids));
       req->comp->threads[i] = calloc(1, sizeof(pthread_t));
@@ -1081,74 +1075,54 @@ struct Vector *capture(struct capture_req_t *req){
     req->comp->waiter_chan = chan_init(vector_size(req->ids));
     compression_wait_chan  = chan_init(vector_size(req->ids));
     compression_done_chan  = chan_init(0);
-    //vector_size(req->ids));
-    //vector_size(req->ids));
     compression_results_chan = chan_init(0);
-    req->comp->done          = compress_done;
-    if (bar_enabled) {
+    if (req->progress_bar_mode) {
       req->comp->bar = calloc(1, sizeof(struct cbar_t));
     }
     if (!start_com(req)) {
       log_error("Failed to start compressions");
       goto fail;
     }
-    debug("\tstarted captures");
-#define MAX_QUALITY    70
-#define MIN_QUALITY    20
-    for (size_t i = 0; i < vector_size(v); i++) {
-      struct capture_result_t *r = (struct capture_result_t *)vector_get(v, i);
+    for (size_t i = 0; i < vector_size(capture_results_v); i++) {
+      struct capture_result_t *r = (struct capture_result_t *)vector_get(capture_results_v, i);
       struct compress_t       *c = calloc(1, sizeof(struct compress_t));
       c->id             = r->id;
       c->pixels         = r->pixels;
       c->len            = r->len;
       c->prev_len       = r->len;
       c->type           = r->type;
+      c->bar           = req->bar;
       c->max_quality    = MAX_QUALITY;
       c->min_quality    = MIN_QUALITY;
       c->capture_result = r;
-      int q = (i % req->concurrency);
-      debug("q:%d", q);
-      debug("Sending compression #%lu/%lu", i + 1, vector_size(v));
-      chan_send(req->comp->chans[q], (void *)c);
-      debug("Sent compression #%lu/%lu", i + 1, vector_size(v));
+      chan_send(req->comp->chans[i%req->concurrency], (void *)c);
     }
     for (int x = 0; x < req->concurrency; x++) {
       chan_close(req->comp->chans[x]);
     }
-    debug("\tsent compressions");
-    debug("\tWaiting compressions");
-    if (false) {
-      if (!wait_com(req)) {
-        log_error("Failed to wait comp");
-        goto fail;
-      }
-
-      debug("\tWaited comps");
-    }
-    void          *ms;
-    chan_recv(compression_results_chan, &ms);
-    struct Vector *new_v = (struct Vector *)ms;
-    debug("\treceived compression results with %lu items", vector_size(new_v));
+    chan_recv(compression_results_chan, &compressed_images_msg);
+    compressed_images_msg_v = (struct Vector *)compressed_images_msg;
+    debug("\treceived compression results with %lu items", vector_size(compressed_images_msg_v));
     chan_close(compression_done_chan);
     chan_close(compression_wait_chan);
 
-    struct Vector *nnew_v = vector_new();
 
-    for (size_t i = 0; i < vector_size(new_v); i++) {
-      struct compress_t *re = (struct compress_t *)vector_get(new_v, i);
+    for (size_t i = 0; i < vector_size(compressed_images_msg_v); i++) {
+      compressed_image_msg = (struct compress_t *)vector_get(compressed_images_msg_v, i);
       debug("new vector ite #%lu/%lu has %s image from %s image of type %d|%s",
-                i + 1, vector_size(new_v),
-                bytes_to_string(re->len),
-                bytes_to_string(re->prev_len),
-                re->type,
-                image_type_name(re->type)
+                i + 1, vector_size(compressed_images_msg_v),
+                bytes_to_string(compressed_image_msg->len),
+                bytes_to_string(compressed_image_msg->prev_len),
+                compressed_image_msg->type,
+                image_type_name(compressed_image_msg->type)
                 );
-      struct capture_result_t *r = re->capture_result;
-      r->pixels = re->pixels;
-      r->len    = re->len;
-      fsio_write_binary_file(r->file, r->pixels, r->len);
+      struct capture_result_t *r = compressed_image_msg->capture_result;
+      r->pixels = compressed_image_msg->pixels;
+      r->len    = compressed_image_msg->len;
+//      Dbg(r->len,%lu);
+//      fsio_write_binary_file(r->file, r->pixels, r->len);
       debug("new vector item #%lu/%lu with id %lu %s file %s has %s image of type %d|%s",
-                i + 1, vector_size(new_v),
+                i + 1, vector_size(compressed_images_msg_v),
                 r->id,
                 bytes_to_string(fsio_file_size(r->file)),
                 r->file,
@@ -1156,33 +1130,28 @@ struct Vector *capture(struct capture_req_t *req){
                 r->type,
                 image_type_name(r->type)
                 );
-      vector_push(nnew_v, r);
+      vector_push(compressed_images_v, r);
     }
-//      chan_close(req->comp->done);
-    v = nnew_v;
+    capture_results_v = compressed_images_v;
+    debug("compressions done");
+    if (req->progress_bar_mode) {
+      req->bar->progress = (float)1.00;
+      cbar_display_bar(req->bar);
+      cbar_show_cursor();
+      printf("\n");
+      fflush(stdout);
+      free(req->bar);
+    }
   }
-  debug("done");
-  if (bar_enabled) {
-    req->bar->progress = (float)1.00;
-    cbar_display_bar(req->bar);
-    cbar_show_cursor();
-    printf("\n");
-    fflush(stdout);
-  }
-  return(v);
-
+  return(capture_results_v);
 fail:
-  return(vector_new());
+  return(capture_results_v);
 } /* capture*/
 
 bool end_animation(struct animated_capture_t *acap){
   errno = 0;
   fprintf(stdout, "%s", kitty_msg_delete_images());
   fflush(stdout);
-  size_t frames_qty = get_gif_frames_qty(acap->gif), msf_size = get_gif_size(acap->gif);
-//    fprintf(stdout, "%s                                                         %s", AC_UP(1), AC_LEFT(acap->term_width));
-  //  fflush(stdout);
-  //log_info("|size:%s|frames:%lu|", bytes_to_string(msf_size), frames_qty);
   acap->result = msf_gif_end(acap->gif);
 
   char *msg;
@@ -1215,11 +1184,13 @@ bool end_animation(struct animated_capture_t *acap){
 //fprintf(stdout,"%s",m);
 //  fflush(stdout);
 //free(m);
-  acap->bar.progress = (float)1.00;
-  cbar_display_bar(&(acap->bar));
+if(acap->progress_bar_mode){
+  acap->bar->progress = (float)1.00;
+  cbar_display_bar((acap->bar));
   cbar_show_cursor();
-  printf("\n");
+ // printf("\n");
   fflush(stdout);
+}
 
   return(true);
 } /* end_animation */
@@ -1292,6 +1263,7 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
         );
   int cs;
 
+
   if (vector_size(acap->frames_v) > 0) {
     cs = (int)(r->delta_ms / 10);
       debug("cs:%d|cs per frame:%d|delta:%lu|",
@@ -1355,19 +1327,8 @@ bool inspect_frames(struct animated_capture_t *acap){
 int poll_new_animated_frame(void *VOID){
   struct animated_capture_t *acap = (struct animated_capture_t *)VOID;
   char                      *bar_msg;
-
-  //printf("%s\033]11;#2F2A2A\033", AC_SAVE_PRIVATE_PALETTE);
-  //fprintf(stdout,"%s\n",bar_msg);
-  //fflush(stdout);
-  //asprintf(&bar_msg,"%s", "\033]11;#2f2a2a\033");
-  //fprintf(stdout,"%s\n",bar_msg);
-  //fflush(stdout);
-  //AC_SAVE_PRIVATE_PALETTE);
-  //"\x1b]11;#000000\x1b");
-    //\]10;#ffffff\]12;#7c54b0\]4;0;#000000\]4;1;#571dc2\]4;2;#14db49\]4;3;#403d70\]4;4;#385a70\]4;5;#384894\]4;6;#4f3a5e\]4;7;#999999\]4;8;#38372c\]4;9;#571dc2\]4;10;#14db49\]4;11;#403d70\]4;12;#385a70\]4;13;#384894\]4;14;#4f3a5e\]4;15;#999999\n");
-    //
-  bool bar_enabled = (CAPTURE_WINDOW_DEBUG_MODE == false) ? false : true;
-    bar_enabled = false;
+  void *msg;
+    if(acap->progress_bar_mode){
   asprintf(&bar_msg,
            "$E BOLD; $ECapturing %lu %s %s Frames at %luFPS: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
            "%s",
@@ -1377,9 +1338,9 @@ int poll_new_animated_frame(void *VOID){
            (size_t)((float)((float)1 / (float)acap->ms_per_frame) * (float)(100 * 10)),
            ""
            );
-  acap->bar = cbar(clamp((int)((float)acap->term_width * (float)(.4)), 20, 60), bar_msg);
+  acap->bar = &(cbar(clamp((int)((float)acap->term_width * (float)(.4)), 20, 60), bar_msg));
   cbar_hide_cursor();
-  void *msg;
+    }
 
   while (chan_recv(acap->chan, &msg) == 0) {
     struct capture_result_t *r = (struct capture_result_t *)msg;
@@ -1388,11 +1349,12 @@ int poll_new_animated_frame(void *VOID){
       log_info("msg %s|%lu|%lu", r->file, r->len, vector_size(acap->frames_v));
     }
     new_animated_frame(acap, r);
-    acap->bar.progress = vector_size(acap->frames_v) == 0 ? 0 : (float)((float)(vector_size(acap->frames_v) / (float)(acap->expected_frames_qty)) / (float)1);
-    //fprintf(stdout,"%s",bar_msg); fflush(stdout);
-    cbar_display_bar(&(acap->bar));
-    pthread_mutex_unlock(acap->mutex);
+    if(acap->progress_bar_mode){
+       acap->bar->progress = vector_size(acap->frames_v) == 0 ? 0 : (float)((float)(vector_size(acap->frames_v) / (float)(acap->expected_frames_qty)) / (float)1);
+    cbar_display_bar((acap->bar));
     fflush(stdout);
+}
+    pthread_mutex_unlock(acap->mutex);
   }
   chan_send(acap->done, (void *)0);
   if (CAPTURE_WINDOW_DEBUG_MODE) {
@@ -1401,12 +1363,13 @@ int poll_new_animated_frame(void *VOID){
   return(0);
 } /* poll_new_animated_frame */
 
-struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame){
+struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode){
   struct animated_capture_t *n = calloc(1, sizeof(struct animated_capture_t));
 
   n->frames_v     = vector_new();
   n->gif          = calloc(1, sizeof(MsfGifState));
   n->ms_per_frame = ms_per_frame;
+  n->progress_bar_mode = progress_bar_mode;
   n->id           = id;
   n->term_width   = get_terminal_width();
   n->term_width   = clamp(n->term_width, 40, 160);

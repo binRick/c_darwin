@@ -31,7 +31,6 @@
 #include <libproc.h>
 #define SYSTEM_PREFERENCES_SECURITY_APP_NAME       "System Preferences"
 #define SYSTEM_PREFERENCES_SECURITY_WINDOW_NAME    "Security & Privacy"
-extern struct Vector *get_window_infos_v();
 static bool       PROCESS_UTILS_DEBUG_MODE         = false;
 static bool       PROCESS_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void);

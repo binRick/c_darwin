@@ -40,7 +40,7 @@ struct capture_req_t {
   struct Vector          *ids;
   int                    concurrency;
   int                    width, height;
-  bool                   compress;
+  bool                   compress, progress_bar_mode;
   enum capture_type_id_t type;
   enum image_type_id_t   format;
   struct capture_time_t  time;
@@ -55,7 +55,7 @@ struct animated_frame_t {
 struct animated_capture_t {
   MsfGifState            *gif;
   MsfGifResult           result;
-  cbar_t                 bar;
+  cbar_t                 *bar;
   size_t                 expected_frames_qty;
   char                   *file;
   struct Vector          *frames_v;
@@ -68,6 +68,7 @@ struct animated_capture_t {
   chan_t                 *chan, *done;
   pthread_t              *thread;
   pthread_mutex_t        *mutex;
+  bool progress_bar_mode;
 };
 struct cgimage_recv_t {
   void                  *msg;
@@ -128,6 +129,7 @@ struct compress_t {
   size_t                  id;
   struct capture_result_t *capture_result;
   unsigned long           started, dur;
+  cbar_t *bar;
 };
 struct cap_t {
   char                         *name;
@@ -180,10 +182,9 @@ char *get_capture_type_name(enum capture_type_id_t type);
 bool inspect_frames(struct animated_capture_t *acap);
 bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t *r);
 int poll_new_animated_frame(void *VOID);
-struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame);
+struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode);
 size_t animated_frames_len(struct animated_capture_t *acap);
 bool end_animation(struct animated_capture_t *acap);
 struct Vector *get_cap_providers(enum image_type_id_t type);
 struct Vector *capture(struct capture_req_t *req);
-struct animated_capture_t *init_animated_capture();
 #endif

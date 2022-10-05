@@ -39,7 +39,7 @@ struct args_t {
   int                                  *ilist;
   size_t                               ilist_size;
 
-  bool                                 verbose_mode, debug_mode, progress_bar_mode;
+  bool                                 verbose_mode, debug_mode, progress_bar_mode, write_images_mode;
   bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
   int                                  space_id, window_id;
   int                                  display_id;

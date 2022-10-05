@@ -507,6 +507,8 @@ void get_window_tags(struct window_info_t *w){
 }
 
 void focus_window_id(size_t WINDOW_ID){
+  if(WINDOW_UTILS_DEBUG_MODE)
+    log_debug("%lu", WINDOW_ID);
   return(focus_window(get_window_id_info(WINDOW_ID)));
 }
 
@@ -572,7 +574,7 @@ void minimize_window(struct window_info_t *w){
 
 void focus_window(struct window_info_t *w){
   if (WINDOW_UTILS_DEBUG_MODE) {
-    log_debug("window %lu:pid %d", w->window_id, w->pid);
+    log_debug("Focusing window %lu:pid %d", w->window_id, w->pid);
   }
   assert(w->pid > 0 && w->window_id > 0);
   errno = 0;
@@ -1146,7 +1148,7 @@ struct window_info_t *get_focused_window_info(){
   return(window_info);
 }
 struct window_info_t *get_window_id_info(size_t window_id){
-  struct Vector        *window_infos_v = get_window_infos_id_v(window_id);
+  struct Vector        *window_infos_v = window_infos_v = get_window_infos_v();
   struct window_info_t *window_info    = NULL;
 
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {
@@ -1255,9 +1257,7 @@ CGImageRef capture_window_id_height(size_t window_id, size_t height){
 
 struct Vector *get_captured_window_infos_v(){
   struct Vector *v = vector_new();
-  log_info("get_captured_window_infos_v");
   return(v);
-
 }
 
 
