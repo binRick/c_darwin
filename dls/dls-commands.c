@@ -27,10 +27,44 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-#define MAX_CONCURRENCY    25
+#define MAX_CONCURRENCY   25
+#define MAX_FRAME_RATE    30
+#define MAX_LIMIT         99
+#define MAX_DURATION      300
+#define MAX_WINDOW_SIZE   4000
+#define MAX_DURATION      300
 #define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
 #define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
 #define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
+struct capture_mode_t;
+enum arg_clamp_type_t {
+  ARG_CLAMP_TYPE_WINDOW_SIZE,
+  ARG_CLAMP_TYPE_FRAME_RATE,
+  ARG_CLAMP_TYPE_LIMIT,
+  ARG_CLAMP_TYPE_CONCURRENCY,
+  ARG_CLAMP_TYPE_DURATION,
+  ARG_CLAMP_TYPES_QTY,
+};
+static const struct arg_clamp_t {
+  signed long min, max;
+} arg_clamps[] = {
+ [ARG_CLAMP_TYPE_WINDOW_SIZE] = {.min = -1, .max = MAX_WINDOW_SIZE},
+ [ARG_CLAMP_TYPE_FRAME_RATE] =  {.min =  1, .max = MAX_FRAME_RATE},
+ [ARG_CLAMP_TYPE_CONCURRENCY] = {.min =  1, .max = MAX_CONCURRENCY},
+ [ARG_CLAMP_TYPE_DURATION] =    {.min =  1, .max = MAX_DURATION},
+ [ARG_CLAMP_TYPE_LIMIT] =       {.min =  1, .max = MAX_LIMIT},
+};
+#define CLAMP_ARG_TYPE(ARGS,ARG,TYPE)\
+  clamp(ARGS->ARG,arg_clamps[TYPE].min,arg_clamps[TYPE].max)
+void clamp_args(struct args_t *ARGS){
+  ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS,concurrency,ARG_CLAMP_TYPE_CONCURRENCY);
+  ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS,duration_seconds,ARG_CLAMP_TYPE_DURATION);
+  ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS,frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
+  ARGS->width       = CLAMP_ARG_TYPE(ARGS,width, ARG_CLAMP_TYPE_WINDOW_SIZE);
+  ARGS->height       = CLAMP_ARG_TYPE(ARGS,height, ARG_CLAMP_TYPE_WINDOW_SIZE);
+  ARGS->limit      = CLAMP_ARG_TYPE(ARGS,limit, ARG_CLAMP_TYPE_LIMIT);
+  ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
+}
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 static void debug_dls_arguments(){
@@ -50,12 +84,52 @@ static void debug_dls_arguments(){
   log_debug("format :  %s", args->image_format);
   log_debug("limit :  %d", args->limit);
   log_debug("format type:  %d", args->image_format_type);
-    log_debug("frame rate :  %d", args->frame_rate);
-    log_debug("Duration sec :  %d", args->duration_seconds);
-    log_debug("window id :  %d", args->capture_id);
-    log_debug("display :  %s", args->display_mode?"Yes":"No");
-    log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
-    log_debug("compress :  %s", args->compress?"Yes":"No");
+  log_debug("frame rate :  %d", args->frame_rate);
+  log_debug("Duration sec :  %d", args->duration_seconds);
+  log_debug("window id :  %d", args->capture_id);
+  log_debug("display :  %s", args->display_mode?"Yes":"No");
+  log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
+  log_debug("compress :  %s", args->compress?"Yes":"No");
+}
+static const struct {
+  struct Vector *(*get_structs_v_function)(void);
+  size_t (^get_struct_index_pk)(struct Vector *structs, size_t index);
+} capture_type_getters[] = {
+  [CAPTURE_TYPE_WINDOW] = { 
+    .get_structs_v_function = get_window_infos_v, 
+    .get_struct_index_pk = ^size_t (struct Vector *structs, size_t index){
+      return( ((struct window_info_t*)vector_get(structs,index))->window_id );
+    },
+  },
+  [CAPTURE_TYPE_SPACE] = { 
+    .get_structs_v_function = get_spaces_v, 
+    .get_struct_index_pk = ^size_t (struct Vector *structs, size_t index){
+      return( ((struct space_t*)vector_get(structs,index))->id );
+    },
+  },
+  [CAPTURE_TYPE_DISPLAY] = { 
+    .get_structs_v_function = get_displays_v, 
+    .get_struct_index_pk = ^size_t (struct Vector *structs, size_t index){
+      return( ((struct display_t*)vector_get(structs,index))->display_id );
+    },
+  },
+};
+static struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
+  struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
+  for(size_t i = 0; i <vector_size(structs) && vector_size(ids) < limit;i++)
+    vector_push(ids,(void*)capture_type_getters[id].get_struct_index_pk(structs,i));
+  vector_release(structs);
+  return(ids);
+}
+static struct Vector *get_capture_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id){
+  struct Vector *ids = NULL;
+  if (all) {
+    ids = get_all_capture_type_ids(type, limit);
+  }else if (args->capture_id > 0) {
+    ids = vector_new();
+    vector_push(ids, (void*)(size_t)(id));
+  }
+  return(ids);
 }
 ////////////////////////////////////////////
 static void _command_move_window();
@@ -141,17 +215,6 @@ static void _check_xml_file(char *xml_file_path);
 static void _check_icon_size(size_t icon_size);
 static void _check_pid(int pid);
 ////////////////////////////////////////////
-#if 0
-  CHECK_COMMAND_DISPLAY_SIZE_ROWS_GROUP,
-  CHECK_COMMAND_DISPLAY_SIZE_COLS_GROUP,
-  CHECK_COMMAND_DISPLAY_SIZE_PERCENT_GROUP,
-  CHECK_COMMAND_DISPLAY_SIZE_PIXELS_GROUP,
-  CHECK_COMMAND_DISPLAY_HEIGHT_GROUP,
-  CHECK_COMMAND_DISPLAY_WIDTH_GROUP,
-  CHECK_COMMAND_DISPLAY_TOP_LEFT_CORNER_GROUP,
-  CHECK_COMMAND_DISPLAY_TOP_RIGHT_CORNER_GROUP,
-  CHECK_COMMAND_DISPLAY_BOTTOM_RIGHT_CORNER_GROUP,
-#endif
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                                 {
     return((struct optparse_opt)                                                                            {
@@ -1727,60 +1790,34 @@ static void _command_set_space_index(){
   exit(EXIT_SUCCESS);
 }
 
+
 static void _command_extract_window(){
   log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
-  struct Vector *v = vector_new();
-  if (args->all_mode ){
-    struct Vector *a = get_window_infos_brief_v();
-    for (size_t i = 0; i < vector_size(a); i++) {
-      if ((size_t)args->limit > 0 && vector_size(v) >= (size_t)args->limit) {
-        continue;
-      }
-      struct window_info_t *w = (struct window_info_t *)vector_get(a, i);
-      vector_push(v, (void *)(w->window_id));
-    }
+  clamp_args(args);
+  debug_dls_arguments();
+  struct Vector *results = NULL, *ids = NULL;
+  if (args->all_mode) {
+    ids = get_all_capture_type_ids(CAPTURE_TYPE_WINDOW, args->limit);
   }else if (args->capture_id > 0) {
-    vector_push(v, (void *)(size_t)(args->capture_id));
+    ids = vector_new();
+    vector_push(ids, (void*)(size_t)(args->capture_id));
   }
-  log_info("%lu Windows", vector_size(v));
-  struct Vector *r = tesseract_extract_windows(v, args->concurrency);
-
-  log_info("%lu Results", vector_size(r));
-
+  log_info("%lu Windows", vector_size(ids));
+  results = tesseract_extract_windows(ids, args->concurrency);
+  log_info("%lu Results", vector_size(results));
   exit(EXIT_SUCCESS);
 }
 
+
 static void _command_animated_capture(){
-  args->frame_rate       = clamp(args->frame_rate, 1, 50);
-  args->width            = clamp(args->width, -1, 4000);
-  args->height           = clamp(args->height, -1, 4000);
-  args->concurrency      = clamp(args->concurrency, 1, args->limit);
-  args->concurrency      = clamp(args->concurrency, 1, MAX_CONCURRENCY);
-  args->duration_seconds = clamp(args->duration_seconds, 1, 300);
+  clamp_args(args);
+  debug_dls_arguments();
   unsigned long animation_started = timestamp();
   unsigned long end_ts = animation_started + (args->duration_seconds * 1000);
   unsigned long interval_ms = (unsigned long)(1000 * (float)(((float)1) / (float)(args->frame_rate))), expected_frames_qty = args->duration_seconds * args->frame_rate;
-  debug_dls_arguments();
-  struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
-  if (args->all_mode) {
-    all_windows = get_window_infos_v();
-    for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(ids) < (size_t)(args->limit))  : true); i++) {
-      struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
-      if (w && w->window_id > 0) {
-        vector_push(ids, (void *)(w->window_id));
-      }
-    }
-  }else if (args->capture_id > 0) {
-    struct window_info_t *w = get_window_id_info((size_t)(args->capture_id));
-    if (w && w->window_id == (size_t)(args->capture_id)) {
-      vector_push(ids, (void *)(size_t)(args->capture_id));
-    }else{
-      log_error("Window ID #%lu not found", (size_t)(args->capture_id));
-      exit(EXIT_FAILURE);
-    }
-  }
+  struct Vector *results = NULL, *ids = get_capture_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->capture_id);
   for (size_t x = 0; x < vector_size(ids); x++) {
-    struct capture_req_t *req = calloc(1, sizeof(struct capture_req_t));
+    struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
     req->ids        = vector_new();
     args->capture_id = (size_t)vector_get(ids, x);
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
@@ -1793,19 +1830,19 @@ static void _command_animated_capture(){
     req->height       = args->height > 0 ? args->height : 0;
     req->time.started = timestamp();
     req->time.dur     = 0;
-    struct animated_capture_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->capture_id, interval_ms, args->progress_bar_mode);
+    struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->capture_id, interval_ms, args->progress_bar_mode);
     acap->expected_frames_qty = expected_frames_qty;
     unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
     size_t                    qty = vector_size(acap->frames_v);
     while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > qty) {
       unsigned long s = timestamp();
-      results  = capture(req);
+      results  = capture_image(req);
       prev_ts  = last_ts;
       last_ts  = timestamp();
       delta_ms = last_ts - prev_ts;
       size_t q = vector_size(results);
       for (size_t i = 0; i < q; i++) {
-        struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+        struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
         r->delta_ms = delta_ms;
         chan_send(acap->chan, (void *)r);
         if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
@@ -1847,33 +1884,94 @@ static void _command_animated_capture(){
 
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
-static void _command_capture(){
-  args->width       = clamp(args->width, -1, 4000);
-  args->height      = clamp(args->height, -1, 4000);
-  args->limit       = clamp(args->limit, 1, 999);
-  args->concurrency = clamp(args->concurrency, 1, args->limit);
-  args->concurrency = clamp(args->concurrency, 1, MAX_CONCURRENCY);
-  struct Vector *all_windows = NULL, *results = NULL, *ids = vector_new();
-  debug_dls_arguments();
 
-  if (args->all_mode == true) {
-    all_windows = get_window_infos_v();
-    for (size_t i = 0; (i < vector_size(all_windows)) && (((size_t)(args->limit) > 0) ? (vector_size(ids) < (size_t)(args->limit))  : true); i++) {
-      struct window_info_t *w = (struct window_info_t *)vector_get(all_windows, i);
-      if (w && w->window_id > 0) {
-        vector_push(ids, (void *)(w->window_id));
-      }
-    }
-  }else if (args->capture_id > 0) {
-    struct window_info_t *w = get_window_id_info((size_t)(args->capture_id));
-    if (w && w->window_id == (size_t)(args->capture_id)) {
-      vector_push(ids, (void *)(size_t)(args->capture_id));
-    }else{
-      log_error("Window ID #%lu not found", (size_t)(args->capture_id));
-      exit(EXIT_FAILURE);
-    }
-  }
-  struct capture_req_t *req = calloc(1, sizeof(struct capture_req_t));
+static const struct capture_mode_t {
+  unsigned long started, dur;
+  struct Vector *ids, *requests, *results;
+  union mode_request_t {
+    struct capture_image_request_t capture;
+    struct capture_animation_request_t animation;
+  } request;
+  union mode_result_t {
+    struct capture_image_result_t capture;
+    struct capture_animation_result_t animation;
+  } result;
+  struct mode_result_handled_t {
+    unsigned long started, dur;
+  } handled;
+  union mode_request_t *(^request_creator)(enum capture_type_id_t type, struct Vector *ids_v);
+  union mode_result_t *(^request_handler)(union mode_request_t *req);
+  struct mode_result_handled_t *(^result_handler)(union mode_result_t *res);
+} capture_modes[CAPTURE_MODE_TYPES_QTY] = {
+  [CAPTURE_MODE_TYPE_IMAGE] = {
+      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
+          struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+          req->ids          = ids_v;
+          req->concurrency  = args->concurrency;
+          req->type         = CAPTURE_TYPE_WINDOW;
+          req->compress         = args->compress;
+          req->progress_bar_mode = true;
+          req->format       = args->image_format_type;
+          req->width        = args->width > 0 ? args->width : 0;
+          req->height       = args->height > 0 ? args->height : 0;
+          req->compress = args->compress;
+          req->time.started = timestamp();
+          req->time.dur     = 0;
+          /*
+          results           = capture(req);
+          char *__writable_dir_file = NULL;
+          size_t wrote_bytes_total = 0;
+          size_t wrote_files_qty = 0;
+          unsigned long _started = timestamp();*/
+        return(req);
+      },
+      .request_handler = ^union mode_result_t *(union mode_request_t *req){
+        return(capture_image(req));
+      },
+      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
+        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
+        for (size_t i = 0; i < vector_size(res); i++) {
+          struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(res, i);
+        }
+        return(handled);
+      },
+  },
+  [CAPTURE_MODE_TYPE_ANIMATION] = {
+      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
+          struct capture_animation_request_t *req = calloc(1, sizeof(struct capture_animation_request_t));
+          struct capture_image_request_t *img = calloc(1, sizeof(struct capture_image_request_t));
+          img->ids        = ids_v;
+          img->concurrency  = args->concurrency;
+          img->type         = CAPTURE_TYPE_WINDOW;
+          img->progress_bar_mode = false;
+          img->compress = args->compress;
+          img->format       = IMAGE_TYPE_GIF;
+          img->width        = args->width > 0 ? args->width : 0;
+          img->height       = args->height > 0 ? args->height : 0;
+          img->time.started = timestamp();
+          img->time.dur     = 0;
+      //    struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, img->format, args->capture_id, interval_ms, args->progress_bar_mode);
+        //  acap->expected_frames_qty = expected_frames_qty;
+          //unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
+         // size_t                    qty = vector_size(acap->frames_v);
+        return(req);
+      },
+      .request_handler = ^union mode_result_t *(union mode_request_t *req){
+        struct capture_animation_result_t *res = calloc(1, sizeof(struct capture_animation_result_t));
+        return(res);
+      },
+      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
+        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
+        return(handled);
+      },
+  },
+};
+
+static void _command_capture(){
+  clamp_args(args);
+  debug_dls_arguments();
+  struct Vector *results = NULL, *ids = get_capture_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->capture_id);
+  struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
   req->ids          = ids;
   req->concurrency  = args->concurrency;
   req->type         = CAPTURE_TYPE_WINDOW;
@@ -1886,34 +1984,13 @@ static void _command_capture(){
   req->compress = args->compress;
   req->time.started = timestamp();
   req->time.dur     = 0;
-  results           = capture(req);
+  results           = capture_image(req);
   char *__writable_dir_file = NULL;
   size_t wrote_bytes_total = 0;
   size_t wrote_files_qty = 0;
   unsigned long _started = timestamp();
   for (size_t i = 0; i < vector_size(results); i++) {
-    struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
-
-
-/*
-        VipsImage *image;
-        vips_pngload_buffer(r->pixels, r->len, &image, NULL);
-        r->time.dur = timestamp() - r->time.started;
-        log_info("Loaded %s PNG Pixels to %dx%d %s PNG VIPImage in %s",
-              bytes_to_string(r->len),
-              vips_image_get_width(image), vips_image_get_height(image),
-              bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
-              milliseconds_to_string(r->time.dur)
-              );
-        errno=0;
-        if(r->len==0){
-          log_error("Failed to acquire Pixel Data (%luB) for Window #%lu",r->len,r->id);
-          return((void *)r);
-        }
-        char *s;
-        asprintf(&s, "%sxWindow-%lu.png", gettempdir(), r->id);
-        vips_pngsave(image, s, NULL);
-*/
+    struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
     if(args->output_file){
         char *ext = fsio_file_extension(args->output_file);
         char *saver = vips_foreign_find_save_target(ext);
@@ -1987,7 +2064,7 @@ log_info("\nchanged extension: %s|saver: %s|",args->output_file,saver);
     }
   }
   for (size_t i = 0; i < vector_size(results); i++) {
-    struct capture_result_t *r = (struct capture_result_t *)vector_get(results, i);
+    struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
       if (args->display_mode && r->len > 0 && r->pixels) {
 //      kitty_display_image_buffer(r->pixels, r->len);
         //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
@@ -2484,10 +2561,10 @@ static void __attribute__((constructor)) __constructor__darwin_ls_commands(void)
     }                                                                     \
     exit(EXIT_SUCCESS);                                                   \
   }
-
 LIST_HANDLER(usb)
 LIST_HANDLER(kitty)
 LIST_HANDLER(app)
 LIST_HANDLER(hotkey)
 LIST_HANDLER(monitor)
+#undef LIST_HANDLER
 #endif

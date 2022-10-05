@@ -375,7 +375,19 @@ int get_focused_window_id(){
   if (r != 0) { free(i);  continue; }
 
 #define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS() \
-  if (!name || strlen(name) < 1 || pid < 1 || !title || ((int)(bounds.size.height) < 75) || ((int)bounds.size.width * bounds.size.height <= 1)) { free(i);  continue; }
+  if (\
+      !name \
+      || strlen(name) < 1 \
+      || pid < 1 \
+      || !title \
+      || ((int)(bounds.size.width) == 0) \
+      || ((int)(bounds.size.width) == 640 && ((int)(bounds.size.height) == 480))\
+      || ((int)(bounds.size.height) < 75) \
+      || ((int)bounds.size.width * bounds.size.height <= 1)\
+    ) { \
+    free(i);  \
+    continue; \
+  }
 
 #define WINDOW_DICTIONARY_SET_WINDOW_INFO(BRIEF)                                                                         \
   i->window_id                                       = (size_t)window_id;                                                \

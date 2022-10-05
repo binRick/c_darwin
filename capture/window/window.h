@@ -20,12 +20,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-//#include "vips/vips.h"
 enum capture_type_id_t {
-  CAPTURE_TYPE_WINDOW  = 100,
-  CAPTURE_TYPE_DISPLAY = 200,
-  CAPTURE_TYPE_SPACE   = 300,
-  CAPTURE_TYPES_QTY    = 3,
+  CAPTURE_TYPE_WINDOW,
+  CAPTURE_TYPE_DISPLAY,
+  CAPTURE_TYPE_SPACE,
+  CAPTURE_TYPES_QTY,
+};
+enum capture_mode_type_t {
+  CAPTURE_MODE_TYPE_IMAGE,
+  CAPTURE_MODE_TYPE_ANIMATION,
+  CAPTURE_MODE_TYPE_EXTRACT,
+  CAPTURE_MODE_TYPES_QTY,
 };
 struct cap_t;
 typedef void (*chan_handler_t)(void *CHAN);
@@ -36,7 +41,10 @@ void send_msg(void *recv, struct cap_t *cap);
 struct capture_time_t {
   unsigned long started, dur, captured_ts;
 };
-struct capture_req_t {
+struct capture_animation_request_t {
+
+};
+struct capture_image_request_t {
   struct Vector          *ids;
   int                    concurrency;
   int                    width, height;
@@ -52,7 +60,7 @@ struct animated_frame_t {
   size_t        width, height, len, id;
   unsigned long ts;
 };
-struct animated_capture_t {
+struct capture_animation_result_t {
   MsfGifState            *gif;
   MsfGifResult           result;
   cbar_t                 *bar;
@@ -74,10 +82,10 @@ struct cgimage_recv_t {
   void                  *msg;
   CGImageRef            img_ref;
   size_t                width, height, index, len;
-  struct capture_req_t  *req;
+  struct capture_image_request_t  *req;
   struct capture_time_t time;
 };
-struct capture_result_t {
+struct capture_image_result_t {
   struct cgimage_recv_t *msg;
   enum image_type_id_t  type;
   char                  *file, *thumbnail_file;
@@ -127,7 +135,7 @@ struct compress_t {
   int                     min_quality, max_quality;
   enum image_type_id_t    type;
   size_t                  id;
-  struct capture_result_t *capture_result;
+  struct capture_image_result_t *capture_result;
   unsigned long           started, dur;
   cbar_t *bar;
 };
@@ -179,12 +187,12 @@ struct cgimage_args_t {
   int    width, height;
 };
 char *get_capture_type_name(enum capture_type_id_t type);
-bool inspect_frames(struct animated_capture_t *acap);
-bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t *r);
+bool inspect_frames(struct capture_animation_result_t *acap);
+bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_image_result_t *r);
 int poll_new_animated_frame(void *VOID);
-struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode);
-size_t animated_frames_len(struct animated_capture_t *acap);
-bool end_animation(struct animated_capture_t *acap);
+struct capture_animation_result_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode);
+size_t animated_frames_len(struct capture_animation_result_t *acap);
+bool end_animation(struct capture_animation_result_t *acap);
 struct Vector *get_cap_providers(enum image_type_id_t type);
-struct Vector *capture(struct capture_req_t *req);
+struct Vector *capture_image(struct capture_image_request_t *req);
 #endif

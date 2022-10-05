@@ -132,9 +132,6 @@ int main(int argc, char *argv[]) {
         common_options_b[COMMON_OPTION_CAPTURE_SPACE_MODE](args),\
         common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
         COMMON_OPTIONS_ID
-#define COMMON_OPTIONS_ANIMATION \
-          common_options_b[COMMON_OPTION_DURATION_SECONDS](args),\
-          common_options_b[COMMON_OPTION_FRAME_RATE](args),
 #define COMMON_OPTIONS_SORT \
           common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
           common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
@@ -147,6 +144,10 @@ int main(int argc, char *argv[]) {
         COMMON_OPTIONS_SORT \
         COMMON_OPTIONS_SIZE\
         COMMON_OPTIONS_LIMIT_OPTIONS
+#define COMMON_OPTIONS_ANIMATION \
+        COMMON_OPTIONS_SIZE \
+        common_options_b[COMMON_OPTION_DURATION_SECONDS](args),\
+        common_options_b[COMMON_OPTION_FRAME_RATE](args),
       {
         .name        = cmds[COMMAND_WINDOWS].name,
         .description = cmds[COMMAND_WINDOWS].description,

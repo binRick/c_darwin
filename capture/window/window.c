@@ -63,7 +63,7 @@ void cgimage_receiver(void *ARGS);
 void rgb_receiver(void *ARGS);
 void gif_receiver(void *ARGS);
 void png_receiver(void *ARGS);
-static bool analyze_image_pixels(struct capture_result_t *r);
+static bool analyze_image_pixels(struct capture_image_result_t *r);
 static char *get_image_type_filename(enum capture_type_id_t capture_type, enum image_type_id_t format, size_t id, bool thumbnail);
 static const struct cap_t *__caps[] = {
   [CAPTURE_CHAN_TYPE_CGIMAGE] = &(struct cap_t)          {
@@ -123,7 +123,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->msg              = (struct cgimage_recv_t *)MSG;
       r->len              = 0;
       r->time.captured_ts = r->msg->time.captured_ts;
@@ -136,7 +136,7 @@ static const struct cap_t *__caps[] = {
       //if (!analyze_image_pixels(r))                   {
       //  log_error("Failed to analyze RGB");
       //}
-      log_info("Converted CGImageRef to %s RGB Pixels in %s",
+      debug("Converted CGImageRef to %s RGB Pixels in %s",
                bytes_to_string(r->len),
                milliseconds_to_string(r->time.dur)
                );
@@ -150,7 +150,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type             = IMAGE_TYPE_QOI;
       r->msg              = (struct cgimage_recv_t *)MSG;
       r->time.captured_ts = r->msg->time.captured_ts;
@@ -183,7 +183,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_GIF;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to GIF", r->msg->width, r->msg->height);
@@ -214,7 +214,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_TIFF;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to TIFF", r->msg->width, r->msg->height);
@@ -244,7 +244,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_BMP;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to BMP", r->msg->width, r->msg->height);
@@ -277,8 +277,8 @@ static const struct cap_t *__caps[] = {
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
       struct cgimage_recv_t *c   = calloc(1, sizeof(struct cgimage_recv_t));
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
-      r->msg = (struct capture_result_t *)MSG;
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
+      r->msg = (struct capture_image_result_t *)MSG;
       debug("Converting %lux%lu CGImageref to TIFF Grayscale", r->width, r->height);
       r->len          = 0;
       c->time.started = timestamp();
@@ -302,7 +302,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_BMP_GRAYSCALE;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to BMP Grayscale", r->msg->width, r->msg->height);
@@ -338,7 +338,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_QOI_GRAYSCALE;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to QOI Grayscale", r->msg->width, r->msg->height);
@@ -375,7 +375,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_JPEG_GRAYSCALE;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to JPEG Grayscale", r->msg->width, r->msg->height);
@@ -411,7 +411,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_PNG_GRAYSCALE;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to PNG Grayscale", r->msg->width, r->msg->height);
@@ -447,7 +447,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_GIF_GRAYSCALE;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to GIF Grayscale", r->msg->width, r->msg->height);
@@ -483,7 +483,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE_GRAYSCALE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_TIFF_GRAYSCALE;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to TIFF Grayscale", r->msg->width, r->msg->height);
@@ -519,7 +519,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_JPEG;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to JPEG", r->msg->width, r->msg->height);
@@ -550,7 +550,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->type = IMAGE_TYPE_PNG_COMPRESSED;
       r->msg  = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to PNG", r->msg->width, r->msg->height);
@@ -589,7 +589,7 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
-      struct capture_result_t *r = calloc(1, sizeof(struct capture_result_t));
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->analyze  = true;
       r->type             = IMAGE_TYPE_PNG;
       r->msg              = (struct cgimage_recv_t *)MSG;
@@ -644,7 +644,7 @@ struct Vector *get_cap_providers(enum image_type_id_t format){
   return(v);
 }
 
-static bool init_cap(struct capture_req_t *req, struct cap_t *cap){
+static bool init_cap(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     cap->threads[i] = calloc(1, sizeof(pthread_t));
     assert(cap->threads[i] != NULL);
@@ -731,7 +731,7 @@ static struct chan_t *compression_done_chan;
 static struct chan_t *compression_results_chan;
 
 static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
-  struct capture_req_t *req = (struct capture_req_t *)REQ;
+  struct capture_image_request_t *req = (struct capture_image_request_t *)REQ;
   void                 *msg;
   size_t               qty = 0, qqty = 0;
   unsigned long        s = timestamp();
@@ -808,7 +808,7 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
   return(EXIT_SUCCESS);
 } /* run_compress_recv */
 
-static bool start_com(struct capture_req_t *req){
+static bool start_com(struct capture_image_request_t *req){
   if (req->compress) {
     for (int i = 0; i < req->concurrency; i++) {
       debug("%d", req->compress);
@@ -827,7 +827,7 @@ static bool start_com(struct capture_req_t *req){
   return(true);
 }
 
-static bool start_cap(struct capture_req_t *req, struct cap_t *cap){
+static bool start_cap(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     if (pthread_create(cap->threads[i], NULL, run_recv_msg, (void *)cap) != 0) {
       log_error("Failed to created Thread %s #%d", cap->name, i);
@@ -837,7 +837,7 @@ static bool start_cap(struct capture_req_t *req, struct cap_t *cap){
   return(true);
 }
 
-static bool analyze_image_pixels(struct capture_result_t *r){
+static bool analyze_image_pixels(struct capture_image_result_t *r){
   r->id             = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
   r->file           = get_image_type_filename(r->msg->req->type, r->type, r->id, false);
   r->thumbnail_file = get_image_type_filename(r->msg->req->type, r->type, r->id, true);
@@ -894,7 +894,7 @@ static bool analyze_image_pixels(struct capture_result_t *r){
   return(true);
 } /* analyze_image_pixels */
 
-static bool wait_com(struct capture_req_t *req){
+static bool wait_com(struct capture_image_request_t *req){
   for (int i = 0; i < req->concurrency; i++) {
     debug("joining comp thread #%d", i);
     pthread_join(req->comp->threads[i], NULL);
@@ -903,7 +903,7 @@ static bool wait_com(struct capture_req_t *req){
   return(true);
 }
 
-static bool wait_cap(struct capture_req_t *req, struct cap_t *cap){
+static bool wait_cap(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     pthread_join(cap->threads[i], NULL);
     debug("%s Thread #%d Returned", cap->name, i);
@@ -911,7 +911,7 @@ static bool wait_cap(struct capture_req_t *req, struct cap_t *cap){
   return(true);
 }
 
-struct Vector *capture(struct capture_req_t *req){
+struct Vector *capture_image(struct capture_image_request_t *req){
   struct Vector *capture_results_v             = vector_new();
   char *bar_msg;
   size_t bar_msg_len,bar_len;
@@ -995,13 +995,13 @@ struct Vector *capture(struct capture_req_t *req){
     }
     debug("\tWaited capture #%d: %s", c, caps[c]->name);
   }
-  struct capture_result_t *r;
+  struct capture_image_result_t *r;
   size_t captured_images_len = 0;
 
   for (size_t i = 0; i < vector_size(req->ids); i++) {
     void *msg;
     if (chan_recv(results_chan, &msg) == 0) {
-      r = (struct capture_result_t *)msg;
+      r = (struct capture_image_result_t *)msg;
       captured_images_len += r->len;
       debug("Received Result #%lu/%lu | %lux%lu | %s | %s | %s | Linear Colorspace: %s | Has Alpha: %s |",
                 i + 1, vector_size(req->ids),
@@ -1084,7 +1084,7 @@ struct Vector *capture(struct capture_req_t *req){
       goto fail;
     }
     for (size_t i = 0; i < vector_size(capture_results_v); i++) {
-      struct capture_result_t *r = (struct capture_result_t *)vector_get(capture_results_v, i);
+      struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(capture_results_v, i);
       struct compress_t       *c = calloc(1, sizeof(struct compress_t));
       c->id             = r->id;
       c->pixels         = r->pixels;
@@ -1116,7 +1116,7 @@ struct Vector *capture(struct capture_req_t *req){
                 compressed_image_msg->type,
                 image_type_name(compressed_image_msg->type)
                 );
-      struct capture_result_t *r = compressed_image_msg->capture_result;
+      struct capture_image_result_t *r = compressed_image_msg->capture_result;
       r->pixels = compressed_image_msg->pixels;
       r->len    = compressed_image_msg->len;
 //      Dbg(r->len,%lu);
@@ -1148,7 +1148,7 @@ fail:
   return(capture_results_v);
 } /* capture*/
 
-bool end_animation(struct animated_capture_t *acap){
+bool end_animation(struct capture_animation_result_t *acap){
   errno = 0;
   fprintf(stdout, "%s", kitty_msg_delete_images());
   fflush(stdout);
@@ -1196,7 +1196,7 @@ bool end_animation(struct animated_capture_t *acap){
   return(true);
 } /* end_animation */
 
-bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t *r){
+bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_image_result_t *r){
   struct animated_frame_t *n = calloc(1, sizeof(struct animated_frame_t));
 
   n->height = r->height;
@@ -1291,7 +1291,7 @@ bool new_animated_frame(struct animated_capture_t *acap, struct capture_result_t
   return(true);
 } /* new_animated_frame */
 
-size_t animated_frames_len(struct animated_capture_t *acap){
+size_t animated_frames_len(struct capture_animation_result_t *acap){
   size_t len = 0;
 
   for (size_t i = 0; i < vector_size(acap->frames_v); i++) {
@@ -1300,7 +1300,7 @@ size_t animated_frames_len(struct animated_capture_t *acap){
   return(len);
 }
 
-bool inspect_frames(struct animated_capture_t *acap){
+bool inspect_frames(struct capture_animation_result_t *acap){
   gd_GIF        *gif    = gd_open_gif(acap->file);
   size_t        len     = (gif->width * gif->height * 3);
   char          *buffer = malloc(len);
@@ -1326,7 +1326,7 @@ bool inspect_frames(struct animated_capture_t *acap){
 }
 
 int poll_new_animated_frame(void *VOID){
-  struct animated_capture_t *acap = (struct animated_capture_t *)VOID;
+  struct capture_animation_result_t *acap = (struct capture_animation_result_t *)VOID;
   char                      *bar_msg;
   void *msg;
     if(acap->progress_bar_mode){
@@ -1345,7 +1345,7 @@ int poll_new_animated_frame(void *VOID){
     }
 
   while (chan_recv(acap->chan, &msg) == 0) {
-    struct capture_result_t *r = (struct capture_result_t *)msg;
+    struct capture_image_result_t *r = (struct capture_image_result_t *)msg;
     pthread_mutex_lock(acap->mutex);
     float bar_progress  = vector_size(acap->frames_v) == 0 ? 0 : (float)((float)(vector_size(acap->frames_v) / (float)(acap->expected_frames_qty)) / (float)1);
     if (CAPTURE_WINDOW_DEBUG_MODE) {
@@ -1372,8 +1372,8 @@ int poll_new_animated_frame(void *VOID){
   return(0);
 } /* poll_new_animated_frame */
 
-struct animated_capture_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode){
-  struct animated_capture_t *n = calloc(1, sizeof(struct animated_capture_t));
+struct capture_animation_result_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode){
+  struct capture_animation_result_t *n = calloc(1, sizeof(struct capture_animation_result_t));
 
   n->frames_v     = vector_new();
   n->gif          = calloc(1, sizeof(MsfGifState));
