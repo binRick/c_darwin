@@ -3,10 +3,15 @@
 #define CAPTURE_WINDOW_C
 #define LOCAL_DEBUG_MODE    CAPTURE_WINDOW_DEBUG_MODE
 #define THUMBNAIL_WIDTH     150
-#define WRITE_FILE          true
+#define WRITE_FILE          false
 #define WRITE_THUMBNAIL     false
 #define MAX_QUALITY    70
 #define MIN_QUALITY    20
+#define PREVIEW_ANIMATION_IN_TERMINAL true 
+#define PREVIEW_ANIMATION_TERMINAL_WIDTH 200
+#define PREVIEW_ANIMATION_IN_TERMINAL_COLUMN_OFFSET 0.85
+#define PREVIEW_ANIMATION_IN_TERMINAL_ROW_OFFSET 0.0
+#define BAR_TERMINAL_WIDTH_PERCENTAGE .8
 #define BAR_TERMINAL_WIDTH_PERCENTAGE .8
 #define BAR_MIN_WIDTH 20
 #define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE .5
@@ -485,35 +490,22 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
 
   while (vector_size(compressed_results) < vector_size(req->ids) && chan_recv(compression_wait_chan, &msg) == 0) {
     qty++;
-    debug("waiter compression recvd #%lu/#%lu", qty, vector_size(req->ids));
     if (req->bar) {
       req->bar->progress += (float)((float)1 / (float)(vector_size(req->ids)));
       cbar_display_bar(req->bar);
     }
     vector_push(compressed_results, msg);
   }
-  debug("compression recv waited");
-  debug("compression done waiting");
   while (qqty < req->concurrency && chan_recv(compression_done_chan, &msg) == 0) {
     qqty++;
-    debug("compression done recvd #%lu/#%d", qqty, req->concurrency);
   }
-  debug("compression done OK");
-  debug("compression waiter ended with %lu items in %s", qty, milliseconds_to_string(timestamp() - s));
   chan_send(compression_results_chan, (void *)compressed_results);
-  debug("compression send %lu items to results chan", vector_size(compressed_results));
 }
 
 static int run_compress_recv(void __attribute__((unused)) *CHAN){
   struct chan_t *chan = (struct chan_t *)CHAN;
   void          *msg;
-  size_t        qty = 0;
-  unsigned long s   = timestamp();
-
-  debug("compression recv waiting");
   while (chan_recv(chan, &msg) == 0) {
-    qty++;
-    debug("> Got compress msg #%lu!", qty);
     struct compress_t *c = (struct compress_t *)msg;
     c->started = timestamp();
     bool              did_compress = false, tried_to_compress = false;
@@ -526,29 +518,22 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
         log_error("Failed to compress #%lu", c->id);
       }
       break;
-    default: break;
+    default: 
+      errno=0;
+      log_warn("Compression not implemented for image type %s.", image_type_name(c->type));
+      break;
     }
 
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
-    did_compress = (c->len < c->prev_len);
-    if (!did_compress && tried_to_compress) {
-      log_warn("Did not compress Item #%lu (New Size is %s, Old is %s)", c->id,
-         bytes_to_string(c->len),
-         bytes_to_string(c->prev_len)
-         );
-    }else if(tried_to_compress && did_compress){
-      debug("Compressed #%lu from %s to %s in %s",
+    debug("Compressed #%lu from %s to %s in %s",
                 c->id,
                 bytes_to_string(c->prev_len),
                 bytes_to_string(c->len),
                 milliseconds_to_string(c->dur)
                 );
-    }
   }
-  debug("recv compresses ended in %s, processed %lu items. sending to done", milliseconds_to_string(timestamp() - s), qty);
   chan_send(compression_done_chan, (void *)0);
-  debug("sent to done");
   return(EXIT_SUCCESS);
 } /* run_compress_recv */
 
@@ -557,7 +542,6 @@ static bool start_com(struct capture_image_request_t *req){
     for (int i = 0; i < req->concurrency; i++) {
       debug("%d", req->compress);
       int q = i % req->concurrency;
-      debug("Creating recv compress chan with index:   %d", q);
       if (pthread_create(req->comp->threads[i], NULL, run_compress_recv, (void *)(req->comp->chans[q])) != 0) {
         log_error("Failed to created Compression Thread #%d", i);
         return(false);
@@ -593,11 +577,9 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
         r->height            = QOIDecoder_GetHeight(qoi);
         r->has_alpha         = QOIDecoder_HasAlpha(qoi);
         r->linear_colorspace = QOIDecoder_IsLinearColorspace(qoi);
-        if (WRITE_FILE) {
-          fsio_write_binary_file(r->file, r->pixels, r->len);
-        }
       }
-      QOIDecoder_Delete(qoi);
+      if(qoi)
+        QOIDecoder_Delete(qoi);
     }else{
       VipsImage *image = NULL;
       errno = 0;
@@ -609,27 +591,6 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
       r->height            = vips_image_get_height(image);
       r->has_alpha         = vips_image_hasalpha(image);
       r->linear_colorspace = vips_colourspace_issupported(image);
-      if (WRITE_FILE) {
-        vips_image_write_to_file(image, r->file, NULL);
-        if (fsio_file_size(r->file) == 0) {
-          fsio_remove(r->file);
-        }
-      }
-      if (WRITE_THUMBNAIL) {
-        VipsImage *thumbnail;
-        vips_thumbnail_image(image, &thumbnail, clamp(THUMBNAIL_WIDTH, vips_image_get_width(image), THUMBNAIL_WIDTH), NULL);
-        vips_image_write_to_file(image, r->thumbnail_file, NULL);
-        log_info("wrote %s %dx%d thumbnail %s",
-                 bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(thumbnail)),
-                 vips_image_get_width(thumbnail),
-                 vips_image_get_height(thumbnail),
-                 r->thumbnail_file
-                 );
-        if (fsio_file_size(r->thumbnail_file) == 0) {
-          fsio_remove(r->thumbnail_file);
-        }
-        g_object_unref(thumbnail);
-      }
       if (image) {
         g_object_unref(image);
       }
@@ -640,9 +601,7 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
 
 static bool wait_com(struct capture_image_request_t *req){
   for (int i = 0; i < req->concurrency; i++) {
-    debug("joining comp thread #%d", i);
     pthread_join(req->comp->threads[i], NULL);
-    debug("Thread comp #%d Returned", i);
   }
   return(true);
 }
@@ -650,7 +609,6 @@ static bool wait_com(struct capture_image_request_t *req){
 static bool wait_cap(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     pthread_join(cap->threads[i], NULL);
-    debug("%s Thread #%d Returned", cap->name, i);
   }
   return(true);
 }
@@ -676,7 +634,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     cbar_display_bar(req->bar);
   }
 
-  debug("request type: %d|format:%d", req->type, req->format);
   struct Vector *providers = get_cap_providers(req->format);
 
   debug("Found %lu providers", vector_size(providers));
@@ -692,10 +649,9 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     if (i == vector_size(providers) - 1) {
       caps[c]->send_chan = results_chan;
     }
-    debug("\tInitializing Provider #%d: %s", c, caps[c]->name);
     if (!init_cap(req, caps[c])) {
       log_error("Failed to initialize capture #%d: %s", c, caps[c]->name);
-      goto fail;
+      goto done;
     }
     debug("\tInitialized capture #%d: %s", c, caps[c]->name);
   }
@@ -703,7 +659,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     enum capture_chan_type_t c = (enum capture_chan_type_t)(size_t)vector_get(providers, i);
     if (!start_cap(req, caps[c])) {
       log_error("Failed to start capture #%d: %s", c, caps[c]->name);
-      goto fail;
+      goto done;
     }
     debug("\tstarted capture #%d: %s", c, caps[c]->name);
   }
@@ -717,27 +673,17 @@ struct Vector *capture_image(struct capture_image_request_t *req){
         chan_send(caps[c]->recv_chan, (void *)r);
       }
       chan_close(caps[c]->recv_chan);
-      if (CAPTURE_WINDOW_DEBUG_MODE) {
-        debug("\tWAITING FOR DONE #%d: %s", c, caps[c]->name);
-      }
       size_t completed = 0;
       for (int i = 0; i < req->concurrency; i++) {
         chan_recv(caps[c]->done_chan, (void *)0);
         completed++;
-        debug("\t%d/%d DONE #%d: %s",
-              i, req->concurrency,
-              c, caps[c]->name
-              );
       }
-      debug("\tDONE #%d: %s", c, caps[c]->name);
       chan_close(caps[c]->send_chan);
     }
-    debug("\tWaiting capture #%d: %s", c, caps[c]->name);
     if (!wait_cap(req, caps[c])) {
       log_error("Failed to wait capture #%d: %s", c, caps[c]->name);
-      goto fail;
+      goto done;
     }
-    debug("\tWaited capture #%d: %s", c, caps[c]->name);
   }
   struct capture_image_result_t *r;
   size_t captured_images_len = 0;
@@ -790,7 +736,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     req->bar->progress = (float)1.00;
     cbar_display_bar(req->bar);
     cbar_show_cursor();
-//    printf("\n");
+    printf("\n");
     fflush(stdout);
     free(req->bar);
   }
@@ -825,7 +771,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
     if (!start_com(req)) {
       log_error("Failed to start compressions");
-      goto fail;
+      goto done;
     }
     for (size_t i = 0; i < vector_size(capture_results_v); i++) {
       struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(capture_results_v, i);
@@ -853,7 +799,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
 
     for (size_t i = 0; i < vector_size(compressed_images_msg_v); i++) {
       compressed_image_msg = (struct compress_t *)vector_get(compressed_images_msg_v, i);
-      debug("new vector ite #%lu/%lu has %s image from %s image of type %d|%s",
+      debug("new vector item #%lu/%lu has %s image from %s image of type %d|%s",
                 i + 1, vector_size(compressed_images_msg_v),
                 bytes_to_string(compressed_image_msg->len),
                 bytes_to_string(compressed_image_msg->prev_len),
@@ -863,8 +809,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       struct capture_image_result_t *r = compressed_image_msg->capture_result;
       r->pixels = compressed_image_msg->pixels;
       r->len    = compressed_image_msg->len;
-//      Dbg(r->len,%lu);
-//      fsio_write_binary_file(r->file, r->pixels, r->len);
       debug("new vector item #%lu/%lu with id %lu %s file %s has %s image of type %d|%s",
                 i + 1, vector_size(compressed_images_msg_v),
                 r->id,
@@ -887,26 +831,26 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       free(req->bar);
     }
   }
-  return(capture_results_v);
-fail:
+done:
   return(capture_results_v);
 } /* capture*/
 
 bool end_animation(struct capture_animation_result_t *acap){
+  char *msg;
   errno = 0;
   fprintf(stdout, "%s", kitty_msg_delete_images());
   fflush(stdout);
   acap->result = msf_gif_end(acap->gif);
 
-  char *msg;
   asprintf(&msg, AC_SHOW_CURSOR AC_LOAD_PALETTE);
   fprintf(stdout, "%s", msg); fflush(stdout);
 
   if (acap->file) {
     if (acap->result.data) {
-      FILE *fp = fopen(acap->file, "wb");
-      fwrite(acap->result.data, acap->result.dataSize, 1, fp);
-      fclose(fp);
+      errno=0;
+      if(!fsio_write_binary_file(acap->file,acap->result.data,acap->result.dataSize)){
+log_error("Failed to write %s to %s",bytes_to_string(acap->result.dataSize),acap->file);
+      }
       if (CAPTURE_WINDOW_DEBUG_MODE) {
         log_info("Wrote %lu Frames to %s Animated GIF %s to %s",
                  vector_size(acap->frames_v),
@@ -923,20 +867,6 @@ bool end_animation(struct capture_animation_result_t *acap){
   }
 
   msf_gif_free(acap->result);
-  //char *m;
-//  asprintf(&m,"%s", AC_RESTORE_PRIVATE_PALETTE);
-//fprintf(stdout,"%s",m);
-//  fflush(stdout);
-//free(m);
-/*
-  if(acap->progress_bar_mode){
-  acap->bar->progress = (float)1.00;
-  cbar_display_bar((acap->bar));
-  cbar_show_cursor();
- // printf("\n");
-  fflush(stdout);
-}
-*/
   return(true);
 } /* end_animation */
 
@@ -952,7 +882,6 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
   unsigned char *pixels = NULL;
 
   if (r->type == IMAGE_TYPE_QOI) {
-    debug("QOI Decoding!");
     s = timestamp();
     QOIDecoder *qoi = QOIDecoder_New();
     if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
@@ -963,7 +892,7 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
       f         = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
       pixels    = QOIDecoder_GetPixels(qoi);
       if (CAPTURE_WINDOW_DEBUG_MODE) {
-        debug("QOI in %s|%dx%d|f:%d|alpha:%d|colorsp:%d|",
+        debug("Decoded QOI data in %s|%dx%d|f:%d|alpha:%d|colorsp:%d|",
               milliseconds_to_string(timestamp() - s),
               w, h, f,
               QOIDecoder_HasAlpha(qoi),
@@ -1019,12 +948,12 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
   }else{
     cs = (int)((acap->ms_per_frame) / 10);
   }
-  //printf(AC_ESC "7");
-  // kitty_display_image_buffer(r->pixels,r->len);
-  kitty_display_image_buffer_resized_width_at_row_col(r->pixels, r->len, 200, 0, (size_t)((float)acap->term_width * (float)(.85)));
-  //printf("\x1b[%dA", 5);
-  //printf("\x1b[%dC", 5);
-  //printf(AC_ESC "8");
+  if(PREVIEW_ANIMATION_IN_TERMINAL)
+    kitty_display_image_buffer_resized_width_at_row_col(r->pixels, r->len, 
+        PREVIEW_ANIMATION_TERMINAL_WIDTH, 
+        (size_t)((float)acap->term_width * (float)(PREVIEW_ANIMATION_IN_TERMINAL_ROW_OFFSET)),
+        (size_t)((float)acap->term_width * (float)(PREVIEW_ANIMATION_IN_TERMINAL_COLUMN_OFFSET))
+          );
   msf_gif_frame(acap->gif, pixels,
                 cs,
                 acap->max_bit_depth,
@@ -1103,16 +1032,13 @@ int poll_new_animated_frame(void *VOID){
     }
     new_animated_frame(acap, r);
     if(acap->progress_bar_mode){
-       acap->bar->progress = bar_progress; 
+      acap->bar->progress = bar_progress; 
       cbar_display_bar((acap->bar));
       fflush(stdout);
     }
     pthread_mutex_unlock(acap->mutex);
   }
   chan_send(acap->done, (void *)0);
-  if (CAPTURE_WINDOW_DEBUG_MODE) {
-    log_info("poller finished");
-  }
   return(0);
 } /* poll_new_animated_frame */
 
@@ -1145,10 +1071,7 @@ struct capture_animation_result_t *init_animated_capture(enum capture_type_id_t 
 
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__capture_window(void){
-//  if(!getenv("TMPDIR") || !stringfn_starts_with(getenv("TMPDIR"),"/tmp/"))
-//    setenv("TMPDIR", "/tmp/", 1);
-  setenv("VIPS_WARNING", "1", 1);
-
+  //setenv("VIPS_WARNING", "1", 1);
   if (getenv("DEBUG") != NULL || getenv("CAPTURE_WINDOW_DEBUG_MODE") != NULL) {
     log_debug("Enabling capture_window Debug Mode");
     CAPTURE_WINDOW_DEBUG_MODE = true;

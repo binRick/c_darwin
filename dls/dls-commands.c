@@ -36,6 +36,8 @@
 #define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
 #define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
 #define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
+#define CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE 300
+#define MIN_FILE_EXTENSION_LENGTH 3
 struct capture_mode_t;
 enum arg_clamp_type_t {
   ARG_CLAMP_TYPE_WINDOW_SIZE,
@@ -1818,6 +1820,7 @@ static void _command_animated_capture(){
   struct Vector *results = NULL, *ids = get_capture_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->capture_id);
   for (size_t x = 0; x < vector_size(ids); x++) {
     struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+    unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
     req->ids        = vector_new();
     args->capture_id = (size_t)vector_get(ids, x);
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
@@ -1828,11 +1831,10 @@ static void _command_animated_capture(){
     req->format       = IMAGE_TYPE_GIF;
     req->width        = args->width > 0 ? args->width : 0;
     req->height       = args->height > 0 ? args->height : 0;
-    req->time.started = timestamp();
     req->time.dur     = 0;
+    req->time.started = timestamp();
     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->capture_id, interval_ms, args->progress_bar_mode);
     acap->expected_frames_qty = expected_frames_qty;
-    unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
     size_t                    qty = vector_size(acap->frames_v);
     while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > qty) {
       unsigned long s = timestamp();
@@ -1844,6 +1846,7 @@ static void _command_animated_capture(){
       for (size_t i = 0; i < q; i++) {
         struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
         r->delta_ms = delta_ms;
+        req->time.started = i == 0 ? timestamp() : req->time.started;
         chan_send(acap->chan, (void *)r);
         if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
           log_info("Frame #%lu/%lu> Received %lu Results in %s"
@@ -1855,7 +1858,7 @@ static void _command_animated_capture(){
                    r->id,
                    r->file,
                    bytes_to_string(fsio_file_size(r->file)),
-                   (qty > 1) ? milliseconds_to_string(delta_ms) : "0ms",
+                   (qty > 1) ? milliseconds_to_string(r->delta_ms) : "0ms",
                    end_ts - timestamp(),
                    ""
                    );
@@ -1917,12 +1920,6 @@ static const struct capture_mode_t {
           req->compress = args->compress;
           req->time.started = timestamp();
           req->time.dur     = 0;
-          /*
-          results           = capture(req);
-          char *__writable_dir_file = NULL;
-          size_t wrote_bytes_total = 0;
-          size_t wrote_files_qty = 0;
-          unsigned long _started = timestamp();*/
         return(req);
       },
       .request_handler = ^union mode_result_t *(union mode_request_t *req){
@@ -1930,8 +1927,9 @@ static const struct capture_mode_t {
       },
       .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
         struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
+      //    struct capture_image_result_t *r;
         for (size_t i = 0; i < vector_size(res); i++) {
-          struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(res, i);
+      //    r = (struct capture_image_result_t *)vector_get(res, i);
         }
         return(handled);
       },
@@ -1950,10 +1948,6 @@ static const struct capture_mode_t {
           img->height       = args->height > 0 ? args->height : 0;
           img->time.started = timestamp();
           img->time.dur     = 0;
-      //    struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, img->format, args->capture_id, interval_ms, args->progress_bar_mode);
-        //  acap->expected_frames_qty = expected_frames_qty;
-          //unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
-         // size_t                    qty = vector_size(acap->frames_v);
         return(req);
       },
       .request_handler = ^union mode_result_t *(union mode_request_t *req){
@@ -1970,14 +1964,23 @@ static const struct capture_mode_t {
 static void _command_capture(){
   clamp_args(args);
   debug_dls_arguments();
+  char *__writable_dir_file = NULL, *file_extension, *image_loader_name;
+  size_t wrote_bytes_total = 0, wrote_files_qty = 0;
+  unsigned long _started;
+  VipsImage *image;
+  struct capture_image_result_t *r = NULL;
+  struct list_table_t *filter = &(struct list_table_t){
+    .sort_key       = stringfn_to_lowercase(args->sort_key),
+    .sort_direction = stringfn_to_lowercase(args->sort_direction),
+    .limit          = args->limit, 
+  };
   struct Vector *results = NULL, *ids = get_capture_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->capture_id);
   struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
   req->ids          = ids;
   req->concurrency  = args->concurrency;
   req->type         = CAPTURE_TYPE_WINDOW;
   req->compress         = args->compress;
-  req->progress_bar_mode = true;
-  //args->progress_bar_mode;     
+  req->progress_bar_mode = args->progress_bar_mode;     
   req->format       = args->image_format_type;
   req->width        = args->width > 0 ? args->width : 0;
   req->height       = args->height > 0 ? args->height : 0;
@@ -1985,27 +1988,23 @@ static void _command_capture(){
   req->time.started = timestamp();
   req->time.dur     = 0;
   results           = capture_image(req);
-  char *__writable_dir_file = NULL;
-  size_t wrote_bytes_total = 0;
-  size_t wrote_files_qty = 0;
-  unsigned long _started = timestamp();
+  _started = timestamp();
   for (size_t i = 0; i < vector_size(results); i++) {
-    struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
+    r = (struct capture_image_result_t *)vector_get(results, i);
     if(args->output_file){
-        char *ext = fsio_file_extension(args->output_file);
-        char *saver = vips_foreign_find_save_target(ext);
-        log_info("ext:%s",
-            ext
-            );
-        if(!stringfn_equal(stringfn_to_lowercase(ext),stringfn_to_lowercase(image_type_name(args->image_format_type)))){
-asprintf(&args->output_file,"%s.%s", 
-    stringfn_substring(args->output_file,0,strlen(args->output_file)-strlen(ext)),
-    stringfn_to_lowercase(image_type_name(args->image_format_type))
-    );
-log_info("\nchanged extension: %s|saver: %s|",args->output_file,saver);
+        file_extension = fsio_file_extension(args->output_file);
+        if(!file_extension||strlen(file_extension) < MIN_FILE_EXTENSION_LENGTH){
+          log_error("File extension name failure: \"%s\"", args->output_file);
+          continue;
         }
-        VipsImage *image;
-        char *loader = vips_foreign_find_load_buffer(r->pixels,r->len);
+        if(!stringfn_equal(stringfn_to_lowercase(file_extension),stringfn_to_lowercase(image_type_name(args->image_format_type)))){
+            asprintf(&args->output_file,"%s.%s", 
+               stringfn_substring(args->output_file,0,strlen(args->output_file)-strlen(file_extension)),
+               stringfn_to_lowercase(image_type_name(args->image_format_type))
+           );
+        }
+        if(file_extension)free(file_extension);
+        image_loader_name = vips_foreign_find_load_buffer(r->pixels,r->len);
         image = vips_image_new_from_buffer(r->pixels,r->len,"",NULL);
         r->time.dur = timestamp() - r->time.started;
         log_info("Loaded %s PNG Pixels to %dx%d %s PNG VIPImage in %s using loader %s",
@@ -2013,17 +2012,15 @@ log_info("\nchanged extension: %s|saver: %s|",args->output_file,saver);
               vips_image_get_width(image), vips_image_get_height(image),
               bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
               milliseconds_to_string(r->time.dur),
-              loader
+              image_loader_name
               );
-        errno=0;
         if(r->len==0){
-          log_error("Failed to acquire Pixel Data (%luB) for Window #%lu using loader %s",r->len,r->id,loader);
-          return((void *)r);
+          log_error("Failed to acquire Pixel Data (%luB) for Window #%lu using loader %s",r->len,r->id,image_loader_name);
+          if(image)g_object_unref(image);
+          continue;
         }
-        char *s;
-        asprintf(&s, "%sxWindow-%lu.png", gettempdir(), r->id);
         image_target_file_savers[args->image_format_type](image, args->output_file, NULL);
-
+        if(image)g_object_unref(image);
     }
 
     if(IS_COMMAND_DEBUG_MODE)
@@ -2042,13 +2039,13 @@ log_info("\nchanged extension: %s|saver: %s|",args->output_file,saver);
              );
     if(r->len < 1 || !r->pixels){
       log_error("Failed to acquire Image Data for ID #%lu", r->id);
+      continue;
     }else{
       if(args->write_directory && args->write_images_mode){
         asprintf(&__writable_dir_file,"%s/window-%lu.%s",args->write_directory,r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
-
-
         if(!fsio_write_binary_file(__writable_dir_file,r->pixels,r->len)){
           log_error("Failed to write %s to File file %s", bytes_to_string(r->len),__writable_dir_file);
+          continue;
         }else{
           wrote_bytes_total += fsio_file_size(__writable_dir_file);
           wrote_files_qty++;
@@ -2063,25 +2060,22 @@ log_info("\nchanged extension: %s|saver: %s|",args->output_file,saver);
       }
     }
   }
-  for (size_t i = 0; i < vector_size(results); i++) {
-    struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
-      if (args->display_mode && r->len > 0 && r->pixels) {
-//      kitty_display_image_buffer(r->pixels, r->len);
-        //kitty_msg_display_image_buffer_resized_width_at_row_col(r->pixels,r->len,300,0,30);
-        kitty_display_image_buffer_resized_width(r->pixels, r->len,300);
-      printf("\n");
+
+  if (args->display_mode){
+    for (size_t i = 0; i < vector_size(results); i++) {
+      r = (struct capture_image_result_t *)vector_get(results, i);
+      if (r->len > 0 && r->pixels) {
+        if(kitty_display_image_buffer_resized_width(r->pixels, r->len,CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE))
+          printf("\n");
       }
+    }
   }
 
-  struct list_table_t *filter = &(struct list_table_t){
-    .sort_key       = stringfn_to_lowercase(args->sort_key),
-    .sort_direction = stringfn_to_lowercase(args->sort_direction),
-    .limit          = args->limit, 
-  };
 
   switch (args->output_mode) {
   case OUTPUT_MODE_TABLE:
-   // list_captured_window_table(filter);
+    if(false)
+      list_captured_window_table(filter);
     break;
   case OUTPUT_MODE_JSON:
     break;
