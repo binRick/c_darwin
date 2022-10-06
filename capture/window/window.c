@@ -99,24 +99,6 @@ static const struct cap_t *__caps[] = {
       r->height   = CGImageGetHeight(r->img_ref);
       r->time.dur = timestamp() - r->time.started;
 
-      /*
-       * size_t rgb_len;
-       * unsigned long s = timestamp();
-       * unsigned char *rgb = save_cgref_to_rgb_memory(r->img_ref,&rgb_len);
-       * assert(rgb != NULL);
-       * log_info("Allocated %s RGB Pixels in %s",
-       * bytes_to_string(rgb_len),
-       * milliseconds_to_string(timestamp() - s)
-       * );
-       * int w,h,f;
-       * unsigned char *rgb_pixels1 = stbi_load_from_memory(rgb, rgb_len, &w, &h, &f, STBI_rgb_alpha);
-       * assert(rgb_pixels1 != NULL);
-       * log_info("Loaded %s RGB Pixels %dx%d|%d",
-       *    bytes_to_string(r->len),
-       *    w,h,f
-       *    );
-       */
-
       debug("Captured %lux%lu Window #%lu in %s", r->width, r->height, window_id, milliseconds_to_string(r->time.dur));
       return((void *)r);
     },
@@ -483,7 +465,6 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
   struct capture_image_request_t *req = (struct capture_image_request_t *)REQ;
   void                 *msg;
   size_t               qty = 0, qqty = 0;
-  unsigned long        s = timestamp();
 
   debug("compression recv waiting");
   struct Vector *compressed_results = vector_new();
@@ -508,22 +489,19 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
   while (chan_recv(chan, &msg) == 0) {
     struct compress_t *c = (struct compress_t *)msg;
     c->started = timestamp();
-    bool              did_compress = false, tried_to_compress = false;
     debug("Run Compress Recv:   type:%d|%s|PNG:%d|%s", c->type, image_type_name(c->type), IMAGE_TYPE_PNG, image_type_name(IMAGE_TYPE_PNG));
     switch (c->type) {
     case IMAGE_TYPE_PNG:
       errno = 0;
-      tried_to_compress = true;
       if (!compress_png_buffer(c->pixels, &(c->len))) {
         log_error("Failed to compress #%lu", c->id);
       }
       break;
     default: 
       errno=0;
-      log_warn("Compression not implemented for image type %s.", image_type_name(c->type));
+      log_warn("\nCompression not implemented for image type %s.", image_type_name(c->type));
       break;
     }
-
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
     debug("Compressed #%lu from %s to %s in %s",
@@ -598,13 +576,6 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
   }
   return(true);
 } /* analyze_image_pixels */
-
-static bool wait_com(struct capture_image_request_t *req){
-  for (int i = 0; i < req->concurrency; i++) {
-    pthread_join(req->comp->threads[i], NULL);
-  }
-  return(true);
-}
 
 static bool wait_cap(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
@@ -872,14 +843,14 @@ log_error("Failed to write %s to %s",bytes_to_string(acap->result.dataSize),acap
 
 bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_image_result_t *r){
   struct animated_frame_t *n = calloc(1, sizeof(struct animated_frame_t));
-
+  int           f = 0, w = 0, h = 0, frame_cs;
+  FILE *stbi_fp;
+  unsigned long s;
+  unsigned char *rgb_pixels = NULL;
   n->height = r->height;
   n->width  = r->width;
   n->len    = r->len;
   n->ts     = r->time.captured_ts;
-  int           f = 0, w = 0, h = 0;
-  unsigned long s;
-  unsigned char *pixels = NULL;
 
   if (r->type == IMAGE_TYPE_QOI) {
     s = timestamp();
@@ -890,7 +861,7 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
       n->width  = w;
       n->height = h;
       f         = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
-      pixels    = QOIDecoder_GetPixels(qoi);
+      rgb_pixels    = QOIDecoder_GetPixels(qoi);
       if (CAPTURE_WINDOW_DEBUG_MODE) {
         debug("Decoded QOI data in %s|%dx%d|f:%d|alpha:%d|colorsp:%d|",
               milliseconds_to_string(timestamp() - s),
@@ -904,12 +875,13 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
     }
     QOIDecoder_Delete(qoi);
   }else if (r->type == IMAGE_TYPE_BMP) {
-    pixels = r->pixels;
+    rgb_pixels = r->pixels;
   }else{
     s = timestamp();
-    FILE *fp = fmemopen(r->pixels, r->len, "rb");
-    pixels = stbi_load_from_file(fp, &w, &h, &f, STBI_rgb_alpha);
-    fclose(fp);
+    stbi_fp = fmemopen(r->pixels, r->len, "rb");
+    rgb_pixels = stbi_load_from_file(stbi_fp, &w, &h, &f, STBI_rgb_alpha);
+    fclose(stbi_fp);
+    debug("\nSTBI Decoded: %dx%d|%d %s\n",w,h,f,milliseconds_to_string(timestamp()-s));
     if (CAPTURE_WINDOW_DEBUG_MODE) {
       log_info("STBI in %s",
                milliseconds_to_string(timestamp() - s)
@@ -935,18 +907,15 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
         r->file,
         w, h
         );
-  int cs;
-
-
   if (vector_size(acap->frames_v) > 0) {
-    cs = (int)(r->delta_ms / 10);
+    frame_cs = (int)(r->delta_ms / 10);
       debug("cs:%d|cs per frame:%d|delta:%lu|",
-                cs,
+                frame_cs,
                 (int)(acap->ms_per_frame / 10),
                 r->delta_ms
                 );
   }else{
-    cs = (int)((acap->ms_per_frame) / 10);
+    frame_cs = (int)((acap->ms_per_frame) / 10);
   }
   if(PREVIEW_ANIMATION_IN_TERMINAL)
     kitty_display_image_buffer_resized_width_at_row_col(r->pixels, r->len, 
@@ -954,13 +923,14 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
         (size_t)((float)acap->term_width * (float)(PREVIEW_ANIMATION_IN_TERMINAL_ROW_OFFSET)),
         (size_t)((float)acap->term_width * (float)(PREVIEW_ANIMATION_IN_TERMINAL_COLUMN_OFFSET))
           );
-  msf_gif_frame(acap->gif, pixels,
-                cs,
+  msf_gif_frame(acap->gif, rgb_pixels,
+                frame_cs,
                 acap->max_bit_depth,
                 acap->pitch_bytes
                 );
   vector_push(acap->frames_v, (void *)n);
   acap->total_size = animated_frames_len(acap);
+  if(rgb_pixels)free(rgb_pixels);
   return(true);
 } /* new_animated_frame */
 

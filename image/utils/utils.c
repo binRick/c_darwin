@@ -42,292 +42,7 @@
 static bool IMAGE_UTILS_DEBUG_MODE = false;
 static bool FANCY_PROGRESS_ENABLED = false;
 static struct Vector *get_image_format_names_v();
-
-bool compress_png_buffer(unsigned char *buf, size_t *len){
-  errno = 0;
-  if (!buf || len < 1) {
-    log_error("Invalid Input PNG Buffer");
-    goto fail;
-  }
-  unsigned long started = timestamp();
-  unsigned int  width, height;
-  unsigned char *raw_rgba_pixels;
-  errno = 0;
-  unsigned int  status = lodepng_decode32(&raw_rgba_pixels, &width, &height, buf, *len);
-  if (status) {
-    log_error("Can't load %s: %s", buf, lodepng_error_text(status));
-    goto fail;
-  }
-  liq_attr   *handle      = liq_attr_create();
-  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
-  liq_result *quantization_result;
-  liq_set_quality(handle, LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY);
-  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
-    log_error("Quantization failed");
-    goto fail;
-  }
-  size_t        pixels_size      = width * height;
-  unsigned char *raw_8bit_pixels = malloc(pixels_size);
-  liq_set_dithering_level(quantization_result, 1.0);
-  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, pixels_size);
-  const liq_palette *palette = liq_get_palette(quantization_result);
-  LodePNGState      state;
-  lodepng_state_init(&state);
-  state.info_raw.colortype       = LCT_PALETTE;
-  state.info_raw.bitdepth        = LODEPNG_BIT_DEPTH;
-  state.info_png.color.colortype = LCT_PALETTE;
-  state.info_png.color.bitdepth  = LODEPNG_BIT_DEPTH;
-  for (int i = 0; i < palette->count; i++) {
-    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
-    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
-  }
-  unsigned char *out_buf;
-  size_t        out_len    = 0;
-  unsigned int  out_status = lodepng_encode(&out_buf, &out_len, raw_8bit_pixels, width, height, &state);
-  if (out_status) {
-    log_error("Can't encode image: %s", lodepng_error_text(out_status));
-    goto fail;
-  }
-
-  unsigned char *new_buf = calloc(out_len, sizeof(unsigned char));
-  memcpy(new_buf, out_buf, out_len);
-  free(buf);
-  buf = new_buf;
-  liq_result_destroy(quantization_result);
-  liq_image_destroy(input_image);
-  liq_attr_destroy(handle);
-
-  free(raw_8bit_pixels);
-  lodepng_state_cleanup(&state);
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("Compressed %dx%d %s PNG Buffer from to %s %d bit PNG Buffer in %s using min quality %d and max quality %d",
-              width, height,
-              bytes_to_string(*len),
-              bytes_to_string(out_len),
-              LODEPNG_BIT_DEPTH,
-              milliseconds_to_string(timestamp() - started),
-              LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY
-              );
-  }
-  *len = out_len;
-  return(true);
-
-fail:
-  return(EXIT_FAILURE);
-} /* compress_png_buffer */
-
-bool compress_png_file(char *file){
-  unsigned long s = timestamp();
-  VipsImage     *image;
-  int           w = 0, h = 0;
-  unsigned char *buf = NULL;
-  size_t        len = 0, c_len = 0, rgb_len = 0;
-  char          *file_rgb;
-  unsigned char *c_buf = NULL;
-
-  len = fsio_file_size(file);
-  if (!(image = vips_image_new_from_file(file, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
-    log_error("Failed to read file");
-    goto fail;
-  }
-  w = vips_image_get_width(image);
-  h = vips_image_get_height(image);
-  asprintf(&file_rgb, "%s.rgb", file);
-  if (vips_rawsave(image, file_rgb, NULL)) {
-    log_error("Failed to load rgb data");
-    goto fail;
-  }
-  g_object_unref(image);
-  rgb_len = fsio_file_size(file_rgb);
-  buf     = fsio_read_binary_file(file_rgb);
-  fsio_remove(file_rgb);
-  c_buf = imagequant_encode_rgb_pixels_to_png_buffer(buf, w, h, 5, 90, &c_len);
-  if (!c_buf || c_len == 0) {
-    log_error("Failed to quant compress rgb pixels from file %s", file);
-    goto fail;
-  }
-  if (c_len > 0 && c_len < len) {
-    if (!fsio_write_binary_file(file, c_buf, c_len)) {
-      log_error("Failed to save compressed png data");
-      goto fail;
-    }
-    if (IMAGE_UTILS_DEBUG_MODE) {
-      log_info(AC_BLUE "compressed %s from %s to %s using %s RGB Pixels in %s"AC_RESETALL,
-               file,
-               bytes_to_string(len),
-               bytes_to_string(c_len),
-               bytes_to_string(rgb_len),
-               milliseconds_to_string(timestamp() - s)
-               );
-    }
-  }
-  return(true);
-
-fail:
-  if (image) {
-    g_object_unref(image);
-  }
-  return(false);
-} /* compress_png_file */
-
-const char *color_type_str(enum spng_color_type color_type){
-  switch (color_type) {
-  case SPNG_COLOR_TYPE_GRAYSCALE: return("grayscale");
-
-  case SPNG_COLOR_TYPE_TRUECOLOR: return("truecolor");
-
-  case SPNG_COLOR_TYPE_INDEXED: return("indexed color");
-
-  case SPNG_COLOR_TYPE_GRAYSCALE_ALPHA: return("grayscale with alpha");
-
-  case SPNG_COLOR_TYPE_TRUECOLOR_ALPHA: return("truecolor with alpha");
-
-  default: return("(invalid)");
-  }
-}
-
-char *get_image_format_names_csv(){
-  char                *s;
-  struct StringBuffer *sb = stringbuffer_new();
-  struct Vector       *v  = get_image_format_names_v();
-
-  for (size_t i = 0; i < vector_size(v); i++) {
-    stringbuffer_append_string(sb, (char *)vector_get(v, i));
-    if (i < vector_size(v) - 1) {
-      stringbuffer_append_string(sb, ", ");
-    }
-  }
-  s = stringbuffer_to_string(sb);
-  stringbuffer_release(sb);
-  return(s);
-}
-
-static struct Vector *get_image_format_names_v(){
-  struct Vector *v = vector_new();
-
-  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
-    vector_push(v, (void *)stringfn_to_lowercase(image_type_name(i)));
-  }
-  return(v);
-}
-
-enum image_type_id_t image_format_type(char *format){
-  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
-    if (strcmp(stringfn_to_lowercase(format),
-               stringfn_to_lowercase(image_type_name(i))) == 0) {
-      return(i);
-    }
-  }
-  return(-1);
-}
-
-char *image_type_name(enum image_type_id_t type){
-  switch (type) {
-  case IMAGE_TYPE_PNG: return("PNG"); break;
-  case IMAGE_TYPE_PNG_COMPRESSED: return("COMPRESSED.PNG"); break;
-  case IMAGE_TYPE_PNG_GRAYSCALE: return("GRAYSCALE.PNG"); break;
-  case IMAGE_TYPE_GIF_GRAYSCALE: return("GRAYSCALE.GIF"); break;
-  case IMAGE_TYPE_BMP_GRAYSCALE: return("GRAYSCALE.BMP"); break;
-  case IMAGE_TYPE_QOI_GRAYSCALE: return("GRAYSCALE.QOI"); break;
-  case IMAGE_TYPE_JPEG_GRAYSCALE: return("GRAYSCALE.JPEG"); break;
-  case IMAGE_TYPE_TIFF: return("TIFF"); break;
-  case IMAGE_TYPE_TIFF_GRAYSCALE: return("GRAYSCALE.TIFF"); break;
-  case IMAGE_TYPE_CGIMAGE_GRAYSCALE: return("GRAYSCALE.CGIMAGE"); break;
-  case IMAGE_TYPE_CGIMAGE: return("CGIMAGE"); break;
-  case IMAGE_TYPE_GIF: return("GIF"); break;
-  case IMAGE_TYPE_RGB: return("RGB"); break;
-  case IMAGE_TYPE_BMP: return("BMP"); break;
-  case IMAGE_TYPE_JPEG: return("JPEG"); break;
-  case IMAGE_TYPE_QOI: return("QOI"); break;
-  default: return("UNKNOWN"); break;
-  }
-}
-
-char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
-  char *grayscale_file;
-
-  asprintf(&grayscale_file, "%s-grayscale-resized-%lu-grayscale.tif", png_file, resize_factor);
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_info("Converting %s to %s resized by %lu%%", png_file, grayscale_file, resize_factor);
-  }
-  FILE       *input_png_file = fopen(png_file, "rb");
-  CGImageRef png_gs          = png_file_to_grayscale_cgimage_ref_resized(input_png_file, resize_factor);
-
-  assert(write_cgimage_ref_to_tif_file_path(png_gs, grayscale_file) == true);
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_info("Converted to %s grayscale from %s PNG", bytes_to_string(fsio_file_size(grayscale_file)), bytes_to_string(fsio_file_size(png_file)));
-  }
-  return(grayscale_file);
-}
-
-void create_animated_gif(){
-  unsigned long started = timestamp();
-
-  char          *gif;
-
-  asprintf(&gif, "%soutput-%d.gif", gettempdir(), getpid());
-  char *png;
-
-  asprintf(&png, "%soutput-%d.png", gettempdir(), getpid());
-  FILE          *fp = fopen(png, "rb");
-  unsigned long frame_ms = 10000;
-  int           width, height, format;
-  unsigned char *pixels = stbi_load_from_file(fp, &width, &height, &format, STBI_rgb_alpha);
-
-  fclose(fp);
-
-  MsfGifState *gifState = &(MsfGifState){};
-
-  msf_gif_begin(gifState, width, height);
-  log_debug("%d/%d/%d", width, height, format);
-  msf_gif_frame(gifState, pixels,
-                (int)(frame_ms / 10),
-                (format == 4) ? 32 : 24,
-                (format == STBI_rgb_alpha) ? (4 * width) : (3 * width)
-                );
-  log_debug("%d/%d/%d", width, height, format);
-  MsfGifResult gifResult = msf_gif_end(&gifState);
-
-  log_debug("%d/%d/%d", width, height, format);
-  fsio_write_binary_file(gif, gifResult.data, gifResult.dataSize);
-  msf_gif_free(gifResult);
-  log_debug("Write %s %s in %s", bytes_to_string(fsio_file_size(gif)), gif, milliseconds_to_string(timestamp() - started));
-}
-
-struct spng_info_t *spng_test(FILE *fp){
-  struct spng_info_t *i = calloc(1, sizeof(struct spng_info_t));
-
-  i->started = timestamp();
-  int      ret  = 0;
-  spng_ctx *ctx = spng_ctx_new(0);
-
-  if (ctx == NULL) {
-    log_error("spng_ctx_new() failed\n");
-    return(NULL);
-  }
-
-  spng_set_crc_action(ctx, SPNG_CRC_USE, SPNG_CRC_USE);
-  size_t limit = 1024 * 1024 * 64;
-
-  spng_set_chunk_limits(ctx, limit, limit);
-  spng_set_png_file(ctx, fp);
-  struct spng_ihdr ihdr;
-
-  if (spng_get_ihdr(ctx, &ihdr)) {
-    log_error("spng_get_ihdr() error: %s\n", spng_strerror(ret));
-    return(NULL);
-  }
-  i->interlace_method   = ihdr.interlace_method;
-  i->filter_method      = ihdr.filter_method;
-  i->color_type         = ihdr.color_type;
-  i->color_name         = color_type_str(i->color_type);
-  i->width              = ihdr.width;
-  i->height             = ihdr.height;
-  i->bit_depth          = ihdr.bit_depth;
-  i->compression_method = ihdr.compression_method;
-  i->dur                = timestamp() - i->started;
-  return(i);
-}
+static void read_image_format_file(const char *path, unsigned char *buf, int len, int offset);
 
 enum image_conversion_test_type_t {
   IMAGE_CONVERSION_JPG,
@@ -337,114 +52,6 @@ enum image_conversion_test_type_t {
 };
 int image_conversion_compressions[] = { 8 };
 int image_conversion_qualities[]    = { 100 };
-
-struct image_conversion_test_t {
-  char          *file;
-  size_t        size;
-  int           (*fxn)(char const *filename, int w, int h, int comp, const void *data, int stride_in_bytes);
-  int           width, height, compression, quality;
-  unsigned long started, dur;
-  char          *ext;
-};
-static struct image_conversion_test_t IC[] = {
-  [IMAGE_CONVERSION_PNG] = { .fxn = stbi_write_png, .size = 0, .width = 0, .height = 0, .compression = 0, .quality = 0, .started = 0, .dur = 0, .file = NULL, .ext = "png", .quality = 90, .compression = 3, },
-  [IMAGE_CONVERSION_JPG] = { .fxn = stbi_write_jpg, .size = 0, .width = 0, .height = 0, .compression = 0, .quality = 0, .started = 0, .dur = 0, .file = NULL, .ext = "jpg", .quality = 90, .compression = 3, },
-  [IMAGE_CONVERSION_BMP] = { .fxn = stbi_write_bmp, .size = 0, .width = 0, .height = 0, .compression = 0, .quality = 0, .started = 0, .dur = 0, .file = NULL, .ext = "bmp", .quality = 90, .compression = 3, },
-};
-
-bool image_conversions(char *file){
-  if (FANCY_PROGRESS_ENABLED == true) {
-    fancy_progress_start();
-  }
-  size_t ROUNDS = 100;
-  srand(time(NULL));
-
-  static const char *strings[] = {
-    "Lorem ipsum dolor sit amet",
-    "Consectetur adipiscing elit",
-    "Vivamus faucibus sagittis dui, tincidunt rhoncus mi",
-    "Fringilla sollicitudin. Donec eget sagittis",
-    "Quam, vitae fringilla nisl",
-    "Donec dolor justo, hendrerit sed accumsan id, sodales",
-    "Eu odio",
-    "Nunc vehicula hendrerit risus, vel condimentum dui rutrum sed.",
-    "Quisque metus enim, pellentesque nec nibh sit amet.",
-    "Commodo molestie diam."
-  };
-  char              *s;
-  int               height, width, channels;
-  unsigned long     started = timestamp();
-  unsigned char     *rgb    = stbi_load(file, &width, &height, &channels, STBI_rgb_alpha);
-  assert(rgb != NULL);
-  asprintf(&s, "Loaded %dx%d %d Channels from %s File in %s", width, height, channels, bytes_to_string(fsio_file_size(file)), milliseconds_to_string(timestamp() - started));
-  log_info("%s", s);
-
-//create_animated_gif();
-
-  FILE               *fp = fopen(file, "rb");
-  struct spng_info_t *i  = spng_test(fp);
-  fclose(fp);
-  asprintf(&s, "Loaded SPNG in %s", milliseconds_to_string(i->dur));
-  log_info("%s", s);
-  log_info("width: %u\n"
-           "height: %u\n"
-           "bit depth: %u\n"
-           "color type: %u - %s\n",
-           i->width, i->height, i->bit_depth, i->color_type, i->color_name);
-
-  log_info("compression method: %u\n"
-           "filter method: %u\n"
-           "interlace method: %u\n",
-           i->compression_method, i->filter_method, i->interlace_method);
-  if (i) {
-    free(i);
-  }
-  fclose(fp);
-
-  return(true);
-
-  int progress = 5;
-  if (FANCY_PROGRESS_ENABLED == true) {
-    fancy_progress_step(progress);
-  }
-  for (size_t i = 0; i < IMAGE_CONVERSIONS_QTY; i++) {
-    for (size_t c = 0; c < sizeof(image_conversion_compressions) / sizeof(image_conversion_compressions[0]); c++) {
-      for (size_t q = 0; q < sizeof(image_conversion_qualities) / sizeof(image_conversion_qualities[0]); q++) {
-        char *s;
-        IC[i].compression = image_conversion_compressions[c];
-        IC[i].quality     = image_conversion_qualities[q];
-        //fancy_progress_step(progress + 1);
-        asprintf(&(IC[i].file), "%soutput-%d-%dx%d-comp-%d-qual-%d.%s", gettempdir(), getpid(), width, height, IC[i].compression, IC[i].quality, IC[i].ext);
-        log_info("%s", IC[i].file);
-        IC[i].started = timestamp();
-        if (IC[i].fxn(IC[i].file, width, height, 0, rgb, 0) != 0) {
-          log_error("Failed to write %s", IC[i].file);
-          continue;
-        }
-        IC[i].dur  = timestamp() - IC[i].started;
-        IC[i].size = fsio_file_size(IC[i].file);
-        asprintf(&s, "Finished %s in %s with %s conversion | %s",
-                 IC[i].ext, milliseconds_to_string(IC[i].dur), bytes_to_string(IC[i].size),
-                 IC[i].file
-                 );
-        log_info("%s", s);
-      }
-    }
-  }
-  if (FANCY_PROGRESS_ENABLED == true) {
-    fancy_progress_step(100);
-  }
-
-  if (FANCY_PROGRESS_ENABLED == true) {
-    fancy_progress_stop();
-  }
-
-  return(true);
-} /* image_conversions */
-
-static void read_image_format_file(const char *path, unsigned char *buf, int len, int offset) {
-  int fd = open(path, O_RDONLY); assert(fd >= 0);   assert(pread(fd, buf, len, offset) >= 0); close(fd);
-}
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   [IMAGE_TYPE_PNG] =  {
     .file_extension             = "png",                         .name = "PNG",
@@ -520,6 +127,174 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
 };
 
+const char *color_type_str(enum spng_color_type color_type){
+  switch (color_type) {
+  case SPNG_COLOR_TYPE_GRAYSCALE: return("grayscale");
+
+  case SPNG_COLOR_TYPE_TRUECOLOR: return("truecolor");
+
+  case SPNG_COLOR_TYPE_INDEXED: return("indexed color");
+
+  case SPNG_COLOR_TYPE_GRAYSCALE_ALPHA: return("grayscale with alpha");
+
+  case SPNG_COLOR_TYPE_TRUECOLOR_ALPHA: return("truecolor with alpha");
+
+  default: return("(invalid)");
+  }
+}
+
+bool compress_png_buffer(unsigned char *buf, size_t *len){
+  errno = 0;
+  if (!buf || *len < 1) {
+    log_error("Invalid Input PNG Buffer");
+    goto fail;
+  }
+  unsigned long started = timestamp();
+  unsigned int  width, height;
+  unsigned char *raw_rgba_pixels;
+  errno = 0;
+  unsigned int  status = lodepng_decode32(&raw_rgba_pixels, &width, &height, buf, *len);
+  if (status) {
+    log_error("Can't load %s: %s", buf, lodepng_error_text(status));
+    goto fail;
+  }
+  liq_attr   *handle      = liq_attr_create();
+  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
+  liq_result *quantization_result;
+  liq_set_quality(handle, LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY);
+  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
+    log_error("Quantization failed");
+    goto fail;
+  }
+  size_t        pixels_size      = width * height;
+  unsigned char *raw_8bit_pixels = malloc(pixels_size);
+  liq_set_dithering_level(quantization_result, 1.0);
+  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, pixels_size);
+  const liq_palette *palette = liq_get_palette(quantization_result);
+  LodePNGState      state;
+  lodepng_state_init(&state);
+  state.info_raw.colortype       = LCT_PALETTE;
+  state.info_raw.bitdepth        = LODEPNG_BIT_DEPTH;
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth  = LODEPNG_BIT_DEPTH;
+  for (int i = 0; i < palette->count; i++) {
+    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
+  }
+  unsigned char *out_buf;
+  size_t        out_len    = 0;
+  unsigned int  out_status = lodepng_encode(&out_buf, &out_len, raw_8bit_pixels, width, height, &state);
+  if (out_status) {
+    log_error("Can't encode image: %s", lodepng_error_text(out_status));
+    goto fail;
+  }
+
+  unsigned char *new_buf = calloc(out_len, sizeof(unsigned char));
+  memcpy(new_buf, out_buf, out_len);
+  free(buf);
+  buf = new_buf;
+  liq_result_destroy(quantization_result);
+  liq_image_destroy(input_image);
+  liq_attr_destroy(handle);
+
+  free(raw_8bit_pixels);
+  lodepng_state_cleanup(&state);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_debug("Compressed %dx%d %s PNG Buffer from to %s %d bit PNG Buffer in %s using min quality %d and max quality %d",
+              width, height,
+              bytes_to_string(*len),
+              bytes_to_string(out_len),
+              LODEPNG_BIT_DEPTH,
+              milliseconds_to_string(timestamp() - started),
+              LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY
+              );
+  }
+  *len = out_len;
+  return(true);
+
+fail:
+  return(EXIT_FAILURE);
+} /* compress_png_buffer */
+
+char *get_image_format_names_csv(){
+  char                *s;
+  struct StringBuffer *sb = stringbuffer_new();
+  struct Vector       *v  = get_image_format_names_v();
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    stringbuffer_append_string(sb, (char *)vector_get(v, i));
+    if (i < vector_size(v) - 1) {
+      stringbuffer_append_string(sb, ", ");
+    }
+  }
+  s = stringbuffer_to_string(sb);
+  stringbuffer_release(sb);
+  return(s);
+}
+
+static struct Vector *get_image_format_names_v(){
+  struct Vector *v = vector_new();
+
+  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
+    vector_push(v, (void *)stringfn_to_lowercase(image_type_name(i)));
+  }
+  return(v);
+}
+
+enum image_type_id_t image_format_type(char *format){
+  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
+    if (strcmp(stringfn_to_lowercase(format),
+               stringfn_to_lowercase(image_type_name(i))) == 0) {
+      return(i);
+    }
+  }
+  return(-1);
+}
+
+char *image_type_name(enum image_type_id_t type){
+  switch (type) {
+  case IMAGE_TYPE_PNG: return("PNG"); break;
+  case IMAGE_TYPE_TIFF: return("TIFF"); break;
+  case IMAGE_TYPE_CGIMAGE: return("CGIMAGE"); break;
+  case IMAGE_TYPE_GIF: return("GIF"); break;
+  case IMAGE_TYPE_RGB: return("RGB"); break;
+  case IMAGE_TYPE_BMP: return("BMP"); break;
+  case IMAGE_TYPE_JPEG: return("JPEG"); break;
+  case IMAGE_TYPE_QOI: return("QOI"); break;
+  default: return("UNKNOWN"); break;
+  }
+}
+
+char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
+  char *grayscale_file;
+
+  asprintf(&grayscale_file, "%s-grayscale-resized-%lu-grayscale.tif", png_file, resize_factor);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_info("Converting %s to %s resized by %lu%%", png_file, grayscale_file, resize_factor);
+  }
+  FILE       *input_png_file = fopen(png_file, "rb");
+  CGImageRef png_gs          = png_file_to_grayscale_cgimage_ref_resized(input_png_file, resize_factor);
+
+  assert(write_cgimage_ref_to_tif_file_path(png_gs, grayscale_file) == true);
+  if (IMAGE_UTILS_DEBUG_MODE) {
+    log_info("Converted to %s grayscale from %s PNG", bytes_to_string(fsio_file_size(grayscale_file)), bytes_to_string(fsio_file_size(png_file)));
+  }
+  return(grayscale_file);
+}
+
+struct spng_info_t *spng_test(FILE *fp){
+  struct spng_info_t *i = calloc(1, sizeof(struct spng_info_t));
+  return(i);
+}
+
+
+bool image_conversions(char *file){
+  return(true);
+} /* image_conversions */
+
+static void read_image_format_file(const char *path, unsigned char *buf, int len, int offset) {
+  int fd = open(path, O_RDONLY); assert(fd >= 0);   assert(pread(fd, buf, len, offset) >= 0); close(fd);
+}
 bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file){
   unsigned long started = timestamp();
   bool          success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
@@ -536,18 +311,6 @@ bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef i
               );
   }
   return((success == true) && fsio_file_exists(image_file));
-}
-
-unsigned char *save_cgref_to_image_type_memory1(CGImageRef image, size_t *len){
-  CGDataProviderRef provider_ref = CGImageGetDataProvider(image);
-  CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
-  size_t            buffer_size  = ((int)(CGImageGetBitsPerPixel(image) / 8)) * CGImageGetWidth(image) * CGImageGetHeight(image);
-  unsigned char     *buffer      = calloc(buffer_size, sizeof(unsigned char));
-
-  memcpy(buffer, CFDataGetBytePtr(data_ref), buffer_size);
-  CFRelease(data_ref);
-  *len = buffer_size;
-  return(buffer);
 }
 
 unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len){
@@ -620,45 +383,12 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   return((ok && (size_t)fsio_file_size(image_file) == (size_t)qoi_len) ? true : false);
 }
 
-unsigned char *save_cgref_to_qoi_memory1(CGImageRef image_ref, size_t *qoi_len){
-  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
-  size_t        rgb_len     = 0;
-  unsigned char *rgb_pixels = save_cgref_to_rgb_memory(image_ref, &rgb_len);
-
-  log_info("encoding %lu", rgb_len);
-  QOIEncoder *qoi = QOIEncoder_New();
-
-  if (qoi == NULL) {
-    log_error("QOI err");
-    return(NULL);
-  }
-
-  bool alpha = (CGImageGetBitsPerPixel(image_ref) / 8) == 4 ? true : false;
-
-  if (!QOIEncoder_Encode(qoi, w, h, rgb_pixels, alpha, false)) {
-    log_error("QOI encode err");
-    QOIEncoder_Delete(qoi);
-    return(NULL);
-  }
-  Dbg(CGImageGetBitsPerPixel(image_ref), % u);
-  Dbg(CGImageGetBytesPerRow(image_ref), % u);
-  Dbg(CGImageGetBitsPerComponent(image_ref), % u);
-  Dbg(alpha, % d);
-  size_t        qw = QOIDecoder_GetWidth(qoi), qh = QOIDecoder_GetHeight(qoi);
-  unsigned char *pixels = QOIEncoder_GetEncoded(qoi);
-
-  *qoi_len = QOIEncoder_GetEncodedSize(qoi);
-  QOIEncoder_Delete(qoi);
-  log_info("encoded %dx%d %s RGB to %lux%lu %s QOI", w, h, bytes_to_string(rgb_len), qw, qh, bytes_to_string(*qoi_len));
-  return(pixels);
-}
 
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   unsigned long _ts[2];
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
   size_t        len  = 0;
   unsigned char *png = save_cgref_to_png_memory(image_ref, &len);
-
   if (len < 1 || !png) {
     log_error("Failed to convert cgref to png");
     return(NULL);
@@ -666,7 +396,6 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
 
   _ts[0] = timestamp();
   unsigned char *rgb = stbi_load_from_memory(png, len, &width, &height, &compression, STBI_rgb_alpha);
-
   _ts[1] = timestamp() - _ts[0];
   if (IMAGE_UTILS_DEBUG_MODE) {
     log_debug("decoded %dx%d %d RGB in %s",
@@ -684,10 +413,8 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
     .channels   = compression,
     .colorspace = QOI_SRGB,
   };
-
   _ts[0] = timestamp();
   void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
-
   _ts[1] = timestamp() - _ts[0];
 
   if (IMAGE_UTILS_DEBUG_MODE) {
@@ -697,54 +424,6 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
               bytes_to_string(*qoi_len),
               desc->width, desc->height,
               milliseconds_to_string(_ts[1])
-              );
-  }
-  if (rgb) {
-    free(rgb);
-  }
-  return(qoi_pixels);
-} /* save_cgref_to_qoi_memory */
-
-unsigned char *save_cgref_to_qoi_memory2(CGImageRef image_ref, size_t *qoi_len){
-  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
-  size_t        len  = 0;
-  unsigned char *rgb = save_cgref_to_rgb_memory(image_ref, &len);
-
-  /*
-   * unsigned char *png = save_cgref_to_png_memory(image_ref, &len);
-   *
-   * if (len < 1 || !png) {
-   * log_error("Failed to convert cgref to png");
-   * return(NULL);
-   * }
-   *
-   * unsigned char *rgb = stbi_load_from_memory(png, len, &width, &height, &compression, STBI_rgb_alpha);
-   * if (png) {
-   * free(png);
-   * }
-   */
-
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("decoded %dx%d %d RGB",
-              width, height, compression);
-  }
-
-  unsigned long s     = timestamp();
-  qoi_desc      *desc = &(qoi_desc){
-    .width      = width,
-    .height     = height,
-    .channels   = compression,
-    .colorspace = QOI_SRGB,
-  };
-  void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
-
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
-              w, h,
-              bytes_to_string(len), width, height,
-              bytes_to_string(*qoi_len),
-              desc->width, desc->height,
-              milliseconds_to_string(timestamp() - s)
               );
   }
   if (rgb) {
@@ -917,83 +596,6 @@ bool write_cgimage_ref_to_tif_file_path(CGImageRef im, char *tif_file_path){
   return(true);
 }
 
-void pngquant_test1(char *input_png_file_path){
-  unsigned long _s = timestamp();
-  unsigned int  width, height;
-  unsigned char *raw_rgba_pixels;
-
-  input_png_file_path = "/tmp/162.png";
-  Dbg(input_png_file_path, % s);
-  unsigned int status = lodepng_decode32_file(&raw_rgba_pixels, &width, &height, input_png_file_path);
-
-  if (status) {
-    fprintf(stderr, "Can't load %s: %s\n", input_png_file_path, lodepng_error_text(status));
-    return(EXIT_FAILURE);
-  }
-
-  liq_attr   *handle      = liq_attr_create();
-  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
-  liq_result *quantization_result;
-
-  liq_set_quality(handle, 20, 60);
-  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
-    fprintf(stderr, "Quantization failed\n");
-    return(EXIT_FAILURE);
-  }
-
-  // Use libimagequant to make new image pixels from the palette
-
-  size_t        pixels_size      = width * height;
-  unsigned char *raw_8bit_pixels = malloc(pixels_size);
-
-  liq_set_dithering_level(quantization_result, 1.0);
-
-  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, pixels_size);
-  const liq_palette *palette = liq_get_palette(quantization_result);
-
-  LodePNGState      state;
-
-  lodepng_state_init(&state);
-  state.info_raw.colortype       = LCT_PALETTE;
-  state.info_raw.bitdepth        = 8;
-  state.info_png.color.colortype = LCT_PALETTE;
-  state.info_png.color.bitdepth  = 8;
-
-  for (int i = 0; i < palette->count; i++) {
-    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
-    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
-  }
-
-  unsigned char *output_file_data;
-  size_t        output_file_size;
-  unsigned int  out_status = lodepng_encode(&output_file_data, &output_file_size, raw_8bit_pixels, width, height, &state);
-
-  if (out_status) {
-    fprintf(stderr, "Can't encode image: %s\n", lodepng_error_text(out_status));
-    return(EXIT_FAILURE);
-  }
-
-  const char *output_png_file_path = "quantized_example.png";
-  FILE       *fp                   = fopen(output_png_file_path, "wb");
-
-  if (!fp) {
-    fprintf(stderr, "Unable to write to %s\n", output_png_file_path);
-    return(EXIT_FAILURE);
-  }
-  fwrite(output_file_data, 1, output_file_size, fp);
-  fclose(fp);
-
-  printf("Written %s\n", output_png_file_path);
-
-  liq_result_destroy(quantization_result);   // Must be freed only after you're done using the palette
-  liq_image_destroy(input_image);
-  liq_attr_destroy(handle);
-
-  free(raw_8bit_pixels);
-  lodepng_state_cleanup(&state);
-  log_debug("Finished pngquant in %s", milliseconds_to_string(timestamp() - _s));
-} /* pngquant_test1 */
-
 unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgba_pixels, int width, int height, int min_quality, int max_quality, size_t *len){
   liq_attr   *handle      = liq_attr_create();
   liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
@@ -1026,6 +628,10 @@ unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgb
 
   unsigned char *output_file_data;
   unsigned int  out_status = lodepng_encode(&output_file_data, len, raw_8bit_pixels, width, height, &state);
+  if (out_status) {
+    fprintf(stderr, "Can't encode image: %s\n", lodepng_error_text(out_status));
+    return(NULL);
+  }
 
   return(output_file_data);
 
@@ -1034,66 +640,6 @@ fail:
   return(NULL);
 }
 
-int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality){
-  size_t     len          = 0;
-  liq_attr   *handle      = liq_attr_create();
-  liq_image  *input_image = liq_image_create_rgba(handle, raw_rgba_pixels, width, height, 0);
-  liq_result *quantization_result;
-
-  liq_set_quality(handle, min_quality, max_quality);
-  if (liq_image_quantize(input_image, handle, &quantization_result) != LIQ_OK) {
-    fprintf(stderr, "Quantization failed\n");
-    goto fail;
-  }
-  len = width * height;
-  unsigned char *raw_8bit_pixels = malloc(len);
-
-  liq_set_dithering_level(quantization_result, 1.0);
-  liq_write_remapped_image(quantization_result, input_image, raw_8bit_pixels, len);
-  const liq_palette *palette = liq_get_palette(quantization_result);
-
-  LodePNGState      state;
-
-  lodepng_state_init(&state);
-  state.info_raw.colortype       = LCT_PALETTE;
-  state.info_raw.bitdepth        = 8;
-  state.info_png.color.colortype = LCT_PALETTE;
-  state.info_png.color.bitdepth  = 8;
-
-  for (unsigned int i = 0; i < palette->count; i++) {
-    lodepng_palette_add(&state.info_png.color, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
-    lodepng_palette_add(&state.info_raw, palette->entries[i].r, palette->entries[i].g, palette->entries[i].b, palette->entries[i].a);
-  }
-  unsigned char *output_file_data;
-  size_t        output_file_size;
-  unsigned int  out_status = lodepng_encode(&output_file_data, &output_file_size, raw_8bit_pixels, width, height, &state);
-
-  if (out_status) {
-    fprintf(stderr, "Can't encode image: %s\n", lodepng_error_text(out_status));
-    goto fail;
-  }
-
-  FILE *fp = fopen(png_file, "wb");
-
-  if (!fp) {
-    fprintf(stderr, "Unable to write to %s\n", png_file);
-    goto fail;
-  }
-  fwrite(output_file_data, 1, output_file_size, fp);
-  fclose(fp);
-
-  liq_result_destroy(quantization_result);
-  liq_image_destroy(input_image);
-  liq_attr_destroy(handle);
-
-  free(raw_8bit_pixels);
-  lodepng_state_cleanup(&state);
-
-  return(EXIT_SUCCESS);
-
-fail:
-  return(EXIT_FAILURE);
-} /* imagequant_encode_rgb_pixels_to_png_file */
 static void __attribute__((constructor)) __constructor__image_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_IMAGE_UTILS") != NULL) {
     log_debug("Enabling Image Utils Debug Mode");
