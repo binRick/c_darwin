@@ -119,10 +119,6 @@ static const struct cap_t *__caps[] = {
       r->analyze          = true;
       r->time.dur         = timestamp() - r->time.started;
       assert(r->pixels != NULL);
-
-      //if (!analyze_image_pixels(r))                   {
-      //  log_error("Failed to analyze RGB");
-      //}
       debug("Converted CGImageRef to %s RGB Pixels in %s",
                bytes_to_string(r->len),
                milliseconds_to_string(r->time.dur)
