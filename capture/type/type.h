@@ -41,9 +41,6 @@ void send_msg(void *recv, struct cap_t *cap);
 struct capture_time_t {
   unsigned long started, dur, captured_ts;
 };
-struct capture_animation_request_t {
-
-};
 struct capture_image_request_t {
   struct Vector          *ids;
   int                    concurrency;
@@ -54,29 +51,6 @@ struct capture_image_request_t {
   struct capture_time_t  time;
   struct compress_req_t  *comp;
   cbar_t                 *bar;
-};
-struct animated_frame_t {
-  unsigned char *pixels;
-  size_t        width, height, len, id;
-  unsigned long ts;
-};
-struct capture_animation_result_t {
-  MsfGifState            *gif;
-  MsfGifResult           result;
-  cbar_t                 *bar;
-  size_t                 expected_frames_qty;
-  char                   *file;
-  struct Vector          *frames_v;
-  size_t                 width, height, len, id, ms_per_frame, bit_depth, total_size;
-  enum capture_type_id_t type;
-  enum image_type_id_t   format;
-  int                    term_width;
-  unsigned long          started;
-  int                    max_bit_depth, pitch_bytes;
-  chan_t                 *chan, *done;
-  pthread_t              *thread;
-  pthread_mutex_t        *mutex;
-  bool progress_bar_mode;
 };
 struct cgimage_recv_t {
   void                  *msg;
@@ -172,11 +146,5 @@ struct cgimage_args_t {
   int    width, height;
 };
 char *get_capture_type_name(enum capture_type_id_t type);
-bool inspect_frames(struct capture_animation_result_t *acap);
-bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_image_result_t *r);
-int poll_new_animated_frame(void *VOID);
-struct capture_animation_result_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode);
-size_t animated_frames_len(struct capture_animation_result_t *acap);
-bool end_animation(struct capture_animation_result_t *acap);
 struct Vector *capture_image(struct capture_image_request_t *req);
 #endif

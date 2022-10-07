@@ -35,6 +35,7 @@ const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
 #include "capture/type/type.h"
+#include "capture/animate/animate.h"
 struct args_t {
   char *write_directory;
   enum capture_type_id_t capture_type;
@@ -44,7 +45,7 @@ struct args_t {
   bool                                 verbose_mode, debug_mode, progress_bar_mode, write_images_mode;
   bool                                 capture_window_mode, capture_space_mode, capture_display_mode;
   bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
-  int                                  space_id, capture_id;
+  int                                  space_id, id;
   int                                  display_id;
   int                                  x, y;
   int                                  width, height;

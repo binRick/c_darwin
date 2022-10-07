@@ -1,12 +1,7 @@
 #include "dls/dls.h"
-#include "vips/vips.h"
 #define DEBUG_ARGV false
 #define NORMALIZE_ARGV false
 #define DEFAULT_PROGRESS_BAR_ENABLED true
-struct normalized_argv_t {
-  char *mode, *executable;
-  struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
-};
 #define DEFAULT_CAPTURE_TYPE CAPTURE_TYPE_WINDOW
 static void __attribute__((constructor)) __constructor__dls(void);
 static bool dls_normalize_arguments(int *argc, char *argv[]);
@@ -14,12 +9,16 @@ static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 static bool                   DARWIN_LS_DEBUG_MODE = false;
+struct normalized_argv_t {
+  char *mode, *executable;
+  struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
+};
 struct args_t                 *args                = &(struct args_t){
   .verbose_mode        = false, .debug_mode = false,
   .space_id            = -1,
   .display_id          = -1,
   .purge_write_directory_before_write = false,
-  .capture_id           = 0,
+  .id           = 0,
   .capture_type         = DEFAULT_CAPTURE_TYPE,
   .capture_mode[DEFAULT_CAPTURE_TYPE] = true,
   .progress_bar_mode = DEFAULT_PROGRESS_BAR_ENABLED,
@@ -116,8 +115,8 @@ int main(int argc, char *argv[]) {
         COMMON_OPTIONS_LIMIT_OPTIONS \
         COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS
 #define COMMON_OPTIONS_ID\
-        common_options_b[COMMON_OPTION_CAPTURE_ID](args),\
-        common_options_b[COMMON_OPTION_RANDOM_CAPTURE_ID](args),\
+        common_options_b[COMMON_OPTION_ID](args),\
+        common_options_b[COMMON_OPTION_RANDOM_ID](args),\
         common_options_b[COMMON_OPTION_ALL_MODE](args),
 #define COMMON_OPTIONS_CAPTURE_TYPE\
         common_options_b[COMMON_OPTION_CAPTURE_WINDOW_MODE](args),\
@@ -161,6 +160,14 @@ int main(int argc, char *argv[]) {
         COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
         COMMON_OPTIONS_CAPTURE_OPTIONS\
         COMMON_OPTIONS_CAPTURE_TYPE
+    .subcommands     = (struct optparse_cmd[]) {
+      {
+        .description = "Print a subcommand's help information and quit.",
+        .name        = "help",
+        .operands    = "COMMAND",
+        .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
+        .function    = optparse_print_help_subcmd,
+      },
 //////////////////////////////////////////
 #define CREATE_SUBCOMMAND(NAME)\
       {\
@@ -174,18 +181,11 @@ int main(int argc, char *argv[]) {
         },\
       }
 //////////////////////////////////////////
-    .subcommands     = (struct optparse_cmd[]) {
-      {
-        .description = "Print a subcommand's help information and quit.",
-        .name        = "help",
-        .operands    = "COMMAND",
-        .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
-        .function    = optparse_print_help_subcmd,
-      },
       CREATE_SUBCOMMAND(WINDOWS),
       CREATE_SUBCOMMAND(CAPTURE),
       CREATE_SUBCOMMAND(EXTRACT),
       CREATE_SUBCOMMAND(ANIMATE),
+#undef CREATE_SUBCOMMAND
       {
         .name        = cmds[COMMAND_FOCUS_SPACE].name,
         .description = cmds[COMMAND_FOCUS_SPACE].description,
@@ -204,8 +204,8 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_FOCUS_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
-          common_options_b[COMMON_OPTION_RANDOM_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
+          common_options_b[COMMON_OPTION_RANDOM_ID](args),
           common_options_b[COMMON_OPTION_APPLICATION_NAME](args),
           common_options_b[COMMON_OPTION_CURRENT_SPACE](args),
           common_options_b[COMMON_OPTION_DISPLAY_ID](args),
@@ -389,7 +389,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_MOVE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_X](args),
           common_options_b[COMMON_OPTION_WINDOW_Y](args),
           { END_OF_OPTIONS },
@@ -402,8 +402,8 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_RESIZE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
-          common_options_b[COMMON_OPTION_RANDOM_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
+          common_options_b[COMMON_OPTION_RANDOM_ID](args),
           common_options_b[COMMON_OPTION_WINDOW_WIDTH](args),
           common_options_b[COMMON_OPTION_WINDOW_HEIGHT](args),
           { END_OF_OPTIONS },
@@ -416,7 +416,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_IS_MINIMIZED),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -427,7 +427,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_ID_INFO),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -438,7 +438,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_LEVEL),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -449,7 +449,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_WINDOW_LAYER),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -471,7 +471,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_MINIMIZE_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -482,7 +482,7 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_STICKY_WINDOW),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -493,7 +493,7 @@ int main(int argc, char *argv[]) {
         .about       = "👽" "\t" COLOR_WINDOW "Set Window To All Spaces" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           { END_OF_OPTIONS },
         },
       },
@@ -535,7 +535,7 @@ int main(int argc, char *argv[]) {
         .about       = "💫" "\t" COLOR_WINDOW "Set Window Space" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_CAPTURE_ID](args),
+          common_options_b[COMMON_OPTION_ID](args),
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
@@ -730,7 +730,6 @@ int main(int argc, char *argv[]) {
           { END_OF_OPTIONS },
         },
       },
-#undef CREATE_SUBCOMMAND
       { END_OF_SUBCOMMANDS },
     },
   };
@@ -739,41 +738,6 @@ int main(int argc, char *argv[]) {
   optparse_print_help();
   return(EXIT_SUCCESS);
 } /* main */
-static void __attribute__((constructor)) __constructor__dls(void){
-  return;
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS") != NULL) {
-    DARWIN_LS_DEBUG_MODE = true;
-  }
-  errno    = 0;
-  whereami = core_utils_whereami_report();
-  if (whereami) {
-    if (DARWIN_LS_DEBUG_MODE) {
-      log_debug("  >Whereami Report<\n\tExecutable:%s\n\tDirectory:%s\n\tBasename:%s\n",
-                whereami->executable, whereami->executable_directory, whereami->executable_basename
-                );
-    }
-  }else{
-    log_error("Whereami Error");
-  }
-  errno = 0;
-  if (is_authorized_for_accessibility() == false) {
-    log_error("Not Authorized for Accessibility");
-    exit(EXIT_FAILURE);
-  }
-  errno = 0;
-  if (is_authorized_for_screen_recording() == false) {
-    log_error("Not Authorized for Screen Recording");
-    exit(EXIT_FAILURE);
-  }
-  /*
-   * char *window = dls_get_alias_type_name(ALIAS_TYPE_WINDOW);
-   * Dbg(window,%s);
-   * Dbg(dls_get_alias_wildcard_glob_name("w"), %s);
-   * Dbg(dls_get_alias_wildcard_glob_name("sp"), %s);
-   * Dbg(dls_get_alias_wildcard_glob_name("s"), %s);
-   * Dbg(dls_get_alias_wildcard_glob_name("d"), %s);
-   */
-}
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]){
   printf(AC_GREEN "%s\n" AC_RESETALL,title);
   for(int i=0;i<argc;i++){
@@ -840,4 +804,31 @@ static bool dls_normalize_arguments(int *argc, char *argv[]){
   struct normalized_argv_t *r = dls_argv_normalized_argv_t(*argc,argv);
   log_info("Mode: %s", r->mode);
   *argc = vector_size(r->arg_v);
+}
+static void __attribute__((constructor)) __constructor__dls(void){
+  return;
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS") != NULL) {
+    DARWIN_LS_DEBUG_MODE = true;
+  }
+  errno    = 0;
+  whereami = core_utils_whereami_report();
+  if (whereami) {
+    if (DARWIN_LS_DEBUG_MODE) {
+      log_debug("  >Whereami Report<\n\tExecutable:%s\n\tDirectory:%s\n\tBasename:%s\n",
+                whereami->executable, whereami->executable_directory, whereami->executable_basename
+                );
+    }
+  }else{
+    log_error("Whereami Error");
+  }
+  errno = 0;
+  if (is_authorized_for_accessibility() == false) {
+    log_error("Not Authorized for Accessibility");
+    exit(EXIT_FAILURE);
+  }
+  errno = 0;
+  if (is_authorized_for_screen_recording() == false) {
+    log_error("Not Authorized for Screen Recording");
+    exit(EXIT_FAILURE);
+  }
 }
