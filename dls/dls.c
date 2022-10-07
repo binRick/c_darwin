@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
       {
         .name        = "usb",
         .description = "USB Devices",
-        .function    = cmds[COMMAND_USB_DEVICES].fxn,
+        .function    = cmds[COMMAND_USBS].fxn,
         .about       = "📡" "\t" COLOR_LIST "List USB Devices" AC_RESETALL,
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),

@@ -29,12 +29,12 @@
   LIST_TABLE(list_process_table, "Processes", PROCESS, process_info_t) \
   LIST_TABLE(list_usb_table, "USB Devices", USB, usbdev_t)             \
   LIST_TABLE(list_kitty_table, "Kitty Processes", KITTY, kitty_t)      \
-  LIST_TABLE(list_spaces_table, "Spaces", SPACE, space_t)              \
-  LIST_TABLE(list_displays_table, "Displays", DISPLAY, display_t)      \
+  LIST_TABLE(list_display_table, "Displays", DISPLAY, display_t)      \
   LIST_TABLE(list_app_table, "Applications", APP, app_t)               \
   LIST_TABLE(list_hotkey_table, "Hotkeys", HOTKEY, key_t)              \
   LIST_TABLE(list_monitor_table, "Monitors", MONITOR, monitor_t)       \
   LIST_TABLE(list_font_table, "Fonts", FONT, font_t)                   \
+  LIST_TABLE(list_space_table, "Spaces", SPACE, space_t)                   \
   LIST_TABLE(list_captured_window_table, "CapturedWindows", CAPTURED_WINDOW, window_info_t)                   \
 ////////////////////////////////////////////////////////////////////////
 enum table_dur_type_t {
@@ -131,8 +131,8 @@ static const char *table_dur_type_names[] = {
   [TABLE_DUR_TYPE_SORT_ROWS]         = "sort items",
 };
 int list_window_table(void *ARGS);
-int list_spaces_table(void *ARGS);
-int list_displays_table(void *ARGS);
+int list_space_table(void *ARGS);
+int list_display_table(void *ARGS);
 int list_hotkey_table(void *ARGS);
 int list_app_table(void *ARGS);
 int list_installed_fonts_table(void *ARGS);

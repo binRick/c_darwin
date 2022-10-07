@@ -218,26 +218,26 @@ static void _command_paste();
 static void _command_image_conversions();
 static void _command_set_space_index();
 static void _command_set_window_all_spaces();
-static void _command_windows();
-static void _command_displays();
+static void _command_list_window();
+static void _command_list_display();
 static void _command_focus_window();
 static void _command_focus_space();
 static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
-static void _command_spaces();
+static void _command_list_space();
 static void _command_sticky_window();
 static void _command_menu_bar();
 static void _command_list_usb();
 static void _command_httpserver();
 static void _check_purge_write_directory(void);
 static void _command_dock();
-static void _command_processes();
+static void _command_list_process();
 static void _command_list_app();
 static void _command_list_monitor();
 static void _command_list_font();
 static void _command_list_kitty();
-static void _command_alacrittys();
+static void _command_list_alacritty();
 static void _command_capture();
 static void _command_animate();
 static void _command_extract();
@@ -1156,10 +1156,6 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name = "resize-window",           .icon = "💡", .color = COLOR_WINDOW, .description = "Resize Window",
     .fxn  = (*_command_resize_window),
   },
-  [COMMAND_HOTKEYS] =               {
-    .name = "hotkeys",               .icon = "🔅", .color = COLOR_WINDOW, .description = "List Hotkeys",
-    .fxn  = (*_command_list_hotkey),
-  },
   [COMMAND_WINDOW_LEVEL] =          {
     .name        = "window-level",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window Level",
@@ -1206,26 +1202,14 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_SET_SPACE_INDEX] =       {
     .fxn = (*_command_set_space_index)
   },
-  [COMMAND_WINDOWS] =               {
-    .name = "windows", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Windows",
-    .fxn  = (*_command_windows)
-  },
   [COMMAND_WINDOW_ID_INFO] =        {
     .name        = "window-id-info",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
-  [COMMAND_SPACES] =                {
-    .name = "spaces", .icon = "🥑", .color = COLOR_WINDOW, .description = "List Spaces",
-    .fxn  = (*_command_spaces)
-  },
   [COMMAND_SECURITY] =              {
     .name = "security", .icon = "🐾", .color = COLOR_WINDOW, .description = "Open Security",
     .fxn  = (*_command_open_security)
-  },
-  [COMMAND_DISPLAYS] =              {
-    .name = "displays", .icon = "🐾", .color = COLOR_WINDOW, .description = "List Displays",
-    .fxn  = (*_command_displays)
   },
   [COMMAND_HTTPSERVER] =            {
     .fxn = (*_command_httpserver)
@@ -1260,16 +1244,6 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .description = "Focused PID",
     .fxn         = (*_command_focused_pid)
   },
-  [COMMAND_APPS] =                  {
-    .name        = "apps",         .icon = "📡", .color = COLOR_SHOW,
-    .description = "Applications",
-    .fxn         = (*_command_list_app)
-  },
-  [COMMAND_FONTS] =                 {
-    .name        = "fonts", .icon = "🦓", .color = COLOR_SHOW,
-    .description = "Fonts",
-    .fxn         = (*_command_list_font)
-  },
   [COMMAND_CAPTURE] =               {
     .name        = "capture",          .icon = "💤", .color = COLOR_CAPTURE,
     .description = "Capture Screenshot",
@@ -1284,11 +1258,6 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name        = "extract",          .icon = "🙀", .color = COLOR_CAPTURE,
     .description = "Extract Capture",
     .fxn = (*_command_extract)
-  },
-  [COMMAND_KITTYS] =                {
-    .name        = "kittys", .icon = "💤", .color = COLOR_LIST,
-    .description = "Kittys",
-    .fxn         = (*_command_list_kitty)
   },
   [COMMAND_IMAGE_CONVERSIONS] =     {
     .name        = "image-conversions", .icon = "💮", .color = COLOR_LIST,
@@ -1305,21 +1274,6 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .description = "Clipboard Copy",
     .fxn         = (*_command_copy)
   },
-  [COMMAND_ALACRITTYS] =            {
-    .name        = "alacrittys", .icon = "💮", .color = COLOR_LIST,
-    .description = "Alacrittys",
-    .fxn         = (*_command_alacrittys)
-  },
-  [COMMAND_USB_DEVICES] =           {
-    .fxn = (*_command_list_usb)
-  },
-  [COMMAND_MONITORS] =              {
-    .fxn = (*_command_list_monitor)
-  },
-  [COMMAND_PROCESSES] =             {
-    .fxn = (*_command_processes)
-  },
-
   [COMMAND_SAVE_APP_ICON_ICNS] =    {
     .fxn = (*_command_save_app_icon_to_icns)
   },
@@ -1350,6 +1304,22 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_CLEAR_ICONS_CACHE] =     {
     .fxn = (*_command_clear_icons_cache)
   },
+//////////////////////////////////////////////////////////  
+#define LIST_SUBCOMMAND(CAPS,LOWER,PLURAL,FXN)\
+  [COMMAND_##CAPS] = { .name = LOWER, .icon = "🥑", .color = COLOR_LIST, .description = "List " PLURAL, .fxn  = *FXN, }\
+//////////////////////////////////////////////////////////  
+  LIST_SUBCOMMAND(SPACES,"spaces","Spaces",_command_list_space),
+  LIST_SUBCOMMAND(DISPLAYS,"displays","Displays",_command_list_display),
+  LIST_SUBCOMMAND(APPS,"apps","Applications",_command_list_app),
+  LIST_SUBCOMMAND(FONTS,"fonts","Fonts",_command_list_font),
+  LIST_SUBCOMMAND(PROCESSES,"processes","Processes",_command_list_process),
+  LIST_SUBCOMMAND(KITTYS,"kittys","Kittys",_command_list_kitty),
+  LIST_SUBCOMMAND(USBS,"usbs","USB Devices",_command_list_usb),
+  LIST_SUBCOMMAND(MONITORS,"monitors","Monitors",_command_list_monitor),
+  LIST_SUBCOMMAND(HOTKEYS,"hotkeys","Hot Keys",_command_list_hotkey),
+  LIST_SUBCOMMAND(WINDOWS,"windows","Windows",_command_list_window),
+  LIST_SUBCOMMAND(ALACRITTYS,"alacrittys","Alacrittys",_command_list_alacritty),
+#undef LIST_SUBCOMMAND
   [COMMAND_TYPES_QTY] =             { 0},
 };
 
@@ -1843,20 +1813,6 @@ static void _command_write_app_icon_icns(){
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-static void _command_processes(){
-  struct list_table_t *filter = &(struct list_table_t){
-    .limit = args->limit, .font_family = args->font_family,
-  };
-
-  switch (args->output_mode) {
-  case OUTPUT_MODE_TABLE: list_process_table(filter); break;
-  case OUTPUT_MODE_JSON:
-    break;
-  case OUTPUT_MODE_TEXT:
-    break;
-  }
-  exit(EXIT_SUCCESS);
-}
 
 static void _command_httpserver(){
   log_debug("Starting HTTP Server");
@@ -2187,7 +2143,7 @@ static void _command_sticky_window(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_windows(){
+static void _command_list_window(){
   unsigned long started = timestamp();
 
   switch (args->output_mode) {
@@ -2323,38 +2279,6 @@ static void _command_set_space(){
   exit(EXIT_FAILURE);
 } /* _command_set_space */
 
-static void _command_displays(){
-  switch (args->output_mode) {
-  case OUTPUT_MODE_TABLE:
-    list_displays_table(&(struct list_table_t){
-      .limit = args->limit,
-    });
-    break;
-  case OUTPUT_MODE_JSON:
-    log_info("display json");
-    break;
-  case OUTPUT_MODE_TEXT:
-    print_displays();
-    break;
-  }
-  exit(EXIT_SUCCESS);
-}
-
-static void _command_spaces(){
-  switch (args->output_mode) {
-  case OUTPUT_MODE_TABLE:
-    list_spaces_table(&(struct list_table_t){
-      .limit = args->limit,
-    });
-    break;
-  case OUTPUT_MODE_JSON:
-    break;
-  case OUTPUT_MODE_TEXT:
-    break;
-  }
-
-  exit(EXIT_SUCCESS);
-}
 
 static void _command_focus_space(){
   log_info("Focusing space #%d", args->space_id);
@@ -2493,7 +2417,7 @@ static void _command_focused_window(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_alacrittys(){
+static void _command_list_alacritty(){
   struct Vector *_alacritty_pids = get_alacritty_pids();
 
   fprintf(stdout,
@@ -2560,5 +2484,8 @@ LIST_HANDLER(kitty)
 LIST_HANDLER(app)
 LIST_HANDLER(hotkey)
 LIST_HANDLER(monitor)
+LIST_HANDLER(process)
+LIST_HANDLER(space)
+LIST_HANDLER(display)
 #undef LIST_HANDLER
 #endif
