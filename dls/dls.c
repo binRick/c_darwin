@@ -69,14 +69,6 @@ int main(int argc, char *argv[]) {
       common_options_b[COMMON_OPTION_OUTPUT_MODE](args),
       { END_OF_OPTIONS },
     },
-    .subcommands     = (struct optparse_cmd[]) {
-      {
-        .description = "Print a subcommand's help information and quit.",
-        .name        = "help",
-        .operands    = "COMMAND",
-        .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
-        .function    = optparse_print_help_subcmd,
-      },
 #define COMMON_OPTIONS_BASE          \
         common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
 #define COMMON_OPTIONS_UI          \
@@ -133,78 +125,67 @@ int main(int argc, char *argv[]) {
         common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
         COMMON_OPTIONS_ID
 #define COMMON_OPTIONS_SORT \
-          common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
-          common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
+        common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
+        common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
 #define COMMON_OPTIONS_SIZE \
         common_options_b[COMMON_OPTION_WIDTH](args),\
         common_options_b[COMMON_OPTION_HEIGHT](args),
-#define COMMON_OPTIONS_CAPTURE \
-        COMMON_OPTIONS_SIZE
 #define COMMON_OPTIONS_TABLE\
         COMMON_OPTIONS_SORT \
         COMMON_OPTIONS_SIZE\
         COMMON_OPTIONS_LIMIT_OPTIONS
-#define COMMON_OPTIONS_ANIMATION \
+#define COMMON_OPTIONS_ANIMATE \
+        COMMON_OPTIONS_BASE\
+        COMMON_OPTIONS_UI\
+        COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
+        COMMON_OPTIONS_CAPTURE_OPTIONS\
+        COMMON_OPTIONS_CAPTURE_TYPE\
         COMMON_OPTIONS_SIZE \
         common_options_b[COMMON_OPTION_DURATION_SECONDS](args),\
         common_options_b[COMMON_OPTION_FRAME_RATE](args),
+#define COMMON_OPTIONS_WINDOWS \
+        COMMON_OPTIONS_BASE \
+        COMMON_OPTIONS_CAPTURE_RESULT_FILTERS\
+        COMMON_OPTIONS_TABLE\
+        common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args),
+#define COMMON_OPTIONS_CAPTURE\
+        COMMON_OPTIONS_BASE\
+        COMMON_OPTIONS_UI\
+        COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
+        COMMON_OPTIONS_CAPTURE_OPTIONS\
+        COMMON_OPTIONS_CAPTURE_TYPE\
+        COMMON_OPTIONS_SIZE
+#define COMMON_OPTIONS_EXTRACT\
+        COMMON_OPTIONS_BASE\
+        COMMON_OPTIONS_UI\
+        COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
+        COMMON_OPTIONS_CAPTURE_OPTIONS\
+        COMMON_OPTIONS_CAPTURE_TYPE
+//////////////////////////////////////////
+#define CREATE_SUBCOMMAND(NAME)\
+      {\
+        .name        = cmds[COMMAND_##NAME].name,\
+        .description = cmds[COMMAND_##NAME].description,\
+        .function    = cmds[COMMAND_##NAME].fxn,\
+        .about       = get_command_about(COMMAND_##NAME),\
+        .options     = (struct optparse_opt[]){\
+          COMMON_OPTIONS_##NAME\
+          { END_OF_OPTIONS },\
+        },\
+      }
+//////////////////////////////////////////
+    .subcommands     = (struct optparse_cmd[]) {
       {
-        .name        = cmds[COMMAND_WINDOWS].name,
-        .description = cmds[COMMAND_WINDOWS].description,
-        .function    = cmds[COMMAND_WINDOWS].fxn,
-        .about       = get_command_about(COMMAND_WINDOWS),
-        .options     = (struct optparse_opt[]){
-                  COMMON_OPTIONS_BASE 
-                  COMMON_OPTIONS_CAPTURE_RESULT_FILTERS
-                  COMMON_OPTIONS_TABLE
-          common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args),
-          { END_OF_OPTIONS },
-        },
+        .description = "Print a subcommand's help information and quit.",
+        .name        = "help",
+        .operands    = "COMMAND",
+        .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
+        .function    = optparse_print_help_subcmd,
       },
-      {
-        .name        = "extract",
-        .description = "Extract Screenshot Data",
-        .function    = cmds[COMMAND_EXTRACT_WINDOW].fxn,
-        .about       = "🙀" "\t" COLOR_CAPTURE "Extract Screenshot Data" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          COMMON_OPTIONS_BASE
-          COMMON_OPTIONS_UI
-          COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS
-          COMMON_OPTIONS_CAPTURE_OPTIONS
-          COMMON_OPTIONS_CAPTURE_TYPE
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = "capture",
-        .description = "Capture",
-        .function    = cmds[COMMAND_CAPTURE].fxn,
-        .about       = "🙀" "\t" COLOR_CAPTURE "Capture Window Screenshot" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          COMMON_OPTIONS_BASE
-          COMMON_OPTIONS_UI
-          COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS
-          COMMON_OPTIONS_CAPTURE_OPTIONS
-          COMMON_OPTIONS_CAPTURE_TYPE
-          COMMON_OPTIONS_CAPTURE
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = cmds[COMMAND_ANIMATED_CAPTURE].name,
-        .description = cmds[COMMAND_ANIMATED_CAPTURE].description,
-        .function    = cmds[COMMAND_ANIMATED_CAPTURE].fxn,
-        .about       = get_command_about(COMMAND_ANIMATED_CAPTURE),
-        .options     = (struct optparse_opt[]){
-          COMMON_OPTIONS_BASE
-          COMMON_OPTIONS_UI
-          COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS
-          COMMON_OPTIONS_CAPTURE_OPTIONS
-          COMMON_OPTIONS_CAPTURE_TYPE
-          COMMON_OPTIONS_ANIMATION
-          { END_OF_OPTIONS },
-        },
-      },
+      CREATE_SUBCOMMAND(WINDOWS),
+      CREATE_SUBCOMMAND(CAPTURE),
+      CREATE_SUBCOMMAND(EXTRACT),
+      CREATE_SUBCOMMAND(ANIMATE),
       {
         .name        = cmds[COMMAND_FOCUS_SPACE].name,
         .description = cmds[COMMAND_FOCUS_SPACE].description,
@@ -250,7 +231,6 @@ int main(int argc, char *argv[]) {
         .about       = get_command_about(COMMAND_DOCK),
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-//          common_options_b[COMMON_OPTION_ILIST](args),
           { END_OF_OPTIONS },
         },
       },
@@ -750,6 +730,7 @@ int main(int argc, char *argv[]) {
           { END_OF_OPTIONS },
         },
       },
+#undef CREATE_SUBCOMMAND
       { END_OF_SUBCOMMANDS },
     },
   };

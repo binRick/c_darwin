@@ -133,6 +133,78 @@ static struct Vector *get_capture_ids(enum capture_type_id_t type, bool all, siz
   }
   return(ids);
 }
+static const struct capture_mode_t {
+  unsigned long started, dur;
+  struct Vector *ids, *requests, *results;
+  union mode_request_t {
+    struct capture_image_request_t capture;
+    struct capture_animation_request_t animation;
+  } request;
+  union mode_result_t {
+    struct capture_image_result_t capture;
+    struct capture_animation_result_t animation;
+  } result;
+  struct mode_result_handled_t {
+    unsigned long started, dur;
+  } handled;
+  union mode_request_t *(^request_creator)(enum capture_type_id_t type, struct Vector *ids_v);
+  union mode_result_t *(^request_handler)(union mode_request_t *req);
+  struct mode_result_handled_t *(^result_handler)(union mode_result_t *res);
+} capture_modes[CAPTURE_MODE_TYPES_QTY] = {
+  [CAPTURE_MODE_TYPE_IMAGE] = {
+      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
+          struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+          req->ids          = ids_v;
+          req->concurrency  = args->concurrency;
+          req->type         = CAPTURE_TYPE_WINDOW;
+          req->compress         = args->compress;
+          req->progress_bar_mode = true;
+          req->format       = args->image_format_type;
+          req->width        = args->width > 0 ? args->width : 0;
+          req->height       = args->height > 0 ? args->height : 0;
+          req->compress = args->compress;
+          req->time.started = timestamp();
+          req->time.dur     = 0;
+        return(req);
+      },
+      .request_handler = ^union mode_result_t *(union mode_request_t *req){
+        return(capture_image(req));
+      },
+      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
+        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
+      //    struct capture_image_result_t *r;
+        for (size_t i = 0; i < vector_size(res); i++) {
+      //    r = (struct capture_image_result_t *)vector_get(res, i);
+        }
+        return(handled);
+      },
+  },
+  [CAPTURE_MODE_TYPE_ANIMATION] = {
+      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
+          struct capture_animation_request_t *req = calloc(1, sizeof(struct capture_animation_request_t));
+          struct capture_image_request_t *img = calloc(1, sizeof(struct capture_image_request_t));
+          img->ids        = ids_v;
+          img->concurrency  = args->concurrency;
+          img->type         = CAPTURE_TYPE_WINDOW;
+          img->progress_bar_mode = false;
+          img->compress = args->compress;
+          img->format       = IMAGE_TYPE_GIF;
+          img->width        = args->width > 0 ? args->width : 0;
+          img->height       = args->height > 0 ? args->height : 0;
+          img->time.started = timestamp();
+          img->time.dur     = 0;
+        return(req);
+      },
+      .request_handler = ^union mode_result_t *(union mode_request_t *req){
+        struct capture_animation_result_t *res = calloc(1, sizeof(struct capture_animation_result_t));
+        return(res);
+      },
+      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
+        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
+        return(handled);
+      },
+  },
+};
 ////////////////////////////////////////////
 static void _command_move_window();
 static void _command_window_id_info();
@@ -167,8 +239,8 @@ static void _command_list_font();
 static void _command_list_kitty();
 static void _command_alacrittys();
 static void _command_capture();
-static void _command_animated_capture();
-static void _command_extract_window();
+static void _command_animate();
+static void _command_extract();
 static void _command_save_app_icon_to_png();
 static void _command_write_app_icon_from_png();
 static void _command_save_app_icon_to_icns();
@@ -1198,10 +1270,20 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .description = "Fonts",
     .fxn         = (*_command_list_font)
   },
-  [COMMAND_ANIMATED_CAPTURE] =      {
-    .name        = "animate",          .icon = "💤", .color = COLOR_LIST,
+  [COMMAND_CAPTURE] =               {
+    .name        = "capture",          .icon = "💤", .color = COLOR_CAPTURE,
+    .description = "Capture Screenshot",
+    .fxn = (*_command_capture)
+  },
+  [COMMAND_ANIMATE] =      {
+    .name        = "animate",          .icon = "💤", .color = COLOR_CAPTURE,
     .description = "Animated Capture",
-    .fxn         = (*_command_animated_capture)
+    .fxn         = (*_command_animate)
+  },  
+  [COMMAND_EXTRACT] =        {
+    .name        = "extract",          .icon = "🙀", .color = COLOR_CAPTURE,
+    .description = "Extract Capture",
+    .fxn = (*_command_extract)
   },
   [COMMAND_KITTYS] =                {
     .name        = "kittys", .icon = "💤", .color = COLOR_LIST,
@@ -1237,12 +1319,7 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
   [COMMAND_PROCESSES] =             {
     .fxn = (*_command_processes)
   },
-  [COMMAND_EXTRACT_WINDOW] =        {
-    .fxn = (*_command_extract_window)
-  },
-  [COMMAND_CAPTURE] =               {
-    .fxn = (*_command_capture)
-  },
+
   [COMMAND_SAVE_APP_ICON_ICNS] =    {
     .fxn = (*_command_save_app_icon_to_icns)
   },
@@ -1792,7 +1869,7 @@ static void _command_set_space_index(){
 }
 
 
-static void _command_extract_window(){
+static void _command_extract(){
   if(DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
   clamp_args(args);
@@ -1806,7 +1883,7 @@ static void _command_extract_window(){
 }
 
 
-static void _command_animated_capture(){
+static void _command_animate(){
   clamp_args(args);
   debug_dls_arguments();
   unsigned long animation_started = timestamp();
@@ -1883,78 +1960,6 @@ static void _command_animated_capture(){
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
 
-static const struct capture_mode_t {
-  unsigned long started, dur;
-  struct Vector *ids, *requests, *results;
-  union mode_request_t {
-    struct capture_image_request_t capture;
-    struct capture_animation_request_t animation;
-  } request;
-  union mode_result_t {
-    struct capture_image_result_t capture;
-    struct capture_animation_result_t animation;
-  } result;
-  struct mode_result_handled_t {
-    unsigned long started, dur;
-  } handled;
-  union mode_request_t *(^request_creator)(enum capture_type_id_t type, struct Vector *ids_v);
-  union mode_result_t *(^request_handler)(union mode_request_t *req);
-  struct mode_result_handled_t *(^result_handler)(union mode_result_t *res);
-} capture_modes[CAPTURE_MODE_TYPES_QTY] = {
-  [CAPTURE_MODE_TYPE_IMAGE] = {
-      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
-          struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-          req->ids          = ids_v;
-          req->concurrency  = args->concurrency;
-          req->type         = CAPTURE_TYPE_WINDOW;
-          req->compress         = args->compress;
-          req->progress_bar_mode = true;
-          req->format       = args->image_format_type;
-          req->width        = args->width > 0 ? args->width : 0;
-          req->height       = args->height > 0 ? args->height : 0;
-          req->compress = args->compress;
-          req->time.started = timestamp();
-          req->time.dur     = 0;
-        return(req);
-      },
-      .request_handler = ^union mode_result_t *(union mode_request_t *req){
-        return(capture_image(req));
-      },
-      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
-        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
-      //    struct capture_image_result_t *r;
-        for (size_t i = 0; i < vector_size(res); i++) {
-      //    r = (struct capture_image_result_t *)vector_get(res, i);
-        }
-        return(handled);
-      },
-  },
-  [CAPTURE_MODE_TYPE_ANIMATION] = {
-      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
-          struct capture_animation_request_t *req = calloc(1, sizeof(struct capture_animation_request_t));
-          struct capture_image_request_t *img = calloc(1, sizeof(struct capture_image_request_t));
-          img->ids        = ids_v;
-          img->concurrency  = args->concurrency;
-          img->type         = CAPTURE_TYPE_WINDOW;
-          img->progress_bar_mode = false;
-          img->compress = args->compress;
-          img->format       = IMAGE_TYPE_GIF;
-          img->width        = args->width > 0 ? args->width : 0;
-          img->height       = args->height > 0 ? args->height : 0;
-          img->time.started = timestamp();
-          img->time.dur     = 0;
-        return(req);
-      },
-      .request_handler = ^union mode_result_t *(union mode_request_t *req){
-        struct capture_animation_result_t *res = calloc(1, sizeof(struct capture_animation_result_t));
-        return(res);
-      },
-      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
-        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
-        return(handled);
-      },
-  },
-};
 
 static void _command_capture(){
   clamp_args(args);
