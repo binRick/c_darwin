@@ -118,21 +118,23 @@ int main(int argc, char *argv[]) {
         common_options_b[COMMON_OPTION_ID](args),\
         common_options_b[COMMON_OPTION_RANDOM_ID](args),\
         common_options_b[COMMON_OPTION_ALL_MODE](args),
-#define COMMON_OPTIONS_CAPTURE_TYPE\
-        common_options_b[COMMON_OPTION_CAPTURE_WINDOW_MODE](args),\
-        common_options_b[COMMON_OPTION_CAPTURE_SPACE_MODE](args),\
-        common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
-        COMMON_OPTIONS_ID
 #define COMMON_OPTIONS_SORT \
         common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
         common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
 #define COMMON_OPTIONS_SIZE \
         common_options_b[COMMON_OPTION_WIDTH](args),\
         common_options_b[COMMON_OPTION_HEIGHT](args),
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#define COMMON_OPTIONS_CAPTURE_TYPE\
+        common_options_b[COMMON_OPTION_CAPTURE_WINDOW_MODE](args),\
+        common_options_b[COMMON_OPTION_CAPTURE_SPACE_MODE](args),\
+        common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
+        COMMON_OPTIONS_ID
 #define COMMON_OPTIONS_TABLE\
         COMMON_OPTIONS_SORT \
         COMMON_OPTIONS_SIZE\
         COMMON_OPTIONS_LIMIT_OPTIONS
+///////////////////////////////////////////////////////////////////////////////////////////////////
 #define COMMON_OPTIONS_ANIMATE \
         COMMON_OPTIONS_BASE\
         COMMON_OPTIONS_UI\
@@ -144,6 +146,7 @@ int main(int argc, char *argv[]) {
         common_options_b[COMMON_OPTION_FRAME_RATE](args),
 #define COMMON_OPTIONS_WINDOWS \
         COMMON_OPTIONS_BASE \
+        COMMON_OPTIONS_UI\
         COMMON_OPTIONS_CAPTURE_RESULT_FILTERS\
         COMMON_OPTIONS_TABLE\
         common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args),
@@ -160,6 +163,7 @@ int main(int argc, char *argv[]) {
         COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
         COMMON_OPTIONS_CAPTURE_OPTIONS\
         COMMON_OPTIONS_CAPTURE_TYPE
+///////////////////////////////////////////////////////////////////////////////////////////////////
     .subcommands     = (struct optparse_cmd[]) {
       {
         .description = "Print a subcommand's help information and quit.",
