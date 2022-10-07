@@ -2,7 +2,7 @@
 #ifndef CAPTURE_UTILS_H
 #define CAPTURE_UTILS_H
 //////////////////////////////////////
-#include "capture/window/window.h"
+#include "capture/type/type.h"
 #include "screen/utils/utils.h"
 #include "space/utils/utils.h"
 #include "window/utils/utils.h"

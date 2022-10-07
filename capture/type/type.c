@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CAPTURE_WINDOW_C
-#define CAPTURE_WINDOW_C
+#ifndef CAPTURE_TYPE_C
+#define CAPTURE_TYPE_C
 #define LOCAL_DEBUG_MODE    CAPTURE_WINDOW_DEBUG_MODE
 #define THUMBNAIL_WIDTH     150
 #define WRITE_FILE          false
@@ -16,10 +16,10 @@
 #define BAR_MIN_WIDTH 20
 #define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE .5
 #define BAR_MESSAGE_COMPRESSION_TEMPLATE "Compressing %lu Images of %s"
-#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu Windows"
+#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu %s Windows"
 #define BAR_MESSAGE_TEMPLATE "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
-#include "capture/window/window.h"
+#include "capture/type/type.h"
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
@@ -52,7 +52,12 @@
 #include "window/utils/utils.h"
 #include <png.h>
 #include <pthread.h>
+#ifndef QTY
+#define QTY(X)           (sizeof(X) / sizeof(X[0]))
+#endif
+#ifndef info
 #define info    log_info
+#endif
 #ifdef LOCAL_DEBUG_MODE
 #define debug(M, ...)    {            \
     do {                              \
@@ -61,13 +66,8 @@
       }                               \
     } while (0); }
 #endif
+static struct Vector *get_cap_providers(enum image_type_id_t format);
 static bool CAPTURE_WINDOW_DEBUG_MODE = false;
-#define QTY(X)           (sizeof(X) / sizeof(X[0]))
-void cgimage_provider(void *ARGS);
-void cgimage_receiver(void *ARGS);
-void rgb_receiver(void *ARGS);
-void gif_receiver(void *ARGS);
-void png_receiver(void *ARGS);
 static bool analyze_image_pixels(struct capture_image_result_t *r);
 static char *get_image_type_filename(enum capture_type_id_t capture_type, enum image_type_id_t format, size_t id, bool thumbnail);
 static const struct cap_t *__caps[] = {
@@ -78,9 +78,9 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_IDS,
     .recv_msg      = ^ void *(void *MSG)                 {
       struct cgimage_recv_t *r = (struct cgimage_recv_t *)MSG;
-      size_t window_id         = (size_t)vector_get(r->req->ids, (size_t)(r->index));
+      size_t id         = (size_t)vector_get(r->req->ids, (size_t)(r->index));
       debug("Capturing #%lu/%lu: %lu |type:%d|format:%d|w:%d|h:%d|",
-            r->index, vector_size(r->req->ids), window_id,
+            r->index, vector_size(r->req->ids), id,
             r->req->type, r->req->format,
             r->req->width, r->req->height
             );
@@ -88,18 +88,18 @@ static const struct cap_t *__caps[] = {
       r->time.started     = timestamp();
       r->time.captured_ts = r->time.started;
       if (r->req->width > 0)                             {
-        r->img_ref = capture_type_width(r->req->type, window_id, r->req->width);
+        r->img_ref = capture_type_width(r->req->type, id, r->req->width);
       }else if (r->req->height > 0)                      {
-        r->img_ref = capture_type_height(r->req->type, window_id, r->req->height);
+        r->img_ref = capture_type_height(r->req->type, id, r->req->height);
       }else                                              {
-        r->img_ref = capture_type_capture(r->req->type, window_id);
+        r->img_ref = capture_type_capture(r->req->type, id);
       }
       debug("got img ref");
       r->width    = CGImageGetWidth(r->img_ref);
       r->height   = CGImageGetHeight(r->img_ref);
       r->time.dur = timestamp() - r->time.started;
 
-      debug("Captured %lux%lu Window #%lu in %s", r->width, r->height, window_id, milliseconds_to_string(r->time.dur));
+      debug("Captured %lux%lu #%lu in %s", r->width, r->height, id, milliseconds_to_string(r->time.dur));
       return((void *)r);
     },
   },
@@ -340,7 +340,18 @@ static const struct cap_t *__caps[] = {
 };
 static struct cap_t       **caps = { NULL };
 
-struct Vector *get_cap_providers(enum image_type_id_t format){
+char *get_capture_type_name(enum capture_type_id_t type){
+  switch (type) {
+  case CAPTURE_TYPE_WINDOW: return("window");
+
+  case CAPTURE_TYPE_DISPLAY: return("display");
+
+  case CAPTURE_TYPE_SPACE: return("space");
+
+  default: return("unknown");
+  }
+}
+static struct Vector *get_cap_providers(enum image_type_id_t format){
   struct Vector            *v = vector_new();
   enum capture_chan_type_t t  = -1;
 
@@ -400,17 +411,6 @@ static bool init_cap(struct capture_image_request_t *req, struct cap_t *cap){
   return(true);
 }
 
-char *get_capture_type_name(enum capture_type_id_t type){
-  switch (type) {
-  case CAPTURE_TYPE_WINDOW: return("window");
-
-  case CAPTURE_TYPE_DISPLAY: return("display");
-
-  case CAPTURE_TYPE_SPACE: return("space");
-
-  default: return("unknown");
-  }
-}
 
 static char *get_image_type_filename(enum capture_type_id_t capture_type, enum image_type_id_t format, size_t id, bool thumbnail){
   char *s;
@@ -590,7 +590,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
 
   if(req->progress_bar_mode){
     req->bar = calloc(1, sizeof(struct cbar_t));
-    asprintf(&bar_msg, BAR_MESSAGE_CAPTURE_TEMPLATE,vector_size(req->ids));
+    asprintf(&bar_msg, BAR_MESSAGE_CAPTURE_TEMPLATE,vector_size(req->ids),image_type_name(req->format));
     bar_msg_len  = strlen(bar_msg);
     term_width = get_terminal_width();
     asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);
@@ -970,10 +970,11 @@ int poll_new_animated_frame(void *VOID){
   void *msg;
     if(acap->progress_bar_mode){
   asprintf(&bar_msg,
-           "$E BOLD; $ECapturing %lu %s %s Frames at %luFPS: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
+           "$E BOLD; $ECapturing %lu %s %s %s Frames at %luFPS: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
            "%s",
            acap->expected_frames_qty,
            get_capture_type_name(acap->type),
+           image_type_name(acap->format),
            stringfn_to_lowercase(image_type_name(acap->format)),
            (size_t)((float)((float)1 / (float)acap->ms_per_frame) * (float)(100 * 10)),
            ""

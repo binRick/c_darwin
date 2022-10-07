@@ -26,7 +26,7 @@ tesseract_utils_deps = [
   space_utils_dep,
   display_utils_dep,
   window_utils_dep,vips_dep,kitty_msg_dep,
-  app_utils_dep,image_utils_dep,process_utils_dep,display_utils_dep,capture_window_dep,
+  app_utils_dep,image_utils_dep,process_utils_dep,display_utils_dep,capture_type_dep,
   c_img_dep,
 ]
 

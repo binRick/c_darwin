@@ -26,7 +26,7 @@ darwin_ls_deps = [
   core_utils_dep,
   window_utils_dep,
   app_utils_dep,font_utils_dep,
-  capture_window_dep,
+  capture_type_dep,
   focused_dep,
   space_utils_dep,tinydir_dep,system_utils_dep,
   display_utils_dep,
@@ -42,7 +42,7 @@ darwin_ls_deps = [
   leptonica_dep,
   c_img_dep,image_utils_dep,config_utils_dep,tesseract_dep,tesseract_utils_dep,
   httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,table_sort_dep,
-  capture_window_deps,
+  capture_type_deps,
 ]
 
 darwin_ls_c_args = [

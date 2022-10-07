@@ -34,7 +34,7 @@ const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "dls/dls-aliases.h"
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
-#include "capture/window/window.h"
+#include "capture/type/type.h"
 struct args_t {
   char *write_directory;
   enum capture_type_id_t capture_type;
@@ -77,7 +77,6 @@ struct args_t *args;
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "capture/window/window.h"
 #include "core-utils/core-utils.h"
 #include "core/utils/utils.h"
 #include "display/utils/utils.h"

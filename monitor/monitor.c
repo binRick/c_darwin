@@ -23,23 +23,5 @@ static void __attribute__((constructor)) __constructor__monitor(void){
     MONITOR_DEBUG_MODE = true;
   }
 }
-static void monitor_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void monitor_internal_fxn1(void){
-  log_info("Called function monitor_internal_fxn1");
-  if (MONITOR_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void monitor_fxn1(void){
-  monitor_internal_fxn1();
-  log_info("Called function monitor_fxn1");
-  if (MONITOR_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
 ////////////////////////////////////////////
 #endif

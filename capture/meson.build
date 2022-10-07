@@ -1,5 +1,5 @@
 subdir('utils')
-subdir('window')
+subdir('type')
 capture_srcs = [
   'capture.c',
 ]
@@ -21,6 +21,8 @@ capture_deps = [
   log_dep,core_dep,
   ms_dep,
   bytes_dep,tempdir_dep,
+  capture_type_dep,
+  capture_utils_dep,
 ]
 
 capture_c_args = [

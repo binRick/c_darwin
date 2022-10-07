@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CAPTURE_WINDOW_H
-#define CAPTURE_WINDOW_H
+#ifndef CAPTURE_TYPE_H
+#define CAPTURE_TYPE_H
 #define VIPS_WARNING    1
 #define MAX_QUEUES      24
 #include "c_workqueue/include/workqueue.h"
@@ -143,13 +143,6 @@ struct cap_t {
   recv_msg_b                   recv_msg;
   cbar_t                       *bar;
 };
-struct capture_windows_t {
-  struct Vector            *window_ids;
-  int                      concurrency;
-  enum capture_chan_type_t type;
-  int                      width, height;
-  bool                     compress;
-};
 struct capture_chan_t {
   chan_t               *chan, *done_chan;
   size_t               qty;
@@ -160,22 +153,22 @@ struct capture_chan_t {
 };
 struct gif_receiver_t {
   unsigned char *gif;
-  size_t        len, window_id;
+  size_t        len, id;
 };
 struct png_receiver_t {
   unsigned char *png;
-  size_t        len, window_id;
+  size_t        len, id;
 };
 struct rgb_receiver_t {
   unsigned char *rgb;
-  size_t        len, window_id, width, height;
+  size_t        len, id, width, height;
 };
 struct cgimage_receiver_t {
   CGImageRef image_ref;
-  size_t     window_id;
+  size_t     id;
 };
 struct cgimage_args_t {
-  size_t window_id;
+  size_t id;
   int    width, height;
 };
 char *get_capture_type_name(enum capture_type_id_t type);
@@ -185,6 +178,5 @@ int poll_new_animated_frame(void *VOID);
 struct capture_animation_result_t *init_animated_capture(enum capture_type_id_t type, enum image_type_id_t format, size_t id, size_t ms_per_frame, bool progress_bar_mode);
 size_t animated_frames_len(struct capture_animation_result_t *acap);
 bool end_animation(struct capture_animation_result_t *acap);
-struct Vector *get_cap_providers(enum image_type_id_t type);
 struct Vector *capture_image(struct capture_image_request_t *req);
 #endif

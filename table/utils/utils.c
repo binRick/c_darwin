@@ -57,11 +57,11 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       struct type *i = (struct type *)item;
       ft_printf_ln(table,
                    "%s"
-                   "|%s"
+                   "|%.5s"
                    "|%d"
                    "|%s"
-                   "|%lu/%lu"
-                   "|%lu/%lu"
+                   "|%lupx/%lumm"
+                   "|%lupx/%lumm"
                    "|%d"
                    "|%lu"
                    "%s",

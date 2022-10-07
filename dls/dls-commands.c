@@ -6,7 +6,7 @@
 #include "c_vector/vector/vector.h"
 #include "tinydir/tinydir.h"
 #include "capture/utils/utils.h"
-#include "capture/window/window.h"
+#include "capture/type/type.h"
 #include "system/utils/utils.h"
 #include "process/utils/utils.h"
 #include "clamp/clamp.h"
@@ -1574,7 +1574,6 @@ fail:
   exit(EXIT_FAILURE);
 }
 static void _check_capture_id(uint16_t capture_id){
-  log_info("Checking capture ID %d of type %d|%s",capture_id,args->capture_type,get_capture_type_name(args->capture_type));
   if (capture_id < 1) {
     log_error("Capture ID too small");
     goto do_error;
@@ -1794,18 +1793,14 @@ static void _command_set_space_index(){
 
 
 static void _command_extract_window(){
-  log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
+  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+    log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
   clamp_args(args);
   debug_dls_arguments();
-  struct Vector *results = NULL, *ids = NULL;
-  if (args->all_mode) {
-    ids = get_all_capture_type_ids(CAPTURE_TYPE_WINDOW, args->limit);
-  }else if (args->capture_id > 0) {
-    ids = vector_new();
-    vector_push(ids, (void*)(size_t)(args->capture_id));
-  }
-  log_info("%lu Windows", vector_size(ids));
-  results = tesseract_extract_windows(ids, args->concurrency);
+  struct Vector *results = NULL, *ids = get_capture_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->capture_id);
+  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+    log_info("%lu Windows", vector_size(ids));
+  results = tesseract_extract_items(ids, args->concurrency);
   log_info("%lu Results", vector_size(results));
   exit(EXIT_SUCCESS);
 }

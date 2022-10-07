@@ -63,3 +63,7 @@ tmp
 **/unc-backup*
 */**/unc-backup*
 **/**/*unc-backup*
+*.tiff
+*.png
+*.gif
+*.jpeg

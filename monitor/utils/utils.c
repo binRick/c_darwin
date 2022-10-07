@@ -6,6 +6,7 @@
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
+#include "display/utils/utils.h"
 #include "c_libmonitors/src/monitors.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
