@@ -27,7 +27,8 @@ struct open_connection_t {
 struct process_info_t {
   int           pid;
   bool          success;
-  struct Vector *open_files_v, *open_connections_v, *open_ports_v;
+  struct Vector *open_files_v, *open_connections_v, *open_ports_v, *ppids_v, *env_v, *child_pids_v;
+  pid_t ppid;
   unsigned long started, dur;
 };
 bool focus_pid(pid_t pid);

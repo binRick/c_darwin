@@ -227,15 +227,20 @@ struct process_info_t *get_process_info(int pid){
   struct process_info_t *I = calloc(1, sizeof(struct process_info_t));
 
   I->pid                = pid;
-  I->success            = false;
-  I->open_ports_v       = vector_new();
-  I->open_connections_v = vector_new();
-  I->open_files_v       = vector_new();
-  I->started            = timestamp();
   if (I->pid == 0) {
     log_error("Invalid PID %d", I->pid);
     return(NULL);
   }
+  I->success            = false;
+  I->open_ports_v       = vector_new();
+  I->open_connections_v = vector_new();
+  I->open_files_v       = vector_new();
+  //I->env_v       = get_process_env(I->pid);
+  I->env_v       = vector_new();
+  I->child_pids_v       = get_child_pids(I->pid);
+  I->ppid = get_process_ppid(I->pid);
+  I->ppids_v       = get_process_ppids(I->pid);
+  I->started            = timestamp();
 
   int bufferSize = proc_pidinfo(I->pid, PROC_PIDLISTFDS, 0, 0, 0);
 

@@ -132,9 +132,11 @@ int main(int argc, char *argv[]) {
         common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
         COMMON_OPTIONS_ID
 #define COMMON_OPTIONS_TABLE\
+        common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
         COMMON_OPTIONS_SORT \
         COMMON_OPTIONS_SIZE\
-        COMMON_OPTIONS_LIMIT_OPTIONS
+        COMMON_OPTIONS_LIMIT_OPTIONS\
+        COMMON_OPTIONS_UI
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #define COMMON_OPTIONS_ANIMATE \
         COMMON_OPTIONS_BASE\
@@ -164,6 +166,8 @@ int main(int argc, char *argv[]) {
         COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
         COMMON_OPTIONS_CAPTURE_OPTIONS\
         COMMON_OPTIONS_CAPTURE_TYPE
+#define COMMON_OPTIONS_PROCESSES\
+        COMMON_OPTIONS_TABLE
 ///////////////////////////////////////////////////////////////////////////////////////////////////
     .subcommands     = (struct optparse_cmd[]) {
       {
@@ -190,6 +194,7 @@ int main(int argc, char *argv[]) {
       CREATE_SUBCOMMAND(CAPTURE),
       CREATE_SUBCOMMAND(EXTRACT),
       CREATE_SUBCOMMAND(ANIMATE),
+      CREATE_SUBCOMMAND(PROCESSES),
 #undef CREATE_SUBCOMMAND
       {
         .name        = cmds[COMMAND_FOCUS_SPACE].name,
@@ -280,17 +285,6 @@ int main(int argc, char *argv[]) {
         .options     = (struct optparse_opt[]){
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
           common_options_b[COMMON_OPTION_RETRIES](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = "processes",
-        .description = "Processes",
-        .function    = cmds[COMMAND_PROCESSES].fxn,
-        .about       = "💒" "\t" COLOR_LIST "List Processes" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
           { END_OF_OPTIONS },
         },
       },

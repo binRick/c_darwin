@@ -68,7 +68,7 @@ struct Vector *get_process_ppids(int pid){
   while (true) {
     int _ppid = get_process_ppid(_pid);
     vector_push(v, (void *)(size_t)_ppid);
-    if (_ppid == 1) {
+    if (_ppid <= 1){
       break;
     }
     _pid = _ppid;

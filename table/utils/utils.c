@@ -6,7 +6,7 @@
 #define DEFAULT_APPS_LIMIT     50
 #define CAPTURED_WINDOW_COLUMNS "ID","Width","Height","Dur","Size","Compressed","Application","File","Format"
 #define MONITOR_COLUMNS        "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
-#define PROCESS_COLUMNS        "PID", "Open Ports", "Open Files", "Open Connections", "Dur"
+#define PROCESS_COLUMNS        "PID", "Open Ports", "Open Files", "Open Connections","PPID","PPIDs","# Env","# PIDs","Dur"
 #define KITTY_COLUMNS          "PID"
 #define USB_COLUMNS            "Product", "Manufacturer"
 #define FONT_COLUMNS           "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
@@ -96,7 +96,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 #undef type
   [TABLE_TYPE_KITTY] = &(struct table_logic_t){
 #define type    kitty_t
-    .query_items = get_kittys,                                                                       .columns = { PROCESS_COLUMNS },
+    .query_items = get_kittys,                                                                       .columns = { KITTY_COLUMNS },
     .row         = ^ void (
       ft_table_t *table,
       size_t __attribute__((unused)) index,
@@ -136,12 +136,16 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       void *item
       ){
       struct type *i = (struct type *)item;
-      ft_printf_ln(table,                                                                            "%d|%lu|%lu|%lu|%lu"
+      ft_printf_ln(table,                                                                            "%d|%lu|%lu|%lu|%d|%lu|%lu|%lu|%lu"
                    "%s",
                    (i->pid),
                    vector_size(i->open_ports_v),
                    vector_size(i->open_files_v),
                    vector_size(i->open_connections_v),
+                   (i->ppid),
+                   vector_size(i->ppids_v),
+                   vector_size(i->env_v),
+                   vector_size(i->child_pids_v),
                    (i->dur),
                    "");
     },
