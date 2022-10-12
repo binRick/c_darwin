@@ -35,7 +35,6 @@ static struct capture_type_t capture_types[]          = {
     .get_default_id = ^ size_t (void){ return(get_current_space_id());                                    },
     .validate_id    = ^ bool (size_t space_id){ return((space_id > 0 && space_id < 10000) ? true : false); },
     .capture        = ^ CGImageRef (size_t space_id){
-      log_info("capturing space #%lu", space_id);
       return(capture_space_id((uint32_t)space_id));
     },
     .capture_rect   = ^ CGImageRef (size_t space_id,CGRect rect){

@@ -83,7 +83,6 @@ static const struct cap_t *__caps[] = {
       r->img_ref          = NULL;
       r->time.started     = timestamp();
       r->time.captured_ts = r->time.started;
-      log_info("req width: %d", r->req->width);
       if (r->req->width > 0)                             {
         r->img_ref = capture_type_width(r->req->type, id, r->req->width);
       }else if (r->req->height > 0)                      {

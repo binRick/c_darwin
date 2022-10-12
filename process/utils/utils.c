@@ -303,7 +303,7 @@ int get_focused_window_id(){
   errno = 0;
   AXUIElementCopyAttributeValue(focused_app, kAXFocusedWindowAttribute, &window_ref);
   if (!window_ref) {
-    log_error("Failed to copy Attribute for app");
+    log_error("Failed to copy Attribute for focused pid %d", focused_pid);
     return(0);
   }
   int window_id = (int)ax_window_id(window_ref);

@@ -1913,6 +1913,10 @@ static void _command_capture(){
   _started = timestamp();
   for (size_t i = 0; i < vector_size(results); i++) {
     r = (struct capture_image_result_t *)vector_get(results, i);
+    if(r->len < 1 || !r->pixels){
+      log_error("Failed to acquire Image Data for ID #%lu", r->id);
+      continue;
+    }
     if(args->output_file){
         file_extension = fsio_file_extension(args->output_file);
         if(!file_extension||strlen(file_extension) < MIN_FILE_EXTENSION_LENGTH){
@@ -1959,10 +1963,6 @@ static void _command_capture(){
              args->image_format_type,image_type_name(args->image_format_type),
              ""
              );
-    if(r->len < 1 || !r->pixels){
-      log_error("Failed to acquire Image Data for ID #%lu", r->id);
-      continue;
-    }else{
       if(args->write_directory && args->write_images_mode){
         asprintf(&__writable_dir_file,"%s/%s-%lu.%s",args->write_directory,get_capture_type_name(req->type),r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
         if(!fsio_write_binary_file(__writable_dir_file,r->pixels,r->len)){
@@ -1980,7 +1980,6 @@ static void _command_capture(){
                 );
         }
       }
-    }
   }
 
   if (args->display_mode){
