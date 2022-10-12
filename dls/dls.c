@@ -1,4 +1,5 @@
 #include "dls/dls.h"
+#include "c_forever/include/forever.h"
 #define DEBUG_ARGV false
 #define NORMALIZE_ARGV false
 #define DEFAULT_PROGRESS_BAR_ENABLED true

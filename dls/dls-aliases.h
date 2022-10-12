@@ -5,6 +5,7 @@ enum alias_type_t {
   ALIAS_TYPE_WINDOW,
   ALIAS_TYPE_SPACE,
   ALIAS_TYPE_DISPLAY,
+  ALIAS_TYPE_PROCESS,
   ALIAS_TYPES_QTY,
 };
 #include "dls/dls.h"

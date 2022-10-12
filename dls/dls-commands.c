@@ -1819,11 +1819,11 @@ static void _command_animate(){
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
     req->concurrency  = args->concurrency;
     req->type         = CAPTURE_TYPE_WINDOW;
-    req->progress_bar_mode = false;//args->progress_bar_mode;
+    req->progress_bar_mode = args->progress_bar_mode;
     req->compress = args->compress;
     req->format       = IMAGE_TYPE_GIF;
-    req->width        = args->width > 0 ? args->width : 0;
-    req->height       = args->height > 0 ? args->height : 0;
+    req->width =    clamp(req->width,0,args->width);
+    req->height =    clamp(req->height,0,args->height);
     req->time.dur     = 0;
     req->time.started = timestamp();
     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
@@ -1901,6 +1901,7 @@ static void _command_capture(){
   req->concurrency  = clamp(args->concurrency, 1, vector_size(req->ids));
   req->format         = args->image_format_type;
   req->compress         = args->compress;
+  req->type = args->capture_type;
   req->progress_bar_mode = args->progress_bar_mode;     
   req->format       = args->image_format_type;
   req->width        = args->width > 0 ? args->width : 0;
@@ -1963,7 +1964,7 @@ static void _command_capture(){
       continue;
     }else{
       if(args->write_directory && args->write_images_mode){
-        asprintf(&__writable_dir_file,"%s/window-%lu.%s",args->write_directory,r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
+        asprintf(&__writable_dir_file,"%s/%s-%lu.%s",args->write_directory,get_capture_type_name(req->type),r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
         if(!fsio_write_binary_file(__writable_dir_file,r->pixels,r->len)){
           log_error("Failed to write %s to File file %s", bytes_to_string(r->len),__writable_dir_file);
           continue;

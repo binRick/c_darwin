@@ -12,7 +12,7 @@
 #define BAR_MIN_WIDTH 20
 #define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE .5
 #define BAR_MESSAGE_COMPRESSION_TEMPLATE "Compressing %lu Images of %s"
-#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu %s Windows"
+#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu %s %s%s"
 #define BAR_MESSAGE_TEMPLATE "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
 #include "capture/type/type.h"
@@ -83,6 +83,7 @@ static const struct cap_t *__caps[] = {
       r->img_ref          = NULL;
       r->time.started     = timestamp();
       r->time.captured_ts = r->time.started;
+      log_info("req width: %d", r->req->width);
       if (r->req->width > 0)                             {
         r->img_ref = capture_type_width(r->req->type, id, r->req->width);
       }else if (r->req->height > 0)                      {
@@ -586,7 +587,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
 
   if(req->progress_bar_mode){
     req->bar = calloc(1, sizeof(struct cbar_t));
-    asprintf(&bar_msg, BAR_MESSAGE_CAPTURE_TEMPLATE,vector_size(req->ids),image_type_name(req->format));
+    asprintf(&bar_msg, BAR_MESSAGE_CAPTURE_TEMPLATE,vector_size(req->ids),image_type_name(req->format), get_capture_type_name(req->type),vector_size(req->ids)>1 ? "s" : "");
     bar_msg_len  = strlen(bar_msg);
     term_width = get_terminal_width();
     asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);

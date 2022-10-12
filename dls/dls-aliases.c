@@ -11,12 +11,14 @@ static char *alias_names[] = {
   [ALIAS_TYPE_WINDOW]  = "window",
   [ALIAS_TYPE_SPACE]   = "space",
   [ALIAS_TYPE_DISPLAY] = "display",
+  [ALIAS_TYPE_PROCESS] = "process",
 };
 
 static char *alias_name_globs[ALIAS_TYPES_QTY][MAX_ALIASES] = {
   [ALIAS_TYPE_WINDOW]  = { "win",  "w", NULL, },
   [ALIAS_TYPE_SPACE]   = { "sp",   "s", NULL, },
   [ALIAS_TYPE_DISPLAY] = { "disp", "d", NULL, },
+  [ALIAS_TYPE_PROCESS] = { "proc", "ps", NULL, },
 };
 static const struct dls_ordered_arg_t {
   char *before, *after;

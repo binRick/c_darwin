@@ -158,6 +158,44 @@ CGImageRef preview_space_id(uint32_t space_id) {
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
 }
 
+  CGImageRef capture_space_id_height(size_t space_id, size_t height){
+    CGImageRef img_ref = capture_space_id(space_id);
+    int        w[2], h[2];
+
+    w[0] = CGImageGetWidth(img_ref);
+    h[0] = CGImageGetHeight(img_ref);
+    h[1] = height;
+    float factor = 1;
+    if(h[0] > 100){
+      factor = (float)(h[0]) / (float)(h[1]);
+    }
+
+    w[1] = (int)((float)w[0] / factor);
+    return(resize_cgimage(img_ref, w[1], h[1]));
+  }
+
+  CGImageRef capture_space_id_width(size_t space_id, size_t width){
+    CGImageRef img_ref = capture_space_id(space_id);
+    int        w[2], h[2];
+
+    w[0] = CGImageGetWidth(img_ref);
+    h[0] = CGImageGetHeight(img_ref);
+    w[1] = width;
+    float factor = (float)(w[0]) / (float)(w[1]);
+
+    h[1] = (int)((float)h[0] / factor);
+    return(resize_cgimage(img_ref, w[1], h[1]));
+  }
+
+CGImageRef capture_space_id_rect(size_t space_id, CGRect rect){
+  CGImageRef img_ref = capture_space_id(space_id);
+  int new_width = (int)(rect.size.width);
+  int new_height = (int)(rect.size.height);
+
+  return(resize_cgimage(img_ref, new_width, new_height));
+
+}
+
 CGImageRef capture_space_id(uint32_t sid) {
   CGImageRef image  = NULL;
   CFArrayRef result = SLSHWCaptureSpace(g_connection, sid, 0);

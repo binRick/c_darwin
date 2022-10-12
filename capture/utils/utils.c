@@ -35,9 +35,15 @@ static struct capture_type_t capture_types[]          = {
     .get_default_id = ^ size_t (void){ return(get_current_space_id());                                    },
     .validate_id    = ^ bool (size_t space_id){ return((space_id > 0 && space_id < 10000) ? true : false); },
     .capture        = ^ CGImageRef (size_t space_id){
+      log_info("capturing space #%lu", space_id);
       return(capture_space_id((uint32_t)space_id));
     },
+    .capture_rect   = ^ CGImageRef (size_t space_id,CGRect rect){
+      return(capture_space_id_rect((uint32_t)space_id, rect));
+    },
     .preview   = ^ CGImageRef (size_t space_id){ return(preview_space_id((uint32_t)space_id));  },
+    .width     = ^ CGImageRef (size_t space_id, size_t width){ return(capture_space_id_width((uint32_t)space_id, width)); },
+    .height    = ^ CGImageRef (size_t space_id, size_t height){ return(capture_space_id_height((uint32_t)space_id, height)); },
     .get_items = ^ struct Vector *(void){ return(get_window_infos_v());                         },
   },
   [CAPTURE_TYPE_DISPLAY] = {
@@ -51,6 +57,8 @@ static struct capture_type_t capture_types[]          = {
       return(capture_display_id((uint32_t)display_id));
     },
     .preview   = ^ CGImageRef (size_t display_id){ return(preview_display_id((uint32_t)display_id)); },
+    .width     = ^ CGImageRef (size_t display_id, size_t width){ return(capture_display_id_width((uint32_t)display_id, width)); },
+    .height    = ^ CGImageRef (size_t display_id, size_t height){ return(capture_display_id_height((uint32_t)display_id, height)); },
     .get_items = ^ struct Vector *(void){ return(get_displays_v());                             },
   },
   [CAPTURE_TYPE_WINDOW] =  {
@@ -92,6 +100,7 @@ CGImageRef capture_type_height(enum capture_type_id_t capture_type_id, size_t ca
 }
 
 CGImageRef capture_type_width(enum capture_type_id_t capture_type_id, size_t capture_id, size_t width){
+  log_info("capture_type_width> %d|%lu|%lu|CAPTURE_TYPE_SPACE:%d", capture_type_id,capture_id,width,CAPTURE_TYPE_SPACE);
   return(capture_types[capture_type_id].width(capture_id, width));
 }
 
