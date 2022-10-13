@@ -475,7 +475,7 @@ int get_focused_window_id(){
         }                                                                                                                        \
       }                                                                                                                          \
     }                                                                                                                            \
-    if(EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED && i->can_minimize ==false){\
+    if(EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED && i->can_minimize == false){\
       continue;\
     }\
     vector_push(window_infos_v, (void *)i);                                                                                      \

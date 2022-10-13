@@ -1,6 +1,7 @@
 subdir('utils')
 subdir('type')
 subdir('animate')
+subdir('save')
 capture_srcs = [
   'capture.c',
 ]
@@ -25,6 +26,7 @@ capture_deps = [
   capture_type_dep,
   capture_utils_dep,
   capture_animate_dep,
+  capture_save_dep,
 ]
 
 capture_c_args = [

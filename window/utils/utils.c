@@ -1280,6 +1280,8 @@ CGImageRef preview_window_id(size_t window_id){
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
 }
 
+
+
 CGImageRef capture_window_id_rect(size_t window_id, CGRect rect){
   uint64_t   wid       = (uint64_t)(window_id);
   CGImageRef image_ref = NULL;

@@ -65,8 +65,8 @@ struct args_t {
   bool                                 clear_screen, compress;
   int                                  pid, width_greater, width_less, height_greater, height_less;
   char                                 *sort_direction, *application_name;
-  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *image_format;
-  enum image_type_id_t                 image_format_type;
+  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *formats;
+  struct Vector *formats_v, *format_ids_v;
   bool                                 exact_match, case_sensitive, duplicate, non_duplicate, write_file, write_thumbnail, purge_write_directory_before_write, random_ids_mode;
   int                                  frame_rate, duration_seconds;
 };

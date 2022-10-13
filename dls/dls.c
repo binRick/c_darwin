@@ -18,7 +18,6 @@ struct args_t                 *args                = &(struct args_t){
   .verbose_mode        = false, .debug_mode = false,
   .space_id            = -1,
   .display_id          = -1,
-  .purge_write_directory_before_write = false,
   .id           = 0,
   .capture_type         = DEFAULT_CAPTURE_TYPE,
   .capture_mode[DEFAULT_CAPTURE_TYPE] = true,
@@ -42,10 +41,12 @@ struct args_t                 *args                = &(struct args_t){
   .font_name           = NULL, .font_family = NULL, .font_style = NULL,
   .exact_match         = false, .case_sensitive = false,
   .retries             = 0,
-  .image_format        = "png",
-  .image_format_type   = IMAGE_TYPE_PNG,
   .duration_seconds    = 10,
-  .write_images_mode = true,
+  .write_images_mode = false,
+  .purge_write_directory_before_write = false,
+  .write_directory = "/tmp",
+  .formats_v = NULL,
+  .format_ids_v = NULL,
 };
 
 ////////////////////////////////////////////
@@ -109,7 +110,7 @@ int main(int argc, char *argv[]) {
         common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS          \
         common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),\
-        common_options_b[COMMON_OPTION_IMAGE_FORMAT](args),
+        common_options_b[COMMON_OPTION_IMAGE_FORMATS](args),
 #define COMMON_OPTIONS_CAPTURE_OPTIONS          \
         common_options_b[COMMON_OPTION_COMPRESS](args),\
         common_options_b[COMMON_OPTION_CONCURRENCY](args),\

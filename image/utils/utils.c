@@ -241,7 +241,7 @@ static struct Vector *get_image_format_names_v(){
   return(v);
 }
 
-enum image_type_id_t image_format_type(char *format){
+enum image_type_id_t get_format_name(char *format){
   for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
     if (strcmp(stringfn_to_lowercase(format),
                stringfn_to_lowercase(image_type_name(i))) == 0) {
@@ -263,6 +263,10 @@ char *image_type_name(enum image_type_id_t type){
   case IMAGE_TYPE_QOI: return("QOI"); break;
   default: return("UNKNOWN"); break;
   }
+}
+
+char *image_type_extension(enum image_type_id_t type){
+  return(stringfn_to_lowercase(image_type_name(type)));
 }
 
 char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
@@ -368,6 +372,10 @@ bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file) {
 
 bool save_cgref_to_tiff_file(CGImageRef image, char *image_file) {
   return(save_cgref_to_image_type_file(IMAGE_TYPE_TIFF, image, image_file));
+}
+
+bool save_qoi_pixels_to_qoi_file(void *pixels, size_t len, char *image_file){
+  return(fsio_write_binary_file(image_file,pixels,len));
 }
 
 bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {

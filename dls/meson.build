@@ -44,6 +44,7 @@ darwin_ls_deps = [
   httpserver_utils_dep,httpserver_dep,icon_utils_dep,capture_utils_dep,wildcardcmp_dep,table_sort_dep,
   capture_type_dep,
   capture_animate_dep,
+  capture_save_dep,
   chan_dep,
 ]
 

@@ -99,7 +99,6 @@ CGImageRef capture_type_height(enum capture_type_id_t capture_type_id, size_t ca
 }
 
 CGImageRef capture_type_width(enum capture_type_id_t capture_type_id, size_t capture_id, size_t width){
-  log_info("capture_type_width> %d|%lu|%lu|CAPTURE_TYPE_SPACE:%d", capture_type_id,capture_id,width,CAPTURE_TYPE_SPACE);
   return(capture_types[capture_type_id].width(capture_id, width));
 }
 

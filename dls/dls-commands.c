@@ -6,6 +6,7 @@
 #include "c_vector/vector/vector.h"
 #include "tinydir/tinydir.h"
 #include "capture/utils/utils.h"
+#include "image/utils/utils.h"
 #include "capture/animate/animate.h"
 #include "capture/type/type.h"
 #include "system/utils/utils.h"
@@ -28,6 +29,7 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
+#include "capture/save/save.h"
 #define MAX_CONCURRENCY   25
 #define MAX_FRAME_RATE    30
 #define MAX_LIMIT         99
@@ -39,6 +41,12 @@
 #define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
 #define CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE 300
 #define MIN_FILE_EXTENSION_LENGTH 3
+#define debug(M, ...)    {            \
+      do {                              \
+        if (IS_COMMAND_VERBOSE_OR_DEBUG_MODE) {\
+          log_debug(M, ## __VA_ARGS__); \
+        }                               \
+      } while (0); }
 struct capture_mode_t;
 enum arg_clamp_type_t {
   ARG_CLAMP_TYPE_WINDOW_SIZE,
@@ -59,7 +67,7 @@ static const struct arg_clamp_t {
 };
 #define CLAMP_ARG_TYPE(ARGS,ARG,TYPE)\
   clamp(ARGS->ARG,arg_clamps[TYPE].min,arg_clamps[TYPE].max)
-void clamp_args(struct args_t *ARGS){
+bool initialize_args(struct args_t *ARGS){
   ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS,concurrency,ARG_CLAMP_TYPE_CONCURRENCY);
   ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS,duration_seconds,ARG_CLAMP_TYPE_DURATION);
   ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS,frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
@@ -67,6 +75,10 @@ void clamp_args(struct args_t *ARGS){
   ARGS->height       = CLAMP_ARG_TYPE(ARGS,height, ARG_CLAMP_TYPE_WINDOW_SIZE);
   ARGS->limit      = CLAMP_ARG_TYPE(ARGS,limit, ARG_CLAMP_TYPE_LIMIT);
   ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
+  if(vector_size(ARGS->format_ids_v)==0){
+    vector_push(ARGS->format_ids_v,(void*)(IMAGE_TYPE_PNG));
+  }
+  return(true);
 }
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
@@ -84,9 +96,9 @@ static void debug_dls_arguments(){
   log_debug("concurrency :  %d", args->concurrency);
   log_debug("write dir :  %s", args->write_directory);
   log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
-  log_debug("format :  %s", args->image_format);
+  log_debug("Format IDs :  %lu", vector_size(args->format_ids_v));
+  log_debug("Formats :  %lu", vector_size(args->formats_v));
   log_debug("limit :  %d", args->limit);
-  log_debug("format type:  %d", args->image_format_type);
   log_debug("frame rate :  %d", args->frame_rate);
   log_debug("Duration sec :  %d", args->duration_seconds);
   log_debug("window id :  %d", args->id);
@@ -159,7 +171,7 @@ static const struct capture_mode_t {
           req->type         = CAPTURE_TYPE_WINDOW;
           req->compress         = args->compress;
           req->progress_bar_mode = true;
-          req->format       = args->image_format_type;
+          req->format       = (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,0);
           req->width        = args->width > 0 ? args->width : 0;
           req->height       = args->height > 0 ? args->height : 0;
           req->compress = args->compress;
@@ -260,7 +272,7 @@ static void _command_list_hotkey();
 static void _check_run_hotkeys(void);
 static void _check_id(uint16_t id);
 static void _check_clear_screen(void);
-static void _check_image_format(char *format);
+static void _check_formats(char *formats);
 static void _check_sort_direction_desc(void);
 static void _check_capture_window_mode(void);
 static void _check_capture_space_mode(void);
@@ -678,15 +690,15 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->output_file),
     });
   },
-  [COMMON_OPTION_IMAGE_FORMAT] = ^ struct optparse_opt (struct args_t *args)                                {
+  [COMMON_OPTION_IMAGE_FORMATS] = ^ struct optparse_opt (struct args_t *args)                                {
     return((struct optparse_opt)                                                                            {
       .short_name = 'f',
-      .long_name = "format",
+      .long_name = "formats",
       .description = get_image_format_names_csv(),
-      .arg_name = "IMAGE-FORMAT",
-      .arg_data_type = check_cmds[CHECK_COMMAND_IMAGE_FORMAT].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_IMAGE_FORMAT].fxn,
-      .arg_dest = &(args->image_format),
+      .arg_name = "IMAGE-FORMATS-CSV",
+      .arg_data_type = check_cmds[CHECK_COMMAND_IMAGE_FORMATS].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_IMAGE_FORMATS].fxn,
+      .arg_dest = &(args->formats),
     });
   },
   [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)                                 {
@@ -1093,8 +1105,8 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_input_icns_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_IMAGE_FORMAT] =        {
-    .fxn           = (void (*)(void))(*_check_image_format),
+  [CHECK_COMMAND_IMAGE_FORMATS] =        {
+    .fxn           = (void (*)(void))(*_check_formats),
     .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_INPUT_PNG_FILE] =      {
@@ -1335,12 +1347,37 @@ static int hotkey_callback(char *KEYS){
 }
 
 ////////////////////////////////////////////
-static void _check_image_format(char *format){
-  args->image_format_type = image_format_type(format);
-  if (args->image_format_type < 0) {
-    log_error("Invalid Image Format");
-    exit(EXIT_FAILURE);
+static void _check_formats(char *formats){
+  args->formats_v = vector_new();
+  args->format_ids_v = vector_new();
+  char *msg[2] = { 0 };
+  struct StringBuffer *sb[2];
+  sb[0] = stringbuffer_new();
+  sb[1] = stringbuffer_new();
+  struct StringFNStrings split = stringfn_split(formats,',');
+  for(int i=0;i<split.count;i++){
+  debug(" - %s",split.strings[i]);
+    vector_push(args->formats_v,(void*)split.strings[i]);
+    vector_push(args->format_ids_v,(void*)get_format_name(split.strings[i]));
   }
+  for(size_t i=0;i<vector_size(args->formats_v);i++){
+    if(i<vector_size(args->formats_v) && i > 0){
+      stringbuffer_append_string(sb[0],", ");
+      stringbuffer_append_string(sb[1],", ");
+    }
+    stringbuffer_append_string(sb[0],(char*)(vector_get(args->formats_v,i)));
+    stringbuffer_append_int(sb[1],(int)(size_t)(vector_get(args->format_ids_v,i)));
+  }
+  msg[0] = stringbuffer_to_string(sb[0]);
+  msg[1] = stringbuffer_to_string(sb[1]);
+  stringbuffer_release(sb[0]);
+  stringfn_release_strings_struct(split);
+  debug("Checking %lu formats: %s, %lu format ids: %s", 
+      vector_size(args->formats_v),msg[0],
+      vector_size(args->format_ids_v), msg[1]
+      );
+  if(msg[0])free(msg[0]);
+  if(msg[1])free(msg[1]);
 }
 
 static void _check_run_hotkeys(){
@@ -1550,9 +1587,9 @@ static void _check_width_group(uint16_t width){
 }
 
 static void _check_write_directory(void){
-  char *test_files[3];
+  char *test_files[3], *new_dir;
+
   if(args->purge_write_directory_before_write && fsio_dir_exists(args->write_directory)){
-    char *new_dir;
     asprintf(&new_dir,"%s/.%s-%lld-dls-purged-dir",
         dirname(args->write_directory),
         basename(args->write_directory),
@@ -1565,7 +1602,6 @@ static void _check_write_directory(void){
       log_error("Failed to move \"%s\" to \"%s\"",args->write_directory,new_dir);
       exit(EXIT_FAILURE);
     }
-    free(new_dir);
   }
   if(!stringfn_starts_with(args->write_directory,"/")){
     asprintf(&(args->write_directory),"%s/%s",
@@ -1586,8 +1622,6 @@ static void _check_write_directory(void){
 
   char td[PATH_MAX];
   asprintf(&td,"%s/",args->write_directory);
-//  setenv("TMPDIR",td,true);
-
   return(EXIT_SUCCESS);
 fail:
   fprintf(stderr, "Invalid \"Write Directory\" "AC_YELLOW "%s"AC_RESETALL": "AC_RED"%s"AC_RESETALL
@@ -1793,7 +1827,7 @@ static void _command_set_space_index(){
 static void _command_extract(){
   if(DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
-  clamp_args(args);
+  initialize_args(args);
   debug_dls_arguments();
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
   if(DARWIN_LS_COMMANDS_DEBUG_MODE)
@@ -1805,7 +1839,7 @@ static void _command_extract(){
 
 
 static void _command_animate(){
-  clamp_args(args);
+  initialize_args(args);
   debug_dls_arguments();
   unsigned long animation_started = timestamp();
   unsigned long end_ts = animation_started + (args->duration_seconds * 1000);
@@ -1882,137 +1916,111 @@ static void _command_animate(){
 } /* _command_animated_capture*/
 
 
-static void _command_capture(){
-  clamp_args(args);
-  debug_dls_arguments();
-  char *__writable_dir_file = NULL, *file_extension, *image_loader_name;
-  size_t wrote_bytes_total = 0, wrote_files_qty = 0;
-  unsigned long _started;
-  VipsImage *image;
+static char *get_type_format_output_file(size_t id, char *dir, enum capture_type_id_t type, enum image_type_id_t format_id){
+  char *output_file = NULL;
+  asprintf(&output_file,"%s/%s-%lu.%s", 
+    dir ? dir : gettempdir(),
+    stringfn_to_lowercase(get_capture_type_name(type)),
+    id,
+    image_type_extension(format_id)
+  );
+  return(output_file);
+}
+
+bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
   struct capture_image_result_t *r = NULL;
+  for (size_t i = 0; i < vector_size(results_v); i++) {
+    r = (struct capture_image_result_t *)vector_get(results_v, i);
+    if(r)
+      r->file = get_type_format_output_file(r->id, dir, type, format_id);
+  }
+  return(true);
+}
+bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
+    struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
+    fprintf(stderr," ✅ Wrote "AC_GREEN"%s"AC_RESETALL " to %lu "AC_BLUE"%s"AC_RESETALL " Capture Files in directory %s in "AC_YELLOW"%s"AC_RESETALL "\n",
+                bytes_to_string(res->bytes),
+                res->qty,
+                image_type_name(format_id),
+                args->write_directory,
+                milliseconds_to_string(res->dur)
+    );
+
+}
+bool display_results(struct Vector *results_v){
+    struct capture_image_result_t *r = NULL;
+    for (size_t i = 0; i < vector_size(results_v); i++) {
+      r = (struct capture_image_result_t *)vector_get(results_v, i);
+      if (r->len > 0 && r->pixels) {
+        debug("Displaying %lux%lu %s File", r->width,r->height,bytes_to_string(r->len));
+        if(kitty_display_image_buffer_resized_width(r->pixels, r->len,CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE))
+          printf("\n");
+      }
+    }
+    if(r)free(r);
+    return(true);
+}
+struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height){
+  struct Vector *results_v;
+  struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+  req->ids = ids;
+  req->concurrency  = clamp(concurrency, 1, vector_size(req->ids));
+  req->format         = format_id;
+  req->compress         = compress;
+  req->type = capture_type;
+  req->progress_bar_mode = progress_bar_mode;     
+  req->width        = width > 0 ? width : 0;
+  req->height       = height > 0 ? height : 0;
+  req->time.started = timestamp();
+  req->time.dur     = 0;
+  results_v = capture_image(req);
+  free(req);
+  return(results_v);
+}
+
+static void _command_capture(){
+  initialize_args(args);
+  debug_dls_arguments();
   struct list_table_t *filter = &(struct list_table_t){
     .sort_key       = stringfn_to_lowercase(args->sort_key),
     .sort_direction = stringfn_to_lowercase(args->sort_direction),
     .limit          = args->limit, 
   };
-  struct Vector *results = NULL;
-  struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-  req->ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
-  req->concurrency  = clamp(args->concurrency, 1, vector_size(req->ids));
-  req->format         = args->image_format_type;
-  req->compress         = args->compress;
-  req->type = args->capture_type;
-  req->progress_bar_mode = args->progress_bar_mode;     
-  req->format       = args->image_format_type;
-  req->width        = args->width > 0 ? args->width : 0;
-  req->height       = args->height > 0 ? args->height : 0;
-  req->compress = args->compress;
-  req->time.started = timestamp();
-  req->time.dur     = 0;
-  results           = capture_image(req);
-  _started = timestamp();
-  for (size_t i = 0; i < vector_size(results); i++) {
-    r = (struct capture_image_result_t *)vector_get(results, i);
-    if(r->len < 1 || !r->pixels){
-      log_error("Failed to acquire Image Data for ID #%lu", r->id);
-      continue;
-    }
-    if(args->output_file){
-        file_extension = fsio_file_extension(args->output_file);
-        if(!file_extension||strlen(file_extension) < MIN_FILE_EXTENSION_LENGTH){
-          log_error("File extension name failure: \"%s\"", args->output_file);
-          continue;
-        }
-        if(!stringfn_equal(stringfn_to_lowercase(file_extension),stringfn_to_lowercase(image_type_name(args->image_format_type)))){
-            asprintf(&args->output_file,"%s.%s", 
-               stringfn_substring(args->output_file,0,strlen(args->output_file)-strlen(file_extension)),
-               stringfn_to_lowercase(image_type_name(args->image_format_type))
-           );
-        }
-        if(file_extension)free(file_extension);
-        image_loader_name = vips_foreign_find_load_buffer(r->pixels,r->len);
-        image = vips_image_new_from_buffer(r->pixels,r->len,"",NULL);
-        r->time.dur = timestamp() - r->time.started;
-        log_info("Loaded %s PNG Pixels to %dx%d %s PNG VIPImage in %s using loader %s",
-              bytes_to_string(r->len),
-              vips_image_get_width(image), vips_image_get_height(image),
-              bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
-              milliseconds_to_string(r->time.dur),
-              image_loader_name
-              );
-        if(r->len==0){
-          log_error("Failed to acquire Pixel Data (%luB) for Window #%lu using loader %s",r->len,r->id,image_loader_name);
-          if(image)g_object_unref(image);
-          continue;
-        }
-        image_target_file_savers[args->image_format_type](image, args->output_file, NULL);
-        if(image)g_object_unref(image);
-    }
-
-    if(IS_COMMAND_DEBUG_MODE)
-      log_info(AC_GREEN "\n\t|capture type:%d (%s)|%lux%lu|size:%s|output file:%s"
-          "\n\t|dur:%s|write dir:%s|write images mode:%s|image format: %d (%s)|" AC_RESETALL
-             "%s",
-             args->capture_type,get_capture_type_name(args->capture_type),
-             r->width, r->height,
-             bytes_to_string(r->len),
-             args->output_file ? args->output_file : "(none)",
-             milliseconds_to_string(r->time.dur),
-             args->write_directory,
-             args->write_images_mode ? "Yes":"No",
-             args->image_format_type,image_type_name(args->image_format_type),
-             ""
-             );
-      if(args->write_directory && args->write_images_mode){
-        asprintf(&__writable_dir_file,"%s/%s-%lu.%s",args->write_directory,get_capture_type_name(req->type),r->id,stringfn_to_lowercase(image_type_name(args->image_format_type)));
-        if(!fsio_write_binary_file(__writable_dir_file,r->pixels,r->len)){
-          log_error("Failed to write %s to File file %s", bytes_to_string(r->len),__writable_dir_file);
-          continue;
-        }else{
-          wrote_bytes_total += fsio_file_size(__writable_dir_file);
-          wrote_files_qty++;
-          if(IS_COMMAND_VERBOSE_OR_DEBUG_MODE)
-            fprintf(stderr,"\t- Wrote %5s to Item #"AC_GREEN AC_BOLD "%6.lu"AC_RESETALL " %s File "AC_YELLOW AC_ITALIC"%s"AC_RESETALL"\n",
-                bytes_to_string(r->len),
-                r->id,
-                image_type_name(args->image_format_type),
-                __writable_dir_file
-                );
-        }
-      }
-  }
-
-  if (args->display_mode){
-    for (size_t i = 0; i < vector_size(results); i++) {
-      r = (struct capture_image_result_t *)vector_get(results, i);
-      if (r->len > 0 && r->pixels) {
-        log_info("Displaying %lux%lu %s File", r->width,r->height,bytes_to_string(r->len));
-     //   if(kitty_display_image_buffer_resized_width(r->pixels, r->len,CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE))
-       //   printf("\n");
-      }
-    }
-  }
-
-
-  switch (args->output_mode) {
-  case OUTPUT_MODE_TABLE:
-    if(false)
-      list_captured_window_table(filter);
-    break;
-  case OUTPUT_MODE_JSON:
-    break;
-  case OUTPUT_MODE_TEXT:
-    break;
-  }
-
-
-  if(IS_COMMAND_VERBOSE_OR_DEBUG_MODE)
-    fprintf(stderr,"Wrote %s to %lu Files in %s\n",
-                bytes_to_string(wrote_bytes_total),
-                wrote_files_qty,
-                milliseconds_to_string(timestamp()-_started)
+  struct Vector *ids =  get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
+  for(size_t i = 0; i <vector_size(args->format_ids_v);i++){
+    struct Vector *results_v = capture(
+        (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), 
+        ids, 
+        args->concurrency, 
+        args->compress, 
+        args->capture_type, 
+        args->progress_bar_mode, 
+        args->width, 
+        args->height
     );
-  if(__writable_dir_file)free(__writable_dir_file);
+
+    set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v);
+    if(args->write_images_mode){
+      save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v, args->concurrency, args->progress_bar_mode);
+    }
+    if (args->display_mode){
+      display_results(results_v);
+    }
+
+
+    switch (args->output_mode) {
+    case OUTPUT_MODE_TABLE:
+      if(false)
+        list_captured_window_table(filter);
+      break;
+    case OUTPUT_MODE_JSON:
+      break;
+    case OUTPUT_MODE_TEXT:
+      break;
+    }
+}
+
+
   exit(EXIT_SUCCESS);
 } /* _command_capture*/
 
@@ -2454,4 +2462,6 @@ LIST_HANDLER(process)
 LIST_HANDLER(space)
 LIST_HANDLER(display)
 #undef LIST_HANDLER
+#undef LOCAL_DEBUG_MODE
+#undef debug  
 #endif

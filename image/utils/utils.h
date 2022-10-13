@@ -64,7 +64,7 @@ CGImageRef rgb_pixels_to_png_cgimage_ref(unsigned char *rgb_pixels, int width, i
 CGImageRef png_file_to_grayscale_cgimage_ref_resized(FILE *fp, double resize_factor);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 char *image_type_name(enum image_type_id_t type);
-enum image_type_id_t image_format_type(char *format);
+enum image_type_id_t get_format_name(char *format);
 bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file);
 unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, CGImageRef image, size_t *len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,4 +96,5 @@ bool compress_png_file(char *file);
 char *get_image_format_names_csv();
 void pngquant_test1(char *input_png_file_path);
 bool compress_png_buffer(unsigned char *buf, size_t *len);
+char *image_type_extension(enum image_type_id_t type);
 #endif

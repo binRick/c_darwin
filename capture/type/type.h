@@ -61,7 +61,8 @@ struct cgimage_recv_t {
 };
 struct capture_image_result_t {
   struct cgimage_recv_t *msg;
-  enum image_type_id_t  type;
+  enum capture_type_id_t  type;
+  enum image_type_id_t  format;
   char                  *file, *thumbnail_file;
   unsigned char         *pixels;
   size_t                width, height, len, id;
