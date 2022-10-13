@@ -169,6 +169,8 @@ int main(int argc, char *argv[]) {
         COMMON_OPTIONS_CAPTURE_TYPE
 #define COMMON_OPTIONS_PROCESSES\
         COMMON_OPTIONS_TABLE
+#define COMMON_OPTIONS_CREATE_SPACE\
+        COMMON_OPTIONS_TABLE
 ///////////////////////////////////////////////////////////////////////////////////////////////////
     .subcommands     = (struct optparse_cmd[]) {
       {
@@ -196,6 +198,7 @@ int main(int argc, char *argv[]) {
       CREATE_SUBCOMMAND(EXTRACT),
       CREATE_SUBCOMMAND(ANIMATE),
       CREATE_SUBCOMMAND(PROCESSES),
+      CREATE_SUBCOMMAND(CREATE_SPACE),
 #undef CREATE_SUBCOMMAND
       {
         .name        = cmds[COMMAND_FOCUS_SPACE].name,

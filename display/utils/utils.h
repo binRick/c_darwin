@@ -23,6 +23,8 @@
 struct display_t {
   size_t        display_id, index;
   int           width, height;
+  int offset_x, offset_y;
+  int center_x, center_y;
   char          *uuid;
   bool          is_main;
   struct Vector *space_ids_v, *window_ids_v;

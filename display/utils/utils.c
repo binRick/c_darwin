@@ -22,6 +22,8 @@ enum display_parser_type_t {
   DISPLAY_PARSER_TYPE_DISPLAY_ID,
   DISPLAY_PARSER_TYPE_WIDTH,
   DISPLAY_PARSER_TYPE_HEIGHT,
+  DISPLAY_PARSER_TYPE_OFFSET,
+  DISPLAY_PARSER_TYPE_CENTER,
   DISPLAY_PARSER_TYPE_MAIN,
   DISPLAY_PARSER_TYPE_SPACE_IDS,
   DISPLAY_PARSER_TYPE_WINDOW_IDS,
@@ -47,6 +49,18 @@ static struct display_parser_t display_parsers[DISPLAY_PARSER_TYPES_QTY + 1] = {
   [DISPLAY_PARSER_TYPE_HEIGHT] =     { .enabled = true,
                                        .parser  = ^ void (struct display_t *d, size_t display_id){
                                          d->height  = get_display_id_height(display_id);
+                                       }, },
+  [DISPLAY_PARSER_TYPE_CENTER] =      { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         CGPoint p = get_display_center(display_id);
+                                         d->center_x    = (int)(p.x);
+                                         d->center_y    = (int)(p.y);
+                                       }, },
+  [DISPLAY_PARSER_TYPE_OFFSET] =      { .enabled = true,
+                                       .parser  = ^ void (struct display_t *d, size_t display_id){
+                                         CGRect rect = get_display_rect(display_id);
+                                         d->offset_x    = (int)(rect.origin.x);
+                                         d->offset_y    = (int)(rect.origin.y);
                                        }, },
   [DISPLAY_PARSER_TYPE_MAIN] =       { .enabled = true,
                                        .parser  = ^ void (struct display_t *d, size_t display_id){

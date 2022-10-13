@@ -242,6 +242,7 @@ static void _command_focused_window();
 static void _command_focused_pid();
 static void _command_focused_space();
 static void _command_list_space();
+static void _command_create_space(void);
 static void _command_sticky_window();
 static void _command_menu_bar();
 static void _command_list_usb();
@@ -1223,6 +1224,11 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
     .description = "Dock Info",
     .fxn         = (*_command_dock)
+  },
+  [COMMAND_CREATE_SPACE] =         {
+    .name        = "create-space", .icon = "💮", .color = COLOR_LIST,
+    .description = "Create Space",
+    .fxn         = (*_command_create_space)
   },
   [COMMAND_FOCUSED_SPACE] =         {
     .name        = "focused-space", .icon = "💮", .color = COLOR_LIST,
@@ -2368,6 +2374,16 @@ static void _command_focused_space(){
   exit(EXIT_SUCCESS);
 } /* _command_focused_space */
 
+
+static void _command_create_space(){
+
+  uint64_t space_id = (uint64_t)(get_current_space_id());
+  int display_space = (int)(get_current_display_id());
+  log_info("creating space on %llu|%d.....", space_id, display_space);
+  uint64_t add_space_fp = 0x230000;
+
+  exit(EXIT_SUCCESS);
+}
 static void _command_focused_pid(){
   int pid = get_focused_pid();
 

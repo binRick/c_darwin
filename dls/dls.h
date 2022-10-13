@@ -37,39 +37,15 @@ const char                    *output_modes[OUTPUT_MODES_QTY + 1];
 #include "capture/type/type.h"
 #include "capture/animate/animate.h"
 struct args_t {
-  char *write_directory;
   enum capture_type_id_t capture_type;
-  int                                  *ilist;
-  size_t                               ilist_size;
-  bool capture_mode[999];
-  bool                                 verbose_mode, debug_mode, progress_bar_mode, write_images_mode;
-  bool                                 capture_window_mode, capture_space_mode, capture_display_mode;
-  bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
-  int                                  space_id;
-  size_t id;
-  int                                  display_id;
-  int                                  x, y;
-  int                                  width, height;
-  int                                  width_or_height_group;
-  int                                  output_mode; char *output_mode_s;
-  char                                 *application_path, *output_icns_file, *input_icns_file;
-  char                                 *output_png_file, *input_png_file, *input_file, *output_file;
   enum common_option_width_or_height_t width_or_height;
   struct window_info_t                 *window;
-  size_t                               icon_size;
-  int                                  retries;
-  int                                  concurrency, limit;
-  double                               resize_factor;
-  char                                 *xml_file_path, *content;
-  bool                                 clear_icons_cache, minimized_only, not_minimized_only;
-  bool                                 display_mode, all_mode;
-  bool                                 clear_screen, compress;
-  int                                  pid, width_greater, width_less, height_greater, height_less;
-  char                                 *sort_direction, *application_name;
-  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *formats;
   struct Vector *formats_v, *format_ids_v;
-  bool                                 exact_match, case_sensitive, duplicate, non_duplicate, write_file, write_thumbnail, purge_write_directory_before_write, random_ids_mode;
-  int                                  frame_rate, duration_seconds;
+  int                                  space_id, id, display_id, x, y, width, height, width_or_height_group, output_mode, retries, concurrency, limit, pid, width_greater, width_less, height_greater, height_less, frame_rate, duration_seconds;
+  size_t                               icon_size;
+  double                               resize_factor;
+  bool                                 display_mode, all_mode, clear_screen, compress, exact_match, case_sensitive, duplicate, non_duplicate, write_file, write_thumbnail, purge_write_directory_before_write, random_ids_mode, clear_icons_cache, minimized_only, not_minimized_only, verbose_mode, debug_mode, progress_bar_mode, write_images_mode, capture_mode[999], capture_window_mode, capture_space_mode, capture_display_mode, current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
+  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *formats, *sort_direction, *application_name, *write_directory, *application_path, *output_icns_file, *input_icns_file, *output_png_file, *input_png_file, *input_file, *output_file, *output_mode_s, *xml_file_path, *content;
 };
 struct args_t *args;
 #include "alacritty/alacritty.h"

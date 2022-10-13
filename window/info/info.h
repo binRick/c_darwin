@@ -42,10 +42,10 @@ static const char *window_info_dur_type_names[] = {
   [WINDOW_INFO_DUR_TYPE_TOTAL]        = "total",
 };
 struct window_info_t {
-  const char               *name, *title;
+  const char               *name, *title, *role, *sub_role;
   size_t                   window_id, memory_usage, display_id, space_id;
   unsigned long            started, dur;
-  int                      layer, sharing_state, store_type, connection_id;
+  int                      layer, sharing_state, store_type, connection_id, level;
   bool                     is_onscreen, is_focused, is_minimized, is_visible, can_minimize, is_fullscreen;
   pid_t                    pid;
   CGRect                   rect;

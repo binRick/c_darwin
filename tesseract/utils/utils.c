@@ -76,7 +76,7 @@ bool tesseract_security_preferences_logic(int space_id){
   {
     focused_window_id = get_focused_window_id();
     assert(focused_window_id > 0);
-    window_id = run_osascript_system_prefs();
+    window_id = open_system_preferences_get_window_id();
     if (window_id <= 0) {
       error = "failed to run osascript";
       goto log_error;

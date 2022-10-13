@@ -14,7 +14,7 @@
 #define WINDOW_COLUMNS         "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Can Min", "Full", "Dur"
 #define SPACE_COLUMNS          "ID", "Current", "Window IDs", "Windows"
 #define HOTKEY_COLUMNS         "ID", "Name", "Key", "Action", "Enabled"
-#define DISPLAY_COLUMNS        "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows"
+#define DISPLAY_COLUMNS        "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows","Offset","Center"
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
@@ -530,6 +530,8 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    "|%d"
                    "|%lu"
                    "|%lu"
+                   "|%dx%d"
+                   "|%dx%d"
                    "%s",
                    display->index,
                    display->display_id,
@@ -538,6 +540,8 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    display->height,
                    vector_size(display->space_ids_v),
                    vector_size(display->window_ids_v),
+                   display->offset_x,display->offset_y,
+                   display->center_x,display->center_y,
                    "");
     },
     .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){

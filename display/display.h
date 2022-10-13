@@ -12,5 +12,4 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-void display_fxn1(void);
 #endif

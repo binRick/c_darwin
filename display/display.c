@@ -23,23 +23,5 @@ static void __attribute__((constructor)) __constructor__display(void){
     DISPLAY_DEBUG_MODE = true;
   }
 }
-static void display_internal_fxn1(void);
-
-////////////////////////////////////////////
-static void display_internal_fxn1(void){
-  log_info("Called function display_internal_fxn1");
-  if (DISPLAY_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
-
-////////////////////////////////////////////
-void display_fxn1(void){
-  display_internal_fxn1();
-  log_info("Called function display_fxn1");
-  if (DISPLAY_DEBUG_MODE == true) {
-    log_info("Debug Mode Enabled");
-  }
-}
 ////////////////////////////////////////////
 #endif

@@ -31,10 +31,10 @@
 #include <libproc.h>
 #define SYSTEM_PREFERENCES_SECURITY_APP_NAME       "System Preferences"
 #define SYSTEM_PREFERENCES_SECURITY_WINDOW_NAME    "Security & Privacy"
+#define OSASCRIPT_PATH "/usr/bin:/usr/local/bin"
 static bool       PROCESS_UTILS_DEBUG_MODE         = false;
 static bool       PROCESS_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void);
-static const bool EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED = false;
 static const char *EXCLUDED_WINDOW_INFO_NAMES[] = {
   "Window Server",
   "com.apple.appkit.xpc.open",
@@ -322,7 +322,6 @@ int get_focused_window_id(){
   CFArrayRef    windows_list    = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements | kCGWindowListOptionAll, kCGNullWindowID); \
   size_t        windows_count   = (size_t)CFArrayGetCount(windows_list);                                                                     \
   struct Vector *window_infos_v = vector_new();                                                                                              \
-  char          *n;                                                                                                                          \
   int           r = -1;
 
 #define WINDOW_DICTIONARY_INFO_REFS(DICT)                                                    \
@@ -373,7 +372,7 @@ int get_focused_window_id(){
   if (r != 0) { free(i);  continue; }
 #define WINDOW_DICTIONARY_VALIDATE_NAME(NAME) \
   {                                           \
-    n = cfstring_copy(name_ref);              \
+    char *n = cfstring_copy(name_ref);        \
     r = strcmp(n, NAME);                      \
     free(n);                                  \
   }                                           \
@@ -385,9 +384,6 @@ int get_focused_window_id(){
       || strlen(name) < 1 \
       || pid < 1 \
       || !title \
-      || ((int)(bounds.size.width) == 0) \
-      || ((int)(bounds.size.width) == 640 && ((int)(bounds.size.height) == 480))\
-      || ((int)(bounds.size.height) < 75) \
       || ((int)bounds.size.width * bounds.size.height <= 1)\
     ) { \
     free(i);  \
@@ -402,7 +398,9 @@ int get_focused_window_id(){
   i->name                                            = (name != NULL) ? strdup(name) : "";                               \
   i->title                                           = (title != NULL) ? strdup(title) : "";                             \
   i->memory_usage                                    = (size_t)memory_usage;                                             \
+  i->pid_app_list_qty = 0;\
   i->app_window_ids_v                                = vector_new();                                                     \
+  i->app_window = NULL;\
   i->is_minimized                                    = false;                                                            \
   i->is_fullscreen                                   = false;                                                            \
   i->can_minimize                                    = false;                                                            \
@@ -429,7 +427,7 @@ int get_focused_window_id(){
       i->space_id = (size_t)(space_id);                                                                                  \
     }                                                                                                                    \
     if (PROCESS_UTILS_VERBOSE_DEBUG_MODE) {                                                                              \
-      /*log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);                                 */  \
+      log_info("space qty:%d|space id:%d|wid:%lu", space_qty, space_id, i->window_id);                                   \
     }                                                                                                                    \
   }                                                                                                                      \
   i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].dur = timestamp() - i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started;             \
@@ -446,10 +444,12 @@ int get_focused_window_id(){
       if ((size_t)(i->pid) > (size_t)1) {                                                                                        \
         i->app = AXUIElementCreateApplication(i->pid);                                                                           \
         if (i->app) {                                                                                                            \
-          AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
+    i->level = 0;\
+    SLSGetWindowLevel(g_connection, i->window_id, &(i->level));\
+    AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
           i->pid_app_list_qty = CFArrayGetCount(i->pid_app_list);                                                                \
           if (PROCESS_UTILS_DEBUG_MODE) {                                                                                        \
-            /*log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);                                           */\
+            log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);\
           }                                                                                                                      \
           for (size_t x = 0; x < i->pid_app_list_qty; x++) {                                                                     \
             AXUIElementRef appWindow = CFArrayGetValueAtIndex(i->pid_app_list, x);                                               \
@@ -459,6 +459,17 @@ int get_focused_window_id(){
             if ((size_t)wid == (size_t)(i->window_id)) {                                                                         \
               i->app_window = appWindow;                                                                                         \
               CFBooleanRef is_fullscreen_ref;                                                                                    \
+    const void *role = NULL;\
+    if(AXUIElementCopyAttributeValue(i->app_window, kAXRoleAttribute, &role) == kAXErrorSuccess){\
+      i->role = cfstring_copy(role);\
+    }\
+    const void *srole = NULL;\
+    if(AXUIElementCopyAttributeValue(i->app_window, kAXSubroleAttribute, &srole) == kAXErrorSuccess){\
+      i->sub_role = cfstring_copy(srole);\
+    }\
+    if(PROCESS_UTILS_DEBUG_MODE){\
+        log_info("Window #%lu role: %s / sub role: %s", i->window_id, i->role,i->sub_role);\
+    }\
               if (AXUIElementCopyAttributeValue(i->app_window, CFSTR("AXFullScreen"), &is_fullscreen_ref) == kAXErrorSuccess) {  \
                 i->is_fullscreen = CFBooleanGetValue(is_fullscreen_ref);                                                         \
                 CFRelease(is_fullscreen_ref);                                                                                    \
@@ -475,7 +486,10 @@ int get_focused_window_id(){
         }                                                                                                                        \
       }                                                                                                                          \
     }                                                                                                                            \
-    if(EXCLUDE_WINDOWS_WHICH_CANNOT_BE_MINIMIZED && i->can_minimize == false){\
+    if(i->pid_app_list_qty==0){\
+      continue;\
+    }\
+    if(!i->app_window){\
       continue;\
     }\
     vector_push(window_infos_v, (void *)i);                                                                                      \
@@ -645,18 +659,25 @@ struct Vector *get_window_infos_v(){
   return(window_infos_v);
 }
 
-size_t run_osascript_system_prefs(){
-  size_t               wid = 0;
+int open_system_preferences_get_window_id(){
+  int               wid = 0;
   bool                 found = false;
   struct Vector        *pre_window_infos_v, *post_window_infos_v;
   struct window_info_t *w;
   {
-    assert(run_osascript(CLOSE_SYSTEM_PREFERENCES) == true);
+    if(!run_osascript(CLOSE_SYSTEM_PREFERENCES)){
+      log_error("Failed to open system preferences");
+      return(-1);
+    }
     pre_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
-    log_info("\n%s\n",OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD);
-    assert(run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD) == true);
+    if(PROCESS_UTILS_DEBUG_MODE)
+      log_debug("\n%s\n",OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD);
+    if(!run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD)){
+      log_error("Failed to open system preferences");
+      return(-1);
+    }
     post_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
-    size_t retries = 50, retry_interval = 50, retried = 0;
+    size_t retries = 5, retry_interval = 2000, retried = 0;
     while ((retried < retries) && (vector_size(post_window_infos_v) <= vector_size(pre_window_infos_v))) {
       post_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
       retried++;
@@ -665,7 +686,10 @@ size_t run_osascript_system_prefs(){
     if (PROCESS_UTILS_DEBUG_MODE) {
       log_info("%lu pre windows|%lu post windows", vector_size(pre_window_infos_v), vector_size(post_window_infos_v));
     }
-    assert(vector_size(post_window_infos_v) > vector_size(pre_window_infos_v));
+    if(vector_size(post_window_infos_v) <= vector_size(pre_window_infos_v)){
+      log_error("Failed to find any new windows");
+      return(-1);
+    }
   }
   {
     for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
@@ -698,7 +722,7 @@ size_t run_osascript_system_prefs(){
     }
   }
 
-  return(wid);
+  return((int)wid);
 } /* run_osascript_system_prefs */
 
 bool process_utils_move_directory_contents(const char *SOURCE_DIRECTORY, const char *DESTINATION_DIRECTORY){
@@ -755,11 +779,10 @@ bool run_osascript(char *OSASCRIPT_CONTENTS){
   reproc_t      *process = NULL;
   int           r        = REPROC_ENOMEM;
   const char    *osascript;
-
   osascript = which("osascript");
   if (!osascript) {
     char *PATH = getenv("PATH");
-    setenv("PATH", "/usr/bin:/usr/local/bin", 1);
+    setenv("PATH", OSASCRIPT_PATH, 1);
     osascript = which("osascript");
     setenv("PATH", PATH, 1);
   }
@@ -806,4 +829,3 @@ static void __attribute__((constructor)) __constructor__process_utils(void){
     PROCESS_UTILS_DEBUG_MODE = true;
   }
 }
-#include "window/info/info.h"
