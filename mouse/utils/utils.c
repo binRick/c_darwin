@@ -30,7 +30,6 @@
 #define TRIPLE_CLICK        3
 ////////////////////////////////////////////
 static bool               mouse_utils_DEBUG_MODE = false;
-//static CGEventTapLocation tapA = kCGAnnotatedSessionEventTap;
 static CGEventTapLocation tapH = kCGHIDEventTap;
 ///////////////////////////////////////////////////////////////////////
 

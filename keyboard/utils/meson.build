@@ -10,6 +10,7 @@ keyboard_utils_include_dirs = [
 ]
 
 keyboard_utils_deps = [
+  frameworks_dep,
   ansi_codes_dep,osx_keys_dep,
   c_vector_dep,
   c_fsio_dep,

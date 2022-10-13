@@ -653,6 +653,7 @@ size_t run_osascript_system_prefs(){
   {
     assert(run_osascript(CLOSE_SYSTEM_PREFERENCES) == true);
     pre_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
+    log_info("\n%s\n",OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD);
     assert(run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD) == true);
     post_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
     size_t retries = 50, retry_interval = 50, retried = 0;

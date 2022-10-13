@@ -68,5 +68,5 @@ struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data
 struct Vector *get_security_words_v();
 bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r);
 void report_tesseract_extraction_results(struct tesseract_extract_result_t *r);
-bool tesseract_security_preferences_logic();
+bool tesseract_security_preferences_logic(int space_id);
 #endif

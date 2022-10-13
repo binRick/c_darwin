@@ -31,6 +31,9 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
+#include "mouse/utils/utils.h"
+#include "keyboard/utils/utils.h"
+#include "pasteboard/pasteboard.h"
 struct TesseractArgs {
   size_t               id;
   char                 *file;
@@ -64,8 +67,8 @@ struct Vector *get_security_words_v(){
 }
 
 ////////////////////////////////////////////
-
-bool tesseract_security_preferences_logic(){
+#define MINIMIZE_PREFERENCES false
+bool tesseract_security_preferences_logic(int space_id){
   struct tesseract_extract_result_t *r, *words;
   size_t                            focused_window_id, window_id;
   char                              *error = NULL;
@@ -84,6 +87,11 @@ bool tesseract_security_preferences_logic(){
       goto log_error;
     }
   }
+  if(space_id>-1){
+    if(!(set_window_id_to_space((size_t)(window_id), (int)(space_id)))){
+      log_error("Failed to move window %lu to space %d", window_id,space_id);
+    }
+  }
   {
     words = get_security_words_v();
     if (vector_size(words) <= 0) {
@@ -95,7 +103,7 @@ bool tesseract_security_preferences_logic(){
     }
   }
   {
-    if (minimize_window_id(window_id) != true) {
+    if (MINIMIZE_PREFERENCES && minimize_window_id(window_id) != true) {
       return(false);
     }
   }
@@ -111,6 +119,109 @@ bool tesseract_security_preferences_logic(){
     }
     report_tesseract_extraction_results(r);
   }
+
+  struct CGPoint *p;
+#define DEBUG_MOUSE_LOCATION(){ do {\
+  p = get_mouse_location();\
+  log_info("Mouse is at %dx%d"\
+      "%s", \
+      (int)p->x,\
+      (int)p->y,\
+      ""\
+      );\
+} while(0); }
+
+  int mouse_to[20];
+  mouse_to[0] = (int)(r->window.rect.origin.x)+(int)(r->determined_area.x_min_offset_pixels)+r->x;
+  mouse_to[1] = (int)(r->window.rect.origin.y)+(int)(r->determined_area.y_min_offset_pixels)+r->y;
+  mouse_to[2] = mouse_to[0] + 260;
+  mouse_to[3] = mouse_to[1] - 230;
+  mouse_to[4] = mouse_to[2] + 20;
+  mouse_to[5] = mouse_to[3] + 60;
+  mouse_to[6] = mouse_to[4] + 170;
+  mouse_to[7] = mouse_to[5] - 20;
+  mouse_to[8] = mouse_to[6] - 190;
+  mouse_to[9] = mouse_to[7] - 0;
+  log_info("Moving mouse to %dx%d", mouse_to[0],mouse_to[1]);
+  DEBUG_MOUSE_LOCATION();
+  move_mouse(mouse_to[0],mouse_to[1]);
+  DEBUG_MOUSE_LOCATION();
+  usleep(1000*100);
+  focus_window_id(window_id);
+  usleep(1000*100);
+  left_click_mouse();
+  usleep(1000*100);
+  move_mouse(mouse_to[2],mouse_to[3]);
+  usleep(1000*500);
+  right_click_mouse();
+  usleep(1000*500);
+  move_mouse(mouse_to[4],mouse_to[5]);
+  usleep(1000*500);
+  char *cb = read_clipboard();
+  if(!getenv("PASS")){
+    log_error("PASS env var not set!");
+    return(false);
+  }
+  char *pass = getenv("PASS");
+  copy_clipboard(pass);
+  left_click_mouse();
+  usleep(1000*500);
+  copy_clipboard(cb);
+  move_mouse(mouse_to[6],mouse_to[7]);
+  usleep(1000*500);
+  left_click_mouse();
+  usleep(1000*1000);
+  CGImageRef image_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+  int w = CGImageGetWidth(image_ref);
+  int h = CGImageGetHeight(image_ref);
+  size_t img_len = 0;
+  unsigned char *img = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, image_ref, &(img_len));
+  log_info("captured %dx%d Window with %s Pixels", w,h,bytes_to_string(img_len));
+  if(kitty_display_image_buffer(img,img_len))
+    printf("\n");
+
+  usleep(1000*500);
+  move_mouse(mouse_to[8],mouse_to[9]);
+  CGPoint *add_position = get_mouse_location();
+  log_info("Add app button position: %dx%d", 
+      (int)(add_position->x),
+      (int)(add_position->y)
+      );
+  char *apps[] = {
+//    "target/release/osx/Alacritty.app",
+       // "kitty-alpha/alpha.app",
+      //  "kitty-code/code.app",
+     //   "kitty-compiler/compiler.app",
+    //    "kitty-entr/entr.app",
+   //     "kitty-left/left.app",
+        "kitty-main/main.app",
+   //     "kitty-primary/primary.app",
+ //       "kitty-richard/richard.app",
+   //     "kitty-right/right.app",
+   //     "kitty-secondary/secondary.app",
+  };
+  size_t apps_qty = sizeof(apps)/sizeof(apps[0]);
+  char *osa, *app_path;
+  for(size_t i = 0; i <apps_qty;i++){
+    focus_window_id(window_id);
+    usleep(1000*100);
+    move_mouse((int)(add_position->x),(int)(add_position->y));
+    usleep(1000*100);
+    left_click_mouse();
+    usleep(1000*100);
+    asprintf(&app_path,"/Users/rick/repos/%s", apps[i]);
+    asprintf(&osa,SET_FILE,app_path);
+    errno=0;
+    if(!run_osascript(osa)){
+      log_error("Failed to run set file osascript");
+      return(false);
+    }
+    usleep(1000*500);
+  }
+  vector_clear(words);
+  vector_push(words,(void*)(char*)"Accessibility");
+  r = tesseract_find_item_matching_word_locations(window_id, words);
+  log_info("Found  Results: %dx%d", (int)(r->window.rect.origin.x),(int)(r->window.rect.origin.y));
 
   if (TESSERACT_UTILS_DEBUG_MODE) {
     log_debug("Closing System Preferences");
@@ -140,6 +251,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
            "---------------------------------------------------"
            "\n|  %sCapture%s          :  |Duration:%s|" AC_RESETALL
            "\n|  %sWindow%s           :  |PID:%d|Size:%dx%d|Name:%s|"
+           "\n|  %sLocation%s         :  |%dx%d|"
            "\n|  %sImage%s            :  |Size:%s|Type:%s"
            "\n|  %sTesseract%s        "
            "\n|                          |%s%s%s|"
@@ -164,6 +276,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
            "\n%s",
            AC_GREEN, AC_RESETALL, milliseconds_to_string(timestamp() - r->started),
            AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
+           AC_RED, AC_RESETALL, (int)(r->window.rect.origin.x),(int)(r->window.rect.origin.y),
            AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->format),
            AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC AC_INVERSE, stringfn_trim(lines.strings[0]), AC_RESETALL,
            r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,

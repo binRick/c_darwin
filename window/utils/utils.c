@@ -1021,7 +1021,7 @@ bool set_window_id_to_space(size_t window_id, int space_id) {
   uint32_t wid = (uint32_t)window_id;
   uint64_t sid = (uint64_t)space_id;
 
-  log_info("%lu|%lld", window_id, sid);
+  log_info("Window ID: %d| Space ID: %lld", wid, sid);
   CFArrayRef wids = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
 
   SLSMoveWindowsToManagedSpace(CGSMainConnectionID(), wids, (uint64_t)space_id);

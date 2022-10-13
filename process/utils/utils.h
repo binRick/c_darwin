@@ -54,7 +54,7 @@ int get_window_id_display_id(size_t window_id);
   "tell application \"System Events\"\n"                   \
   "    keystroke \"G\" using {command down, shift down}\n" \
   "    delay 1\n"                                          \
-  "    keystroke \"/path/to/file\"\n"                      \
+  "    keystroke \"%s\"\n"                      \
   "    delay 1\n"                                          \
   "    keystroke return\n"                                 \
   "    delay 1\n"                                          \

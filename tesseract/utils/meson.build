@@ -10,6 +10,8 @@ tesseract_utils_include_dirs = [
 ]
 
 tesseract_utils_deps = [
+  pasteboard_dep,
+  mouse_utils_dep,keyboard_utils_dep,
   core_utils_dep, core_image_dep,ansi_utils_dep,
   ansi_codes_dep,capture_utils_dep,tempdir_dep,
   c_vector_dep,

@@ -45,7 +45,8 @@ struct args_t {
   bool                                 verbose_mode, debug_mode, progress_bar_mode, write_images_mode;
   bool                                 capture_window_mode, capture_space_mode, capture_display_mode;
   bool                                 current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode;
-  int                                  space_id, id;
+  int                                  space_id;
+  size_t id;
   int                                  display_id;
   int                                  x, y;
   int                                  width, height;

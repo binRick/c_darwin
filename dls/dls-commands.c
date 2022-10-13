@@ -75,6 +75,10 @@ bool initialize_args(struct args_t *ARGS){
   ARGS->height       = CLAMP_ARG_TYPE(ARGS,height, ARG_CLAMP_TYPE_WINDOW_SIZE);
   ARGS->limit      = CLAMP_ARG_TYPE(ARGS,limit, ARG_CLAMP_TYPE_LIMIT);
   ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
+  if(!ARGS->format_ids_v)
+    ARGS->format_ids_v = vector_new();
+  if(!ARGS->formats_v)
+    ARGS->formats_v = vector_new();
   if(vector_size(ARGS->format_ids_v)==0){
     vector_push(ARGS->format_ids_v,(void*)(IMAGE_TYPE_PNG));
   }
@@ -270,7 +274,7 @@ static void _command_open_security();
 static void _command_list_hotkey();
 ////////////////////////////////////////////
 static void _check_run_hotkeys(void);
-static void _check_id(uint16_t id);
+static void _check_id(size_t id);
 static void _check_clear_screen(void);
 static void _check_formats(char *formats);
 static void _check_sort_direction_desc(void);
@@ -788,9 +792,8 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .long_name = "id",
       .description = "ID",
       .arg_name = "ID",
+      .arg_data_type = DATA_TYPE_UINT64,
       .arg_dest = &(args->id),
-      .arg_data_type = check_cmds[CHECK_COMMAND_ID].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_ID].fxn,
     });
   },
   [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args)                            {
@@ -1062,7 +1065,7 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   },
   [CHECK_COMMAND_ID] =    {
     .fxn           = (void (*)(void))(*_check_id),
-    .arg_data_type = DATA_TYPE_INT,
+    .arg_data_type = DATA_TYPE_UINT64,
   },
   [CHECK_COMMAND_PID] =                 {
     .fxn           = (void (*)(void))(*_check_pid),
@@ -1631,12 +1634,14 @@ fail:
       );
   exit(EXIT_FAILURE);
 }
-static void _check_id(uint16_t id){
+static void _check_id(size_t id){
+  log_info("id:%lu",id);
   if (id < 1) {
     log_error("ID too small");
     goto do_error;
   }
-  args->id = (int)id;
+  args->id = id;
+  log_info("id:%d",args->id);
   return(EXIT_SUCCESS);
 
 do_error:
@@ -1658,7 +1663,7 @@ static void _command_open_security(){
   int ret = EXIT_FAILURE;
   for (int tries = 0; tries <= args->retries && ret == EXIT_FAILURE; tries++) {
     errno = 0;
-    ret   = ((tesseract_security_preferences_logic() == true) ? EXIT_SUCCESS: EXIT_FAILURE);
+    ret   = ((tesseract_security_preferences_logic(args->space_id) == true) ? EXIT_SUCCESS: EXIT_FAILURE);
     if (ret == EXIT_SUCCESS || (ret != EXIT_SUCCESS && tries >= args->retries)) {
       break;
     }
@@ -1824,20 +1829,6 @@ static void _command_set_space_index(){
 }
 
 
-static void _command_extract(){
-  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
-    log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
-  initialize_args(args);
-  debug_dls_arguments();
-  struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
-  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
-    log_info("%lu Windows", vector_size(ids));
-  results = tesseract_extract_items(ids, args->concurrency);
-  log_info("%lu Results", vector_size(results));
-  exit(EXIT_SUCCESS);
-}
-
-
 static void _command_animate(){
   initialize_args(args);
   debug_dls_arguments();
@@ -1927,7 +1918,7 @@ static char *get_type_format_output_file(size_t id, char *dir, enum capture_type
   return(output_file);
 }
 
-bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
+static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
   struct capture_image_result_t *r = NULL;
   for (size_t i = 0; i < vector_size(results_v); i++) {
     r = (struct capture_image_result_t *)vector_get(results_v, i);
@@ -1936,7 +1927,8 @@ bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_typ
   }
   return(true);
 }
-bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
+
+static bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
     struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
     fprintf(stderr," ✅ Wrote "AC_GREEN"%s"AC_RESETALL " to %lu "AC_BLUE"%s"AC_RESETALL " Capture Files in directory %s in "AC_YELLOW"%s"AC_RESETALL "\n",
                 bytes_to_string(res->bytes),
@@ -1945,9 +1937,12 @@ bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t f
                 args->write_directory,
                 milliseconds_to_string(res->dur)
     );
-
+  if(res)
+    free(res);
+  return(true);
 }
-bool display_results(struct Vector *results_v){
+
+static bool display_results(struct Vector *results_v){
     struct capture_image_result_t *r = NULL;
     for (size_t i = 0; i < vector_size(results_v); i++) {
       r = (struct capture_image_result_t *)vector_get(results_v, i);
@@ -1960,7 +1955,9 @@ bool display_results(struct Vector *results_v){
     if(r)free(r);
     return(true);
 }
-struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height){
+
+
+static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height){
   struct Vector *results_v;
   struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
   req->ids = ids;
@@ -1971,13 +1968,25 @@ struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int c
   req->progress_bar_mode = progress_bar_mode;     
   req->width        = width > 0 ? width : 0;
   req->height       = height > 0 ? height : 0;
-  req->time.started = timestamp();
   req->time.dur     = 0;
+  req->time.started = timestamp();
   results_v = capture_image(req);
   free(req);
   return(results_v);
 }
 
+
+static void _command_extract(){
+  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
+    log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
+  initialize_args(args);
+  debug_dls_arguments();
+  struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
+  debug("Extracting %lu Items", vector_size(ids));
+  results = tesseract_extract_items(ids, args->concurrency);
+  log_info("Extracted %lu Results", vector_size(results));
+  exit(EXIT_SUCCESS);
+}
 static void _command_capture(){
   initialize_args(args);
   debug_dls_arguments();
@@ -1998,15 +2007,19 @@ static void _command_capture(){
         args->width, 
         args->height
     );
-
     set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v);
     if(args->write_images_mode){
-      save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v, args->concurrency, args->progress_bar_mode);
+      errno=0;
+      if(!save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v, args->concurrency, args->progress_bar_mode)){
+        log_error("Failed to save results");
+      }
     }
     if (args->display_mode){
-      display_results(results_v);
+      errno=0;
+      if(!display_results(results_v)){
+        log_error("Failed to display results");
+      }
     }
-
 
     switch (args->output_mode) {
     case OUTPUT_MODE_TABLE:
@@ -2195,7 +2208,6 @@ static void _command_set_window_all_spaces(){
 }
 
 static void _command_set_window_space(){
-  log_info("%d|%d", args->id, args->space_id);
   exit(((set_window_id_to_space((size_t)(args->id), (int)(args->space_id))) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
