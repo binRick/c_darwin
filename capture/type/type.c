@@ -507,22 +507,42 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
 static int run_compress_recv(void __attribute__((unused)) *CHAN){
   struct chan_t *chan = (struct chan_t *)CHAN;
   void          *msg;
+  char *buf;
+  size_t blen=0;
+  VipsImage *v = NULL;
   while (chan_recv(chan, &msg) == 0) {
     struct compress_t *c = (struct compress_t *)msg;
     c->started = timestamp();
     debug("Run Compress Recv:   type:%d|%s|PNG:%d|%s", c->format, image_type_name(c->format), IMAGE_TYPE_PNG, image_type_name(IMAGE_TYPE_PNG));
-    switch (c->format) {
+      switch (c->format) {
+    case IMAGE_TYPE_WEBP:
+      v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
+      if(v)
+        vips_pngsave_buffer(v,&buf,&blen,"Q",100,NULL);
+      break;
     case IMAGE_TYPE_PNG:
-      errno = 0;
-      if (!compress_png_buffer(c->pixels, &(c->len))) {
-        log_error("Failed to compress #%lu", c->id);
-      }
+      v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
+      if(v)
+        vips_pngsave_buffer(v,&buf,&blen,"compression",9,NULL);
+      break;
+    case IMAGE_TYPE_TIFF:
+      v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
+      if(v)
+        if(vips_tiffsave_buffer(v,&buf,&blen, "compression",VIPS_FOREIGN_TIFF_COMPRESSION_JPEG,"tile",true,"pyramid",true,NULL))
+          log_error("failed to save buffer");
       break;
     default: 
       errno=0;
-      log_warn("\nCompression not implemented for image type %s.", image_type_name(c->format));
+      if(CAPTURE_TYPE_DEBUG_MODE)
+        log_warn("\nCompression not implemented for image type %s.", image_type_name(c->format));
       break;
     }
+     if(v && blen>0 && buf){
+      c->pixels = buf;
+      c->len = blen;
+    }
+    if(v)
+      g_object_unref(v);
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
     debug("Compressed #%lu from %s to %s in %s",

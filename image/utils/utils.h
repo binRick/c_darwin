@@ -32,9 +32,11 @@ struct spng_info_t {
   char          *color_name;
   unsigned long started, dur;
 };
+typedef int (*vips_save_buffer_f)( VipsImage *in, void **buf, size_t *len, ... );
 unsigned char *save_cgref_to_image_type_memory1(CGImageRef image, size_t *len);
 struct image_type_t {
   const char    *name, *file_extension;
+  vips_save_buffer_f save_buffer_fxn;
   CFStringRef   (^get_format)(void);
   bool          (^load_buffer_to_tesseract_api)(unsigned char *image_buf, size_t len, TessBaseAPI *api);
   bool          (^validate_header)(unsigned char *header_buf);

@@ -52,9 +52,22 @@ enum image_conversion_test_type_t {
 };
 int image_conversion_compressions[] = { 8 };
 int image_conversion_qualities[]    = { 100 };
+/*
+vips_jpegsave_buffer(
+vips_webpsave_buffer(
+vips_tiffsave_buffer(
+vips_magicksave_buffer(
+vips_pngsave_buffer(
+vips_radsave_buffer(
+vips_gifsave_buffer(
+vips_jp2ksave_buffer(
+vips_jxlsave_buffer(
+vips_dzsave_buffer(
+*/
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   [IMAGE_TYPE_PNG] =  {
     .file_extension             = "png",                         .name = "PNG",
+    .save_buffer_fxn = vips_pngsave_buffer,
     .get_format                 = ^ CFStringRef (void){ return(kUTTypePNG);                                         },
     .validate_header            = ^ bool (unsigned char *image_buf){ return(('P' == image_buf[1] && 'N' == image_buf[2] && 'G' == image_buf[3]) ? true : false); },
     .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(8, sizeof(unsigned char)); read_image_format_file(image_path, buf, 8, 16); return(buf); },
@@ -66,6 +79,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_GIF] =  {
     .file_extension             = "gif",
+    .save_buffer_fxn = vips_gifsave_buffer,
     .name                       = "GIF",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeGIF);                                         },
     .validate_header            = ^ bool (unsigned char *image_buf){ return(('G' == image_buf[0] && 'I' == image_buf[1] && 'F' == image_buf[2]) ? true : false); },
@@ -78,6 +92,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_TIFF] = {
     .file_extension             = "tiff",
+    .save_buffer_fxn = vips_tiffsave_buffer,
     .name                       = "TIFF",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeTIFF);                                        },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
@@ -89,10 +104,12 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_WEBP] = {
     .file_extension             = "webp",
+    .save_buffer_fxn = vips_webpsave_buffer,
     .name                       = "WEBP",
   },
   [IMAGE_TYPE_JPEG] = {
     .file_extension             = "jpeg",
+    .save_buffer_fxn = vips_jpegsave_buffer,
     .name                       = "JPEG",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeJPEG);                                        },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((0xff == image_buf[0] && 0xd8 == image_buf[1]) ? true : false); },
@@ -104,6 +121,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_BMP] =  {
     .file_extension             = "bmp",
+    .save_buffer_fxn = NULL,
     .name                       = "BMP",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeBMP);                                         },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
@@ -115,6 +133,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_QOI] =  {
     .file_extension             = "qoi",
+    .save_buffer_fxn = NULL,
     .name                       = "QOI",
     .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
@@ -264,7 +283,7 @@ char *image_type_name(enum image_type_id_t type){
   case IMAGE_TYPE_RGB: return("RGB"); break;
   case IMAGE_TYPE_BMP: return("BMP"); break;
   case IMAGE_TYPE_JPEG: return("JPEG"); break;
-  case IMAGE_TYPE_WEBP: return("webp"); break;
+  case IMAGE_TYPE_WEBP: return("WEBP"); break;
   case IMAGE_TYPE_QOI: return("QOI"); break;
   default: return("UNKNOWN"); break;
   }

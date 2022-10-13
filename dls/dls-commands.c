@@ -1357,6 +1357,12 @@ static int hotkey_callback(char *KEYS){
 
 ////////////////////////////////////////////
 static void _check_formats(char *formats){
+  if(formats)
+    formats = stringfn_mut_trim(formats);
+  if(strcmp(formats,"all")==0){
+    formats = get_image_format_names_csv();
+  }
+
   args->formats_v = vector_new();
   args->format_ids_v = vector_new();
   char *msg[2] = { 0 };
@@ -1364,10 +1370,18 @@ static void _check_formats(char *formats){
   sb[0] = stringbuffer_new();
   sb[1] = stringbuffer_new();
   struct StringFNStrings split = stringfn_split(formats,',');
+  char *line=NULL;
   for(int i=0;i<split.count;i++){
-  debug(" - %s",split.strings[i]);
-    vector_push(args->formats_v,(void*)split.strings[i]);
-    vector_push(args->format_ids_v,(void*)get_format_name(split.strings[i]));
+    line = stringfn_mut_trim(split.strings[i]);
+    if(strcmp(line,"cgimage")==0)
+      continue;
+    if(strcmp(line,"rgb")==0)
+      continue;
+    if(strcmp(line,"bmp")==0)
+      continue;
+    debug(" - %s",line);
+    vector_push(args->formats_v,(void*)line);
+    vector_push(args->format_ids_v,(void*)get_format_name(line));
   }
   for(size_t i=0;i<vector_size(args->formats_v);i++){
     if(i<vector_size(args->formats_v) && i > 0){
@@ -1938,15 +1952,32 @@ static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum im
 
 static bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
     struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
-    fprintf(stderr," ✅ Wrote "AC_GREEN"%s"AC_RESETALL " to %lu "AC_BLUE"%s"AC_RESETALL " Capture Files in directory %s in "AC_YELLOW"%s"AC_RESETALL "\n",
-                bytes_to_string(res->bytes),
+    fprintf(stderr," ✅ Wrote"
+        " "
+        AC_CYAN "%2lu"AC_RESETALL
+        " "
+        AC_BLUE"%4s"AC_RESETALL 
+        " "
+        "Files totaling"
+        " "
+        AC_GREEN"%6s"AC_RESETALL 
+        " "
+        "to"
+        " "
+AC_DOTTED_UNDERLINE AC_ITALIC AC_YELLOW "%s" AC_RESETALL
+        " "
+        "in"
+        " "
+AC_BOLD AC_YELLOW"%6s"AC_RESETALL 
+        "\n",
                 res->qty,
                 image_type_name(format_id),
+                bytes_to_string(res->bytes),
                 args->write_directory,
                 milliseconds_to_string(res->dur)
     );
-  if(res)
-    free(res);
+//  if(res)
+  //  free(res);
   return(true);
 }
 
@@ -1979,7 +2010,7 @@ static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids
   req->time.dur     = 0;
   req->time.started = timestamp();
   results_v = capture_image(req);
-  free(req);
+  //free(req);
   return(results_v);
 }
 

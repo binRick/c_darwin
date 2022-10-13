@@ -38,7 +38,6 @@ struct save_result_t {
 
 static int receive_save_request_handler(void *R){
   unsigned long started   = timestamp(), dur = 0, save_started = 0;
-
   struct save_result_t *r = (struct save_result_t *)R;
   void          *msg;
   size_t        qty = 0;
@@ -49,6 +48,24 @@ static int receive_save_request_handler(void *R){
     qty++;
     struct capture_image_result_t *res = (struct capture_image_result_t*)msg;
     save_started = timestamp();
+    /*
+    switch(res->format){
+      case IMAGE_TYPE_WEBP:
+        log_info("webp");
+        break;
+        VipsImage *v = { 0 };
+        v = vips_image_new_from_buffer(res->pixels,res->len,"",NULL);
+        if(!v){
+          log_error("Failed to decode webp from %lu pixels",res->len);
+        }else{
+          int page_height = vips_image_get_page_height( v );
+          int n_pages = image->Ysize / page_height;
+          Dbg(n_pages,%d);
+        }
+          if(v)g_object_unref(v);
+      default: break;
+    }
+    */
     switch(res->format){
       case IMAGE_TYPE_QOI:
         if(!fsio_write_binary_file(res->file,res->pixels,res->len)){
@@ -58,8 +75,9 @@ static int receive_save_request_handler(void *R){
       default:
           image_loader_name = vips_foreign_find_load_buffer(res->pixels,res->len);
           image = vips_image_new_from_buffer(res->pixels,res->len,"",NULL);
-          debug("Loaded %s PNG Pixels to %dx%d %s File %s PNG VIPImage in %s using loader %s",
+          debug("Loaded %s %s Pixels to %dx%d %s File %s PNG VIPImage in %s using loader %s",
                     bytes_to_string(res->len),
+                    image_type_name(res->format),
                     vips_image_get_width(image), vips_image_get_height(image),
                     bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
                     res->file,
@@ -168,6 +186,12 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
     bar->progress = (float)1.00;
     cbar_display_bar(bar);
     cbar_show_cursor();    printf("\n");
+    printf("%s",
+        "\033[F"
+        "\033[K"
+        "\033[F"
+        "\033[K"
+        );
     fflush(stdout);
     free(bar);
   }
