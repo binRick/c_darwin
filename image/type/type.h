@@ -22,6 +22,7 @@ enum image_type_id_t {
   IMAGE_TYPE_QOI,
   IMAGE_TYPE_RGB,
   IMAGE_TYPE_CGIMAGE,
+  IMAGE_TYPE_WEBP,
   IMAGE_TYPES_QTY,
 };
 struct VipsImage;
@@ -31,6 +32,7 @@ static const image_target_file_saver_t image_target_file_savers[] = {
   [IMAGE_TYPE_GIF] = vips_gifsave,
   [IMAGE_TYPE_JPEG] = vips_jpegsave,
   [IMAGE_TYPE_TIFF] = vips_tiffsave,
+  [IMAGE_TYPE_WEBP] = vips_webpsave,
 };
 /*
 vips_csvsave

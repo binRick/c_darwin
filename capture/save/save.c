@@ -67,7 +67,7 @@ static int receive_save_request_handler(void *R){
                     image_loader_name
                     );
 
-          if(!image_loader_name || !image || image_target_file_savers[res->type](image, res->file, NULL)){
+          if(!image_loader_name || !image || image_target_file_savers[res->format](image, res->file, NULL)){
             log_error("Failed to save file %s with loader %s", res->file,image_loader_name);
           }
           if(image)g_object_unref(image);
@@ -83,7 +83,7 @@ static int receive_save_request_handler(void *R){
         "%s", 
         r->index+1, 
         bytes_to_string(res->len),
-        image_type_name(res->type),
+        image_type_name(res->format),
         qty, 
         res->file,
         ""
@@ -143,16 +143,13 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
     r->index = i;
     threads[i] = calloc(1,sizeof(pthread_t));
     pthread_create(threads[i],0,receive_save_request_handler,(void*)r);
-    debug("Created Save Channel and Thread #%lu/%lu",i+1,concurrency);
   }
   for(size_t i=0;i<vector_size(results_v);i++){
-    debug("Pushing Result #%lu/%lu to Channel #%lu", i+1,vector_size(results_v),i%concurrency);
     struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results_v,i);
     r->format = format;
     chan_send(chans[i%concurrency],r);
   }
   for(size_t i=0;i<concurrency;i++){
-    debug("Closing Recv Channel #%lu/%lu", i+1,concurrency);
     chan_close(chans[i%concurrency]);
   }
   while(res->qty<vector_size(results_v)){

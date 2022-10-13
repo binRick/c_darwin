@@ -77,6 +77,7 @@ enum capture_chan_type_t {
   CAPTURE_CHAN_TYPE_PNG,
   CAPTURE_CHAN_TYPE_JPEG,
   CAPTURE_CHAN_TYPE_TIFF,
+  CAPTURE_CHAN_TYPE_WEBP,
   CAPTURE_CHAN_TYPE_GIF,
   CAPTURE_CHAN_TYPE_QOI,
   CAPTURE_CHAN_TYPE_TIMG,
@@ -100,7 +101,7 @@ struct compress_t {
   size_t                  len;
   size_t                  prev_len;
   int                     min_quality, max_quality;
-  enum image_type_id_t    type;
+  enum image_type_id_t    format;
   size_t                  id;
   struct capture_image_result_t *capture_result;
   unsigned long           started, dur;

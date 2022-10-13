@@ -72,12 +72,14 @@ unsigned char *save_cgref_to_tiff_memory(CGImageRef image, size_t *len);
 unsigned char *save_cgref_to_bmp_memory(CGImageRef image, size_t *len);
 unsigned char *save_cgref_to_gif_memory(CGImageRef image, size_t *len);
 unsigned char *save_cgref_to_jpeg_memory(CGImageRef image, size_t *len);
+unsigned char *save_cgref_to_webp_memory(CGImageRef image, size_t *len);
 unsigned char *save_cgref_to_png_memory(CGImageRef image, size_t *len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool save_cgref_to_png_file(CGImageRef image, char *image_file);
 bool save_cgref_to_bmp_file(CGImageRef image, char *image_file);
 bool save_cgref_to_gif_file(CGImageRef image, char *image_file);
 bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file);
+bool save_cgref_to_webp_file(CGImageRef image, char *image_file);
 bool save_cgref_to_tiff_file(CGImageRef image, char *image_file);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char *save_cgref_to_rgb_memory(CGImageRef image_ref, size_t *len);

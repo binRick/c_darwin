@@ -87,6 +87,10 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
       return(true);
     },
   },
+  [IMAGE_TYPE_WEBP] = {
+    .file_extension             = "webp",
+    .name                       = "WEBP",
+  },
   [IMAGE_TYPE_JPEG] = {
     .file_extension             = "jpeg",
     .name                       = "JPEG",
@@ -260,6 +264,7 @@ char *image_type_name(enum image_type_id_t type){
   case IMAGE_TYPE_RGB: return("RGB"); break;
   case IMAGE_TYPE_BMP: return("BMP"); break;
   case IMAGE_TYPE_JPEG: return("JPEG"); break;
+  case IMAGE_TYPE_WEBP: return("webp"); break;
   case IMAGE_TYPE_QOI: return("QOI"); break;
   default: return("UNKNOWN"); break;
   }
@@ -346,6 +351,7 @@ unsigned char *save_cgref_to_gif_memory(CGImageRef image, size_t *len){
   return(save_cgref_to_image_type_memory(IMAGE_TYPE_GIF, image, len));
 }
 
+
 unsigned char *save_cgref_to_jpeg_memory(CGImageRef image, size_t *len){
   return(save_cgref_to_image_type_memory(IMAGE_TYPE_JPEG, image, len));
 }
@@ -364,6 +370,10 @@ bool save_cgref_to_bmp_file(CGImageRef image, char *image_file) {
 
 bool save_cgref_to_gif_file(CGImageRef image, char *image_file) {
   return(save_cgref_to_image_type_file(IMAGE_TYPE_GIF, image, image_file));
+}
+
+bool save_cgref_to_webp_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_WEBP, image, image_file));
 }
 
 bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file) {
@@ -391,48 +401,74 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   return((ok && (size_t)fsio_file_size(image_file) == (size_t)qoi_len) ? true : false);
 }
 
+unsigned char *save_cgref_to_webp_memory(CGImageRef image, size_t *len){
+  unsigned char *rgb=NULL,*buf=NULL;
+  size_t rgb_len=0;
+  VipsImage *v;
+  *len = 0;
+  rgb = save_cgref_to_rgb_memory(image,&rgb_len);
+  if(!rgb||rgb_len<1){
+      log_error("Failed to save cgref to rgb");
+  }else{
+    errno=0;
+    v = vips_image_new_from_memory(rgb,rgb_len,CGImageGetWidth(image),CGImageGetHeight(image),4,VIPS_FORMAT_UCHAR);
+    if(!v){
+      log_error("Failed to load from buffer");
+    }else{
+      if(IMAGE_UTILS_DEBUG_MODE)
+        log_debug("\nLoaded %s PNG Pixels to %dx%d %s Webp VIPImage using",
+                        bytes_to_string(rgb_len),
+                        vips_image_get_width(v), vips_image_get_height(v),
+                        bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(v))
+                        );
+      if(vips_webpsave_buffer(v,&buf, len, NULL)){
+        log_error("Failed to save to buffer");
+      }
+      g_object_unref(v);
+    }
+  }
+  return(buf);
+}
 
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   unsigned long _ts[2];
-  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref), width = 0, height = 0, compression = 0;
+  int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
   size_t        len  = 0;
-  unsigned char *png = save_cgref_to_png_memory(image_ref, &len);
-  if (len < 1 || !png) {
-    log_error("Failed to convert cgref to png");
-    return(NULL);
-  }
-
+  unsigned char *rgb = NULL;
   _ts[0] = timestamp();
-  unsigned char *rgb = stbi_load_from_memory(png, len, &width, &height, &compression, STBI_rgb_alpha);
+  rgb = save_cgref_to_rgb_memory(image_ref,&len);
   _ts[1] = timestamp() - _ts[0];
   if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("decoded %dx%d %d RGB in %s",
-              width, height, compression,
-              milliseconds_to_string(_ts[1])
-              );
-  }
-  if (png) {
-    free(png);
+    log_debug("[cgref to rgb] decoded %dx%d RGB (rgb len: %s/%lu) in %s",
+                w,h,
+                bytes_to_string(len),
+                len,
+                milliseconds_to_string(_ts[1])
+                );
   }
 
   qoi_desc *desc = &(qoi_desc){
-    .width      = width,
-    .height     = height,
-    .channels   = compression,
+    .width      = w,
+    .height     = h,
+    .channels   = 4,
     .colorspace = QOI_SRGB,
   };
+  errno=0;
   _ts[0] = timestamp();
   void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
-  _ts[1] = timestamp() - _ts[0];
-
-  if (IMAGE_UTILS_DEBUG_MODE) {
-    log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
-              w, h,
-              bytes_to_string(len), width, height,
-              bytes_to_string(*qoi_len),
-              desc->width, desc->height,
-              milliseconds_to_string(_ts[1])
-              );
+  if(!qoi_pixels){
+    log_error("Failed to qoi encode");
+  }else{
+    _ts[1] = timestamp() - _ts[0];
+    if (IMAGE_UTILS_DEBUG_MODE) {
+      log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
+                w, h,
+                bytes_to_string(len), w, h,
+                bytes_to_string(*qoi_len),
+                desc->width, desc->height,
+                milliseconds_to_string(_ts[1])
+                );
+    }
   }
   if (rgb) {
     free(rgb);
@@ -442,6 +478,8 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
 
 ///////////////////////////////////////////////////////////////////////////////
 CGImageRef resize_cgimage_factor(CGImageRef imageRef, double resize_factor){
+//  if(resize_factor>
+  //     Dbg(resize_factor,%f);
   return(resize_cgimage(imageRef, CGImageGetWidth(imageRef) * resize_factor / 100, CGImageGetHeight(imageRef) * resize_factor / 100));
 }
 
@@ -469,7 +507,6 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
   CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
   CGContextRef context = CGBitmapContextCreate(NULL,
                                                width, height,
-                                               //CGImageGetWidth(imageRef),CGImageGetHeight(imageRef),
                                                CGImageGetBitsPerComponent(imageRef),
                                                CGImageGetBytesPerRow(imageRef),
                                                CGImageGetColorSpace(imageRef),
@@ -526,16 +563,24 @@ unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, 
 unsigned char *save_cgref_to_rgb_memory(CGImageRef img_ref, size_t *len){
   unsigned char     *buffer = NULL;
   int               width = CGImageGetWidth(img_ref), height = CGImageGetHeight(img_ref);
-  CGRect            rect         = CGRectMake(0, 0, width, height);
-  CGImageRef        image_ref    = CGDisplayCreateImageForRect(kCGDirectMainDisplay, rect);
-  CGDataProviderRef provider_ref = CGImageGetDataProvider(image_ref);
+  CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
+  CGContextRef context = CGBitmapContextCreate(NULL,
+                                               width, height,
+                                               8,
+                                               width*4,
+                                               CGColorSpaceCreateDeviceRGB(),
+                                               kCGImageAlphaNoneSkipLast
+                                               );
+  CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+  CGContextDrawImage(context, newRect, img_ref);
+  CGImageRef newImageRef = CGBitmapContextCreateImage(context);
+  CGDataProviderRef provider_ref = CGImageGetDataProvider(newImageRef);
   CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
-  size_t            bpp = CGImageGetBitsPerPixel(image_ref) / 8;
-  *len = width * height * bpp;
-  buffer = calloc(*len, sizeof(int8_t));
+  *len = CFDataGetLength(data_ref);
+  buffer = calloc(*len, sizeof(unsigned char));
   memcpy(buffer, CFDataGetBytePtr(data_ref), *len);
+  CFRelease(context);
   CFRelease(data_ref);
-  CGImageRelease(image_ref);
   return(buffer);
 }
 

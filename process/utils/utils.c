@@ -29,6 +29,7 @@
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
 #include <libproc.h>
+#include <sys/resource.h>
 #define SYSTEM_PREFERENCES_SECURITY_APP_NAME       "System Preferences"
 #define SYSTEM_PREFERENCES_SECURITY_WINDOW_NAME    "Security & Privacy"
 #define OSASCRIPT_PATH "/usr/bin:/usr/local/bin"
@@ -111,6 +112,44 @@ static bool get_application_has_accessibility_access_0(){
   CFRelease(options);
 
   return(result);
+}
+
+void get_cputime(){
+
+struct rusage r_usage;
+
+if (getrusage(RUSAGE_SELF, &r_usage)) {
+  log_error("Failed to get rusage");
+}else{
+      struct kinfo_proc info;
+    int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)getpid() };
+    size_t len = sizeof info;
+    memset(&info,0,len);
+    sysctl(mib, (sizeof(mib)/sizeof(int)), &info, &len, NULL, 0);
+
+
+      struct timeval wall_start = info.kp_proc.p_starttime;
+
+
+struct timeval wall_now;
+gettimeofday(&wall_now, NULL);
+double start = wall_start.tv_sec + (wall_start.tv_usec / (float)1000000);
+double stop = wall_now.tv_sec + (wall_now.tv_usec / (float)1000000);
+double wall_time = stop - start;
+
+  printf("Total User CPU = %ld.%d\n",
+            r_usage.ru_utime.tv_sec,
+            r_usage.ru_utime.tv_usec);
+  printf("Total System CPU = %ld.%d\n",
+            r_usage.ru_stime.tv_sec,
+            r_usage.ru_stime.tv_usec);
+  double cpu_time = r_usage.ru_utime.tv_sec + r_usage.ru_utime.tv_usec/(float)1000000 + r_usage.ru_stime.tv_sec + r_usage.ru_stime.tv_usec/(float)1000000;
+  double percentage = cpu_time / wall_time;
+  log_debug("time:%f", cpu_time);
+  log_debug("%%:%f", percentage);
+  log_debug("start:%f", start);
+  log_debug("time:%f", wall_time);
+  }
 }
 
 static bool get_application_has_accessibility_access_1(){

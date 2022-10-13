@@ -1838,8 +1838,7 @@ static void _command_set_space_index(){
 static void _command_animate(){
   initialize_args(args);
   debug_dls_arguments();
-  unsigned long animation_started = timestamp();
-  unsigned long end_ts = animation_started + (args->duration_seconds * 1000);
+  unsigned long end_ts = 0;
   unsigned long interval_ms = (unsigned long)(1000 * (float)(((float)1) / (float)(args->frame_rate))), expected_frames_qty = args->duration_seconds * args->frame_rate;
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
   for (size_t x = 0; x < vector_size(ids); x++) {
@@ -1853,15 +1852,18 @@ static void _command_animate(){
     req->progress_bar_mode = args->progress_bar_mode;
     req->compress = args->compress;
     req->format       = IMAGE_TYPE_GIF;
-    req->width =    clamp(req->width,0,args->width);
-    req->height =    clamp(req->height,0,args->height);
+    req->width =    args->width;
+    req->height =    args->height;
     req->time.dur     = 0;
     req->time.started = timestamp();
     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
     acap->expected_frames_qty = expected_frames_qty;
     size_t                    qty = vector_size(acap->frames_v);
-    while ((unsigned long)timestamp() < (unsigned long)end_ts || expected_frames_qty > qty) {
+  end_ts = timestamp() + (args->duration_seconds * 1000);
+    while ((unsigned long)timestamp() < (unsigned long)end_ts){// || expected_frames_qty > qty) {
       unsigned long s = timestamp();
+      req->progress_bar_mode = false;
+//      req->format = IMAGE_TYPE_CGIMAGE;
       results  = capture_image(req);
       prev_ts  = last_ts;
       last_ts  = timestamp();
@@ -1872,15 +1874,15 @@ static void _command_animate(){
         r->delta_ms = delta_ms;
         req->time.started = i == 0 ? timestamp() : req->time.started;
         chan_send(acap->chan, (void *)r);
+//        get_cputime();
         if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
           log_info("Frame #%lu/%lu> Received %lu Results in %s"
-                   "\n\tID:%lu|File:%s|Size:%s|Delta ms:%s|Time left:%lldms|"
+                   "\n\tID:%lu|Size:%s|Delta ms:%s|Time left:%lldms|"
                    "\n\t%s",
                    qty, expected_frames_qty,
                    vector_size(results),
                    milliseconds_to_string(last_ts - s),
                    r->id,
-                   r->file,
                    bytes_to_string(fsio_file_size(r->file)),
                    (qty > 1) ? milliseconds_to_string(r->delta_ms) : "0ms",
                    end_ts - timestamp(),
@@ -1889,7 +1891,7 @@ static void _command_animate(){
         }
       }
       while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5)))) {
-        usleep((interval_ms / 50) * 1000);
+        usleep((interval_ms / 10) * 1000);
       }
       pthread_mutex_lock(acap->mutex);
       qty = vector_size(acap->frames_v);

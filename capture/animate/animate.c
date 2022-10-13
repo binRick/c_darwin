@@ -132,11 +132,6 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
     rgb_pixels = stbi_load_from_file(stbi_fp, &w, &h, &f, STBI_rgb_alpha);
     fclose(stbi_fp);
     debug("\nSTBI Decoded: %dx%d|%d %s\n",w,h,f,milliseconds_to_string(timestamp()-s));
-    if (CAPTURE_ANIMATE_DEBUG_MODE) {
-      log_info("STBI in %s",
-               milliseconds_to_string(timestamp() - s)
-               );
-    }
     acap->max_bit_depth = (int)((f == 4) ?  32 : 24);
     acap->pitch_bytes   = (int)((f == 4) ? (4 * w) : (3 * w));
   }
@@ -147,23 +142,8 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
     acap->started = n->ts;
     msf_gif_begin(acap->gif, w, h);
   }
-  debug("req type:%d|f:%d|max bit:%d|pitch bytes:%d|stbi rgb alpha:%d|size:%s|file:%s|%dx%d",
-        r->type,
-        f,
-        acap->max_bit_depth,
-        acap->pitch_bytes,
-        STBI_rgb_alpha,
-        bytes_to_string(r->len),
-        r->file,
-        w, h
-        );
   if (vector_size(acap->frames_v) > 0) {
     frame_cs = (int)(r->delta_ms / 10);
-      debug("cs:%d|cs per frame:%d|delta:%lu|",
-                frame_cs,
-                (int)(acap->ms_per_frame / 10),
-                r->delta_ms
-                );
   }else{
     frame_cs = (int)((acap->ms_per_frame) / 10);
   }
@@ -242,15 +222,6 @@ int poll_new_animated_frame(void *VOID){
     struct capture_image_result_t *r = (struct capture_image_result_t *)msg;
     pthread_mutex_lock(acap->mutex);
     float bar_progress  = vector_size(acap->frames_v) == 0 ? 0 : (float)((float)(vector_size(acap->frames_v) / (float)(acap->expected_frames_qty)) / (float)1);
-    if (CAPTURE_ANIMATE_DEBUG_MODE) {
-      log_info("msg %s|%lu|progress:%f|frames:%lu|expected frames:%lu|bar mode:%d|", 
-          r->file, r->len, 
-          bar_progress,
-          vector_size(acap->frames_v), 
-          acap->expected_frames_qty,
-          acap->progress_bar_mode
-          );
-    }
     new_animated_frame(acap, r);
     if(acap->progress_bar_mode){
       acap->bar->progress = bar_progress; 

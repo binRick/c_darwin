@@ -39,6 +39,7 @@ pid_t PSN2PID(ProcessSerialNumber psn);
 ProcessSerialNumber PID2PSN(pid_t pid);
 int get_focused_pid();
 struct Vector *get_all_process_infos_v();
+void get_cputime(void);
 bool run_osascript(char *OSASCRIPT_CONTENTS);
 int open_system_preferences_get_window_id();
 int get_focused_window_id();
