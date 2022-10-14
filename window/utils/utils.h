@@ -70,6 +70,7 @@ static const char *window_levels[] = { "Base", "Minimum", "Desktop", "Backstop",
 ///////////////////////////////////////////////////
 int get_window_id_space_id(size_t window_id);
 bool get_pid_is_minimized(int pid);
+bool unminimize_window_id(size_t window_id);
 bool get_window_id_is_minimized(size_t window_id);
 struct Vector *get_window_ids_above_window(struct window_info_t *w);
 struct Vector *get_window_ids_below_window(struct window_info_t *w);

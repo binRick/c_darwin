@@ -73,7 +73,6 @@ static icns_family_t *get_icns_file_info(FILE *fp);
 static struct icns_t *cfdataref_to_icns_bytes(CFDataRef data_ref);
 static int get_icon_size_pixels(size_t icon_size);
 static int get_icon_size_value(size_t icon_size);
-static struct Vector *get_app_icon_sizes_v();
 static struct app_icon_size_t *get_icon_size(size_t icon_size);
 static icns_type_t get_icon_size_type(size_t icon_size);
 static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, int32_t *height);
@@ -338,7 +337,24 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
 
   return(true);
 } /* write_app_icon_from_png */
+size_t get_maximum_icon_size(){
+  return(app_icon_sizes[app_icon_sizes_qty-1].pixels);
+}
 
+size_t get_minimum_icon_size(){
+  return(app_icon_sizes[0].pixels);
+}
+
+struct Vector *get_app_icon_sizes_v(){
+  struct Vector *v = vector_new();
+
+  for (size_t i = 0; i < app_icon_sizes_qty; i++) {
+    if (app_icon_sizes[i].pixels > 0) {
+      vector_push(v, (void *)(size_t)app_icon_sizes[i].pixels);
+    }
+  }
+  return(v);
+}
 static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_size){
   icns_family_t *iconFamily = get_icns_file_info(fp);
 
@@ -731,16 +747,6 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
 
   return(TRUE);
 } /* read_png */
-static struct Vector *get_app_icon_sizes_v(){
-  struct Vector *v = vector_new();
-
-  for (size_t i = 0; i < app_icon_sizes_qty; i++) {
-    if (app_icon_sizes[i].pixels > 0) {
-      vector_push(v, (void *)(size_t)app_icon_sizes[i].pixels);
-    }
-  }
-  return(v);
-}
 
 char *get_app_path_icns_file_path_icon_file_path(char *app_path, char *icns_file_path){
   char        *ret = NULL;

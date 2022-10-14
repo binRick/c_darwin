@@ -7,6 +7,7 @@
 #include "ansi-codes/ansi-codes.h"
 #include "b64.c/b64.h"
 #include "bytes/bytes.h"
+#include "fancy-progress/src/fancy-progress.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"

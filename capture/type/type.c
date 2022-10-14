@@ -12,7 +12,7 @@
 #define BAR_MIN_WIDTH 20
 #define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE .5
 #define BAR_MESSAGE_COMPRESSION_TEMPLATE "Compressing %lu Images of %s"
-#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu %s %s%s"
+#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu %s %s"
 #define BAR_MESSAGE_TEMPLATE "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
 #include "capture/type/type.h"
@@ -510,8 +510,10 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
   char *buf;
   size_t blen=0;
   VipsImage *v = NULL;
+  size_t qty=0;
   while (chan_recv(chan, &msg) == 0) {
     struct compress_t *c = (struct compress_t *)msg;
+    qty++;
     c->started = timestamp();
     debug("Run Compress Recv:   type:%d|%s|PNG:%d|%s", c->format, image_type_name(c->format), IMAGE_TYPE_PNG, image_type_name(IMAGE_TYPE_PNG));
       switch (c->format) {
@@ -537,7 +539,36 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
         log_warn("\nCompression not implemented for image type %s.", image_type_name(c->format));
       break;
     }
-     if(v && blen>0 && buf){
+      char *m;
+     if(v && blen>0 && buf && blen < c->len){
+      free(c->pixels);
+      asprintf(&m,"✅ Compressed"
+          " "
+          AC_BLUE"%4s"AC_RESETALL
+          " "
+          AC_GREEN"%6s"AC_RESETALL
+          " "
+          "File of"
+          " "
+          "to"
+          " "
+  AC_DOTTED_UNDERLINE AC_ITALIC AC_YELLOW "%s" AC_RESETALL
+          " "
+          "in"
+          " "
+  AC_BOLD AC_YELLOW"%6s"AC_RESETALL
+          "",
+                  image_type_name(c->format),
+                  bytes_to_string(c->len),
+                  bytes_to_string(blen),
+                  milliseconds_to_string(timestamp() - c->started)
+      );
+    fflush(stdout);
+    printf(
+       "\t%s\n",
+        m
+        );
+    fflush(stdout);
       c->pixels = buf;
       c->len = blen;
     }
@@ -635,7 +666,11 @@ struct Vector *capture_image(struct capture_image_request_t *req){
 
   if(req->progress_bar_mode){
     req->bar = calloc(1, sizeof(struct cbar_t));
-    asprintf(&bar_msg, BAR_MESSAGE_CAPTURE_TEMPLATE,vector_size(req->ids),image_type_name(req->format), get_capture_type_name(req->type),vector_size(req->ids)>1 ? "s" : "");
+    asprintf(&bar_msg, 
+        BAR_MESSAGE_CAPTURE_TEMPLATE,
+        vector_size(req->ids),image_type_name(req->format), 
+        get_capture_type_name(req->type)
+        );
     bar_msg_len  = strlen(bar_msg);
     term_width = clamp(get_terminal_width(), 40, 160);
     asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);
@@ -644,6 +679,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     cbar_hide_cursor();
     req->bar->progress = 0.00;
     cbar_display_bar(req->bar);
+      fflush(stdout);
   }
 
   struct Vector *providers = get_cap_providers(req->format);
@@ -746,7 +782,9 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     req->bar->progress = (float)1.00;
     cbar_display_bar(req->bar);
     cbar_show_cursor();
-    printf("\n");
+    printf(
+        "\n"
+        );
     fflush(stdout);
     if(req->bar)
       free(req->bar);
@@ -837,7 +875,9 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       req->bar->progress = (float)1.00;
       cbar_display_bar(req->bar);
       cbar_show_cursor();
-      printf("\n");
+    printf(
+        "\n"
+        );
       fflush(stdout);
       if(req->bar)
         free(req->bar);

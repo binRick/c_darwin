@@ -484,7 +484,72 @@ int get_focused_window_id(){
         i->app = AXUIElementCreateApplication(i->pid);                                                                           \
         if (i->app) {                                                                                                            \
     i->level = 0;\
-    SLSGetWindowLevel(g_connection, i->window_id, &(i->level));\
+  SLSGetWindowLevel(g_connection, i->window_id, &(i->level));\
+  int connection;\
+  uint64_t set_tags = 1;\
+  uint64_t clear_tags = 0;\
+  int did = 0;\
+  int space_count = 0;\
+  int display_count=0;\
+ if(false){\
+  CGGetActiveDisplayList(0, NULL, &display_count);\
+  log_info("qty displays:%d", display_count);\
+  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);\
+  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);\
+  uint32_t options = true ? 0x7 : 0x2;\
+  for (int i = 0; i < display_spaces_count; ++i) {\
+    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);\
+    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));\
+    int spaces_count = CFArrayGetCount(spaces_ref);\
+    log_info("qty spaces:%d",spaces_count);\
+    uint64_t space_list[spaces_count];\
+    for (int j = 0; j < spaces_count; ++j) {\
+      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);\
+      CFNumberRef sid_ref = CFDictionaryGetValue(space_ref, CFSTR("id64"));\
+      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &space_list[j]);\
+      log_info("space #%lu> ",space_list[j]);\
+    }\
+    CFArrayRef space_list_ref = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), spaces_count, kCFNumberSInt64Type);\
+    CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, 0, space_list_ref, options, &set_tags, &clear_tags);\
+    size_t qty = CFArrayGetCount(window_list_ref);\
+    log_info("qty windows:%lu", qty);\
+    CFTypeRef query = SLSWindowQueryWindows(g_connection, window_list_ref, qty);\
+    CFTypeRef iterator = SLSWindowQueryResultCopyWindows(query);\
+    int window_count = 0;\
+    while (SLSWindowIteratorAdvance(iterator)) {\
+        uint32_t wid = SLSWindowIteratorGetWindowID(iterator);\
+        CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow,wid);\
+        int wqty = CFArrayGetCount(window_list);\
+      for (int I = 0; I < CFArrayGetCount(window_list); I++) {\
+        CFDictionaryRef windict  = CFArrayGetValueAtIndex(window_list, I);\
+        CFNumberRef     owner_pid_ref     = CFDictionaryGetValue(windict, kCGWindowOwnerPID);\
+        int owner_pid=0,connection=0;\
+        CFNumberGetValue(owner_pid_ref, CFNumberGetType(owner_pid_ref), &owner_pid);\
+        ProcessSerialNumber tempPSN;\
+        GetProcessForPID(owner_pid, &tempPSN);\
+        SLSGetConnectionIDForPSN(g_connection, &(tempPSN), &connection);\
+    AXUIElementRef a;\
+    AXUIElementRef w;\
+        a = AXUIElementCreateApplication(owner_pid);\
+        int lvl=0,lyr=0;\
+  SLSGetWindowLevel(connection, wid, &(lvl));\
+  CFStringRef         nr         = CFDictionaryGetValue(windict, kCGWindowName);         \
+    CFNumberRef     lr = CFDictionaryGetValue(windict, kCGWindowLayer);\
+    CFNumberGetValue(lr, kCFNumberIntType, &lyr);\
+        char *n = cfstring_copy(nr);\
+  CFBooleanRef        is_onscreen_ref   = CFDictionaryGetValue(windict, kCGWindowIsOnscreen);   \
+        bool os = false;\
+        if(is_onscreen_ref)\
+          os = CFBooleanGetValue(is_onscreen_ref);\
+        log_info("window #%lu> display:%d|pid:%d|conn:%d|lvl:%d|lyr:%d\n\t|name:%s|onscreen:%s|",\
+            wid,\
+            i,\
+            owner_pid,connection,lvl,lyr,n,os?"Yes":"No"\
+            );\
+      }\
+    }\
+  }\
+ }\
     AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
           i->pid_app_list_qty = CFArrayGetCount(i->pid_app_list);                                                                \
           if (PROCESS_UTILS_DEBUG_MODE) {                                                                                        \
@@ -526,12 +591,14 @@ int get_focused_window_id(){
       }                                                                                                                          \
     }                                                                                                                            \
     if(i->pid_app_list_qty==0){\
-      continue;\
     }\
     if(!i->app_window){\
       continue;\
     }\
-    vector_push(window_infos_v, (void *)i);                                                                                      \
+    if(strcmp(i->sub_role,"AXStandardWindow")!=0){\
+      continue;\
+    }\
+    vector_push(window_infos_v, (void *)i);\
   }
 
 #define WINDOW_DICTIONARY_PRINT_ITEMS(FILE_DESCRIPTOR)                        \

@@ -35,6 +35,39 @@ static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = f
 static char *get_axerror_name(AXError err);
 ///////////////////////////////////////////////////////////////////////////////
 
+bool unminimize_window_id(size_t window_id){
+  if (window_id < 0) {
+    errno = 0;
+    log_error("Invalid Window ID %lu", window_id);
+    return(false);
+  }
+  struct window_info_t *W = get_window_id_info(window_id);
+  assert(W->window_id == window_id);
+  AXUIElementRef       app = AXWindowFromCGWindow(W->window);
+  CFBooleanRef         is_min_ref;
+  errno = 0;
+  if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &is_min_ref) != kAXErrorSuccess) {
+    log_error("Failed to copy attrs");
+    return(false);
+  }
+  bool is_min = CFBooleanGetValue(is_min_ref);
+  if (is_min == false) {
+    return(true);
+  }
+  errno = 0;
+  if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanFalse) == kAXErrorSuccess) {
+    if (WINDOW_UTILS_DEBUG_MODE) {
+      log_info("Set unminimized property on window id");
+    }
+  }else{
+    log_error("Failed to set unminimized property");
+    errno = 0;
+    return(false);
+  }
+  return(true);
+
+}
+
 bool minimize_window_id(size_t window_id){
   if (window_id < 0) {
     errno = 0;

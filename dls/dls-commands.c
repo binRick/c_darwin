@@ -6,6 +6,7 @@
 #include "c_vector/vector/vector.h"
 #include "tinydir/tinydir.h"
 #include "capture/utils/utils.h"
+#include "fancy-progress/src/fancy-progress.h"
 #include "image/utils/utils.h"
 #include "capture/animate/animate.h"
 #include "capture/type/type.h"
@@ -226,6 +227,7 @@ static void _command_move_window();
 static void _command_window_id_info();
 static void _command_resize_window();
 static void _command_minimize_window();
+static void _command_unminimize_window();
 static void _command_set_window_space();
 static void _command_set_space();
 static void _check_write_directory(void);
@@ -302,7 +304,7 @@ static void _check_application_path(char *application_path);
 static void _check_application_name(char *application_name);
 static void _check_resize_factor(double resize_factor);
 static void _check_xml_file(char *xml_file_path);
-static void _check_icon_size(size_t icon_size);
+static void _check_icon_sizes(char *strs);
 static void _check_pid(int pid);
 ////////////////////////////////////////////
 common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
@@ -555,15 +557,15 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .function = optparse_print_help,
     });
   },
-  [COMMON_OPTION_ICON_SIZE] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_ICON_SIZES] = ^ struct optparse_opt (struct args_t *args)                                   {
     return((struct optparse_opt)                                                                            {
       .short_name = 's',
-      .long_name = "icon-size",
-      .description = "Icon Size",
-      .arg_name = "ICON-SIZE",
-      .arg_data_type = check_cmds[CHECK_COMMAND_ICON_SIZE].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_ICON_SIZE].fxn,
-      .arg_dest = &(args->icon_size),
+      .long_name = "icon-sizes",
+      .description = "Icon Sizes CSV",
+      .arg_name = "ICON-SIZES-CSV",
+      .arg_data_type = check_cmds[CHECK_COMMAND_ICON_SIZES].arg_data_type,
+      .function = check_cmds[CHECK_COMMAND_ICON_SIZES].fxn,
+      .arg_dest = &(args->sizes),
     });
   },
   [COMMON_OPTION_WRITE_DIRECTORY] = ^ struct optparse_opt (struct args_t *args)                            {
@@ -597,10 +599,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)                            {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'P',
-      .long_name = "application-path",
-      .description = "Application Path",
-      .arg_name = "APPLICATION-PATH",
+      .short_name = 'a',
+      .long_name = "app",
+      .description = "Application Path (/path/to/name.app)",
+      .arg_name = "APP-PATH",
       .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_PATH].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_APPLICATION_PATH].fxn,
       .arg_dest = &(args->application_path),
@@ -630,10 +632,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)                              {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'f',
-      .long_name = "png-file",
-      .description = "PNG File",
-      .arg_name = "PNG-FILE",
+      .short_name = 'i',
+      .long_name = "in",
+      .description = "PNG In File",
+      .arg_name = "IN-PNG-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_PNG_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_INPUT_PNG_FILE].fxn,
       .arg_dest = &(args->input_png_file),
@@ -641,10 +643,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)                             {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'f',
-      .long_name = "png-file",
-      .description = "PNG File",
-      .arg_name = "PNG-FILE",
+      .short_name = 'o',
+      .long_name = "out",
+      .description = "PNG Out File",
+      .arg_name = "OUT-PNG-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_PNG_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_PNG_FILE].fxn,
       .arg_dest = &(args->output_png_file),
@@ -652,10 +654,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)                             {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'f',
-      .long_name = "icns-file",
-      .description = "ICNS File",
-      .arg_name = "ICNS-FILE",
+      .short_name = 'i',
+      .long_name = "in",
+      .description = "ICNS Output File",
+      .arg_name = "OUT-ICNS-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_ICNS_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_INPUT_ICNS_FILE].fxn,
       .arg_dest = &(args->input_icns_file),
@@ -663,10 +665,10 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
   [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)                            {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'f',
-      .long_name = "icns-file",
-      .description = "ICNS File",
-      .arg_name = "ICNS-FILE",
+      .short_name = 'o',
+      .long_name = "out",
+      .description = "ICNS Out File",
+      .arg_name = "OUT-ICNS-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_ICNS_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_ICNS_FILE].fxn,
       .arg_dest = &(args->output_icns_file),
@@ -675,7 +677,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                                  {
     return((struct optparse_opt)                                                                            {
       .short_name = 'i',
-      .long_name = "input-file",
+      .long_name = "in",
       .description = "Input File",
       .arg_name = "INPUT-FILE",
       .group = COMMON_OPTION_GROUP_ID,
@@ -687,7 +689,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                                 {
     return((struct optparse_opt)                                                                            {
       .short_name = 'o',
-      .long_name = "output-file",
+      .long_name = "out",
       .description = "Output File",
       .arg_name = "OUTPUT-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_FILE].arg_data_type,
@@ -1072,9 +1074,9 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
     .fxn           = (void (*)(void))(*_check_pid),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_ICON_SIZE] =           {
-    .fxn           = (void (*)(void))(*_check_icon_size),
-    .arg_data_type = DATA_TYPE_UINT64,
+  [CHECK_COMMAND_ICON_SIZES] =           {
+    .fxn           = (void (*)(void))(*_check_icon_sizes),
+    .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_APPLICATION_NAME] =    {
     .fxn           = (void (*)(void))(*_check_application_name),
@@ -1171,6 +1173,11 @@ struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
     .name        = "pid-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
     .description = "PID is Minimized",
     .fxn         = (*_command_pid_is_minimized),
+  },
+  [COMMAND_UNMINIMIZE_WINDOW] =       {
+    .name        = "unminimize-window",           .icon = "🔅", .color = COLOR_WINDOW,
+    .description = "Unminimize Window",
+    .fxn         = (*_command_unminimize_window),
   },
   [COMMAND_MINIMIZE_WINDOW] =       {
     .name        = "minimize-window",           .icon = "🔅", .color = COLOR_WINDOW,
@@ -1457,14 +1464,34 @@ static void _check_pid(int pid){
   return(EXIT_SUCCESS);
 }
 
-static void _check_icon_size(size_t icon_size){
-  errno = 0;
-  if (app_icon_size_is_valid(icon_size) == false) {
-    log_error("Invalid Icon Size %lu", icon_size);
+static void _check_icon_sizes(char *strs){
+    args->icon_sizes_v = vector_new();
+  if(strs)
+    strs = stringfn_mut_trim(strs);
+  if(strcmp(strs,"all")==0){
+    args->icon_sizes_v = get_app_icon_sizes_v();
+  }
+
+  struct StringFNStrings split = stringfn_split(strs,',');
+  char *line=NULL;
+  for(int i=0;i<split.count;i++){
+    line = stringfn_mut_trim(split.strings[i]);
+
+    if(!app_icon_size_is_valid(atoi(line)))
+        continue;
+    debug(" - %s",line);
+    vector_push(args->icon_sizes_v,(void*)(size_t)atoi(line));
+  }
+  stringfn_release_strings_struct(split);
+  if(vector_size(args->icon_sizes_v)<1){
+    log_error("Invalid Icon Sizes");
     exit(EXIT_FAILURE);
   }
+  debug("Loaded %lu icon sizes",
+      vector_size(args->icon_sizes_v)
+      );
   return(EXIT_SUCCESS);
-}
+  }
 
 static void _check_application_name(char *application_name){
   args->application_name = application_name;
@@ -1799,8 +1826,24 @@ static void _command_image_conversions(){
 }
 
 static void _command_save_app_icon_to_png(){
-  log_info("getting app icon from app %s and writing to png file %s", args->application_path, args->output_png_file);
-  bool ok = write_app_icon_to_png(args->application_path, args->output_png_file, args->icon_size);
+  bool rm_output_png_file=false;
+  bool ok = false;
+  size_t size=0;
+  for(size_t i = 0; i <vector_size(args->icon_sizes_v);i++){
+    if(!args->output_png_file){
+      asprintf(&(args->output_png_file),"%s%lld.png",gettempdir(),timestamp());
+      rm_output_png_file=true;
+    }
+    size = (size_t)vector_get(args->icon_sizes_v,i);
+    ok = write_app_icon_to_png(args->application_path,args->output_png_file,size);
+    if(ok && kitty_display_image_buffer_resized_width(fsio_read_binary_file(args->output_png_file), fsio_file_size(args->output_png_file),size)){
+       printf("\n");
+       fflush(stdout);
+    }
+    if(rm_output_png_file){
+      fsio_remove(args->output_png_file);
+    }
+  }
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -1951,8 +1994,67 @@ static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum im
 }
 
 static bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
+
+/*
+static const char *strings[] = {
+  "Lorem ipsum dolor sit amet",
+  "Consectetur adipiscing elit",
+  "Vivamus faucibus sagittis dui, tincidunt rhoncus mi",
+  "Fringilla sollicitudin. Donec eget sagittis",
+  "Quam, vitae fringilla nisl",
+  "Donec dolor justo, hendrerit sed accumsan id, sodales",
+  "Eu odio",
+  "Nunc vehicula hendrerit risus, vel condimentum dui rutrum sed.",
+  "Quisque metus enim, pellentesque nec nibh sit amet.",
+  "Commodo molestie diam."
+};
+
+  int i, r;
+  fancy_progress_start();
+  srand(time(NULL));
+  for (i = 0; i <= 100; i++) {
+    r = rand() % 10;
+    fprintf(stdout, "%s...\n", strings[r]);
+    fancy_progress_step(((float)i / 150) * 100);
+    usleep(50 * 1000);
+  }
+  fancy_progress_stop();
+  */
+    cbar_t bars[] = {
+        cbar(64, "Bar1: [$E RGB(8, 25, 104);"
+                 "FG_RED; $E$F'-'$F$E RESET;"
+                 "$E$N' '$N] $P%$E RESET;"
+                 "$E"
+                 ),
+        cbar(64, "Bar2: [$E RGB(8, 25, 104);"
+                 "FG_YELLOW; $E$F'-'$F$E RESET;"
+                 "$E$N' '$N] $P%$E RESET;"
+                 "$E"
+                 ),
+        cbar(64, "Bar3: [$E RGB(8, 25, 104);"
+                 "BOLD; $E$F'-'$F$E RESET;"
+                 "$E$N' '$N] $P%$E RESET;"
+                 "$E"
+                 ),
+    };
+    bool complete = false;
+    cbar_hide_cursor();
+    while(!complete){
+        complete = true;
+        for(size_t i = 0; i < 3; i++){
+            bars[i].progress += 0.0001*(i+1);
+            if(bars[i].progress <= 1.0) complete = false;
+        }
+        cbar_display_bars(bars, 3);
+        usleep(0.001*100000.0);
+    }
+    cbar_show_cursor();
+    printf("\n\n\n\n");  
+    fflush(stdout);
+
     struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
-    fprintf(stderr," ✅ Wrote"
+    fprintf(stdout,
+        "✅ Wrote"
         " "
         AC_CYAN "%2lu"AC_RESETALL
         " "
@@ -1976,6 +2078,7 @@ AC_BOLD AC_YELLOW"%6s"AC_RESETALL
                 args->write_directory,
                 milliseconds_to_string(res->dur)
     );
+    fflush(stdout);
 //  if(res)
   //  free(res);
   return(true);
@@ -2238,6 +2341,9 @@ static void _command_pid_is_minimized(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_unminimize_window(){
+  exit((unminimize_window_id(args->id) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
 static void _command_minimize_window(){
   exit((minimize_window_id(args->id) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

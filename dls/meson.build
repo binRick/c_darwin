@@ -10,7 +10,7 @@ darwin_ls_include_dirs = [
 ]
 darwin_ls_deps = [
   kitty_msg_dep,
-  core_utils_dep,
+  core_utils_dep,fancy_progress_dep,
   core_image_dep,
   optparse99_dep,
   font_utils_dep,

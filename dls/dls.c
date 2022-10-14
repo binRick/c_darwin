@@ -47,6 +47,7 @@ struct args_t                 *args                = &(struct args_t){
   .write_directory = "/tmp",
   .formats_v = NULL,
   .format_ids_v = NULL,
+  .icon_sizes_v = NULL,
 };
 
 ////////////////////////////////////////////
@@ -469,6 +470,17 @@ int main(int argc, char *argv[]) {
         },
       },
       {
+        .name        = cmds[COMMAND_UNMINIMIZE_WINDOW].name,
+        .description = cmds[COMMAND_UNMINIMIZE_WINDOW].description,
+        .function    = cmds[COMMAND_UNMINIMIZE_WINDOW].fxn,
+        .about       = get_command_about(COMMAND_UNMINIMIZE_WINDOW),
+        .options     = (struct optparse_opt[]){
+          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+          common_options_b[COMMON_OPTION_ID](args),
+          { END_OF_OPTIONS },
+        },
+      },
+      {
         .name        = cmds[COMMAND_MINIMIZE_WINDOW].name,
         .description = cmds[COMMAND_MINIMIZE_WINDOW].description,
         .function    = cmds[COMMAND_MINIMIZE_WINDOW].fxn,
@@ -628,7 +640,8 @@ int main(int argc, char *argv[]) {
           common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
           common_options_b[COMMON_OPTION_APPLICATION_PATH](args),
           common_options_b[COMMON_OPTION_OUTPUT_PNG_FILE](args),
-          common_options_b[COMMON_OPTION_ICON_SIZE](args),
+          common_options_b[COMMON_OPTION_ICON_SIZES](args),
+          common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
           { END_OF_OPTIONS },
         },
       },

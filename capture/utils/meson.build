@@ -10,6 +10,7 @@ capture_utils_include_dirs = [
 ]
 
 capture_utils_deps = [
+  fancy_progress_dep,
   space_utils_dep,window_utils_dep,display_utils_dep,screen_utils_dep,
   ansi_codes_dep,cache_utils_dep,b64_dep,image_utils_dep,fs_c_dep,tempdir_dep,
   c_vector_dep,
