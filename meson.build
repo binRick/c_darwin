@@ -76,7 +76,6 @@ subdir('keylogger-config')
 #//////////////////////////////////////////////////////////////////////
 subdir('hotkey-utils')
 subdir('table')
-subdir('core-utils')
 subdir('alacritty')
 subdir('screen')
 subdir('capture')

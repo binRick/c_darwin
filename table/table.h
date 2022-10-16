@@ -3,7 +3,7 @@
 #define TABLE_H
 //////////////////////////////////////
 #include "app/utils/utils.h"
-#include "core-utils/core-utils.h"
+
 #include "font-utils/font-utils.h"
 #include "frameworks/frameworks.h"
 #include "hotkey-utils/hotkey-utils.h"

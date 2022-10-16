@@ -4,7 +4,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "djbhash/src/djbhash.h"
 #include "kitty/kitty.h"
 #include "log/log.h"

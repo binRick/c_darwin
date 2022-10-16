@@ -1,6 +1,6 @@
 #pragma once
 #include "log/log.h"
-#include "process.h"
+#include "process/process.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -31,7 +31,7 @@
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
 #include "log/log.h"

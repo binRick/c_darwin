@@ -1,7 +1,7 @@
 #pragma once
 #include "active-app.h"
 #include "app/utils/utils.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "log/log.h"
 #include "process/utils/utils.h"
 static bool ACTIVE_APP_UTILS_DEBUG_MODE = false;

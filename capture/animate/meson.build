@@ -12,9 +12,9 @@ capture_animate_include_dirs = [
 capture_animate_deps = [
   core_dep,
   kitty_msg_dep,
-  imagequant_dep,capture_utils_dep,image_utils_dep,qoi_ci_dep,
-  capture_utils_dep,stb_dep,msf_gif_dep,gifdec_dep,
-  glib_dep,
+  capture_utils_dep,image_utils_dep,qoi_ci_dep,
+  capture_utils_dep,
+  msf_gif_dep,gifdec_dep,
   vips_dep,
   core_debug_dep,core_utils_dep,
   capture_type_dep,

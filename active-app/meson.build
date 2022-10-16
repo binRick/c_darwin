@@ -2,8 +2,8 @@ active_app_srcs = [
   'active-app.c',
 ]
 active_app_deps = [
-  c_stringfn_dep,
-  core_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,log_dep,string_utils_dep,
+  core_dep,
+  core_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,string_utils_dep,
 ]
 active_app_link_args = [
   '-Wno-deprecated-declarations',

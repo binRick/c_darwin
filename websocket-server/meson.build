@@ -10,16 +10,11 @@ websocket_server_include_dirs = [
 ]
 
 websocket_server_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  nettle_dep,uuid4_dep,
-  c_fsio_dep,
-  c_stringfn_dep,socket_protocol_dep,libforks_dep,
-  c_string_buffer_dep,chan_dep,
-  timestamp_dep,flingfd_dep,
-  log_dep,core_dep,wslay_dep,tempdir_dep,parson_dep,c_img_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  nettle_dep,
+  socket_protocol_dep,
+  flingfd_dep,
+  wslay_dep,
 ]
 
 websocket_server_c_args = [

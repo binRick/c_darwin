@@ -9,19 +9,7 @@ process_utils_dirs = [
     inc,
   ]
 process_utils_deps = [
-  c_stringfn_dep,
-  parson_dep,
-  log_dep,core_dep,
-  ansi_codes_dep,
-  c_vector_dep,
-  fort_dep,
-  bytes_dep,
-  ms_dep,
-  string_utils_dep,string_utils_dep,
-  frameworks_dep,
-  timestamp_dep,
-  wildcardcmp_dep,
-  reproc_dep,which_dep,
+  core_dep,
 ]
 
 

@@ -9,7 +9,7 @@
 /**********************************/
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "keylogger/keylogger.h"
 #include "log/log.h"
 #include "timestamp/timestamp.h"

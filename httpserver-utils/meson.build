@@ -12,20 +12,11 @@ httpserver_utils_include_dirs = [
 ]
 
 httpserver_utils_deps = [
-  glib_dep,vips_dep,
-  log_dep,wslay_dep,tempdir_dep,parson_dep,c_img_dep,
-  timestamp_dep,chan_dep,
-  ansi_codes_dep,
+  core_dep,
+  vips_dep,
+  wslay_dep,
   httpserver_h_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,incbin_dep,string_utils_dep,
-  url_h_dep,capture_utils_dep,ms_dep,config_utils_dep,
+  capture_utils_dep,ms_dep,config_utils_dep,
   querystring_c_dep,hotkey_utils_dep,image_utils_dep,
   tesseract_dep,space_utils_dep,display_utils_dep,screen_utils_dep,
 ]

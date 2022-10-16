@@ -11,7 +11,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_vector/vector/vector.h"
 #include "c_workqueue/include/workqueue.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "core/utils/utils.h"
 #include "fancy-progress/src/fancy-progress.h"
 #include "frameworks/frameworks.h"

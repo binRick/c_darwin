@@ -11,19 +11,12 @@ process_include_cargs = [
   '-Wno-unused-function',
   ]
 process_test_deps = [
+  core_dep,
   c_greatest_dep,
   process_dep,
-  c_vector_dep,
   kitty_dep,
-  c_timer_dep,
-  ansi_codes_dep,
-  tiny_regex_c_dep,
-  socket99_dep,process_utils_dep,window_info_dep,app_utils_dep,
-  c_string_buffer_dep,
+  process_utils_dep,window_info_dep,app_utils_dep,
   window_utils_dep,app_utils_dep,core_utils_dep,window_utils_dep,
-  c_stringfn_dep,
-  c_fsio_dep,
-  
 ]
 if get_option('enable-binaries')
   process_test_exec = executable('process-test',

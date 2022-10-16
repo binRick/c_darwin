@@ -10,20 +10,11 @@ httpserver_include_dirs = [
 ]
 
 httpserver_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
+  core_dep,
   httpserver_utils_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
   httpserver_h_deps,
   wslay_dep,
   websocket_server_dep,
-  libforks_dep,url_h_dep,chan_dep,
 ]
 
 httpserver_c_args = [

@@ -13,7 +13,6 @@ save_deps = [
   core_dep,
   capture_type_dep,
   image_utils_dep,
-  core_debug_dep,core_utils_dep,
   vips_dep,
 ]
 

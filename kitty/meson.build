@@ -1,4 +1,3 @@
-#subdir('shm')
 subdir('msg')
 kitty_srcs = [
   'kitty.c',
@@ -11,7 +10,6 @@ kitty_deps = [
   core_dep,
   image_dep,
   process_dep,
-  #  kitty_shm_dep,
   kitty_msg_dep,
 ]
 kitty_dirs = [

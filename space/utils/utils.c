@@ -1,7 +1,7 @@
 #pragma once
 #ifndef SPACE_UTILS_C
 #define SPACE_UTILS_C
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "display/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"

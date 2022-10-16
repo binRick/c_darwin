@@ -21,7 +21,7 @@
 #include "app/utils/utils.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 ///////////////////////////////////////////////////
 #define MAX_DISPLAYS            8
 #define BITS_PER_COMPONENT      8

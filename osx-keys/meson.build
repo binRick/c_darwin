@@ -4,7 +4,7 @@ osx_keys_srcs = [
 osx_keys_link_flags = []
 osx_keys_c_args = []
 osx_keys_deps = [
-  log_dep,core_dep,string_utils_dep,
+  core_dep,
 ]
 osx_keys_dirs = [
   '.',

@@ -19,7 +19,7 @@
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "db/db.h"
 #include "font-utils/font-utils.h"
 #include "frameworks/frameworks.h"

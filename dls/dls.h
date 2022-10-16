@@ -33,7 +33,7 @@
 #include "c_fsio/include/fsio.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "core-utils/core-utils.h"
+
 #include "core/utils/utils.h"
 #include "display/utils/utils.h"
 #include "dock/utils/utils.h"

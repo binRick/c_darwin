@@ -2,7 +2,7 @@
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "image/utils/utils.h"
 #include "log/log.h"
 #include "ms/ms.h"

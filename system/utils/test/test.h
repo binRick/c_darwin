@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 ////////////////////////////////////////////////////////
-#include "core-utils/core-utils.h"
+#include "core/utils/utils.h"
 #include "pasteboard/pasteboard.h"
 #include "process/process.h"
 #include "system/utils/utils.h"

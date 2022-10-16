@@ -10,17 +10,10 @@ hotkey_utils_include_dirs = [
 ]
 
 hotkey_utils_deps = [
-  libforks_dep,keylogger_dep,layout_utils_dep,
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,display_utils_dep,
-  bytes_dep,libcyaml_dep,path_module_dep,window_utils_dep,app_utils_dep,
-  murmurhash_dep,
+  core_dep,
+  keylogger_dep,layout_utils_dep,
+  display_utils_dep,
+  path_module_dep,window_utils_dep,app_utils_dep,
 ]
 
 hotkey_utils_c_args = [
