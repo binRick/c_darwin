@@ -18,7 +18,7 @@ table_utils_deps = [
   fort_dep,
   bytes_dep,
   ms_dep,
-  string_utils_dep,window_db_dep,
+  string_utils_dep,
   timestamp_dep,window_utils_dep,
   window_info_dep,table_sort_dep,wildcardcmp_dep,space_utils_dep,display_utils_dep,process_utils_dep,
   core_utils_dep,core_debug_dep,

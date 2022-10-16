@@ -5,11 +5,13 @@
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
 #include "core/core.h"
+#include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process/process.h"
+#include "capture/type/type.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
@@ -18,6 +20,9 @@
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
 #include "window/utils/utils.h"
+#include "sqldbal/src/sqldbal.h"
+#include "capture/utils/utils.h"
+#include "db/db.h"
 #include <errno.h>
 #include <mach/clock.h>
 #include <mach/mach.h>
@@ -34,6 +39,51 @@
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static char *get_axerror_name(AXError err);
 ///////////////////////////////////////////////////////////////////////////////
+bool window_db_load(struct sqldbal_db *db){
+  struct Vector *v=get_window_infos_v();
+  struct window_info_t *w;
+  int rc;
+  struct sqldbal_stmt      *stmt;
+  uint64_t ts = (uint64_t)(timestamp());
+//struct Vector *captures_v = db_table_images_from_ids(CAPTURE_TYPE_WINDOW, v);
+//Dbg(vector_size(captures_v),%lu);
+  for(size_t i=0;i<vector_size(v);i++){
+    w = (struct window_info_t*)vector_get(v,i);
+    log_info("Loading Window #%lu/%lu> %lu :: %s",i+1,vector_size(v),w->window_id,TABLE_NAME_WINDOWS);
+/*
+    struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+    req->ids = v;
+    req->format         = IMAGE_TYPE_QOI;
+    req->compress         = false;
+    req->quantize_mode = false;
+    req->type = CAPTURE_TYPE_WINDOW;
+    req->progress_bar_mode = false;
+    req->width        = 300;
+    req->height       = 0;
+    req->time.dur     = 0;
+    req->time.started = timestamp();
+    */
+
+    rc = sqldbal_stmt_prepare(db,
+                            "INSERT INTO "TABLE_NAME_WINDOWS"(id, ts, is_focused) VALUES(?, ?, ?)",
+                            -1,
+                            &stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 0, (uint64_t)(w->window_id));
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 1, ts);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 2, (uint64_t)(w->is_focused));
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_execute(stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_close(stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+
+  }
+  vector_release(v);
+return(true);
+}
 
 bool unminimize_window_id(size_t window_id){
   if (window_id < 0) {
@@ -211,6 +261,32 @@ char *get_window_display_uuid(struct window_info_t *window){
   return(uuid);
 }
 
+pid_t get_window_id_pid(size_t window_id){
+  size_t               WINDOW_ID = 0, tmp_WINDOW_ID = 0;
+  CFArrayRef           windowList;
+  CFDictionaryRef      window;
+  struct window_info_t *w = NULL;
+  int wid; pid_t pid;
+
+  windowList = CGWindowListCopyWindowInfo(
+    (kCGWindowListExcludeDesktopElements),
+    kCGNullWindowID
+    );
+  for (int i = 0; i < CFArrayGetCount(windowList) && (WINDOW_ID <= 0); i++) {
+      window = CFArrayGetValueAtIndex(windowList, i);
+      CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowNumber),
+                       kCGWindowIDCFNumberType,
+                       &wid);
+      if((size_t)wid != (size_t)window_id)
+        continue;
+      CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowOwnerPID),
+                       kCGWindowIDCFNumberType,
+                       &pid);
+      if(pid)
+        return(pid);
+  }
+  return(0);
+}
 size_t get_pid_window_id(int PID){
   size_t               WINDOW_ID = 0, tmp_WINDOW_ID = 0;
   CFArrayRef           windowList;
@@ -390,7 +466,8 @@ size_t get_first_window_id_by_name(char *name){
   struct window_info_t *w;
   struct Vector        *windows_v;
 
-  windows_v = get_window_infos_v();
+//  windows_v = get_window_infos_v();
+  windows_v = get_window_infos_brief_named_v(name);
 
   for (size_t i = 0; i < vector_size(windows_v) && window_id == 0; i++) {
     w = (struct window_info_t *)vector_get(windows_v, i);
@@ -539,12 +616,6 @@ void get_window_tags(struct window_info_t *w){
   }
 }
 
-void focus_window_id(size_t WINDOW_ID){
-  if(WINDOW_UTILS_DEBUG_MODE)
-    log_debug("%lu", WINDOW_ID);
-  return(focus_window(get_window_id_info(WINDOW_ID)));
-}
-
 bool get_pid_is_minimized(int pid){
   AXError        err;
   AXUIElementRef app = AXUIElementCreateApplication(pid);
@@ -604,23 +675,16 @@ void minimize_window(struct window_info_t *w){
     log_error("Failed to set minimized property");
   }
 }
-
-void focus_window(struct window_info_t *w){
-  if (WINDOW_UTILS_DEBUG_MODE) {
-    log_debug("Focusing window %lu:pid %d", w->window_id, w->pid);
-  }
-  assert(w->pid > 0 && w->window_id > 0);
+void focus_window_id_psn(size_t window_id, ProcessSerialNumber psn){
   errno = 0;
   AXError             err;
-  ProcessSerialNumber psn = {};
-  psn   = PID2PSN(w->pid);
   errno = 0;
   err   = SetFrontProcessWithOptions(&psn, kSetFrontProcessFrontWindowOnly);
   if (err != kAXErrorSuccess) {
     log_error("failed to set psn");
   }
 
-  CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow, w->window_id);
+  CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow, window_id);
   int        qty         = CFArrayGetCount(window_list);
   if (WINDOW_UTILS_DEBUG_MODE) {
     log_debug("%d windows", qty);
@@ -632,74 +696,25 @@ void focus_window(struct window_info_t *w){
     AXUIElementPerformAction(window, kAXRaiseAction);
     AXUIElementSetAttributeValue(window, kAXMainAttribute, kCFBooleanTrue);
   }
-  make_key_window(w);
-  /*
-   * return;
-   *
-   *
-   * AXUIElementRef app = AXWindowFromCGWindow(window);
-   * _SLPSSetFrontProcessWithOptions(&psn, (uint32_t)w->window_id, kCPSUserGenerated);
-   * AXUIElementSetAttributeValue(app, kAXFrontmostAttribute, kCFBooleanTrue);
-   * AXUIElementPerformAction(window, kAXRaiseAction);
-   * AXUIElementSetAttributeValue(window, kAXMainAttribute, kCFBooleanTrue);
-   * make_key_window(w);
-   *
-   *
-   *
-   * return;
-   * AXUIElementSetAttributeValue(app, kAXFrontmostAttribute, kCFBooleanTrue);
-   *
-   * make_key_window(w);
-   * AXUIElementPerformAction(window, kAXRaiseAction);
-   * AXUIElementSetAttributeValue(window, kAXMainAttribute, kCFBooleanTrue);
-   *
-   *
-   * return;
-   * _SLPSSetFrontProcessWithOptions(&psn, w->window_id, kCPSUserGenerated);
-   *
-   * AXUIElementPerformAction(window, kAXRaiseAction);
-   * AXUIElementSetAttributeValue(window, kAXFrontmostAttribute, kCFBooleanTrue);
-   * //AXUIElementSetAttributeValue(w->window, kAXFullscreenAttribute, kCFBooleanTrue);
-   * return;
-   *
-   *
-   *
-   *
-   *
-   *
-   *
-   *
-   *
-   *
-   * err =  _SLPSSetFrontProcessWithOptions(&(w->psn), w->window_id, kCPSUserGenerated);
-   * if (err != kAXErrorSuccess) {
-   *  log_error("Set Front Fail for Window #%lu", w->window_id);
-   * }
-   * log_debug("set app");
-   * make_key_window(w);
-   * AXUIElementPerformAction(window, kAXRaiseAction);
-   * AXUIElementSetAttributeValue(window, kAXFrontmostAttribute, kCFBooleanTrue);
-   * log_debug("set win");
-   *
-   *
-   * }else{
-   * log_error("Failed to find window #%lu",w->window_id);
-   * }
-   */
-}
-
-void make_key_window(struct window_info_t *w){
   uint8_t bytes1[0xf8] = { [0x04] = 0xf8, [0x08] = 0x01, [0x3a] = 0x10 };
   uint8_t bytes2[0xf8] = { [0x04] = 0xf8, [0x08] = 0x02, [0x3a] = 0x10 };
-
-  memcpy(bytes1 + 0x3c, &(w->window_id), sizeof(uint32_t));
+  memcpy(bytes1 + 0x3c, &(window_id), sizeof(uint32_t));
   memset(bytes1 + 0x20, 0xFF, 0x10);
-
-  memcpy(bytes2 + 0x3c, &(w->window_id), sizeof(uint32_t));
+  memcpy(bytes2 + 0x3c, &(window_id), sizeof(uint32_t));
   memset(bytes2 + 0x20, 0xFF, 0x10);
+  SLPSPostEventRecordTo(&(psn), bytes1);
+  SLPSPostEventRecordTo(&(psn), bytes2);
+}
 
-  SLPSPostEventRecordTo(&(w->psn), bytes1);
-  SLPSPostEventRecordTo(&(w->psn), bytes2);
+void focus_window_id(size_t window_id){
+  pid_t pid = get_window_id_pid(window_id);
+  ProcessSerialNumber psn = PID2PSN(pid);
+  log_debug("%lu|%d|%d|%d",window_id,pid,psn.highLongOfPSN,psn.lowLongOfPSN);
+  return(focus_window_id_psn(window_id,psn));
+}
+
+void focus_window(struct window_info_t *w){
+  focus_window_id_psn(w->window_id, *(w->psn));
 }
 
 char *windowTitle(char *appName, char *windowName) {
@@ -1181,7 +1196,7 @@ struct window_info_t *get_focused_window_info(){
   return(window_info);
 }
 struct window_info_t *get_window_id_info(size_t window_id){
-  struct Vector        *window_infos_v = window_infos_v = get_window_infos_v();
+  struct Vector        *window_infos_v = window_infos_v = get_window_infos_brief_by_id(window_id);
   struct window_info_t *window_info    = NULL;
 
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {

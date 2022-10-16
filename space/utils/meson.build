@@ -12,7 +12,7 @@ space_utils_deps = [
   core_dep,
   c_vector_dep,vips_dep,
   c_stringfn_dep,
-  parson_dep,
+  parson_dep,sqldbal_dep,
   string_utils_dep,
   image_utils_dep,
   log_dep,core_dep,

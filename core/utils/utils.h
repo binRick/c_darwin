@@ -29,6 +29,7 @@
 #include "timestamp/timestamp.h"
 #include "whereami/src/whereami.h"
 #include "wildcardcmp/wildcardcmp.h"
+#include "clamp/clamp.h"
 //////////////////////////////////////
 struct whereami_report_t {
   const char *executable, *executable_directory, *executable_basename;

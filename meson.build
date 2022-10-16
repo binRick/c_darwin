@@ -35,6 +35,7 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
+subdir('layout/utils')
 subdir('core')
 subdir('event')
 subdir('icons')
@@ -82,6 +83,7 @@ subdir('screen')
 subdir('capture')
 subdir('focused')
 subdir('audit')
+subdir('db')
 #//////////////////////////////////////////////////////////////////////
 subdir('kitty-ls')
 subdir('ls-proc')

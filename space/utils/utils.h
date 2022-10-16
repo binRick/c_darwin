@@ -2,6 +2,7 @@
 #ifndef SPACE_UTILS_H
 #define SPACE_UTILS_H
 #include "frameworks/frameworks.h"
+#include "core/utils/utils.h"
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
@@ -14,11 +15,13 @@ struct space_t {
   bool          is_current;
   struct Vector *window_ids_v;
 };
+struct sqldbal_db;
 /////////////////////////////////////////////////
 //uint32_t get_display_id_for_space(uint32_t sid);
 uint64_t get_display_space_id(uint32_t did);
 int get_space_display_id(int sid);
 /////////////////////////////////////////////////
+bool space_db_load(struct sqldbal_db *db);
 struct Vector *get_space_window_ids_v(size_t space_id);
 struct Vector *get_space_ids_v();
 struct Vector *get_spaces_v();

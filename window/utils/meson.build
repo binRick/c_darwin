@@ -11,7 +11,7 @@ window_utils_dirs = [
   ]
 window_utils_deps = [
   c_stringfn_dep,
-  wildcardcmp_dep,
+  wildcardcmp_dep,sqldbal_dep,whereami_dep,core_utils_dep,
   parson_dep,
   space_utils_dep,
   log_dep,image_utils_dep,glib_dep,vips_dep,

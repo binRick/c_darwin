@@ -19,6 +19,7 @@
 #include "timestamp/timestamp.h"
 #include "window/utils/utils.h"
 #include "murmurhash.c/murmurhash.h"
+#include "layout/utils/utils.h"
 #include <libgen.h>
 #include <limits.h>
 #define HOTKEY_UTILS_HASH_SEED    212136436
@@ -170,6 +171,15 @@ char *get_homedir_yaml_config_file_path(){
 
 int execute_hotkey_config_key(struct key_t *key){
   return(handle_action(key->action_type, key->action));
+}
+
+struct hk_layout_t *hk_get_layout(struct hotkeys_config_t *cfg, char *name){
+  for (size_t i = 0; i < cfg->layouts_count; i++) {
+    if (strcmp(cfg->layouts[i].name, name) == 0) {
+      return(&(cfg->layouts[i]));
+    }
+  }
+  return(NULL);
 }
 
 struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key){
@@ -373,6 +383,37 @@ int minimize_application(void *APPLICATION_NAME){
 
 int fullscreen_application(void *APPLICATION_NAME){
   log_info("Fullscreen app %s", (char *)APPLICATION_NAME);
+  return(EXIT_SUCCESS);
+}
+
+int normalize_layout(void *LAYOUT){
+  char *n = (char*)LAYOUT;
+  char                    *config_path = get_homedir_yaml_config_file_path();
+  struct hotkeys_config_t *cfg         = load_yaml_config_file_path(config_path);
+  struct hk_layout_t *l = hk_get_layout(cfg, n);
+  log_info("normalizing layout \"%s\" using %s and app %s to width %f",n,l->name,l->app,l->width);
+  struct layout_request_t *req; struct layout_result_t *res;
+  req = layout_init_request();
+  req->debug = true;
+  req->mode = LAYOUT_MODE_HORIZONTAL;
+  log_debug("%lu",cfg->layouts[0].apps_count);
+  for(size_t i=0; i < cfg->layouts[0].apps_count;i++){
+    vector_push(req->ids_v,(void*)i);
+  }
+  req->max_width = get_display_width()/100;
+  req->max_height = get_display_height()/1;
+  req->master_width = (int)((float)(req->max_width) * (float)l->width);
+  res = layout_request(req);
+  /*
+  for(size_t i=0; i < cfg->layouts[0].apps_count;i++){
+    struct layout_content_result_t *c = (struct hk_layout_content_result_t*)        vector_get(res->contents_v,i);
+    Dbg(c->x,%lu);
+    Dbg(c->y,%lu);
+    Dbg(c->width,%lu);
+    Dbg(c->height,%lu);
+  }
+  */
+  free(res);
   return(EXIT_SUCCESS);
 }
 

@@ -9,6 +9,8 @@
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include <ApplicationServices/ApplicationServices.h>
+#include "sqldbal/src/sqldbal.h"
+#include "db/db.h"
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 static bool SPACE_UTILS_DEBUG_MODE = false;
@@ -47,6 +49,36 @@ struct Vector *get_space_ids_v(){
   }
 
   return(ids);
+}
+
+bool space_db_load(struct sqldbal_db *db){
+  struct Vector *v=get_spaces_v();
+  struct space_t *s;
+  int rc;
+  struct sqldbal_stmt      *stmt;
+  uint64_t ts = (uint64_t)(timestamp());
+  for(size_t i=0;i<vector_size(v);i++){
+    s = (struct space_t*)vector_get(v,i);
+    log_info("Loading Space #%lu/%lu> %d",i+1,vector_size(v),s->id);
+    rc = sqldbal_stmt_prepare(db,
+                            "INSERT INTO "TABLE_NAME_SPACES"(id, ts, is_current) VALUES(?, ?, ?)",
+                            -1,
+                            &stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 0, (uint64_t)(s->id));
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 1, ts);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 2, (uint64_t)(s->is_current));
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_execute(stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_close(stmt);  
+    assert(rc == SQLDBAL_STATUS_OK);
+
+  }
+  vector_release(v);
+  return(true);
 }
 
 struct Vector *get_space_non_minimized_window_ids_v(size_t space_id){

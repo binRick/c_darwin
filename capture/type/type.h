@@ -45,7 +45,7 @@ struct capture_image_request_t {
   struct Vector          *ids;
   int                    concurrency;
   int                    width, height;
-  bool                   compress, progress_bar_mode;
+  bool                   compress, progress_bar_mode, quantize_mode;
   enum capture_type_id_t type;
   enum image_type_id_t   format;
   struct capture_time_t  time;
@@ -105,6 +105,7 @@ struct compress_t {
   size_t                  id;
   struct capture_image_result_t *capture_result;
   unsigned long           started, dur;
+  bool quantize_mode;
   cbar_t *bar;
 };
 struct cap_t {
@@ -148,5 +149,6 @@ struct cgimage_args_t {
   int    width, height;
 };
 char *get_capture_type_name(enum capture_type_id_t type);
+struct Vector *db_tables_images(enum capture_type_id_t type, struct Vector *ids);
 struct Vector *capture_image(struct capture_image_request_t *req);
 #endif

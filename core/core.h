@@ -5,6 +5,7 @@
 #include "core/debug/debug.h"
 #include "core/image/image.h"
 #include "core/utils/utils.h"
+#include "layout/utils/utils.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>

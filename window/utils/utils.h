@@ -68,9 +68,11 @@ static const char *ax_error_str[] = {
 };
 static const char *window_levels[] = { "Base", "Minimum", "Desktop", "Backstop", "Normal", "Floating", "TornOffMenu", "Dock", "MainMenu", "Status", "ModalPanel", "PopUpMenu", "Dragging", "ScreenSaver", "Maximum", "Overlay", "Help", "Utility", "DesktopIcon", "Cursor", "AssistiveTechHigh" };
 ///////////////////////////////////////////////////
+struct sqldbal_db;
 int get_window_id_space_id(size_t window_id);
 bool get_pid_is_minimized(int pid);
 bool unminimize_window_id(size_t window_id);
+bool window_db_load(struct sqldbal_db *db);
 bool get_window_id_is_minimized(size_t window_id);
 struct Vector *get_window_ids_above_window(struct window_info_t *w);
 struct Vector *get_window_ids_below_window(struct window_info_t *w);
@@ -156,7 +158,7 @@ bool resize_window(struct window_info_t *w, const int WIDTH, const int HEIGHT);
 bool move_window(struct window_info_t *w, const int X, const int Y);
 struct window_info_t *get_focused_window();
 ProcessSerialNumber get_window_ProcessSerialNumber(struct window_info_t *w);
-int get_window_id_pid(int window_id);
+pid_t get_window_id_pid(size_t window_id);
 int get_window_id_level(size_t window_id);
 void print_all_window_items(FILE *rsp);
 struct window_info_t *get_window_id_info(size_t window_id);

@@ -20,7 +20,7 @@
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core-utils/core-utils.h"
-#include "window/db/db.h"
+#include "db/db.h"
 #include "font-utils/font-utils.h"
 #include "frameworks/frameworks.h"
 #include "hotkey-utils/hotkey-utils.h"
@@ -319,6 +319,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
+
       return skip_row;
     },
   },
@@ -411,9 +412,10 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
+      return skip_row;
       cur_display_id = get_current_display_id();
       cur_space_id   = get_current_space_id();
-      if (string_compare_skip_row(args->application_name,                                            w->name,                               args->exact_match,                        args->case_sensitive)) {
+      if (args->application_name && string_compare_skip_row(args->application_name,                                            w->name,                               args->exact_match,                        args->case_sensitive)) {
         skip_row = true;
       }
       if (args->application_name) {
@@ -589,7 +591,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 };
 
 #define BREAK_IF_ROW_LIMIT(TABLE, ARGS) \
-  if (args->limit >= 0 && (size_t)ft_row_count(table) > (size_t)args->limit) break;
+  if ((int)(args->limit) > 0 && (int)ft_row_count(table) > (int)(args->limit)) break;
 
 #define CONTINUE_IF_ROW_SKIP(SKIP) \
   if (SKIP) {                      \

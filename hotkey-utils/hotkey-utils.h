@@ -20,6 +20,8 @@ int hotkeys_exec_with_callback(void ( *cb )(char *));
 enum action_type_t {
   ACTION_TYPE_NONE,
   ////////////////////////////////////////////////////////
+  ACTION_TYPE_NORMALIZE_LAYOUT,
+  ////////////////////////////////////////////////////////
   ACTION_TYPE_ACTIVATE_APPLICATION,
   ACTION_TYPE_DEACTIVATE_APPLICATION,
   ACTION_TYPE_MINIMIZE_APPLICATION,
@@ -57,6 +59,18 @@ enum action_type_t {
 struct action_type_handler_t {
   int (*fxn)(void *);
 };
+struct hk_app_t {
+  const char *name;
+};
+struct hk_layout_t {
+  const char *app, *mode, *name;
+  const float width;
+  const int app_margins[4], content_margins[4];
+  const bool debug;
+  const int display;
+  const struct hk_app_t *apps;
+  size_t apps_count;
+};
 struct key_t {
   const char         *name, *key, *action;
   const char         **actions;
@@ -67,11 +81,13 @@ struct hotkeys_config_t {
   const char   *name, *todo_app;
   const int    todo_width;
   struct key_t *keys;
-  size_t       keys_count;
+  struct hk_layout_t *layouts;
+  size_t       keys_count, layouts_count;
 };
 //////////////////////////////////////
 static const cyaml_strval_t action_type_strings[] = {
   { "None",                                        ACTION_TYPE_NONE                                             },
+  { "NormalizeLayout",                         ACTION_TYPE_NORMALIZE_LAYOUT                             },
   { "ActivateApplication",                         ACTION_TYPE_ACTIVATE_APPLICATION                             },
   { "DeactivateApplication",                       ACTION_TYPE_DEACTIVATE_APPLICATION                           },
   { "MinimizeApplication",                         ACTION_TYPE_MINIMIZE_APPLICATION,                            },
@@ -137,6 +153,7 @@ char *get_homedir_yaml_config_file_path(void);
 struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path);
 size_t get_config_file_hash(char *CONFIG_FILE_PATH);
 int minimize_application(void *APPLICATION_NAME);
+int normalize_layout(void *LAYOUT);
 int activate_application(void *APPLICATION_NAME);
 int fullscreen_application(void *APPLICATION_NAME);
 int deactivate_application(void *APPLICATION_NAME);
@@ -185,12 +202,15 @@ GENERATE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(bottom, sixty);
 ////////////////////////////////////////////////////////////
 int handle_action(enum action_type_t action_type, void *action);
 struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key);
+struct hk_layout_t *hk_get_layout(struct hotkeys_config_t *cfg, char *name);
 int execute_hotkey_config_key(struct key_t *key);
 bool disable_hotkey_config_key(struct key_t *key);
 bool enable_hotkey_config_key(struct key_t *key);
 int run_hotkeys_server();
 //////////////////////////////////////
 static struct action_type_handler_t __attribute__((unused)) action_type_handlers[] = {
+////////////////////////////////////////////////////////////
+  [ACTION_TYPE_NORMALIZE_LAYOUT]   =                           { .fxn = normalize_layout,                             },
 ////////////////////////////////////////////////////////////
   [ACTION_TYPE_ACTIVATE_APPLICATION]   =                           { .fxn = activate_application,                             },
   [ACTION_TYPE_DEACTIVATE_APPLICATION] =                           { .fxn = deactivate_application,                           },

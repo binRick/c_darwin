@@ -523,9 +523,15 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
         vips_pngsave_buffer(v,&buf,&blen,"Q",100,NULL);
       break;
     case IMAGE_TYPE_PNG:
+      errno=0;
       v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
       if(v)
         vips_pngsave_buffer(v,&buf,&blen,"compression",9,NULL);
+      errno=0;
+      if(c->quantize_mode && !compress_png_buffer(buf,&blen)){
+        log_error("Failed to compress png buffer");
+      }
+
       break;
     case IMAGE_TYPE_TIFF:
       v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
@@ -542,7 +548,7 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
       char *m;
      if(v && blen>0 && buf && blen < c->len){
       free(c->pixels);
-      asprintf(&m,"✅ Compressed"
+      asprintf(&m,"\n✅ Compressed"
           " "
           AC_BLUE"%4s"AC_RESETALL
           " "
@@ -833,6 +839,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       c->bar           = req->bar;
       c->max_quality    = MAX_QUALITY;
       c->min_quality    = MIN_QUALITY;
+      c->quantize_mode    = req->quantize_mode;
       c->capture_result = r;
       chan_send(req->comp->chans[i%req->concurrency], (void *)c);
     }
@@ -889,6 +896,21 @@ done:
 } /* capture*/
 
 
+struct Vector *db_tables_images(enum capture_type_id_t type, struct Vector *ids){
+      struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+      req->ids = ids;
+      req->format         = IMAGE_TYPE_QOI;
+      req->compress         = false;
+      req->quantize_mode = false;
+      req->type = type;
+      req->progress_bar_mode = false;
+      req->width        = 300;
+      req->height       = 0;
+      req->time.dur     = 0;
+      req->time.started = timestamp();
+      Dbg(vector_size(req->ids),%lu);
+      return(capture_image(req));
+}
 
 
 ///////////////////////////////////////////////////////////////////////
