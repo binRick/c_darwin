@@ -61,13 +61,13 @@
     }                                                                     \
     exit(EXIT_SUCCESS);                                                   \
   }
-#define COMMAND(ICON, CMD, NAME, __COLOR__, DESC, FXN) \
-  [COMMAND_ ## CMD] = {                                \
-    .name        = NAME,                               \
-    .icon        = ICON,                               \
-    .color       = __COLOR__ AC_BOLD AC_DOTTED_UNDERLINE,                          \
-    .description = DESC,                               \
-    .fxn         = FXN                                 \
+#define COMMAND(ICON, CMD, NAME, __COLOR__, DESC, FXN)    \
+  [COMMAND_ ## CMD] = {                                   \
+    .name        = NAME,                                  \
+    .icon        = ICON,                                  \
+    .color       = __COLOR__ AC_BOLD AC_DOTTED_UNDERLINE, \
+    .description = DESC,                                  \
+    .fxn         = FXN                                    \
   },
 #define CREATE_STRING_COMMON_OPTION(OPTION, SHORT, LONG, DESC, NAME, DEST)  \
   [COMMON_OPTION_ ## OPTION] = ^ struct optparse_opt (struct args_t *args){ \
@@ -2603,10 +2603,12 @@ static void _command_capture_display(){
   args->capture_type = CAPTURE_TYPE_DISPLAY;
   return(_command_capture());
 }
+
 static void _command_capture_window(){
   args->capture_type = CAPTURE_TYPE_WINDOW;
   return(_command_capture());
 }
+
 static void _command_capture_space(){
   args->capture_type = CAPTURE_TYPE_SPACE;
   return(_command_capture());

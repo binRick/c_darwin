@@ -22,14 +22,14 @@ const cyaml_schema_value_t app_schema = {
   CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, struct hk_app_t, app_fields_schema),
 };
 const cyaml_schema_field_t layout_fields_schema[] = {
-  CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_POINTER, struct hk_layout_t, name,     0,           CYAML_UNLIMITED),
-  CYAML_FIELD_STRING_PTR("app",  CYAML_FLAG_POINTER, struct hk_layout_t, app,      0,           CYAML_UNLIMITED),
-  CYAML_FIELD_STRING_PTR("mode", CYAML_FLAG_POINTER, struct hk_layout_t, mode,     0,           CYAML_UNLIMITED),
-  CYAML_FIELD_INT("display",     CYAML_FLAG_DEFAULT, struct hk_layout_t, display),
-  CYAML_FIELD_INT("display_space",     CYAML_FLAG_DEFAULT, struct hk_layout_t, display_space),
-  CYAML_FIELD_FLOAT("width",     CYAML_FLAG_DEFAULT, struct hk_layout_t, width),
-  CYAML_FIELD_BOOL("debug",      CYAML_FLAG_DEFAULT, struct hk_layout_t, debug),
-  CYAML_FIELD_SEQUENCE("apps",   CYAML_FLAG_POINTER, struct hk_layout_t, apps,     &app_schema, 0,               CYAML_UNLIMITED),
+  CYAML_FIELD_STRING_PTR("name",   CYAML_FLAG_POINTER, struct hk_layout_t, name,           0,           CYAML_UNLIMITED),
+  CYAML_FIELD_STRING_PTR("app",    CYAML_FLAG_POINTER, struct hk_layout_t, app,            0,           CYAML_UNLIMITED),
+  CYAML_FIELD_STRING_PTR("mode",   CYAML_FLAG_POINTER, struct hk_layout_t, mode,           0,           CYAML_UNLIMITED),
+  CYAML_FIELD_INT("display",       CYAML_FLAG_DEFAULT, struct hk_layout_t, display),
+  CYAML_FIELD_INT("display_space", CYAML_FLAG_DEFAULT, struct hk_layout_t, display_space),
+  CYAML_FIELD_FLOAT("width",       CYAML_FLAG_DEFAULT, struct hk_layout_t, width),
+  CYAML_FIELD_BOOL("debug",        CYAML_FLAG_DEFAULT, struct hk_layout_t, debug),
+  CYAML_FIELD_SEQUENCE("apps",     CYAML_FLAG_POINTER, struct hk_layout_t, apps,           &app_schema, 0,               CYAML_UNLIMITED),
   CYAML_FIELD_END,
 };
 const cyaml_schema_value_t layout_schema = {

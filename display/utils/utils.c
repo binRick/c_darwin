@@ -252,15 +252,15 @@ int get_current_display_id(void){
 
 size_t get_display_index_id(int display_index){
   struct Vector *v = get_display_ids_v();
-  size_t id, display_id = 0;
-  for(size_t i = 0; display_id == 0 && i <vector_size(v);i++){
-    id = (size_t)(vector_get(v,i));
-    if(get_display_id_index(id) == display_index)
+  size_t        id, display_id = 0;
+
+  for (size_t i = 0; display_id == 0 && i < vector_size(v); i++) {
+    id = (size_t)(vector_get(v, i));
+    if (get_display_id_index(id) == display_index) {
       display_id = id;
+    }
   }
   return(display_id);
-
-
 }
 
 int get_display_id_index(size_t display_id){
