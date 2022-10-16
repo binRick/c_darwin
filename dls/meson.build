@@ -49,43 +49,85 @@ darwin_ls_link_args = [
 ]
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
+timeout = 15
 test_args = [
-  { 'name': 'List Up to 10 Spaces', 'command': 'spaces', 'args': ['--limit','10'], 'timeout': 5, },
-  { 'name': 'List Up to 10 Displays', 'command': 'displays', 'args': ['--limit','10'], 'timeout': 5,  },
+  { 'name': 'List Up to 10 Spaces', 'command': 'spaces', 'args': ['--limit','10'], 'timeout': 20, },
+  { 'name': 'List Up to 10 Displays', 'command': 'displays', 'args': ['--limit','10'], 'timeout': timeout,  },
   { 'name': 'List Up to 10 Installed Applications Sorted By Name Ascending', 'command': 'apps', 'args': ['--sort-by','name','--asc','--limit','10'],   'timeout': 30,},
   { 'name': 'List 10 Largest Fonts', 'command': 'fonts', 'args': ['--sort-by','size','--desc','--limit','10'],   'timeout': 30,},
-  { 'name': 'List 10 Newest Windows', 'command': 'windows', 'args': ['--sort-by','id','--desc','--limit','10'],   'timeout': 10,},
+  { 'name': 'List 10 Newest Windows', 'command': 'windows', 'args': ['--sort-by','id','--desc','--limit','10'],   'timeout': timeout,},
   { 'name': 'List Windows Not on Currently Focused Display', 'command': 'windows', 'args': ['--not-current-display'],   'timeout': 10,},
   { 'name': 'List Windows On Currently Focused Display', 'command': 'windows', 'args': ['--current-display'],   'timeout': 10,},
   { 'name': 'List Windows Not on Currently Focused Space', 'command': 'windows', 'args': ['--not-current-space'],   'timeout': 10,},
   { 'name': 'List Windows On Currently Focused Space', 'command': 'windows', 'args': ['--current-space'],   'timeout': 10,},
-  { 'name': 'List Minimized Windows', 'command': 'windows', 'args': ['--minimized'],   'timeout': 3,},
+  { 'name': 'List Minimized Windows', 'command': 'windows', 'args': ['--minimized'],   'timeout': timeout,},
   #  { 'name': 'List Non Minimized Windows', 'command': 'windows', 'args': ['--non-minimized'],   'timeout': 3,},
-  { 'name': 'List USB Devices', 'command': 'usb', 'args': [],   'timeout': 3,},
-  { 'name': 'List Monitors', 'command': 'monitors', 'args': [],   'timeout': 3,},
+  { 'name': 'List USB Devices', 'command': 'usb', 'args': [],   'timeout': timeout,},
+  { 'name': 'List Monitors', 'command': 'monitors', 'args': [],   'timeout': timeout,},
   { 'name': 'List Processes', 'command': 'processes', 'args': [],   'timeout': 30,},
-  { 'name': 'Copy Contents to Clipboard', 'command': 'clipboard', 'args': ['copy','--content','test123'],   'timeout': 10,},
-  { 'name': 'Paste Clipboard Contents', 'command': 'clipboard', 'args': ['paste'],   'timeout': 10,},
+  { 'name': 'Copy Contents to Clipboard', 'command': 'clipboard', 'args': ['copy','--content','test123'],   'timeout': timeout,},
+  { 'name': 'Paste Clipboard Contents', 'command': 'clipboard', 'args': ['paste'],   'timeout': timeout,},
   { 'name': 'List Kitty Processes', 'command': 'kittys', 'args': [],   'timeout': 10,},
   { 'name': 'List Alacritty Processes', 'command': 'alacrittys', 'args': [],   'timeout': 10,},
-  #{ 'name': 'Show Focused Window Info', 'command': 'focused', 'args': ['--window'],   'timeout': 3,},
-  #  { 'name': 'Show Focused Space Info', 'command': 'focused', 'args': ['--space'],   'timeout': 3,},
-  #{ 'name': 'Show Focused PID Info', 'command': 'focused', 'args': ['--pid'],   'timeout': 3,},
-  { 'name': 'Capture GIF Window','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--window','--all','--limit','1','--out','/tmp/dls-test/window-capture.gif','--formats','gif'], 'timeout': 5, },
-  { 'name': 'Capture PNG Window','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--window','--all','--limit','1','--out','/tmp/dls-test/window-capture.png','--formats','png'], 'timeout': 5, },
-  { 'name': 'Capture JPEG Window','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--window','--all','--limit','1','--out','/tmp/dls-test/window-capture.jpeg','--formats','jpeg'], 'timeout': 5, },
-  { 'name': 'Capture TIFF Window','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--window','--all','--limit','1','--out','/tmp/dls-test/window-capture.tiff','--formats','tiff'], 'timeout': 5, },
-  { 'name': 'Capture GIF Space','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--space','--all','--limit','1','--out','/tmp/dls-test/space-capture.gif','--formats','gif'], 'timeout': 5, },
-  { 'name': 'Capture PNG Space','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--space','--all','--limit','1','--out','/tmp/dls-test/space-capture.png','--formats','png'], 'timeout': 5, },
-  { 'name': 'Capture JPEG Space','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--space','--all','--limit','1','--out','/tmp/dls-test/space-capture.jpeg','--formats','jpeg'], 'timeout': 5, },
-  { 'name': 'Capture TIFF Space','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--space','--all','--limit','1','--out','/tmp/dls-test/space-capture.tiff','--formats','tiff'], 'timeout': 5, },
-  { 'name': 'Capture GIF Display','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--display','--all','--limit','1','--out','/tmp/dls-test/display-capture.gif','--formats','gif'], 'timeout': 5, },
-  { 'name': 'Capture PNG Display','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--display','--all','--limit','1','--out','/tmp/dls-test/display-capture.png','--formats','png'], 'timeout': 5, },
-  { 'name': 'Capture JPEG Display','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--display','--all','--limit','1','--out','/tmp/dls-test/display-capture.jpeg','--formats','jpeg'], 'timeout': 5, },
-  { 'name': 'Capture TIFF Display','command':'capture', 'args': ['--write','--dir','/tmp/dls-test','--display','--all','--limit','1','--out','/tmp/dls-test/display-capture.tiff','--formats','tiff'], 'timeout': 5, },
+  #  { 'name': 'Capture Windows','command':'capture', 'args': ['window','--write','--dir','/tmp/dls-test-windows','--all','--limit','5','--formats','all'], 'timeout': 15, },
+  #  { 'name': 'Capture Spaces','command':'capture', 'args': ['space','--write','--dir','/tmp/dls-test-spaces','--all','--limit','5','--formats','all'], 'timeout': 15, },
+  # { 'name': 'Capture Displays','command':'capture', 'args': ['display','--write','--dir','/tmp/dls-test-displays','--all','--limit','5','--formats','all'], 'timeout': 15, },
   #  { 'name': 'Extract Text Content from 2 Window Images Concurrently', 'command':'extract', 'args': ['--window','--all','--limit','2','--concurrency','2'], 'timeout': 60, },
   #  { 'name': 'Open System Preferences and Configure Security', 'command':'security', 'args': ['--retries','3'], 'timeout': 30, },
   ]
+CaptureCommands = [
+  { 'name':'Window','command':'window','plural':'Windows'},
+  { 'name':'Display','command':'display','plural':'Displays'},
+  { 'name':'Space','command':'space','plural':'Spaces'},
+  ]
+CaptureFormats = ['png','gif','webp','jpeg','qoi','tiff','all']
+CaptureWidths = [
+  {'name': '200 Pixels Wide','arg':'--width','value':'200','slug':'200x'},
+  ]
+CaptureModes = [
+  { 'name': 'Uncompressed', 'flags': [], },
+  { 'name': 'Compressed', 'flags': ['-z'], },
+  ]
+foreach w : CaptureWidths
+foreach c : CaptureCommands
+foreach m : CaptureModes
+foreach format : CaptureFormats
+  name = ' '.join(
+            'Capture',
+            w['name'],
+            format.to_upper(),
+            c['name'],
+            m['name'],
+            )
+  dir = '/'.join(
+            '/tmp',
+            'dls-tests',
+            c['name'].to_lower(),
+            format.to_lower(),
+            w['slug'],
+            m['name'].to_lower().replace(' ','-'),
+      )
+  args = [
+      c['command'],
+      '--display',
+      '--no-progress',
+      '--purge','--write','--dir',dir,
+      '--all','--concurrency','20',
+      '--formats',format,
+      w['arg'],w['value'],
+      m['flags'],
+  ]
+  test_args += {
+    'name': name.strip(),
+    'command':'capture',
+    'args': args,
+    'timeout':30,
+    }
+endforeach
+endforeach
+endforeach
+endforeach
+
 xxxx = [
   ['app-icns-file','-P','/Applications/kitty.app'],
   ['get-icon-png','-P','/Applications/kitty.app','-s','512','-f','/tmp/kitty-icon-512.png'],

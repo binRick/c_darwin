@@ -20,6 +20,8 @@
 #include "window/utils/utils.h"
 #include "murmurhash.c/murmurhash.h"
 #include "layout/utils/utils.h"
+#include "capture/type/type.h"
+#include "capture/utils/utils.h"
 #include <libgen.h>
 #include <limits.h>
 #define HOTKEY_UTILS_HASH_SEED    212136436
@@ -393,11 +395,189 @@ int hk_get_layout_name_index(char *name){
   for(size_t i = 0; r == -1 && i < cfg->layouts_count;i++)
     if(strcmp(cfg->layouts[i].name,name)==0)
       r=i;
-  free(cfg);
   return(r);
 }
 
-bool hk_print_layout(char *name){
+struct layout_result_t *hk_render_layout_name(char *name){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  int I = hk_get_layout_name_index(name);
+  if(I<0){
+    log_error("Layout not found");
+    return(0);
+  }
+  struct layout_request_t *req; struct layout_result_t *res;
+  req = layout_init_request();
+  req->debug = HOTKEY_UTILS_DEBUG_MODE;
+  req->mode = LAYOUT_MODE_HORIZONTAL;
+  req->max_width = get_display_width();
+  req->max_height = get_display_height();
+  req->master_width = (int)((float)(req->max_width) * (float)(cfg->layouts[I].width)/100);
+  req->master_height = req->max_height;
+  req->qty = cfg->layouts[I].apps_count;
+  res = layout_request(req);
+  free(req);
+  return(res);
+}
+
+struct hk_dur_t {
+  unsigned long dur, started;
+};
+
+struct hk_image_t {
+  CGImageRef img;
+  unsigned char *qoi;
+  size_t len, qoi_len;
+  uint32_t width,height;
+  uint32_t qoi_width,qoi_height;
+ struct hk_dur_t capture, convert;
+};
+struct hk_rendered_app_t {
+  size_t window_id;
+  pid_t pid;
+  char *name;
+  uint32_t x,y,width,height;
+  struct hk_image_t image;
+};
+struct hk_rendered_area_t {
+  size_t index, id;
+  uint32_t width,height;
+  struct hk_image_t image;
+  size_t len;
+};
+
+struct hk_render_t {
+  struct hk_rendered_area_t *display;
+  struct hk_rendered_area_t *space;
+  struct hk_rendered_app_t *master;
+  struct hk_rendered_app_t **items;
+};
+
+#define ENSURE_LAYOUT_INDEX(I){ do{\
+  if(I<0){\
+    log_error("Layout not found");\
+    return(false);\
+  }\
+} while(0); }
+
+bool hk_show_rendered_layout_name(char *name){
+  struct hotkeys_config_t *cfg = load_yaml_config_file_path(get_homedir_yaml_config_file_path());
+  struct layout_result_t *res = hk_render_layout_name(name);
+  int I = hk_get_layout_name_index(name);
+  ENSURE_LAYOUT_INDEX(I);
+  layout_print_result(res);
+  struct hk_render_t *r = calloc(1,sizeof(struct hk_render_t));
+  r->master = calloc(1,sizeof(struct hk_rendered_app_t));
+  r->space = calloc(1,sizeof(struct hk_rendered_area_t));
+  r->display = calloc(1,sizeof(struct hk_rendered_area_t));
+  r->space->index = cfg->layouts[I].display_space;
+  r->display->index = cfg->layouts[I].display;
+  r->display->id = get_display_index_id(r->display->index);
+  if(r->display->id<1){
+    log_error("Failed to find display id for index %d",cfg->layouts[I].display);
+  }
+  r->display->image.capture.started = timestamp();
+  r->display->image.img= capture_type_capture(CAPTURE_TYPE_DISPLAY, r->display->id);
+  r->display->image.width = CGImageGetWidth(r->display->image.img);
+  r->display->image.height = CGImageGetHeight(r->display->image.img);
+  r->display->image.capture.dur = timestamp() - r->display->image.capture.started;
+  r->display->image.convert.started = timestamp();
+  r->display->image.qoi = save_cgref_to_qoi_memory(r->display->image.img,&(r->display->image.qoi_len));
+  r->display->image.convert.dur = timestamp() - r->display->image.convert.started;
+  r->display->width = get_display_id_width(r->display->id);
+  r->display->height = get_display_id_height(r->display->id);
+  r->master->name = cfg->layouts[I].app;
+  r->master->window_id = get_first_window_id_by_name(r->master->name);
+  r->master->image.len = r->master->image.qoi_len;
+  if(r->master->window_id<1){
+    log_error("Failed to find window id for %s",cfg->layouts[I].app);
+  }
+  r->master->width = res->master->width;
+  r->master->height = res->master->height;
+  r->master->x = res->master->x;
+  r->master->y = res->master->y;
+  r->master->image.capture.started = timestamp();
+  r->master->image.img= capture_type_capture(CAPTURE_TYPE_WINDOW, r->master->window_id);
+  r->master->image.width = CGImageGetWidth(r->master->image.img);
+  r->master->image.height = CGImageGetHeight(r->master->image.img);
+  r->master->image.capture.dur = timestamp() - r->master->image.capture.started;
+  r->master->image.convert.started = timestamp();
+  r->master->image.qoi = save_cgref_to_qoi_memory(r->master->image.img,&(r->master->image.qoi_len));
+  r->master->image.convert.dur = timestamp() - r->master->image.convert.started;
+  r->master->image.len = r->master->image.qoi_len;
+  size_t len=r->display->image.qoi_len+r->master->image.qoi_len;
+  r->items = calloc(1,sizeof(struct hk_rendered_app_t));
+  for(size_t i=0;i<res->qty;i++){
+    r->items[i] = calloc(1,sizeof(struct hk_rendered_app_t));
+    r->items[i]->window_id = get_first_window_id_by_name(cfg->layouts[I].apps[i].name);
+    r->items[i]->name = cfg->layouts[I].apps[i].name;
+    if(r->items[i]->window_id<1){
+      log_error("Failed to find window id for %s",r->items[i]->name);
+    }
+    r->items[i]->width = res->items[i]->width;
+    r->items[i]->height = res->items[i]->height;
+    r->items[i]->x = res->items[i]->x;
+    r->items[i]->y = res->items[i]->y;
+  r->items[i]->image.capture.started = timestamp();
+  r->items[i]->image.img= capture_type_capture(CAPTURE_TYPE_WINDOW, r->items[i]->window_id);
+  r->items[i]->image.width = CGImageGetWidth(r->items[i]->image.img);
+  r->items[i]->image.height = CGImageGetHeight(r->items[i]->image.img);
+  r->items[i]->image.capture.dur = timestamp() - r->items[i]->image.capture.started;
+  r->items[i]->image.convert.started = timestamp();
+  r->items[i]->image.qoi = save_cgref_to_qoi_memory(r->items[i]->image.img,&(r->items[i]->image.qoi_len));
+  r->items[i]->image.convert.dur = timestamp() - r->items[i]->image.convert.started;
+  len += r->items[i]->image.qoi_len;
+  }
+  log_info(
+      "Total Size: %s"
+      "\nRendering Master %s Window ID %lu to %dx%d @ %dx%d"
+      "\n\tMaster Image: %dx%d in %s"
+      "\n\tMaster QOI: %s in %s"
+      "\nDisplay Image: %dx%d in %s"
+      "\n\tDisplay QOI: %s in %s"
+      "\nDisplay: Index:%lu|ID:%lu|%dx%d|Space: Index:%lu|ID:%lu|"
+      "",
+      bytes_to_string(len),
+      r->master->name,r->master->window_id,
+      r->master->width,r->master->height,
+      r->master->x,r->master->y,
+      r->master->image.width,r->master->image.height,
+      milliseconds_to_string(r->master->image.capture.dur),
+      bytes_to_string(r->master->image.qoi_len),
+      milliseconds_to_string(r->display->image.convert.dur),
+      r->display->image.width,
+      r->display->image.height,
+      milliseconds_to_string(r->display->image.capture.dur),
+      bytes_to_string(r->display->image.qoi_len),
+      milliseconds_to_string(r->display->image.convert.dur),
+      r->display->index,
+      r->display->id,
+      r->display->width,
+      r->display->height,
+      r->space->index,
+      r->space->id
+        );
+  for(size_t i=0;i<res->qty;i++){
+    log_info("Rendering App %s Window ID %lu to %dx%d @ %dx%d"
+      "%dx%d %s in %s|%s",
+      r->items[i]->name,
+      r->items[i]->window_id,
+      r->items[i]->width,
+      r->items[i]->height,
+      r->items[i]->x,
+      r->items[i]->y,
+      r->items[i]->image.width,
+      r->items[i]->image.height,
+ bytes_to_string(     r->items[i]->image.qoi_len),
+      milliseconds_to_string(r->items[i]->image.capture.dur),
+      milliseconds_to_string(r->items[i]->image.convert.dur)
+
+      );
+  }
+
+  return(true);
+}
+
+bool hk_show_layout(char *name){
   struct hotkeys_config_t *cfg         = hk_get_config();
   int I = hk_get_layout_name_index(name);
   if(I<0){
@@ -417,23 +597,11 @@ bool hk_print_layout(char *name){
       cfg->layouts[I].display,
       cfg->layouts[I].apps_count,
         "");
-  for(size_t i = 0; i < cfg->layouts[I].apps_count;i++){
-    printf("  - %s\n",cfg->layouts[I].apps[i].name);
-  }
-  struct layout_request_t *req; struct layout_result_t *res;
-  req = layout_init_request();
-  req->debug = true;
-  req->mode = LAYOUT_MODE_HORIZONTAL;
-  req->max_width = get_display_width();
-  req->max_height = get_display_height();
-  req->master_width = (int)((float)(req->max_width) * (float)(cfg->layouts[I].width)/100);
-  req->master_width = req->max_height;
-  for(size_t i=0; i < cfg->layouts[I].apps_count;i++){
-    req->qty++;
-  }
-  res = layout_request(req);
-  free(req);free(res);
-    return(true);
+    for(size_t i = 0; i < cfg->layouts[I].apps_count;i++){
+      printf("  - %s\n",cfg->layouts[I].apps[i].name);
+    }
+    struct layout_result_t *res = hk_render_layout_name(name);
+    return(layout_print_result(res));
   }
 
 bool hk_list_layouts(){

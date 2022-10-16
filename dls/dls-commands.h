@@ -3,24 +3,60 @@
 #define LS_WIN_COMMANDS_H
 #include "dls/dls.h"
 ////////////////////////////////////////////
+#define ICON_LIST "💈"
+#define ICON_SHOW "🐝"
+#define ICON_TEST "🔔"
+#define ICON_RENDER "🍺"
+#define ICON_APPLY         "🧢"
+#define ICON_LAYOUT         "💥"
+#define ICON_INIT         "🚛"
+#define ICON_LOAD         "🚛"
+#define ICON_TABLE         "🚛"
+#define ICON_ICON         "🚛"
+#define ICON_WINDOW         "🚛"
+#define ICON_MOVE         "🚛"
+#define ICON_STICKY         "🚛"
+#define ICON_UNSTICKY         "🚛"
+#define ICON_RESIZE         "🚛"
+#define ICON_INFO         "🚛"
+#define ICON_ROW         "🚛"
+#define ICON_IDS         "🚛"
+#define ICON_SERVER         "🚛"
+#define ICON_DB         "🔋"
+#define ICON_CAPTURE         "🔋"
+#define ICON_SPACE         "🔋"
+#define ICON_DISPLAY         "🔋"
+#define ICON_EXTRACT         "🔋"
 #define COLOR_CAPTURE_MODE            "\x1b[38;2;50;252;142m" AC_BOLD AC_CURLY_UNDERLINE
 #define COLOR_CAPTURE_WINDOW_MODE     "\x1b[38;2;151;252;50m" AC_ITALIC
 #define COLOR_CAPTURE_DISPLAY_MODE    "\x1b[38;2;97;50;50m" AC_ITALIC
 #define COLOR_CAPTURE_SPACE_MODE      "\x1b[38;2;189;163;50m" AC_ITALIC
-#define COLOR_FOCUS                   "\x1b[38;2;151;252;50m" AC_UNDERLINE
-#define COLOR_SHOW                    "\x1b[38;2;50;252;142m" AC_UNDERLINE
-#define COLOR_LIST                    "\x1b[38;2;50;175;252m" AC_UNDERLINE
-#define COLOR_SPACE                   "\x1b[38;2;97;252;50m" AC_UNDERLINE
-#define COLOR_INFO                    "\x1b[38;2;189;50;252m" AC_UNDERLINE
-#define COLOR_DEBUG                   "\x1b[38;2;252;50;127m" AC_UNDERLINE
-#define COLOR_WINDOW                  "\x1b[38;2;252;163;50m" AC_UNDERLINE
-#define COLOR_MOVE                    "\x1b[38;2;252;83;50m" AC_UNDERLINE
-#define COLOR_START                   "\x1b[38;2;62;252;50m" AC_UNDERLINE
-#define COLOR_CAPTURE                 "\x1b[38;2;50;252;50m" AC_UNDERLINE
-#define COLOR_GET                     "\x1b[38;2;252;50;252m" AC_UNDERLINE
-#define COLOR_SET                     "\x1b[38;2;252;163;252m" AC_UNDERLINE
-#define COLOR_HELP                    "\x1b[38;2;50;50;252m" AC_UNDERLINE
-#define COLOR_ICNS                    "\x1b[38;2;252;252;252m" AC_UNDERLINE
+#define COLOR_FOCUS                   "\x1b[38;2;151;252;50m" 
+#define COLOR_ID                   "\x1b[38;2;162;194;208m" 
+#define COLOR_CAPTURE                   "\x1b[38;2;162;194;208m" 
+#define COLOR_INIT                   "\x1b[38;2;162;194;208m" 
+#define COLOR_LOAD                   "\x1b[38;2;0;255;34m" 
+#define COLOR_TABLE                   "\x1b[38;2;126;94;82m" 
+#define COLOR_ROW                   "\x1b[38;2;80;100;127m"
+#define COLOR_SERVER                   "\x1b[38;2;12;255;12m" 
+#define COLOR_LIST                    "\x1b[38;2;50;175;252m" 
+#define COLOR_TEST                    "\x1b[38;2;243;233;217m" 
+#define COLOR_SHOW                    "\x1b[38;2;25;25;112m" 
+#define COLOR_APPLY                   "\x1b[38;2;153;0;102m" 
+#define COLOR_LAYOUT                  "\x1b[38;2;211;221;228m" 
+#define COLOR_RENDER                  "\x1b[38;2;0;130;161m" 
+#define COLOR_ICON                  "\x1b[38;2;0;251;255m" 
+#define COLOR_DISPLAY                  "\x1b[38;2;0;251;255m" 
+#define COLOR_SPACE                   "\x1b[38;2;97;252;50m" 
+#define COLOR_INFO                    "\x1b[38;2;189;50;252m"
+#define COLOR_DEBUG                   "\x1b[38;2;252;50;127m" 
+#define COLOR_WINDOW                  "\x1b[38;2;252;163;50m" 
+#define COLOR_MOVE                    "\x1b[38;2;252;83;50m" 
+#define COLOR_START                   "\x1b[38;2;62;252;50m" 
+#define COLOR_GET                     "\x1b[38;2;252;50;252m" 
+#define COLOR_SET                     "\x1b[38;2;252;163;252m" 
+#define COLOR_HELP                    "\x1b[38;2;50;50;252m" 
+#define COLOR_ICNS                    "\x1b[38;2;252;252;252m" 
 typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 typedef char (^common_option_description)(void *sorts);
 enum common_option_group_t {
@@ -123,6 +159,7 @@ enum common_option_name_t {
   COMMON_OPTION_WINDOW_WIDTH,
   COMMON_OPTION_CONCURRENCY,
   COMMON_OPTION_LIMIT,
+  COMMON_OPTION_ICON_LIST,
   COMMON_OPTION_ALL_MODE,
   COMMON_OPTION_WINDOW_HEIGHT,
   COMMON_OPTION_WINDOW_WIDTH_GROUP,
@@ -198,6 +235,9 @@ enum command_type_t {
   COMMAND_WINDOW_SPACE,
   COMMAND_WINDOW_NOT_ALL_SPACES,
   COMMAND_WINDOW,
+  COMMAND_CAPTURE_WINDOW,
+  COMMAND_CAPTURE_SPACE,
+  COMMAND_CAPTURE_DISPLAY,
   COMMAND_LIST,
   COMMAND_SPACE,
   COMMAND_SPACE_LIST,
@@ -225,13 +265,20 @@ enum command_type_t {
   COMMAND_USBS,
   COMMAND_MONITORS,
   COMMAND_FONTS,
+  COMMAND_ICON_LIST,
   COMMAND_CLIPBOARD,
   COMMAND_KITTYS,
   COMMAND_ALACRITTYS,
   COMMAND_CAPTURE,
   COMMAND_QUANT,
   COMMAND_ANIMATE,
+  COMMAND_ANIMATE_WINDOW,
+  COMMAND_ANIMATE_SPACE,
+  COMMAND_ANIMATE_DISPLAY,
   COMMAND_EXTRACT,
+  COMMAND_EXTRACT_WINDOW,
+  COMMAND_EXTRACT_SPACE,
+  COMMAND_EXTRACT_DISPLAY,
   COMMAND_SAVE_APP_ICON_PNG,
   COMMAND_SET_APP_ICON_PNG,
   COMMAND_SAVE_APP_ICON_ICNS,

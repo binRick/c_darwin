@@ -30,6 +30,7 @@ struct display_t {
   struct Vector *space_ids_v, *window_ids_v;
 };
 int get_display_id_index(size_t display_id);
+size_t get_display_index_id(int display_index);
 struct Vector *get_display_id_window_ids_v(uint32_t display_id);
 struct Vector *get_displays_v();
 int get_display_id_width(int display_id);

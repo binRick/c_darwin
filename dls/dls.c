@@ -5,6 +5,19 @@ static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 static bool                   DARWIN_LS_DEBUG_MODE = false;
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
+#define CREATE_SUBCOMMAND(NAME, SUBCOMMANDS)                                     \
+  {                                                                              \
+    .name        = cmds[COMMAND_ ## NAME].name,                                  \
+    .description = cmds[COMMAND_ ## NAME].description,                           \
+    .function    = cmds[COMMAND_ ## NAME].fxn,                                   \
+    .about       = get_command_about(COMMAND_ ## NAME),                          \
+    .options     = (struct optparse_opt[]){                                      \
+      COMMON_OPTIONS_ ## NAME                                                    \
+      { END_OF_OPTIONS },                                                        \
+    },                                                                           \
+    .subcommands = (struct optparse_cmd[]) { SUBCOMMANDS { END_OF_SUBCOMMANDS }, \
+    }                                                                            \
+  }
 #define COMMON_OPTIONS_BASE \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
 #define COMMON_OPTIONS_UI                                          \
@@ -71,11 +84,13 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   COMMON_OPTIONS_ID
 #define COMMON_OPTIONS_LAYOUT_LIST
 #define COMMON_OPTIONS_LAYOUT_TEST
-#define COMMON_OPTIONS_LAYOUT_SHOW \
+#define COMMON_OPTIONS_LAYOUT_SHOW\
   common_options_b[COMMON_OPTION_LAYOUT_NAME](args),
-#define COMMON_OPTIONS_LAYOUT_RENDER
-#define COMMON_OPTIONS_LAYOUT_APPLY
-#define COMMON_OPTIONS_LAYOUT \
+#define COMMON_OPTIONS_LAYOUT_RENDER\
+  common_options_b[COMMON_OPTION_LAYOUT_NAME](args),
+#define COMMON_OPTIONS_LAYOUT_APPLY\
+  common_options_b[COMMON_OPTION_LAYOUT_NAME](args),
+#define COMMON_OPTIONS_LAYOUT\
   COMMON_OPTIONS_UI
 #define COMMON_OPTIONS_TABLE                         \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
@@ -102,11 +117,13 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   common_options_b[COMMON_OPTION_HIDE_COLUMNS](args),     \
   common_options_b[COMMON_OPTION_SHOW_COLUMNS](args),
 #define COMMON_OPTIONS_CAPTURE          \
+  COMMON_OPTIONS_BASE                   
+#define COMMON_OPTIONS_CAPTURE_COMMON          \
   COMMON_OPTIONS_BASE                   \
-  COMMON_OPTIONS_CAPTURE_TYPE           \
   COMMON_OPTIONS_UI                     \
   COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS \
   COMMON_OPTIONS_CAPTURE_OPTIONS        \
+  COMMON_OPTIONS_ID \
   COMMON_OPTIONS_SIZE
 #define COMMON_OPTIONS_EXTRACT          \
   COMMON_OPTIONS_BASE                   \
@@ -117,7 +134,6 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 #define COMMON_OPTIONS_PROCESSES \
   COMMON_OPTIONS_TABLE
 #define COMMON_OPTIONS_CREATE_SPACE \
-  COMMON_OPTIONS_CAPTURE            \
   COMMON_OPTIONS_TABLE
 #define COMMON_OPTIONS_WINDOW_IDS \
   common_options_b[COMMON_OPTION_WINDOW_IDS](args),
@@ -193,6 +209,20 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   common_options_b[COMMON_OPTION_ID](args),          \
   common_options_b[COMMON_OPTION_WINDOW_X](args),    \
   common_options_b[COMMON_OPTION_WINDOW_Y](args),
+#define COMMON_OPTIONS_ICON 
+#define COMMON_OPTIONS_ICON_LIST
+#define COMMON_OPTIONS_CAPTURE_WINDOW\
+  COMMON_OPTIONS_CAPTURE_COMMON
+#define COMMON_OPTIONS_CAPTURE_SPACE\
+  COMMON_OPTIONS_CAPTURE_COMMON
+#define COMMON_OPTIONS_CAPTURE_DISPLAY\
+  COMMON_OPTIONS_CAPTURE_COMMON
+#define COMMON_OPTIONS_ANIMATE_WINDOW
+#define COMMON_OPTIONS_ANIMATE_SPACE
+#define COMMON_OPTIONS_ANIMATE_DISPLAY
+#define COMMON_OPTIONS_EXTRACT_WINDOW
+#define COMMON_OPTIONS_EXTRACT_SPACE
+#define COMMON_OPTIONS_EXTRACT_DISPLAY
 //#########################################
 #define SUBCOMMANDS_HOTKEYS          \
   CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
@@ -220,6 +250,21 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 #define SUBCOMMANDS_SPACE          \
   CREATE_SUBCOMMAND(SPACE_LIST, ), \
   CREATE_SUBCOMMAND(SPACE_CREATE, ),
+#define SUBCOMMANDS_ICON_LIST
+#define SUBCOMMANDS_ICON\
+  CREATE_SUBCOMMAND(ICON_LIST, ),
+#define SUBCOMMANDS_ANIMATE       \
+  CREATE_SUBCOMMAND(ANIMATE_WINDOW, ),\
+  CREATE_SUBCOMMAND(ANIMATE_DISPLAY, ),\
+  CREATE_SUBCOMMAND(ANIMATE_SPACE, ),
+#define SUBCOMMANDS_CAPTURE       \
+  CREATE_SUBCOMMAND(CAPTURE_WINDOW, ),\
+  CREATE_SUBCOMMAND(CAPTURE_DISPLAY, ),\
+  CREATE_SUBCOMMAND(CAPTURE_SPACE, ),
+#define SUBCOMMANDS_EXTRACT       \
+  CREATE_SUBCOMMAND(EXTRACT_WINDOW, ),\
+  CREATE_SUBCOMMAND(EXTRACT_DISPLAY, ),\
+  CREATE_SUBCOMMAND(EXTRACT_SPACE, ),
 #define SUBCOMMANDS_DB               \
   CREATE_SUBCOMMAND(DB_INIT, ),      \
   CREATE_SUBCOMMAND(DB_TEST, ),      \
@@ -229,19 +274,6 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   CREATE_SUBCOMMAND(DB_ROWS, ),      \
   CREATE_SUBCOMMAND(DB_TABLE_IDS, ), \
 //#########################################
-#define CREATE_SUBCOMMAND(NAME, SUBCOMMANDS)                                     \
-  {                                                                              \
-    .name        = cmds[COMMAND_ ## NAME].name,                                  \
-    .description = cmds[COMMAND_ ## NAME].description,                           \
-    .function    = cmds[COMMAND_ ## NAME].fxn,                                   \
-    .about       = get_command_about(COMMAND_ ## NAME),                          \
-    .options     = (struct optparse_opt[]){                                      \
-      COMMON_OPTIONS_ ## NAME                                                    \
-      { END_OF_OPTIONS },                                                        \
-    },                                                                           \
-    .subcommands = (struct optparse_cmd[]) { SUBCOMMANDS { END_OF_SUBCOMMANDS }, \
-    }                                                                            \
-  }
 struct normalized_argv_t {
   char          *mode, *executable;
   struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
@@ -323,9 +355,6 @@ int main(int argc, char *argv[]) {
       },
 //////////////////////////////////////////
       CREATE_SUBCOMMAND(WINDOWS, ),
-      CREATE_SUBCOMMAND(CAPTURE, ),
-      CREATE_SUBCOMMAND(EXTRACT, ),
-      CREATE_SUBCOMMAND(ANIMATE, ),
       CREATE_SUBCOMMAND(PROCESSES, ),
       CREATE_SUBCOMMAND(FOCUS, ),
       CREATE_SUBCOMMAND(FOCUSED, ),
@@ -337,6 +366,10 @@ int main(int argc, char *argv[]) {
       CREATE_SUBCOMMAND(HOTKEYS, SUBCOMMANDS_HOTKEYS),
       CREATE_SUBCOMMAND(WINDOW, SUBCOMMANDS_WINDOW),
       CREATE_SUBCOMMAND(SPACE, SUBCOMMANDS_SPACE),
+      CREATE_SUBCOMMAND(ICON, SUBCOMMANDS_ICON),
+      CREATE_SUBCOMMAND(CAPTURE, SUBCOMMANDS_CAPTURE),
+      CREATE_SUBCOMMAND(ANIMATE, SUBCOMMANDS_ANIMATE),
+      CREATE_SUBCOMMAND(EXTRACT, SUBCOMMANDS_EXTRACT),
 #undef CREATE_SUBCOMMAND
       {
         .name        = cmds[COMMAND_ALACRITTYS].name,

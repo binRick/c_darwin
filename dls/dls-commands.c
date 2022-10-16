@@ -65,7 +65,7 @@
   [COMMAND_ ## CMD] = {                                \
     .name        = NAME,                               \
     .icon        = ICON,                               \
-    .color       = __COLOR__,                          \
+    .color       = __COLOR__ AC_BOLD AC_DOTTED_UNDERLINE,                          \
     .description = DESC,                               \
     .fxn         = FXN                                 \
   },
@@ -183,7 +183,7 @@ static const struct capture_mode_t {
       struct capture_image_request_t *req   = calloc(1,                                                    sizeof(struct capture_image_request_t));
       req->ids               = ids_v;
       req->concurrency       = args->concurrency;
-      req->type              = CAPTURE_TYPE_WINDOW;
+      req->type              = args->capture_type;
       req->compress          = args->compress;
       req->progress_bar_mode = true;
       req->format            = (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, 0);
@@ -297,6 +297,7 @@ static void debug_dls_arguments(){
   log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
   log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
   log_debug("write dir :  %s", args->write_directory);
+  log_debug("Capture Type :  %d (%s)", args->capture_type, get_capture_type_name(args->capture_type));
   log_debug("compress :  %s", args->compress?"Yes":"No");
   log_debug("width :  %d", args->width);
   log_debug("height :  %d", args->height);
@@ -324,6 +325,10 @@ COMMAND_PROTOTYPE(window_unsticky)
 COMMAND_PROTOTYPE(window_all_spaces)
 COMMAND_PROTOTYPE(window_not_all_spaces)
 COMMAND_PROTOTYPE(hotkeys_server)
+COMMAND_PROTOTYPE(icon_list)
+COMMAND_PROTOTYPE(capture_window)
+COMMAND_PROTOTYPE(capture_space)
+COMMAND_PROTOTYPE(capture_display)
 COMMAND_PROTOTYPE(db_init)
 COMMAND_PROTOTYPE(db_tables)
 COMMAND_PROTOTYPE(db_load)
@@ -1162,30 +1167,31 @@ struct cmd_t       cmds[] = {
     .description = "Dock Info",
     .fxn         = (*_command_dock)
   },
-  COMMAND("🍎", DB, "db", AC_RED, "Database Operations", 0)
-  COMMAND("🐜", DB_INIT, "init", AC_RED, "Initialize Database", *_command_db_init)
-  COMMAND("💮", DB_TEST, "test", AC_YELLOW, "Database Test", *_command_db_test)
-  COMMAND("💮", DB_LOAD, "load", AC_GREEN, "Database Load", *_command_db_load)
-  COMMAND("🚛", DB_TABLES, "tables", AC_RED, "Database Tables", *_command_db_tables)
-  COMMAND("💮", DB_INFO, "info", AC_RED, "Database Info", *_command_db_info)
-  COMMAND("💮", DB_ROWS, "rows", AC_RED, "Database Info", *_command_db_rows)
-  COMMAND("💮", DB_TABLE_IDS, "ids", AC_RED, "Table IDs", *_command_db_table_ids)
-  COMMAND("💮", HOTKEYS_SERVER, "server", AC_RED, "Hotkeys Server", *_command_hotkeys_server)
-  COMMAND("💮", HOTKEYS_LIST, "list", AC_RED, "List Hotkeys", *_command_list_hotkey)
-  COMMAND("💮", LAYOUT, "layout", AC_RED, "Layouts", 0)
-  COMMAND("💮", LAYOUT_LIST, "list", AC_RED, "List Layouts", *_command_layout_list)
-  COMMAND("💮", LAYOUT_TEST, "test", AC_RED, "Test Layout", *_command_layout_test)
-  COMMAND("💮", LAYOUT_APPLY, "apply", AC_RED, "Apply Layout", *_command_layout_apply)
-  COMMAND("💮", LAYOUT_SHOW, "show", AC_RED, "Show Layout", *_command_layout_show)
-  COMMAND("💮", LAYOUT_RENDER, "render", AC_RED, "Render Layout", *_command_layout_render)
-  COMMAND("💮", LIST, "list", AC_RED, "List", 0)
-  COMMAND("💮", ICON, "icon", AC_RED, "Icon", 0)
-  COMMAND("💮", WINDOW, "window", AC_RED, "Window", 0)
-  COMMAND("💮", WINDOW_LIST, "list", AC_RED, "List Windows", *_command_list_window)
-  COMMAND("💮", WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
-  COMMAND("💮", WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
-  COMMAND("💮", WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
-  COMMAND("💮", WINDOW_RESIZE, "resize", AC_RED, "Resize Window", *_command_resize_window)
+  COMMAND(ICON_DB, DB, "db", AC_RED, "Database Manager", 0)
+  COMMAND(ICON_INIT, DB_INIT, "init", COLOR_INIT, "Initialize Database", *_command_db_init)
+  COMMAND(ICON_TEST, DB_TEST, "test", COLOR_TEST, "Database Test", *_command_db_test)
+  COMMAND(ICON_LOAD, DB_LOAD, "load", COLOR_LOAD, "Database Load", *_command_db_load)
+  COMMAND(ICON_TABLE, DB_TABLES, "tables", COLOR_TABLE, "Database Tables", *_command_db_tables)
+  COMMAND(ICON_INFO, DB_INFO, "info", COLOR_INFO, "Database Info", *_command_db_info)
+  COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
+  COMMAND(ICON_IDS, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
+  COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkeys Server", *_command_hotkeys_server)
+  COMMAND(ICON_LIST, HOTKEYS_LIST, "list", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
+  COMMAND(ICON_LIST, ICON_LIST, "list", COLOR_LIST, "List Icons", *_command_icon_list)
+  COMMAND(ICON_LAYOUT, LAYOUT, "layout", COLOR_LAYOUT, "Layout Manager", 0)
+  COMMAND(ICON_LIST, LAYOUT_LIST, "list", COLOR_LIST, "List Layouts", *_command_layout_list)
+  COMMAND(ICON_TEST, LAYOUT_TEST, "test", COLOR_TEST, "Test Layout", *_command_layout_test)
+  COMMAND(ICON_APPLY, LAYOUT_APPLY, "apply", COLOR_APPLY, "Apply Layout", *_command_layout_apply)
+  COMMAND(ICON_SHOW, LAYOUT_SHOW, "show", COLOR_SHOW, "Show Layout", *_command_layout_show)
+  COMMAND(ICON_RENDER, LAYOUT_RENDER, "render", COLOR_RENDER, "Render Layout", *_command_layout_render)
+  COMMAND(ICON_LIST, LIST, "list", COLOR_LIST, "List", 0)
+  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)
+  COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
+  COMMAND(ICON_LIST, WINDOW_LIST, "list", AC_RED, "List Windows", *_command_list_window)
+  COMMAND(ICON_MOVE, WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
+  COMMAND(ICON_STICKY, WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
+  COMMAND(ICON_STICKY, WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
+  COMMAND(ICON_RESIZE, WINDOW_RESIZE, "resize", AC_RED, "Resize Window", *_command_resize_window)
   COMMAND("💮", WINDOW_ALL_SPACES, "all-spaces", AC_RED, "Window All Spaces", *_command_window_all_spaces)
   COMMAND("💮", WINDOW_NOT_ALL_SPACES, "not-all-spaces", AC_RED, "Window Not All Spaces", *_command_window_not_all_spaces)
   COMMAND("💮", WINDOW_MINIMIZE, "minimize", AC_RED, "Minimize Window", *_command_minimize_window)
@@ -1194,13 +1200,19 @@ struct cmd_t       cmds[] = {
   COMMAND("💮", SPACE, "space", AC_RED, "Spaces", 0)
   COMMAND("💮", SPACE_CREATE, "create", AC_RED, "Create Space", 0)
   COMMAND("💮", SPACE_LIST, "list", AC_RED, "List Spaces", 0)
+  COMMAND(ICON_CAPTURE, CAPTURE, "capture", COLOR_CAPTURE, "Capture Image", 0)
+  COMMAND(ICON_WINDOW, CAPTURE_WINDOW, "window", COLOR_WINDOW, "Capture Window", *_command_capture_window)
+  COMMAND(ICON_SPACE, CAPTURE_SPACE, "space", COLOR_SPACE, "Capture Space", *_command_capture_space)
+  COMMAND(ICON_DISPLAY, CAPTURE_DISPLAY, "display", COLOR_DISPLAY, "Capture Display", *_command_capture_display)
+  COMMAND(ICON_WINDOW, ANIMATE_WINDOW, "window", COLOR_WINDOW, "Animate Window", *_command_animate)
+  COMMAND(ICON_SPACE, ANIMATE_SPACE, "space", COLOR_SPACE, "Animate Space", *_command_animate)
+  COMMAND(ICON_DISPLAY, ANIMATE_DISPLAY, "display", COLOR_DISPLAY, "Animate Display", *_command_animate)
+  COMMAND(ICON_EXTRACT, EXTRACT, "extract", COLOR_WINDOW, "Extract Text", *_command_extract)
+  COMMAND(ICON_WINDOW, EXTRACT_WINDOW, "window", COLOR_WINDOW, "Extract Window", *_command_extract)
+  COMMAND(ICON_SPACE, EXTRACT_SPACE, "space", COLOR_SPACE, "Extract Space", *_command_extract)
+  COMMAND(ICON_DISPLAY, EXTRACT_DISPLAY, "display", COLOR_DISPLAY, "Extract Display", *_command_extract)
 #undef COMMAND_PROTOTYPE
 #undef COMMAND
-  [COMMAND_CAPTURE] =             {
-    .name        = "capture",            .icon = "💤", .color = COLOR_CAPTURE,
-    .description = "Capture Screenshot",
-    .fxn         = (*_command_capture)
-  },
   [COMMAND_ANIMATE] =             {
     .name        = "animate",          .icon = "💤", .color = COLOR_CAPTURE,
     .description = "Animated Capture",
@@ -1866,7 +1878,7 @@ static void _command_animate(){
     args->id = (size_t)vector_get(ids, x);
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
     req->concurrency       = args->concurrency;
-    req->type              = CAPTURE_TYPE_WINDOW;
+    req->type              = args->capture_type;
     req->progress_bar_mode = args->progress_bar_mode;
     req->compress          = args->compress;
     req->format            = IMAGE_TYPE_GIF;
@@ -2577,11 +2589,28 @@ static void _command_hotkeys_server(){
   exit((hotkeys_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
+static void _command_icon_list(){
+  exit(EXIT_SUCCESS);
+}
+
 static void _command_db_init(){
   COMMAND_DB_COMMON();
   exit(EXIT_SUCCESS);
 }
 #undef COMMAND_DB_COMMON
+
+static void _command_capture_display(){
+  args->capture_type = CAPTURE_TYPE_DISPLAY;
+  return(_command_capture());
+}
+static void _command_capture_window(){
+  args->capture_type = CAPTURE_TYPE_WINDOW;
+  return(_command_capture());
+}
+static void _command_capture_space(){
+  args->capture_type = CAPTURE_TYPE_SPACE;
+  return(_command_capture());
+}
 
 static void _command_list_alacritty(){
   struct Vector *_alacritty_pids = get_alacritty_pids();
@@ -2634,11 +2663,11 @@ static void _command_layout_apply(){
 }
 
 static void _command_layout_render(){
-  exit(EXIT_SUCCESS);
+  exit((hk_show_rendered_layout_name(args->layout_name))? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_layout_show(){
-  exit((hk_print_layout(args->layout_name))? EXIT_SUCCESS : EXIT_FAILURE);
+  exit((hk_show_layout(args->layout_name))? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_layout_list(){

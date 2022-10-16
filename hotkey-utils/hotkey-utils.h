@@ -67,7 +67,7 @@ struct hk_layout_t {
   const float           width;
   const int             app_margins[4], content_margins[4];
   const bool            debug;
-  const int             display;
+  const int             display, display_space;
   const struct hk_app_t *apps;
   size_t                apps_count;
 };
@@ -247,5 +247,6 @@ static struct action_type_handler_t __attribute__((unused)) action_type_handlers
 char *get_hotkey_type_action_name(enum action_type_t action);
 struct Vector *get_config_keys_v();
 bool hk_list_layouts();
-bool hk_print_layout(char *name);
+bool hk_show_layout(char *name);
+bool hk_show_rendered_layout_name(char *name);
 #endif

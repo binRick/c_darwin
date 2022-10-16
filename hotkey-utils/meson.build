@@ -13,7 +13,8 @@ hotkey_utils_deps = [
   core_dep,
   keylogger_dep,layout_utils_dep,
   display_utils_dep,
-  path_module_dep,window_utils_dep,app_utils_dep,
+  path_module_dep,window_utils_dep,app_utils_dep,vips_dep,
+  capture_utils_dep,capture_type_dep,capture_dep,image_utils_dep,
 ]
 
 hotkey_utils_c_args = [

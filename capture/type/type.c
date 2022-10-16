@@ -553,7 +553,7 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
     char *m;
     if (v && blen > 0 && buf && blen < c->len) {
       free(c->pixels);
-      asprintf(&m, "\n✅ Compressed"
+      asprintf(&m, "✅ Compressed"
                " "
                AC_BLUE "%4s"AC_RESETALL
                " "
@@ -576,7 +576,7 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
                );
       fflush(stdout);
       printf(
-        "\t%s\n",
+        "%s\n",
         m
         );
       fflush(stdout);
