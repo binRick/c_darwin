@@ -1,11 +1,49 @@
 #pragma once
 #ifndef DLS_COMMANDS_C
 #define DLS_COMMANDS_C
+#include "c_vector/vector/vector.h"
+#include "db/db.h"
+#include "space/utils/utils.h"
+#include "capture/utils/utils.h"
+#include "fancy-progress/src/fancy-progress.h"
+#include "image/utils/utils.h"
+#include "capture/animate/animate.h"
+#include "capture/type/type.h"
+#include "system/utils/utils.h"
+#include "process/utils/utils.h"
+#include "clamp/clamp.h"
+#include "dls/dls-commands.h"
+#include "dls/dls.h"
+#include "hotkey-utils/hotkey-utils.h"
+#include "httpserver-utils/httpserver-utils.h"
+#include "httpserver/httpserver.h"
+#include "keylogger/keylogger.h"
+#include "kitty/msg/msg.h"
+#include "pasteboard/pasteboard.h"
+#include "table/sort/sort.h"
+#include "table/utils/utils.h"
+#include "tesseract/utils/utils.h"
+#include "vips/vips.h"
+#include "wildcardcmp/wildcardcmp.h"
+#include "window/utils/utils.h"
+#include "capture/save/save.h"
+#define MAX_CONCURRENCY   25
+#define MAX_FRAME_RATE    30
+#define MAX_LIMIT         99
+#define MAX_DURATION      300
+#define MAX_WINDOW_SIZE   4000
+#define MAX_DURATION      300
+#define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
+#define CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE 300
+#define MIN_FILE_EXTENSION_LENGTH 3
 #define OPEN_SECURITY_RETRY_INTERVAL_MS      1000
 #define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
 #define LIST_SUBCOMMAND(CAPS,LOWER,PLURAL,FXN)\
   [COMMAND_##CAPS] = { .name = LOWER, .icon = "🥑", .color = COLOR_LIST, .description = "List " PLURAL, .fxn  = *FXN, }
 #define COMMAND_DB_COMMON(){ do { initialize_args(args); } while(0); }
+#define CREATE_CHECK_COMMAND_PROTOTYPE(NAME,ARGS) static void _check_##NAME(ARGS);
 #define LIST_HANDLER(NAME)                                                \
   static void _command_list_ ## NAME(){                                   \
     initialize_args(args);\
@@ -74,51 +112,11 @@
           log_debug(M, ## __VA_ARGS__); \
         }                               \
       } while (0); }
-#include "c_vector/vector/vector.h"
-#include "db/db.h"
-#include "space/utils/utils.h"
-#include "capture/utils/utils.h"
-#include "fancy-progress/src/fancy-progress.h"
-#include "image/utils/utils.h"
-#include "capture/animate/animate.h"
-#include "capture/type/type.h"
-#include "system/utils/utils.h"
-#include "process/utils/utils.h"
-#include "clamp/clamp.h"
-#include "dls/dls-commands.h"
-#include "dls/dls.h"
-#include "hotkey-utils/hotkey-utils.h"
-#include "httpserver-utils/httpserver-utils.h"
-#include "httpserver/httpserver.h"
-#include "keylogger/keylogger.h"
-#include "kitty/msg/msg.h"
-#include "pasteboard/pasteboard.h"
-#include "table/sort/sort.h"
-#include "table/utils/utils.h"
-#include "tesseract/utils/utils.h"
-#include "vips/vips.h"
-#include "wildcardcmp/wildcardcmp.h"
-#include "window/utils/utils.h"
-#include "capture/save/save.h"
-#define MAX_CONCURRENCY   25
-#define MAX_FRAME_RATE    30
-#define MAX_LIMIT         99
-#define MAX_DURATION      300
-#define MAX_WINDOW_SIZE   4000
-#define MAX_DURATION      300
-#define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
-#define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
-#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
-#define CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE 300
-#define MIN_FILE_EXTENSION_LENGTH 3
-enum arg_clamp_type_t {
-  ARG_CLAMP_TYPE_WINDOW_SIZE,
-  ARG_CLAMP_TYPE_FRAME_RATE,
-  ARG_CLAMP_TYPE_LIMIT,
-  ARG_CLAMP_TYPE_CONCURRENCY,
-  ARG_CLAMP_TYPE_DURATION,
-  ARG_CLAMP_TYPES_QTY,
-};
+/////////////////////////////////////////////////////////////////////////////////////
+static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
+static void debug_dls_arguments();
+static bool initialize_args(struct args_t *ARGS);
+static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 static const struct arg_clamp_t {
   signed long min, max;
 } arg_clamps[] = {
@@ -128,62 +126,6 @@ static const struct arg_clamp_t {
  [ARG_CLAMP_TYPE_DURATION] =    {.min =  1, .max = MAX_DURATION},
  [ARG_CLAMP_TYPE_LIMIT] =       {.min =  1, .max = MAX_LIMIT},
 };
-static bool initialize_args(struct args_t *ARGS){
-  if (args->clear_screen == true) {
-    fprintf(stdout, "%s", AC_CLS);
-  }
-  ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS,concurrency,ARG_CLAMP_TYPE_CONCURRENCY);
-  ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS,duration_seconds,ARG_CLAMP_TYPE_DURATION);
-  ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS,frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
-  ARGS->width       = CLAMP_ARG_TYPE(ARGS,width, ARG_CLAMP_TYPE_WINDOW_SIZE);
-  ARGS->height       = CLAMP_ARG_TYPE(ARGS,height, ARG_CLAMP_TYPE_WINDOW_SIZE);
-  ARGS->limit      = CLAMP_ARG_TYPE(ARGS,limit, ARG_CLAMP_TYPE_LIMIT);
-  ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
-  if(args->db_tables_qty==1 && strcmp(args->db_tables[0],"all")==0){
-    struct Vector *tbls = db_tables_v();
-    if(args->db_tables)free(args->db_tables);
-    args->db_tables = calloc(vector_size(tbls),sizeof(char*));
-    args->db_tables_qty=vector_size(tbls);
-    for(size_t i = 0; i <vector_size(tbls);i++){
-      char *tbl = (char*)vector_get(tbls,i);
-      args->db_tables[i] = tbl;
-    }
-  }
-  if(!ARGS->format_ids_v)
-    ARGS->format_ids_v = vector_new();
-  if(!ARGS->formats_v)
-    ARGS->formats_v = vector_new();
-  if(vector_size(ARGS->format_ids_v)==0){
-    vector_push(ARGS->format_ids_v,(void*)(IMAGE_TYPE_PNG));
-  }
-  return(true);
-}
-static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
-static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
-static void debug_dls_arguments(){
-  if (!IS_COMMAND_DEBUG_MODE)
-    return;
-  log_debug("All Mode:  %s", args->all_mode?"Yes":"No");
-  log_debug("display :  %s", args->display_mode?"Yes":"No");
-  log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
-  log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
-  log_debug("write dir :  %s", args->write_directory);
-  log_debug("compress :  %s", args->compress?"Yes":"No");
-  log_debug("width :  %d", args->width);
-  log_debug("height :  %d", args->height);
-  log_debug("concurrency :  %d", args->concurrency);
-  log_debug("write dir :  %s", args->write_directory);
-  log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
-  log_debug("Format IDs :  %lu", vector_size(args->format_ids_v));
-  log_debug("Formats :  %lu", vector_size(args->formats_v));
-  log_debug("limit :  %d", args->limit);
-  log_debug("frame rate :  %d", args->frame_rate);
-  log_debug("Duration sec :  %d", args->duration_seconds);
-  log_debug("Window IDs:  %s", args->windowids);
-  log_debug("window id :  %d", args->id);
-  log_debug("display :  %s", args->display_mode?"Yes":"No");
-  log_debug("compress :  %s", args->compress?"Yes":"No");
-}
 static const struct {
   struct Vector *(*get_structs_v_function)(void);
   size_t (^get_struct_index_pk)(struct Vector *structs, size_t index);
@@ -207,23 +149,6 @@ static const struct {
     },
   },
 };
-static struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
-  struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
-  for(size_t i = 0; i <vector_size(structs) && vector_size(ids) < limit;i++)
-    vector_push(ids,(void*)capture_type_getters[id].get_struct_index_pk(structs,i));
-  vector_release(structs);
-  return(ids);
-}
-static struct Vector *get_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id){
-  struct Vector *ids = NULL;
-  if (all) {
-    ids = get_all_capture_type_ids(type, limit);
-  }else if (args->id > 0) {
-    ids = vector_new();
-    vector_push(ids, (void*)(size_t)(id));
-  }
-  return(ids);
-}
 static const struct capture_mode_t {
   unsigned long started, dur;
   struct Vector *ids, *requests, *results;
@@ -296,6 +221,77 @@ static const struct capture_mode_t {
       },
   },
 };
+static bool initialize_args(struct args_t *ARGS){
+  if (args->clear_screen == true) {
+    fprintf(stdout, "%s", AC_CLS);
+  }
+  ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS,concurrency,ARG_CLAMP_TYPE_CONCURRENCY);
+  ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS,duration_seconds,ARG_CLAMP_TYPE_DURATION);
+  ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS,frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
+  ARGS->width       = CLAMP_ARG_TYPE(ARGS,width, ARG_CLAMP_TYPE_WINDOW_SIZE);
+  ARGS->height       = CLAMP_ARG_TYPE(ARGS,height, ARG_CLAMP_TYPE_WINDOW_SIZE);
+  ARGS->limit      = CLAMP_ARG_TYPE(ARGS,limit, ARG_CLAMP_TYPE_LIMIT);
+  ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
+  if(args->db_tables_qty==1 && strcmp(args->db_tables[0],"all")==0){
+    struct Vector *tbls = db_tables_v();
+    if(args->db_tables)free(args->db_tables);
+    args->db_tables = calloc(vector_size(tbls),sizeof(char*));
+    args->db_tables_qty=vector_size(tbls);
+    for(size_t i = 0; i <vector_size(tbls);i++){
+      char *tbl = (char*)vector_get(tbls,i);
+      args->db_tables[i] = tbl;
+    }
+  }
+  if(!ARGS->format_ids_v)
+    ARGS->format_ids_v = vector_new();
+  if(!ARGS->formats_v)
+    ARGS->formats_v = vector_new();
+  if(vector_size(ARGS->format_ids_v)==0){
+    vector_push(ARGS->format_ids_v,(void*)(IMAGE_TYPE_PNG));
+  }
+  return(true);
+}
+static struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
+  struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
+  for(size_t i = 0; i <vector_size(structs) && vector_size(ids) < limit;i++)
+    vector_push(ids,(void*)capture_type_getters[id].get_struct_index_pk(structs,i));
+  vector_release(structs);
+  return(ids);
+}
+static struct Vector *get_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id){
+  struct Vector *ids = NULL;
+  if (all) {
+    ids = get_all_capture_type_ids(type, limit);
+  }else if (args->id > 0) {
+    ids = vector_new();
+    vector_push(ids, (void*)(size_t)(id));
+  }
+  return(ids);
+}
+static void debug_dls_arguments(){
+  if (!IS_COMMAND_DEBUG_MODE)
+    return;
+  log_debug("All Mode:  %s", args->all_mode?"Yes":"No");
+  log_debug("display :  %s", args->display_mode?"Yes":"No");
+  log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
+  log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
+  log_debug("write dir :  %s", args->write_directory);
+  log_debug("compress :  %s", args->compress?"Yes":"No");
+  log_debug("width :  %d", args->width);
+  log_debug("height :  %d", args->height);
+  log_debug("concurrency :  %d", args->concurrency);
+  log_debug("write dir :  %s", args->write_directory);
+  log_debug("progress bar enabled:  %s", args->progress_bar_mode?"Yes":"No");
+  log_debug("Format IDs :  %lu", vector_size(args->format_ids_v));
+  log_debug("Formats :  %lu", vector_size(args->formats_v));
+  log_debug("limit :  %d", args->limit);
+  log_debug("frame rate :  %d", args->frame_rate);
+  log_debug("Duration sec :  %d", args->duration_seconds);
+  log_debug("Window IDs:  %s", args->windowids);
+  log_debug("window id :  %d", args->id);
+  log_debug("display :  %s", args->display_mode?"Yes":"No");
+  log_debug("compress :  %s", args->compress?"Yes":"No");
+}
 ////////////////////////////////////////////
   COMMAND_PROTOTYPE(layout_list)
   COMMAND_PROTOTYPE(layout_apply)
@@ -312,56 +308,56 @@ static const struct capture_mode_t {
   COMMAND_PROTOTYPE(db_test)
   COMMAND_PROTOTYPE(db_rows)
   COMMAND_PROTOTYPE(db_table_ids)
-static void _command_move_window();
-static void _command_window_id_info();
-static void _command_resize_window();
-static void _command_minimize_window();
-static void _command_unminimize_window();
-static void _command_set_window_space();
-static void _command_set_space();
-static void _check_write_directory(void);
-static void _command_copy();
-static void _command_paste();
-static void _command_image_conversions();
-static void _command_set_space_index();
-static void _command_list_display();
-static void _command_focus();
-static void _command_focused();
-static void _command_list_space();
-static void _command_create_space(void);
-static void _command_menu_bar();
-static void _command_list_usb();
-static void _command_httpserver();
-static void _command_dock();
-static void _command_list_process();
-static void _command_list_app();
-static void _command_list_monitor();
-static void _command_list_font();
-static void _command_list_window();
-static void _command_list_kitty();
-static void _command_list_alacritty();
-static void _command_capture();
-static void _command_animate();
-static void _command_extract();
-static void _command_layout(void);
-static void _command_save_app_icon_to_png();
-static void _command_write_app_icon_from_png();
-static void _command_save_app_icon_to_icns();
-static void _command_write_app_icon_icns();
-static void _command_icon_info();
-static void _command_app_info_plist_path();
-static void _command_app_icns_path();
-static void _command_parse_xml_file();
-static void _command_grayscale_png();
-static void _command_clear_icons_cache();
-static void _command_pid_is_minimized();
-static void _command_window_is_minimized();
-static void _command_window_layer();
-static void _command_window_level();
-static void _command_open_security();
-static void _command_list_hotkey();
+  COMMAND_PROTOTYPE(animate)
+  COMMAND_PROTOTYPE(app_icns_path)
+  COMMAND_PROTOTYPE(app_info_plist_path)
+  COMMAND_PROTOTYPE(capture)
+  COMMAND_PROTOTYPE(clear_icons_cache)
+  COMMAND_PROTOTYPE(copy)
+  COMMAND_PROTOTYPE(create_space)
+  COMMAND_PROTOTYPE(dock)
+  COMMAND_PROTOTYPE(extract)
+  COMMAND_PROTOTYPE(focus)
+  COMMAND_PROTOTYPE(focused)
+  COMMAND_PROTOTYPE(grayscale_png)
+  COMMAND_PROTOTYPE(httpserver)
+  COMMAND_PROTOTYPE(icon_info)
+  COMMAND_PROTOTYPE(image_conversions)
+  COMMAND_PROTOTYPE(layout)
+  COMMAND_PROTOTYPE(list_alacritty)
+  COMMAND_PROTOTYPE(list_app)
+  COMMAND_PROTOTYPE(list_display)
+  COMMAND_PROTOTYPE(list_font)
+  COMMAND_PROTOTYPE(list_hotkey)
+  COMMAND_PROTOTYPE(list_kitty)
+  COMMAND_PROTOTYPE(list_monitor)
+  COMMAND_PROTOTYPE(list_process)
+  COMMAND_PROTOTYPE(list_space)
+  COMMAND_PROTOTYPE(list_usb)
+  COMMAND_PROTOTYPE(list_window)
+  COMMAND_PROTOTYPE(menu_bar)
+  COMMAND_PROTOTYPE(minimize_window)
+  COMMAND_PROTOTYPE(move_window)
+  COMMAND_PROTOTYPE(open_security)
+  COMMAND_PROTOTYPE(parse_xml_file)
+  COMMAND_PROTOTYPE(paste)
+  COMMAND_PROTOTYPE(pid_is_minimized)
+  COMMAND_PROTOTYPE(resize_window)
+  COMMAND_PROTOTYPE(save_app_icon_to_icns)
+  COMMAND_PROTOTYPE(save_app_icon_to_png)
+  COMMAND_PROTOTYPE(set_space)
+  COMMAND_PROTOTYPE(set_space_index)
+  COMMAND_PROTOTYPE(set_window_space)
+  COMMAND_PROTOTYPE(unminimize_window)
+  COMMAND_PROTOTYPE(window_id_info)
+  COMMAND_PROTOTYPE(window_is_minimized)
+  COMMAND_PROTOTYPE(window_layer)
+  COMMAND_PROTOTYPE(window_level)
+  COMMAND_PROTOTYPE(write_app_icon_from_png)
+  COMMAND_PROTOTYPE(write_app_icon_icns)
 ////////////////////////////////////////////
-static void _check_id(size_t id);
+CREATE_CHECK_COMMAND_PROTOTYPE(write_directory,void)
+CREATE_CHECK_COMMAND_PROTOTYPE(id,size_t id)
 static void _check_formats(char *formats);
 static void _check_sort_direction_desc(void);
 static void _check_capture_window_mode(void);
@@ -390,13 +386,39 @@ static void _check_icon_sizes(char *strs);
 static void _check_pid(void);
 static void _set_windowids(char *windowids);
 ////////////////////////////////////////////
-common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
-/////////////////////////////////////////////////////
+common_option_b    common_options_b[] = {
 /////////////////////////////////////////////////////
   COMMON_OPTION_CAPTURE_MODE(DISPLAY,"display","Display"),
   COMMON_OPTION_CAPTURE_MODE(SPACE,"space","Space"),
   COMMON_OPTION_CAPTURE_MODE(WINDOW,"window","Window"),
 #undef COMMON_OPTION_CAPTURE_MODE
+  COMMON_OPTION_LIST(SHOW_COLUMNS,'K',"show", "Show Columns","COLUMN-NAMES",show_columns,show_columns_qty)
+  COMMON_OPTION_LIST(HIDE_COLUMNS,'H',"hide", "Hide Columns","COLUMN-NAMES",hide_columns,hide_columns_qty)
+  COMMON_OPTION_LIST(DB_TABLES,'t',"tables","Database Tables","TABLE-NAMES",db_tables,db_tables_qty)
+#undef COMMON_OPTION_LIST
+  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,'C',"clear","Clear Screen",clear_screen)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,0,"not-current-space","Windows not on Currently Focused Space only",not_current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,0,"current-space","Windows on Currently Focused Space only",current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,0,"not-current-display","Windows not on Currently Focused Display only",not_current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_DISPLAY,0,"current-display","Windows on Currently Focused Display only",current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(PURGE_WRITE_DIRECTORY_BEFORE_WRITE,0,"purge","Purge Contents of Write Directory Before any Writes. Must Prefix --dir",purge_write_directory_before_write)
+  CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,'Q',"quantize","Enable Quantized Compression",quantize_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,'A',"all","All IDs",all_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,0,"not-minimized","Show Non Minimized Only",not_minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,0,"minimized","Show Minimized Only",minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,0,"clear-icons-cache","Clear Icons Cache",clear_icons_cache)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,0,"non-duplicate","Show Non Duplicate Fonts",non_duplicate)
+  CREATE_BOOLEAN_COMMAND_OPTION(DUPLICATE,0,"duplicate","Show Duplicate Fonts",duplicate)
+  CREATE_BOOLEAN_COMMAND_OPTION(CASE_SENSITIVE,0,"case-sensitive","Case Sensitive Match",case_sensitive)
+  CREATE_BOOLEAN_COMMAND_OPTION(EXACT_MATCH,'e',"exact-match","Exact Match",exact_match)
+  CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,'d',"debug","Enable Debug Mode",debug_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,'v',"verbose","Enable Verbose Mode",verbose_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,'z',"compress","Enable Compression",compress)
+  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,0,"grayscale","Enable Grayscale Mode",grayscale_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,'D',"display","Display Result",display_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,0,"write","Write Results",write_images_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,'p',"progress","Enable Progress Bar",progress_bar_mode)
+#undef CREATE_BOOLEAN_COMMAND_OPTION
 /////////////////////////////////////////////////////
   [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                                 {
     return((struct optparse_opt)                                                                            {
@@ -479,10 +501,6 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  COMMON_OPTION_LIST(SHOW_COLUMNS,'K',"show", "Show Columns","COLUMN-NAMES",show_columns,show_columns_qty)
-  COMMON_OPTION_LIST(HIDE_COLUMNS,'H',"hide", "Hide Columns","COLUMN-NAMES",hide_columns,hide_columns_qty)
-  COMMON_OPTION_LIST(DB_TABLES,'t',"tables","Database Tables","TABLE-NAMES",db_tables,db_tables_qty)
-#undef COMMON_OPTION_LIST
   [COMMON_OPTION_SORT_APP_KEYS] = ^ struct optparse_opt (struct args_t *args)                               {
     return((struct optparse_opt)                                                                            {
       .short_name = 'S',
@@ -555,29 +573,6 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
       .arg_dest = &(args->pid),
     });
   },
-  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,'C',"clear","Clear Screen",clear_screen)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,0,"not-current-space","Windows not on Currently Focused Space only",not_current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,0,"current-space","Windows on Currently Focused Space only",current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,0,"not-current-display","Windows not on Currently Focused Display only",not_current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_DISPLAY,0,"current-display","Windows on Currently Focused Display only",current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(PURGE_WRITE_DIRECTORY_BEFORE_WRITE,0,"purge","Purge Contents of Write Directory Before any Writes. Must Prefix --dir",purge_write_directory_before_write)
-  CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,'Q',"quantize","Enable Quantized Compression",quantize_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,'A',"all","All IDs",all_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,0,"not-minimized","Show Non Minimized Only",not_minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,0,"minimized","Show Minimized Only",minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,0,"clear-icons-cache","Clear Icons Cache",clear_icons_cache)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,0,"non-duplicate","Show Non Duplicate Fonts",non_duplicate)
-  CREATE_BOOLEAN_COMMAND_OPTION(DUPLICATE,0,"duplicate","Show Duplicate Fonts",duplicate)
-  CREATE_BOOLEAN_COMMAND_OPTION(CASE_SENSITIVE,0,"case-sensitive","Case Sensitive Match",case_sensitive)
-  CREATE_BOOLEAN_COMMAND_OPTION(EXACT_MATCH,'e',"exact-match","Exact Match",exact_match)
-  CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,'d',"debug","Enable Debug Mode",debug_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,'v',"verbose","Enable Verbose Mode",verbose_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,'z',"compress","Enable Compression",compress)
-  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,0,"grayscale","Enable Grayscale Mode",grayscale_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,'D',"display","Display Result",display_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,0,"write","Write Results",write_images_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,'p',"progress","Enable Progress Bar",progress_bar_mode)
-#undef CREATE_BOOLEAN_COMMAND_OPTION
   [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args)                {
     return((struct optparse_opt)                                                                            {
       .short_name = 'h',
@@ -966,7 +961,7 @@ common_option_b    common_options_b[COMMON_OPTION_NAMES_QTY + 1] = {
   },
 };
 ////////////////////////////////////////////
-struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
+struct check_cmd_t check_cmds[] = {
   [CHECK_COMMAND_WRITE_DIRECTORY] =               {
     .fxn           = (void (*)(void))(*_check_write_directory),
     .arg_data_type = DATA_TYPE_STR,
@@ -1074,7 +1069,7 @@ struct check_cmd_t check_cmds[CHECK_COMMAND_TYPES_QTY + 1] = {
   [CHECK_COMMAND_TYPES_QTY] =           { 0},
 };
 
-struct cmd_t       cmds[COMMAND_TYPES_QTY + 1] = {
+struct cmd_t       cmds[] = {
   [COMMAND_CLIPBOARD] =           {
     .name = "clipboard",           .icon = "☯", .color = COLOR_WINDOW, .description = "Clipboard",
   },

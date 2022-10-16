@@ -10,16 +10,7 @@ cache_utils_include_dirs = [
 ]
 
 cache_utils_deps = [
-  ansi_codes_dep,
-  c_vector_dep,reproc_dep,which_dep,tempdir_dep,
-  c_fsio_dep,iowow_dep,murmurhash_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
-  string_utils_dep,
+  core_dep,
 ]
 
 cache_utils_c_args = [

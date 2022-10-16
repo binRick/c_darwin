@@ -10,17 +10,7 @@ systemprofiler_include_dirs = [
 ]
 
 systemprofiler_deps = [
-  ansi_codes_dep,
-  c_vector_dep,reproc_dep,which_dep,
-  c_fsio_dep,
-  libspinner_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
-  tempdir_dep,iowow_dep,parson_dep,
+  core_dep,
 ]
 
 systemprofiler_c_args = [

@@ -10,26 +10,18 @@ tesseract_utils_include_dirs = [
 ]
 
 tesseract_utils_deps = [
+  core_dep,
   pasteboard_dep,
   mouse_utils_dep,keyboard_utils_dep,
-  core_utils_dep, core_image_dep,ansi_utils_dep,
-  ansi_codes_dep,capture_utils_dep,tempdir_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_utils_dep, core_image_dep,
+  capture_utils_dep,
   tesseract_dep,
-  leptonica_dep,wildcardcmp_dep,
-  c_workqueue_dep,chan_dep,
   space_utils_dep,
   display_utils_dep,
-  window_utils_dep,vips_dep,kitty_msg_dep,
+  window_utils_dep,
+  vips_dep,
+  kitty_msg_dep,
   app_utils_dep,image_utils_dep,process_utils_dep,display_utils_dep,capture_type_dep,
-  c_img_dep,
 ]
 
 tesseract_utils_c_args = [

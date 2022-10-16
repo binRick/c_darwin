@@ -9,7 +9,7 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
-#include "timg/utils/utils.h"
+
 #include "vips-basics-test/vips-basics-test.h"
 #include "vips/vips.h"
 #define UNUSED    __attribute__((unused))

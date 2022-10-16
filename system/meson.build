@@ -10,15 +10,7 @@ system_include_dirs = [
 ]
 
 system_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
 ]
 
 system_c_args = [

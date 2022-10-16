@@ -1,3 +1,4 @@
+subdir('utils')
 keyboard_srcs = [
   'keyboard.c',
 ]
@@ -10,15 +11,8 @@ keyboard_include_dirs = [
 ]
 
 keyboard_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  keyboard_utils_dep,
 ]
 
 keyboard_c_args = [
@@ -40,4 +34,3 @@ keyboard_dep = declare_dependency(
   link_with: keyboard_lib,
   link_args: keyboard_link_args,
 )
-subdir('utils')

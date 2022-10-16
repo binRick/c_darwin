@@ -10,16 +10,8 @@ usbdevs_utils_include_dirs = [
 ]
 
 usbdevs_utils_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
+  core_dep,
   hidapi_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
 ]
 
 usbdevs_utils_c_args = [

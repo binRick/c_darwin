@@ -10,17 +10,11 @@ capture_utils_include_dirs = [
 ]
 
 capture_utils_deps = [
-  fancy_progress_dep,
+  core_dep,
   space_utils_dep,window_utils_dep,display_utils_dep,screen_utils_dep,
-  ansi_codes_dep,cache_utils_dep,b64_dep,image_utils_dep,fs_c_dep,tempdir_dep,
-  c_vector_dep,
-  c_fsio_dep,timg_utils_dep,c_workqueue_dep,vips_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,process_utils_dep,
-  ms_dep,
-  bytes_dep,
+  cache_utils_dep,image_utils_dep,
+  vips_dep,
+  process_dep,
 ]
 
 capture_utils_c_args = [

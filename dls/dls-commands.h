@@ -21,6 +21,8 @@
 #define COLOR_SET        "\x1b[38;2;252;163;252m" AC_UNDERLINE
 #define COLOR_HELP       "\x1b[38;2;50;50;252m" AC_UNDERLINE
 #define COLOR_ICNS       "\x1b[38;2;252;252;252m" AC_UNDERLINE
+typedef struct optparse_opt (^common_option_b)(struct args_t *args);
+typedef char (^common_option_description)(void *sorts);
 enum common_option_group_t {
   COMMON_OPTION_GROUP_WIDTH_OR_HEIGHT = 1,
   COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
@@ -272,8 +274,14 @@ enum color_types_t {
   COLOR_TYPE_FOCUS,
   COLOR_TYPES_QTY,
 };
-typedef struct optparse_opt (^common_option_b)(struct args_t *args);
-typedef char (^common_option_description)(void *sorts);
+enum arg_clamp_type_t {
+  ARG_CLAMP_TYPE_WINDOW_SIZE,
+  ARG_CLAMP_TYPE_FRAME_RATE,
+  ARG_CLAMP_TYPE_LIMIT,
+  ARG_CLAMP_TYPE_CONCURRENCY,
+  ARG_CLAMP_TYPE_DURATION,
+  ARG_CLAMP_TYPES_QTY,
+};
 struct item_color_t {
   const char *color;
 };

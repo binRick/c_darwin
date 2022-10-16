@@ -1,3 +1,4 @@
+subdir('utils')
 app_srcs = [
   'app.c',
 ]
@@ -10,15 +11,8 @@ app_include_dirs = [
 ]
 
 app_deps = [
-  ansi_codes_dep,timelib_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  app_utils_dep,
 ]
 
 app_c_args = [
@@ -40,4 +34,3 @@ app_dep = declare_dependency(
   link_with: app_lib,
   link_args: app_link_args,
 )
-subdir('utils')

@@ -7,16 +7,9 @@ menu_bar_utils_dirs = [
   inc,
 ]
 menu_bar_utils_deps = [
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  ansi_codes_dep,
+  core_dep,
   display_utils_dep,
-  log_dep,core_dep,
-  timestamp_dep,
-  ms_dep,
   space_utils_dep,
-  bytes_dep,
 ]
 menu_bar_utils_c_args = [
 ]

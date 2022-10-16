@@ -10,16 +10,8 @@ monitor_utils_include_dirs = [
 ]
 
 monitor_utils_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
+  core_dep,
   libmonitors_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
 ]
 
 monitor_utils_c_args = [

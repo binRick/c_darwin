@@ -35,12 +35,11 @@ inc = [include_directories(
 #############################################################################
 subdir('submodules')
 #############################################################################
-subdir('layout/utils')
+subdir('frameworks')
 subdir('core')
+subdir('layout/utils')
 subdir('event')
 subdir('icons')
-subdir('frameworks')
-subdir('timg')
 subdir('cache-utils')
 subdir('output-utils')
 subdir('keychain-utils')

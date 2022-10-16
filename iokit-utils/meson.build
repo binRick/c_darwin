@@ -9,15 +9,7 @@ iokit_utils_dirs = [
     inc,
   ]
 iokit_utils_deps = [
-  c_vector_dep,
-  c_stringfn_dep,
-  string_utils_dep,
-  log_dep,
-  ansi_codes_dep,
-  timestamp_dep,
-  bytes_dep, ms_dep,
-  hash_dep,
-  timestamp_dep,
+  core_dep,
 ]
 iokit_utils_link_flags = [
   osx_link_args,

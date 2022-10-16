@@ -7,19 +7,10 @@ focused_include_dirs = [
   inc,
 ]
 focused_deps = [
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_eventemitter_dep,
+  core_dep,
   osx_keys_dep,
-  core_utils_dep,
   app_utils_dep,
-  dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,msgbox_dep,window_utils_dep,
-  ansi_codes_dep,msgpack_c_dep,base64_simple_dep,hexify_c_dep,
-  log_dep,
-  timestamp_dep,
-  ms_dep,
-  bytes_dep,base64_dep,
+  dock_utils_dep, space_utils_dep, display_utils_dep, menu_bar_utils_dep,window_utils_dep,
 ]
 focused_c_args = [
 ]

@@ -7,21 +7,9 @@ rectangle_dirs = [
   inc,
 ]
 rectangle_deps = [
-  c_string_buffer_dep,
-  c_vector_dep,
-  c_fsio_dep,
+  core_dep,
   osx_keys_dep,
-  c_stringfn_dep,
-  ansi_codes_dep,
-  
-  iowow_dep,
-  subprocess_dep,
-  wildcardcmp_dep,
-  process_dep,
-  c_dbg_dep,
-  which_dep,
-  timestamp_dep,
-  str_flatten_c_dep,
+  process_dep,process_utils_dep,
 ]
 rectangle_c_args = [
 ]

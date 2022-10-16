@@ -10,20 +10,10 @@ save_include_dirs = [
 ]
 
 save_deps = [
-  glib_dep,
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
+  core_dep,
   capture_type_dep,
   image_utils_dep,
-  chan_dep,clamp_dep,
-  core_dep,core_debug_dep,core_utils_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
+  core_debug_dep,core_utils_dep,
   vips_dep,
 ]
 

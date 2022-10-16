@@ -12,15 +12,9 @@ table_include_dirs = [
 ]
 
 table_deps = [
-  ansi_codes_dep,font_utils_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,table_utils_dep,table_sort_dep,
+  core_dep,
+  font_utils_dep,
+  table_utils_dep,table_sort_dep,
   core_utils_dep,
 ]
 

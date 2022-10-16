@@ -10,16 +10,9 @@ kitty_msg_include_dirs = [
 ]
 
 kitty_msg_deps = [
-  b64_dep,vips_dep,tempdir_dep,ansi_utils_dep,qoi_dep,qoi_ci_dep,
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  vips_dep,
+  qoi_ci_dep,
 ]
 
 kitty_msg_c_args = [

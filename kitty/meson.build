@@ -1,4 +1,4 @@
-subdir('shm')
+#subdir('shm')
 subdir('msg')
 kitty_srcs = [
   'kitty.c',
@@ -8,20 +8,10 @@ kitty_srcs = [
 kitty_link_flags = []
 kitty_c_args = []
 kitty_deps = [
-  core_dep,image_dep,
-  c_vector_dep,
-  djbhash_dep,
-  socket99_dep,
-  c_stringfn_dep,
-  wildcardcmp_dep,
-  c_fsio_dep,
-  c_string_buffer_dep,
-  subprocess_dep,
-  which_dep,
+  core_dep,
+  image_dep,
   process_dep,
-  ansi_codes_dep,
-  parson_dep,
-  kitty_shm_dep,
+  #  kitty_shm_dep,
   kitty_msg_dep,
 ]
 kitty_dirs = [

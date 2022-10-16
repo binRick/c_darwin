@@ -1,6 +1,5 @@
 subdir('info')
 subdir('utils')
-subdir('utils/test')
 
 window_srcs = [
   'window.c',
@@ -14,15 +13,8 @@ window_include_dirs = [
 ]
 
 window_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  window_info_dep,window_utils_dep,
 ]
 
 window_c_args = [
@@ -44,3 +36,4 @@ window_dep = declare_dependency(
   link_with: window_lib,
   link_args: window_link_args,
 )
+subdir('utils/test')

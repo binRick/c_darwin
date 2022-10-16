@@ -1,3 +1,4 @@
+subdir('utils')
 monitor_srcs = [
   'monitor.c',
 ]
@@ -10,15 +11,8 @@ monitor_include_dirs = [
 ]
 
 monitor_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  monitor_utils_dep,
 ]
 
 monitor_c_args = [
@@ -40,4 +34,3 @@ monitor_dep = declare_dependency(
   link_with: monitor_lib,
   link_args: monitor_link_args,
 )
-subdir('utils')

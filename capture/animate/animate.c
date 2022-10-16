@@ -33,7 +33,7 @@
 #include "stb/stb_image_write.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
-#include "timg/utils/utils.h"
+
 #include "vips/vips.h"
 #include "window/utils/utils.h"
 #include <png.h>

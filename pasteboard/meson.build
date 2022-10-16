@@ -6,14 +6,10 @@ pasteboard_dirs = [
   inc,
 ]
 pasteboard_deps = [
-  c_stringfn_dep,
-  pbpaste_dep,reproc_dep,
-  log_dep,core_dep,
+  core_dep,
 ]
 
 pasteboard_link_args = [
-  '-Wl,-framework,CoreFoundation',
-  '-Wl,-framework,IOKit',
 ]
 
 pasteboard_lib = library('pasteboard',
@@ -22,7 +18,6 @@ pasteboard_lib = library('pasteboard',
   dependencies: pasteboard_deps,
   include_directories: pasteboard_dirs,
 )
-
 
 pasteboard_dep = declare_dependency(
   include_directories: pasteboard_dirs,

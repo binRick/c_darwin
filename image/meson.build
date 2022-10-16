@@ -1,3 +1,6 @@
+subdir('utils')
+subdir('type')
+
 image_srcs = [
   'image.c',
 ]
@@ -10,15 +13,8 @@ image_include_dirs = [
 ]
 
 image_deps = [
-  ansi_codes_dep,glib_dep,vips_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  image_utils_dep,image_type_dep,
 ]
 
 image_c_args = [
@@ -40,5 +36,3 @@ image_dep = declare_dependency(
   link_with: image_lib,
   link_args: image_link_args,
 )
-subdir('utils')
-subdir('type')

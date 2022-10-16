@@ -10,17 +10,10 @@ db_include_dirs = [
 ]
 
 db_deps = [
+  core_dep,
   core_utils_dep,core_dep,vips_dep,capture_type_dep,capture_utils_dep,
   ansi_codes_dep,whereami_dep,core_utils_dep,space_utils_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
-  sqldbal_dep,window_utils_dep,
+  window_utils_dep,
 ]
 
 db_c_args = [

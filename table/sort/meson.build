@@ -11,15 +11,6 @@ table_sort_include_dirs = [
 
 table_sort_deps = [
   core_dep,
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
 ]
 
 table_sort_c_args = [

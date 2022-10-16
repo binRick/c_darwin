@@ -14,7 +14,30 @@ core_include_dirs = [
 ]
 
 core_deps = [
-  core_utils_dep,core_image_dep,core_debug_dep,layout_utils_dep,
+  core_utils_dep,core_image_dep,core_debug_dep,incbin_dep,
+  leptonica_dep,
+  ansi_codes_dep,
+  c_vector_dep,
+  c_fsio_dep,
+  c_stringfn_dep,
+  c_img_dep,ansi_utils_dep,
+  c_string_buffer_dep,optparse99_dep,string_utils_dep,reproc_dep,frameworks_dep,
+  timestamp_dep,
+  log_dep,chan_dep,clamp_dep,glib_dep,c_workqueue_dep,
+  ms_dep,qoi_dep,
+  spng_dep,msf_gif_dep,
+  djbhash_dep,
+  subprocess_dep,c_forever_dep,tinydir_dep,
+  which_dep,parson_dep,
+  iowow_dep,murmurhash_dep,c_eventemitter_dep,
+  msgpack_c_dep,base64_simple_dep,hexify_c_dep,msgbox_dep,libspinner_dep,
+  sqldbal_dep,str_flatten_c_dep,stb_dep,
+  imagequant_dep,lodepng_dep,vips_dep,
+  timelib_dep,date_c_dep,hash_dep,fort_dep,whereami_dep,
+  socket99_dep,pngquant_dep,glib_dep,
+  wildcardcmp_dep,
+  bytes_dep,tempdir_dep,fs_c_dep,b64_dep,fancy_progress_dep,
+  url_h_dep,vips_dep,
 ]
 
 core_c_args = [

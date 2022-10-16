@@ -1,3 +1,4 @@
+subdir('utils')
 display_srcs = [
   'display.c',
 ]
@@ -10,15 +11,8 @@ display_include_dirs = [
 ]
 
 display_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  display_utils_dep,
 ]
 
 display_c_args = [
@@ -41,4 +35,3 @@ display_dep = declare_dependency(
   link_args: display_link_args,
 )
 
-subdir('utils')

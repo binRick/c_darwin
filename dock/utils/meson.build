@@ -7,15 +7,7 @@ dock_utils_dirs = [
   inc,
 ]
 dock_utils_deps = [
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  ansi_codes_dep,
-  display_utils_dep,
-  log_dep,core_dep,
-  timestamp_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,display_utils_dep,
 ]
 dock_utils_c_args = [
 ]

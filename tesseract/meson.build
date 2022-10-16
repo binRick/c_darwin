@@ -1,3 +1,4 @@
+subdir('utils')
 tesseract_srcs = [
   'tesseract.c',
 ]
@@ -10,15 +11,8 @@ tesseract_include_dirs = [
 ]
 
 tesseract_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
+  tesseract_utils_dep,
 ]
 
 tesseract_c_args = [
@@ -40,4 +34,3 @@ tesseract_dep = declare_dependency(
   link_with: tesseract_lib,
   link_args: tesseract_link_args,
 )
-subdir('utils')

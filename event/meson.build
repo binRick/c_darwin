@@ -10,7 +10,7 @@ event_include_dirs = [
 ]
 
 event_deps = [
-  core_utils_dep,
+  core_dep,
 ]
 
 event_c_args = [

@@ -10,14 +10,8 @@ keylogger_inc = [
 ]
 
 keylogger_deps = [
-  app_utils_dep,
-  c_string_buffer_dep,
- c_string_buffer_dep,c_stringfn_dep,
- string_utils_dep,
- core_utils_dep,
- timestamp_dep,
- ansi_codes_dep,
- log_dep,
+ core_dep,
+ app_utils_dep,
 ]
 
 

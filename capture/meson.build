@@ -14,19 +14,8 @@ capture_include_dirs = [
 ]
 
 capture_deps = [
-  ansi_codes_dep,timg_utils_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,tempdir_dep,
-  capture_type_dep,
-  capture_utils_dep,
-  capture_animate_dep,
-  capture_save_dep,
+  core_dep,
+  capture_utils_dep,capture_type_dep,capture_animate_dep,capture_save_dep,
 ]
 
 capture_c_args = [

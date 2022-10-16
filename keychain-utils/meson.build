@@ -10,15 +10,7 @@ keychain_utils_include_dirs = [
 ]
 
 keychain_utils_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
 ]
 
 keychain_utils_c_args = [

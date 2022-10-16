@@ -10,16 +10,7 @@ mouse_utils_include_dirs = [
 ]
 
 mouse_utils_deps = [
-  ansi_codes_dep,osx_keys_dep,
-  c_vector_dep,
-  frameworks_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,core_dep,
-  ms_dep,
-  bytes_dep,
+  core_dep,
 ]
 
 mouse_utils_c_args = [

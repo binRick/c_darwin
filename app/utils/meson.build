@@ -5,12 +5,10 @@ app_utils_c_args = [
   '-Wno-address',
 ]
 app_utils_deps = [
-  app_dep,process_utils_dep,
-  timestamp_dep,
+  core_dep,
+  process_utils_dep,
   systemprofiler_dep,
-  bytes_dep,ms_dep,string_utils_dep,subprocess_dep,bytes_dep,ms_dep,string_utils_dep,icon_utils_dep,
-  c_stringfn_dep,c_fsio_dep,c_vector_dep,c_string_buffer_dep,iowow_dep,which_dep,
-  log_dep,parson_dep,tempdir_dep,reproc_dep,date_c_dep,timelib_dep,
+  icon_utils_dep,
 ]
 app_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 app_utils_lib = library('app-utils',

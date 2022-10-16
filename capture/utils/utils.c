@@ -22,7 +22,7 @@
 #include "screen/utils/utils.h"
 #include "space/utils/utils.h"
 #include "timestamp/timestamp.h"
-#include "timg/utils/utils.h"
+
 #include "vips/vips.h"
 #include "window/utils/utils.h"
 ////////////////////////////////////////////

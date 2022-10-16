@@ -9,18 +9,13 @@ table_utils_dirs = [
     inc,
   ]
 table_utils_deps = [
-  c_stringfn_dep,hotkey_utils_dep,
-  parson_dep,
-  log_dep,
-  ansi_codes_dep,
-  c_vector_dep,app_utils_dep,font_utils_dep,usbdevs_utils_dep,kitty_dep,monitor_utils_dep,
+  core_dep,
+  hotkey_utils_dep,
+  app_utils_dep,font_utils_dep,usbdevs_utils_dep,kitty_dep,monitor_utils_dep,
   process_dep,
-  fort_dep,
-  bytes_dep,
-  ms_dep,
-  string_utils_dep,
-  timestamp_dep,window_utils_dep,
-  window_info_dep,table_sort_dep,wildcardcmp_dep,space_utils_dep,display_utils_dep,process_utils_dep,
+  window_utils_dep,
+  window_info_dep,table_sort_dep,
+  space_utils_dep,display_utils_dep,process_utils_dep,
   core_utils_dep,core_debug_dep,
 ]
 table_utils_link_flags = [

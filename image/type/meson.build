@@ -10,16 +10,7 @@ type_include_dirs = [
 ]
 
 type_deps = [
-  ansi_codes_dep,
-  c_vector_dep,
-  c_fsio_dep,
-  c_stringfn_dep,
-  c_string_buffer_dep,
-  timestamp_dep,
-  log_dep,
-  ms_dep,
-  bytes_dep,
-  vips_dep,
+  core_dep,vips_dep,
 ]
 
 type_c_args = [
@@ -36,7 +27,7 @@ type_lib = library('type',
   include_directories: type_include_dirs
 )
 
-type_dep = declare_dependency(
+image_type_dep = declare_dependency(
   include_directories: type_include_dirs,
   link_with: type_lib,
   link_args: type_link_args,
