@@ -1,12 +1,5 @@
 #pragma once
-#include "app/app.h"
 #include "app/utils/utils.h"
-#include "date.c/date.h"
-#include "frameworks/frameworks.h"
-#include "icon-utils/icon-utils.h"
-#include "string-utils/string-utils.h"
-#include "systemprofiler/systemprofiler.h"
-#include "timelib/timelib.h"
 #define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
 #define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8) * 1000
 static authorized_tests_t  authorized_tests = {
@@ -275,3 +268,20 @@ static void __attribute__((constructor)) __constructor__app_utils(void){
     APP_UTILS_DEBUG_MODE = true;
   }
 }
+const char       *app_type_names[APP_TYPES_QTY + 1] = {
+  [APP_TYPE_APPLE]          = "Apple",
+  [APP_TYPE_ABSENT]         = "Absent",
+  [APP_TYPE_EXISTANT]       = "Existant",
+  [APP_TYPE_SYSTEM]         = "System",
+  [APP_TYPE_SYSTEM_LIBRARY] = "System Library",
+  [APP_TYPE_USER_LIBRARY]   = "User Library",
+  [APP_TYPE_APPLICATIONS]   = "Applications",
+  [APP_TYPE_IDENTIFIED]     = "Identified",
+  [APP_TYPE_UNVERSIONED]    = "Unversioned",
+  [APP_TYPE_VERSIONED]      = "Versioned",
+  [APP_TYPES_QTY]           = NULL,
+};
+static const int app_event_types[] = {
+  kEventAppActivated,
+  kEventAppDeactivated,
+};

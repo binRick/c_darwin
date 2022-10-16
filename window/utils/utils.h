@@ -1,7 +1,7 @@
 #pragma once
 #ifndef WINDOW_UTILS_H
 #define WINDOW_UTILS_H
-#include "frameworks/frameworks.h"
+#include "core/core.h"
 #include <fnmatch.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
@@ -15,13 +15,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-///////////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "app/utils/utils.h"
-#include "c_stringfn/include/stringfn.h"
-#include "c_vector/vector/vector.h"
-#include "core/utils/utils.h"
-#include "window/utils/utils.h"
 ///////////////////////////////////////////////////
 struct cf_window_list {
   int           count;

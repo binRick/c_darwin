@@ -1,25 +1,7 @@
 #pragma once
 #ifndef DISPLAY_UTILS_H
 #define DISPLAY_UTILS_H
-//////////////////////////////////////
-#include "c_vector/vector/vector.h"
-////#include <ApplicationServices/ApplicationServices.h>
-#include <ctype.h>
-#include <Carbon/Carbon.h>
-#include <CoreFoundation/CFBase.h>
-#include <CoreFoundation/CFString.h>
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreGraphics/CoreGraphics.h>
-#include <CoreServices/CoreServices.h>
-#include <CoreVideo/CVPixelBuffer.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <IOKit/hid/IOHIDKeys.h>
-#include <IOKit/hid/IOHIDManager.h>
-#include <IOKit/IOKitLib.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "core/core.h"
 struct display_t {
   size_t        display_id, index;
   int           width, height;

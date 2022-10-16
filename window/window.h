@@ -2,26 +2,9 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 //////////////////////////////////////
-#include "db/db.h"
-#include "frameworks/frameworks.h"
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "core/core.h"
 //////////////////////////////////////
-static int window_event_types[] = {
-  kEventWindowHidden,
-  kEventWindowActivated,
-  kEventWindowBoundsChanged,
-  kEventWindowResizeStarted,
-  kEventWindowResizeCompleted,
-  kEventWindowClose,
-  kEventWindowCollapsed,
-  kEventWindowDeactivated,
-};
+#include "window/info/info.h"
+#include "window/utils/utils.h"
+//////////////////////////////////////
 #endif

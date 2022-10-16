@@ -14,7 +14,7 @@ image_include_dirs = [
 
 image_deps = [
   core_dep,
-  image_utils_dep,image_type_dep,
+  image_utils_dep,image_type_dep,vips_dep,glib_dep,
 ]
 
 image_c_args = [

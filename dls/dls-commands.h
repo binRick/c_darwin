@@ -9,6 +9,7 @@
 #define ICON_RENDER                   "🍺"
 #define ICON_APPLY                    "🧢"
 #define ICON_LAYOUT                   "💥"
+#define ICON_NAME                   "💥"
 #define ICON_INIT                     "🚛"
 #define ICON_LOAD                     "🚛"
 #define ICON_TABLE                    "🚛"
@@ -35,6 +36,7 @@
 #define COLOR_ID                      "\x1b[38;2;162;194;208m"
 #define COLOR_CAPTURE                 "\x1b[38;2;162;194;208m"
 #define COLOR_INIT                    "\x1b[38;2;162;194;208m"
+#define COLOR_NAME                    "\x1b[38;2;162;194;208m"
 #define COLOR_LOAD                    "\x1b[38;2;0;255;34m"
 #define COLOR_TABLE                   "\x1b[38;2;126;94;82m"
 #define COLOR_ROW                     "\x1b[38;2;80;100;127m"
@@ -292,6 +294,7 @@ enum command_type_t {
   COMMAND_MINIMIZE_WINDOW,
   COMMAND_LAYOUT,
   COMMAND_LAYOUT_LIST,
+  COMMAND_LAYOUT_NAMES,
   COMMAND_LAYOUT_TEST,
   COMMAND_LAYOUT_APPLY,
   COMMAND_LAYOUT_SHOW,

@@ -5,25 +5,9 @@
 #include "hotkey-utils/hotkey-utils-types.h"
 #include "hotkey-utils/hotkey-utils.h"
 ////////////////////////////////////////////
-#include "ansi-codes/ansi-codes.h"
-#include "keylogger/keylogger.h"
-#include "bytes/bytes.h"
-#include "c_fsio/include/fsio.h"
-#include "c_string_buffer/include/stringbuffer.h"
-#include "c_stringfn/include/stringfn.h"
-#include "c_vector/vector/vector.h"
-#include "libcyaml/include/cyaml/cyaml.h"
-#include "log/log.h"
-#include "ms/ms.h"
-#include "path_module/src/path.h"
-#include "timestamp/timestamp.h"
-#include "window/utils/utils.h"
-#include "murmurhash.c/murmurhash.h"
-#include "layout/utils/utils.h"
-#include "capture/type/type.h"
-#include "capture/utils/utils.h"
-#include <libgen.h>
-#include <limits.h>
+#include "core/core.h"
+#include "capture/capture.h"
+////////////////////////////////////////////
 #define HOTKEY_UTILS_HASH_SEED    212136436
 #define RELOAD_CONFIG_MS 10000
 #define HOTKEYS_CONFIG_FILE_NAME    "config.yaml"
@@ -422,14 +406,33 @@ struct layout_result_t *hk_render_layout_name(char *name){
 struct hk_dur_t {
   unsigned long dur, started;
 };
-
+enum hk_format_t {
+  HK_FORMAT_QOI,
+  HK_FORMAT_JPEG,
+  HK_FORMATS_QTY,
+};
+enum image_type_id_t hk_formats[] = {
+  [HK_FORMAT_JPEG] = IMAGE_TYPE_JPEG,
+  [HK_FORMAT_QOI] = IMAGE_TYPE_QOI,
+};
+enum hk_vip_t {
+  HK_VIP_IMAGE,
+  HK_VIP_RESIZED,
+  HK_VIP_RED_RECT,
+  HK_VIP_RESIZED_RED_RECT,
+  HK_VIPS_QTY,
+};
 struct hk_image_t {
-  CGImageRef img;
-  unsigned char *qoi;
-  size_t len, qoi_len;
+  CGImageRef img, resized;
+  unsigned char *qoi, *resized_qoi;
+  size_t len, qoi_len,resized_qoi_len;
   uint32_t width,height;
   uint32_t qoi_width,qoi_height;
- struct hk_dur_t capture, convert;
+  uint32_t resized_width,resized_height;
+  struct hk_dur_t capture, convert, resize;
+  VipsImage *vips[HK_VIPS_QTY];
+  unsigned char *pixels[HK_FORMATS_QTY];
+  size_t sizes[HK_FORMATS_QTY];
 };
 struct hk_rendered_app_t {
   size_t window_id;
@@ -459,6 +462,60 @@ struct hk_render_t {
   }\
 } while(0); }
 
+static double    red[]         = { 255, 0, 0, 255 };
+static double    transparent[] = { 0, 0, 0, 0 };
+
+//    if (vips_crop(image, &page[i], 0, page_height * i, image->Xsize, page_height, NULL)) {
+    /*
+  if (!(overlay[0] = vips_image_new_from_image(page[0], red, VIPS_NUMBER(red)))
+      || vips_draw_rect(
+        overlay[0], transparent, VIPS_NUMBER(transparent),
+        10, 10, overlay[0]->Xsize - 20, overlay[0]->Ysize - 20, "fill", TRUE, NULL
+        )
+      ) {a
+         if (vips_composite2(page[i], overlay[0], &annotated[i],
+                        VIPS_BLEND_MODE_OVER, NULL)) {
+      return(-1);
+    }
+      */
+
+char *create_master_table_report(){
+  ft_table_t *table = ft_create_table();
+
+  ft_set_border_style(table, FT_NICE_STYLE);
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+
+  ft_u8write_ln(table, "#", "Period Type", "Date", "Closed", "Hours", "Periods", "Avg", "Moving Avg");
+  ft_add_separator(table);
+  ft_u8write_ln(table, "1", "x", "y", "n-body", "1000", "1.6", "1,500,000", "✔");
+  ft_u8write_ln(table, "1", "x", "y", "n-body", "1000", "1.6", "1,500,000", "✖");
+
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, 8, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+  ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+
+  ft_set_cell_prop(table, FT_ANY_ROW, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 2, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 3, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+  ft_set_cell_prop(table, 8, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+
+  ft_set_cell_prop(table, 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+  ft_set_cell_prop(table, 2, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+
+  ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
+  ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 10);
+
+  const char *table_str = ft_to_u8string(table);
+
+  ft_destroy_table(table);
+  return(table_str);
+}
+
+
 bool hk_show_rendered_layout_name(char *name){
   struct hotkeys_config_t *cfg = load_yaml_config_file_path(get_homedir_yaml_config_file_path());
   struct layout_result_t *res = hk_render_layout_name(name);
@@ -475,35 +532,56 @@ bool hk_show_rendered_layout_name(char *name){
   if(r->display->id<1){
     log_error("Failed to find display id for index %d",cfg->layouts[I].display);
   }
+
+  r->display->width = get_display_id_width(r->display->id);
+  r->display->height = get_display_id_height(r->display->id);
+
   r->display->image.capture.started = timestamp();
   r->display->image.img= capture_type_capture(CAPTURE_TYPE_DISPLAY, r->display->id);
   r->display->image.width = CGImageGetWidth(r->display->image.img);
   r->display->image.height = CGImageGetHeight(r->display->image.img);
   r->display->image.capture.dur = timestamp() - r->display->image.capture.started;
+
   r->display->image.convert.started = timestamp();
-  r->display->image.qoi = save_cgref_to_qoi_memory(r->display->image.img,&(r->display->image.qoi_len));
+  r->display->image.pixels[HK_FORMAT_QOI] = save_cgref_to_qoi_memory(r->display->image.img,&(r->display->image.pixels[HK_FORMAT_QOI]));
+  r->display->image.pixels[HK_FORMAT_JPEG] = save_cgref_to_jpeg_memory(r->display->image.img,&(r->display->image.pixels[HK_FORMAT_JPEG]));
   r->display->image.convert.dur = timestamp() - r->display->image.convert.started;
-  r->display->width = get_display_id_width(r->display->id);
-  r->display->height = get_display_id_height(r->display->id);
+
+//  r->display->image.vips[HK_VIP_IMAGE] = vips_image_new_from_image(page[0], red, VIPS_NUMBER(red));
+  //r->display->vips[HK_VIP_RED_RECT] = vips_image_new_from_image(page[0], red, VIPS_NUMBER(red));
+
   r->master->name = cfg->layouts[I].app;
   r->master->window_id = get_first_window_id_by_name(r->master->name);
   r->master->image.len = r->master->image.qoi_len;
   if(r->master->window_id<1){
     log_error("Failed to find window id for %s",cfg->layouts[I].app);
   }
+
   r->master->width = res->master->width;
   r->master->height = res->master->height;
   r->master->x = res->master->x;
   r->master->y = res->master->y;
+
   r->master->image.capture.started = timestamp();
   r->master->image.img= capture_type_capture(CAPTURE_TYPE_WINDOW, r->master->window_id);
   r->master->image.width = CGImageGetWidth(r->master->image.img);
   r->master->image.height = CGImageGetHeight(r->master->image.img);
   r->master->image.capture.dur = timestamp() - r->master->image.capture.started;
+
+  r->master->image.resize.started = timestamp();
+  r->master->image.resized= resize_cgimage(r->master->image.img, r->master->width,r->master->height);
+  r->master->image.resized_width = CGImageGetWidth(r->master->image.resized);
+  r->master->image.resized_height = CGImageGetHeight(r->master->image.resized);
+  r->master->image.resize.dur = timestamp() - r->master->image.resize.started;
+
+  log_debug("..");
   r->master->image.convert.started = timestamp();
   r->master->image.qoi = save_cgref_to_qoi_memory(r->master->image.img,&(r->master->image.qoi_len));
+  r->master->image.resized_qoi = save_cgref_to_qoi_memory(r->master->image.resized,&(r->master->image.resized_qoi_len));
   r->master->image.convert.dur = timestamp() - r->master->image.convert.started;
   r->master->image.len = r->master->image.qoi_len;
+  log_debug("..");
+
   size_t len=r->display->image.qoi_len+r->master->image.qoi_len;
   r->items = calloc(1,sizeof(struct hk_rendered_app_t));
   for(size_t i=0;i<res->qty;i++){
@@ -512,43 +590,54 @@ bool hk_show_rendered_layout_name(char *name){
     r->items[i]->name = cfg->layouts[I].apps[i].name;
     if(r->items[i]->window_id<1){
       log_error("Failed to find window id for %s",r->items[i]->name);
+      exit(EXIT_FAILURE);
     }
     r->items[i]->width = res->items[i]->width;
     r->items[i]->height = res->items[i]->height;
     r->items[i]->x = res->items[i]->x;
     r->items[i]->y = res->items[i]->y;
-  r->items[i]->image.capture.started = timestamp();
-  r->items[i]->image.img= capture_type_capture(CAPTURE_TYPE_WINDOW, r->items[i]->window_id);
-  r->items[i]->image.width = CGImageGetWidth(r->items[i]->image.img);
-  r->items[i]->image.height = CGImageGetHeight(r->items[i]->image.img);
-  r->items[i]->image.capture.dur = timestamp() - r->items[i]->image.capture.started;
-  r->items[i]->image.convert.started = timestamp();
-  r->items[i]->image.qoi = save_cgref_to_qoi_memory(r->items[i]->image.img,&(r->items[i]->image.qoi_len));
-  r->items[i]->image.convert.dur = timestamp() - r->items[i]->image.convert.started;
-  len += r->items[i]->image.qoi_len;
+
+    r->items[i]->image.capture.started = timestamp();
+    r->items[i]->image.img= capture_type_capture(CAPTURE_TYPE_WINDOW, r->items[i]->window_id);
+    r->items[i]->image.width = CGImageGetWidth(r->items[i]->image.img);
+    r->items[i]->image.height = CGImageGetHeight(r->items[i]->image.img);
+    r->items[i]->image.capture.dur = timestamp() - r->items[i]->image.capture.started;
+
+    /*
+    r->items[i]->image.resize.started = timestamp();
+    r->items[i]->image.resized= resize_cgimage(r->items[i]->image.img, r->items[i]->width,r->items[i]->height);
+    r->items[i]->image.resized_width = CGImageGetWidth(r->items[i]->image.resized);
+    r->items[i]->image.resized_height = CGImageGetHeight(r->items[i]->image.resized);
+    r->items[i]->image.resize.dur = timestamp() - r->items[i]->image.resize.started;
+    */
+
+    r->items[i]->image.convert.started = timestamp();
+    r->items[i]->image.qoi = save_cgref_to_qoi_memory(r->items[i]->image.img,&(r->items[i]->image.qoi_len));
+    //r->items[i]->image.resized_qoi = save_cgref_to_qoi_memory(r->items[i]->image.resized,&(r->items[i]->image.resized_qoi_len));
+    r->items[i]->image.convert.dur = timestamp() - r->items[i]->image.convert.started;
+
+    len += r->items[i]->image.qoi_len;
   }
+  log_debug("1");
   log_info(
       "Total Size: %s"
+      "Master:\n%s"
       "\nRendering Master %s Window ID %lu to %dx%d @ %dx%d"
+      "\nResized Master to %dx%d in %s"
       "\n\tMaster Image: %dx%d in %s"
-      "\n\tMaster QOI: %s in %s"
+      "\n\tMaster QOI: %s (%s resized) in %s"
       "\nDisplay Image: %dx%d in %s"
       "\n\tDisplay QOI: %s in %s"
       "\nDisplay: Index:%lu|ID:%lu|%dx%d|Space: Index:%lu|ID:%lu|"
       "",
       bytes_to_string(len),
-      r->master->name,r->master->window_id,
-      r->master->width,r->master->height,
-      r->master->x,r->master->y,
-      r->master->image.width,r->master->image.height,
-      milliseconds_to_string(r->master->image.capture.dur),
-      bytes_to_string(r->master->image.qoi_len),
-      milliseconds_to_string(r->display->image.convert.dur),
-      r->display->image.width,
-      r->display->image.height,
-      milliseconds_to_string(r->display->image.capture.dur),
-      bytes_to_string(r->display->image.qoi_len),
-      milliseconds_to_string(r->display->image.convert.dur),
+      create_master_table_report(),
+      r->master->name,r->master->window_id,r->master->width,r->master->height,r->master->x,r->master->y,
+      r->master->image.resized_width,r->master->image.resized_height,milliseconds_to_string(r->master->image.resize.dur),
+      r->master->image.width,r->master->image.height,milliseconds_to_string(r->master->image.capture.dur),
+      bytes_to_string(r->master->image.qoi_len),bytes_to_string(r->master->image.resized_qoi_len),milliseconds_to_string(r->display->image.convert.dur),
+      r->display->image.width,r->display->image.height,milliseconds_to_string(r->display->image.capture.dur),
+      bytes_to_string(r->display->image.qoi_len),milliseconds_to_string(r->display->image.convert.dur),
       r->display->index,
       r->display->id,
       r->display->width,
@@ -557,18 +646,19 @@ bool hk_show_rendered_layout_name(char *name){
       r->space->id
         );
   for(size_t i=0;i<res->qty;i++){
-    log_info("Rendering App %s Window ID %lu to %dx%d @ %dx%d"
-      "%dx%d %s in %s|%s",
-      r->items[i]->name,
-      r->items[i]->window_id,
-      r->items[i]->width,
-      r->items[i]->height,
-      r->items[i]->x,
-      r->items[i]->y,
-      r->items[i]->image.width,
-      r->items[i]->image.height,
- bytes_to_string(     r->items[i]->image.qoi_len),
+    log_info(
+      "\tRendering App %s Window ID %lu to %dx%d @ %dx%d"
+      "\n\tQOI         : %dx%d %s"
+      "\n\tResized QOI : %s"
+      "\n\tCapture     : %s"
+      "\n\tResize      : %s"
+      "\n\tConvert     : %s"
+      "",
+      r->items[i]->name,r->items[i]->window_id,r->items[i]->width,r->items[i]->height,r->items[i]->x,r->items[i]->y,
+      r->items[i]->image.width,r->items[i]->image.height,bytes_to_string(r->items[i]->image.qoi_len),
+      bytes_to_string(r->items[i]->image.resized_qoi_len),
       milliseconds_to_string(r->items[i]->image.capture.dur),
+      milliseconds_to_string(r->items[i]->image.resize.dur),
       milliseconds_to_string(r->items[i]->image.convert.dur)
 
       );
@@ -603,6 +693,15 @@ bool hk_show_layout(char *name){
     struct layout_result_t *res = hk_render_layout_name(name);
     return(layout_print_result(res));
   }
+
+bool hk_print_layout_names(){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  for(size_t i = 0; i < cfg->layouts_count;i++){
+    printf("%s\n",cfg->layouts[i].name);
+  }
+  free(cfg);
+  return(true);
+}
 
 bool hk_list_layouts(){
   struct hotkeys_config_t *cfg         = hk_get_config();

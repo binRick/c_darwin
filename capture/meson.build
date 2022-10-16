@@ -16,6 +16,7 @@ capture_include_dirs = [
 capture_deps = [
   core_dep,
   capture_utils_dep,capture_type_dep,capture_animate_dep,capture_save_dep,
+  vips_dep,glib_dep,
 ]
 
 capture_c_args = [

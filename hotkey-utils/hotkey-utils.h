@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "core/core.h"
 struct hotkeys_libforks_param_t {
   int socket_fd;
   int websocket_server_port;
@@ -53,6 +54,12 @@ enum action_type_t {
   ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT,
   ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT,
   ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT,
+  ////////////////////////////////////////////////////////
+  ACTION_TYPE_MOVE_WINDOW_TO_NEXT_SPACE,
+  ACTION_TYPE_MOVE_WINDOW_TO_PREV_SPACE,
+  ////////////////////////////////////////////////////////
+  ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY,
+  ACTION_TYPE_MOVE_WINDOW_TO_PREV_DISPLAY,
   ////////////////////////////////////////////////////////
   ACTION_TYPES_QTY,
 };
@@ -247,6 +254,7 @@ static struct action_type_handler_t __attribute__((unused)) action_type_handlers
 char *get_hotkey_type_action_name(enum action_type_t action);
 struct Vector *get_config_keys_v();
 bool hk_list_layouts();
+bool hk_print_layout_names();
 bool hk_show_layout(char *name);
 bool hk_show_rendered_layout_name(char *name);
 #endif

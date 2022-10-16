@@ -1,39 +1,43 @@
 #pragma once
 #ifndef APP_UTILS_H
 #define APP_UTILS_H
-#include <assert.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/proc_info.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
 ///////////////////////////////////////////////////////////////////////
-#include "window/utils/utils.h"
+#include "core/core.h"
 ///////////////////////////////////////////////////////////////////////
-#include "bytes/bytes.h"
-#include "c_fsio/include/fsio.h"
-#include "c_string_buffer/include/stringbuffer.h"
-#include "c_stringfn/include/stringfn.h"
-#include "c_vector/vector/vector.h"
-#include "log/log.h"
-#include "ms/ms.h"
-#include "parson/parson.h"
-#include "subprocess.h/subprocess.h"
-#include "tempdir.c/tempdir.h"
-#include "timestamp/timestamp.h"
-#include "which/src/which.h"
-///////////////////////////////////////////////////////////////////////
-#include "app/app.h"
 #include "iowow/src/fs/iwfile.h"
 #include "iowow/src/iowow.h"
 #include "iowow/src/kv/iwkv.h"
 #include "iowow/src/log/iwlog.h"
 #include "iowow/src/platform/iwp.h"
+///////////////////////////////////////////////////////////////////////
+enum app_type_t {
+  APP_TYPE_APPLE,
+  APP_TYPE_ABSENT,
+  APP_TYPE_EXISTANT,
+  APP_TYPE_SYSTEM,
+  APP_TYPE_SYSTEM_LIBRARY,
+  APP_TYPE_USER_LIBRARY,
+  APP_TYPE_APPLICATIONS,
+  APP_TYPE_IDENTIFIED,
+  APP_TYPE_UNIDENTIFIED,
+  APP_TYPE_VERSIONED,
+  APP_TYPE_UNVERSIONED,
+  APP_TYPES_QTY,
+};
+struct app_t {
+  char          *name;
+  char          *version;
+  char          *arch;
+  char          *path;
+  char          *last_modified_s;
+  char          *obtained_from;
+  char          *info;
+  char          **signed_by;
+  timelib_time  *last_modified_time;
+  unsigned long last_modified_timestamp;
+  bool          path_exists;
+};
+const char *app_type_names[APP_TYPES_QTY + 1];
 ///////////////////////////////////////////////////////////////////////
 typedef bool (*authorized_test_function_t)(void);
 typedef struct authorized_test_t    authorized_test_t;

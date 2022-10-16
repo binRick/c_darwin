@@ -1,38 +1,9 @@
 #pragma once
+#include "window/utils/utils.h"
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
-#include "bytes/bytes.h"
-#include "c_vector/vector/vector.h"
 #include "capture/type/type.h"
 #include "capture/utils/utils.h"
-#include "core/core.h"
-#include "core/utils/utils.h"
-#include "core/utils/utils.h"
-#include "db/db.h"
-#include "frameworks/frameworks.h"
-#include "image/utils/utils.h"
-#include "ms/ms.h"
-#include "parson/parson.h"
-#include "process/process.h"
-#include "process/utils/utils.h"
-#include "space/utils/utils.h"
-#include "sqldbal/src/sqldbal.h"
-#include "string-utils/string-utils.h"
-#include "submodules/log/log.h"
-#include "timestamp/timestamp.h"
-#include "wildcardcmp/wildcardcmp.h"
-#include "window/info/info.h"
-#include "window/utils/utils.h"
-#include <errno.h>
-#include <mach/clock.h>
-#include <mach/mach.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
 ///////////////////////////////////////////////////////////////////////////////
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100

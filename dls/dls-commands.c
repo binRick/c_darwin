@@ -320,6 +320,7 @@ COMMAND_PROTOTYPE(layout_test)
 COMMAND_PROTOTYPE(layout_apply)
 COMMAND_PROTOTYPE(layout_show)
 COMMAND_PROTOTYPE(layout_render)
+COMMAND_PROTOTYPE(layout_names)
 COMMAND_PROTOTYPE(window_sticky)
 COMMAND_PROTOTYPE(window_unsticky)
 COMMAND_PROTOTYPE(window_all_spaces)
@@ -1180,6 +1181,7 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_LIST, ICON_LIST, "list", COLOR_LIST, "List Icons", *_command_icon_list)
   COMMAND(ICON_LAYOUT, LAYOUT, "layout", COLOR_LAYOUT, "Layout Manager", 0)
   COMMAND(ICON_LIST, LAYOUT_LIST, "list", COLOR_LIST, "List Layouts", *_command_layout_list)
+  COMMAND(ICON_NAME, LAYOUT_NAMES, "names", COLOR_NAME, "List Layout Names", *_command_layout_names)
   COMMAND(ICON_TEST, LAYOUT_TEST, "test", COLOR_TEST, "Test Layout", *_command_layout_test)
   COMMAND(ICON_APPLY, LAYOUT_APPLY, "apply", COLOR_APPLY, "Apply Layout", *_command_layout_apply)
   COMMAND(ICON_SHOW, LAYOUT_SHOW, "show", COLOR_SHOW, "Show Layout", *_command_layout_show)
@@ -1306,6 +1308,7 @@ static int hotkey_callback(char *KEYS){
     int rc = execute_hotkey_config_key(key);
     if (rc != EXIT_SUCCESS) {
       log_error("Failed to execute Action %s", key->action);
+      exit(EXIT_FAILURE);
     }else{
       if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
         log_debug("Executed Action %s", key->action);
@@ -2672,6 +2675,9 @@ static void _command_layout_show(){
   exit((hk_show_layout(args->layout_name))? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
+static void _command_layout_names(){
+  exit(hk_print_layout_names()?EXIT_SUCCESS:EXIT_FAILURE);
+}
 static void _command_layout_list(){
   exit(hk_list_layouts()?EXIT_SUCCESS:EXIT_FAILURE);
 }
