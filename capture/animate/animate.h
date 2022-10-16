@@ -4,8 +4,10 @@
 #define VIPS_WARNING    1
 #define MAX_QUEUES      24
 #include "c_workqueue/include/workqueue.h"
+#include "capture/type/type.h"
 #include "chan/src/chan.h"
 #include "core/core.h"
+#include "image/utils/utils.h"
 #include "libimagequant/libimagequant.h"
 #include "msf_gif/msf_gif.h"
 #include "qoi/qoi.h"
@@ -19,11 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "image/utils/utils.h"
-#include "capture/type/type.h"
 struct capture_image_request_t;
 struct capture_animation_request_t {
-
 };
 struct animated_frame_t {
   unsigned char *pixels;
@@ -46,7 +45,7 @@ struct capture_animation_result_t {
   chan_t                 *chan, *done;
   pthread_t              *thread;
   pthread_mutex_t        *mutex;
-  bool progress_bar_mode;
+  bool                   progress_bar_mode;
 };
 bool inspect_frames(struct capture_animation_result_t *acap);
 bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_image_result_t *r);

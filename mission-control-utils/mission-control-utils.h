@@ -1,7 +1,7 @@
 #pragma once
 #ifndef MISSION_CONTROL_UTILS_H
 #define MISSION_CONTROL_UTILS_H
-#include <Carbon/Carbon.h>
+
 #include <fnmatch.h>
 #include <libproc.h>
 #include <mach/mach_time.h>

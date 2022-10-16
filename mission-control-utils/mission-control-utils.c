@@ -1,6 +1,6 @@
 #pragma once
-#include <ApplicationServices/ApplicationServices.h>
-#include <Carbon/Carbon.h>
+//#include <ApplicationServices/ApplicationServices.h>
+
 #include <CoreServices/CoreServices.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
@@ -22,8 +22,8 @@
 #include "space/utils/utils.h"
 #include "submodules/log/log.h"
 #include "timestamp/timestamp.h"
-#include <ApplicationServices/ApplicationServices.h>
-#include <Carbon/Carbon.h>
+//#include <ApplicationServices/ApplicationServices.h>
+
 #include <CoreServices/CoreServices.h>
 static bool MISSION_CONTROL_UTILS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__mission_control_utils(void){

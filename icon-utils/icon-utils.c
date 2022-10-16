@@ -337,8 +337,9 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
 
   return(true);
 } /* write_app_icon_from_png */
+
 size_t get_maximum_icon_size(){
-  return(app_icon_sizes[app_icon_sizes_qty-1].pixels);
+  return(app_icon_sizes[app_icon_sizes_qty - 1].pixels);
 }
 
 size_t get_minimum_icon_size(){
@@ -355,6 +356,7 @@ struct Vector *get_app_icon_sizes_v(){
   }
   return(v);
 }
+
 static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_size){
   icns_family_t *iconFamily = get_icns_file_info(fp);
 

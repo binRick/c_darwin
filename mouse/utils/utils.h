@@ -4,7 +4,6 @@
 //////////////////////////////////////
 #include <assert.h>
 #include <ctype.h>
-#include <Carbon/Carbon.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <math.h>
@@ -13,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "frameworks/frameworks.h"
 //////////////////////////////////////
 CGPoint *get_mouse_location(void);
 void move_mouse(int posX, int posY);

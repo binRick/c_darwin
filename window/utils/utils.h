@@ -1,7 +1,6 @@
 #pragma once
 #ifndef WINDOW_UTILS_H
 #define WINDOW_UTILS_H
-#include <Carbon/Carbon.h>
 #include <fnmatch.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
@@ -15,6 +14,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include "frameworks/frameworks.h"
 ///////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "app/utils/utils.h"

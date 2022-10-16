@@ -6,8 +6,8 @@
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "window/info/info.h"
-#include <ApplicationServices/ApplicationServices.h>
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
@@ -50,17 +50,17 @@ static struct display_parser_t display_parsers[DISPLAY_PARSER_TYPES_QTY + 1] = {
                                        .parser  = ^ void (struct display_t *d, size_t display_id){
                                          d->height  = get_display_id_height(display_id);
                                        }, },
-  [DISPLAY_PARSER_TYPE_CENTER] =      { .enabled = true,
+  [DISPLAY_PARSER_TYPE_CENTER] =     { .enabled = true,
                                        .parser  = ^ void (struct display_t *d, size_t display_id){
-                                         CGPoint p = get_display_center(display_id);
-                                         d->center_x    = (int)(p.x);
-                                         d->center_y    = (int)(p.y);
+                                         CGPoint p   = get_display_center(display_id);
+                                         d->center_x = (int)(p.x);
+                                         d->center_y = (int)(p.y);
                                        }, },
-  [DISPLAY_PARSER_TYPE_OFFSET] =      { .enabled = true,
+  [DISPLAY_PARSER_TYPE_OFFSET] =     { .enabled = true,
                                        .parser  = ^ void (struct display_t *d, size_t display_id){
                                          CGRect rect = get_display_rect(display_id);
-                                         d->offset_x    = (int)(rect.origin.x);
-                                         d->offset_y    = (int)(rect.origin.y);
+                                         d->offset_x = (int)(rect.origin.x);
+                                         d->offset_y = (int)(rect.origin.y);
                                        }, },
   [DISPLAY_PARSER_TYPE_MAIN] =       { .enabled = true,
                                        .parser  = ^ void (struct display_t *d, size_t display_id){

@@ -1,7 +1,6 @@
 #pragma once
 #ifndef PROCESS_UTILS_H
 #define PROCESS_UTILS_H
-#include <Carbon/Carbon.h>
 #include <fnmatch.h>
 #include <mach/mach_time.h>
 #include <stdbool.h>
@@ -50,7 +49,7 @@ struct process_info_t {
   int           pid;
   bool          success;
   struct Vector *open_files_v, *open_connections_v, *open_ports_v, *ppids_v, *env_v, *child_pids_v;
-  pid_t ppid;
+  pid_t         ppid;
   unsigned long started, dur;
 };
 bool focus_pid(pid_t pid);
@@ -79,7 +78,7 @@ int get_window_id_display_id(size_t window_id);
   "tell application \"System Events\"\n"                   \
   "    keystroke \"G\" using {command down, shift down}\n" \
   "    delay 1\n"                                          \
-  "    keystroke \"%s\"\n"                      \
+  "    keystroke \"%s\"\n"                                 \
   "    delay 1\n"                                          \
   "    keystroke return\n"                                 \
   "    delay 1\n"                                          \

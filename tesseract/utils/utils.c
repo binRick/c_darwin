@@ -17,36 +17,36 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "c_workqueue/include/workqueue.h"
-#include "capture/utils/utils.h"
 #include "capture/type/type.h"
+#include "capture/utils/utils.h"
 #include "chan/src/chan.h"
 #include "core/image/image.h"
 #include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
+#include "keyboard/utils/utils.h"
 #include "kitty/msg/msg.h"
 #include "log/log.h"
+#include "mouse/utils/utils.h"
 #include "ms/ms.h"
+#include "pasteboard/pasteboard.h"
 #include "tempdir.c/tempdir.h"
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-#include "mouse/utils/utils.h"
-#include "keyboard/utils/utils.h"
-#include "pasteboard/pasteboard.h"
 struct TesseractArgs {
-  size_t               id;
-  char                 *file;
-  unsigned char        *img;
-  CGImageRef           img_ref;
-  size_t               index, img_len, img_width, img_height;
-  enum image_type_id_t format;
+  size_t                 id;
+  char                   *file;
+  unsigned char          *img;
+  CGImageRef             img_ref;
+  size_t                 index, img_len, img_width, img_height;
+  enum image_type_id_t   format;
   enum capture_type_id_t type;
-  struct Vector        *results_v;
+  struct Vector          *results_v;
 };
 ////////////////////////////////////////////
-static bool TESSERACT_UTILS_DEBUG_MODE = false;
-static const char *tess_lang = "eng";
+static bool       TESSERACT_UTILS_DEBUG_MODE = false;
+static const char *tess_lang                 = "eng";
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((destructor)) __destructor__tesseract_utils(void){
 }
@@ -67,7 +67,8 @@ struct Vector *get_security_words_v(){
 }
 
 ////////////////////////////////////////////
-#define MINIMIZE_PREFERENCES false
+#define MINIMIZE_PREFERENCES    false
+
 bool tesseract_security_preferences_logic(int space_id){
   struct tesseract_extract_result_t *r, *words;
   size_t                            focused_window_id, window_id;
@@ -87,9 +88,10 @@ bool tesseract_security_preferences_logic(int space_id){
       goto log_error;
     }
   }
-  if(space_id>-1){
-    if(!(set_window_id_to_space((size_t)(window_id), (int)(space_id)))){
-      log_error("Failed to move window %lu to space %d", window_id,space_id);
+
+  if (space_id > -1) {
+    if (!(set_window_id_to_space((size_t)(window_id), (int)(space_id)))) {
+      log_error("Failed to move window %lu to space %d", window_id, space_id);
     }
   }
   {
@@ -121,19 +123,20 @@ bool tesseract_security_preferences_logic(int space_id){
   }
 
   struct CGPoint *p;
-#define DEBUG_MOUSE_LOCATION(){ do {\
-  p = get_mouse_location();\
-  log_info("Mouse is at %dx%d"\
-      "%s", \
-      (int)p->x,\
-      (int)p->y,\
-      ""\
-      );\
-} while(0); }
+
+#define DEBUG_MOUSE_LOCATION()    { do {                           \
+                                      p = get_mouse_location();    \
+                                      log_info("Mouse is at %dx%d" \
+                                               "%s",               \
+                                               (int)p->x,          \
+                                               (int)p->y,          \
+                                               ""                  \
+                                               );                  \
+                                    } while (0); }
 
   int mouse_to[20];
-  mouse_to[0] = (int)(r->window.rect.origin.x)+(int)(r->determined_area.x_min_offset_pixels)+r->x;
-  mouse_to[1] = (int)(r->window.rect.origin.y)+(int)(r->determined_area.y_min_offset_pixels)+r->y;
+  mouse_to[0] = (int)(r->window.rect.origin.x) + (int)(r->determined_area.x_min_offset_pixels) + r->x;
+  mouse_to[1] = (int)(r->window.rect.origin.y) + (int)(r->determined_area.y_min_offset_pixels) + r->y;
   mouse_to[2] = mouse_to[0] + 260;
   mouse_to[3] = mouse_to[1] - 230;
   mouse_to[4] = mouse_to[2] + 20;
@@ -142,86 +145,87 @@ bool tesseract_security_preferences_logic(int space_id){
   mouse_to[7] = mouse_to[5] - 20;
   mouse_to[8] = mouse_to[6] - 190;
   mouse_to[9] = mouse_to[7] - 0;
-  log_info("Moving mouse to %dx%d", mouse_to[0],mouse_to[1]);
+  log_info("Moving mouse to %dx%d", mouse_to[0], mouse_to[1]);
   DEBUG_MOUSE_LOCATION();
-  move_mouse(mouse_to[0],mouse_to[1]);
+  move_mouse(mouse_to[0], mouse_to[1]);
   DEBUG_MOUSE_LOCATION();
-  usleep(1000*100);
+  usleep(1000 * 100);
   focus_window_id(window_id);
-  usleep(1000*100);
+  usleep(1000 * 100);
   left_click_mouse();
-  usleep(1000*100);
-  move_mouse(mouse_to[2],mouse_to[3]);
-  usleep(1000*500);
+  usleep(1000 * 100);
+  move_mouse(mouse_to[2], mouse_to[3]);
+  usleep(1000 * 500);
   right_click_mouse();
-  usleep(1000*500);
-  move_mouse(mouse_to[4],mouse_to[5]);
-  usleep(1000*500);
+  usleep(1000 * 500);
+  move_mouse(mouse_to[4], mouse_to[5]);
+  usleep(1000 * 500);
   char *cb = read_clipboard();
-  if(!getenv("PASS")){
+  if (!getenv("PASS")) {
     log_error("PASS env var not set!");
     return(false);
   }
   char *pass = getenv("PASS");
   copy_clipboard(pass);
   left_click_mouse();
-  usleep(1000*500);
+  usleep(1000 * 500);
   copy_clipboard(cb);
-  move_mouse(mouse_to[6],mouse_to[7]);
-  usleep(1000*500);
+  move_mouse(mouse_to[6], mouse_to[7]);
+  usleep(1000 * 500);
   left_click_mouse();
-  usleep(1000*1000);
-  CGImageRef image_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
-  int w = CGImageGetWidth(image_ref);
-  int h = CGImageGetHeight(image_ref);
-  size_t img_len = 0;
-  unsigned char *img = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, image_ref, &(img_len));
-  log_info("captured %dx%d Window with %s Pixels", w,h,bytes_to_string(img_len));
-  if(kitty_display_image_buffer(img,img_len))
+  usleep(1000 * 1000);
+  CGImageRef    image_ref = capture_type_capture(CAPTURE_TYPE_WINDOW, window_id);
+  int           w         = CGImageGetWidth(image_ref);
+  int           h         = CGImageGetHeight(image_ref);
+  size_t        img_len   = 0;
+  unsigned char *img      = save_cgref_to_image_type_memory(IMAGE_TYPE_PNG, image_ref, &(img_len));
+  log_info("captured %dx%d Window with %s Pixels", w, h, bytes_to_string(img_len));
+  if (kitty_display_image_buffer(img, img_len)) {
     printf("\n");
+  }
 
-  usleep(1000*500);
-  move_mouse(mouse_to[8],mouse_to[9]);
+  usleep(1000 * 500);
+  move_mouse(mouse_to[8], mouse_to[9]);
   CGPoint *add_position = get_mouse_location();
-  log_info("Add app button position: %dx%d", 
-      (int)(add_position->x),
-      (int)(add_position->y)
-      );
-  char *apps[] = {
+  log_info("Add app button position: %dx%d",
+           (int)(add_position->x),
+           (int)(add_position->y)
+           );
+  char   *apps[] = {
 //    "target/release/osx/Alacritty.app",
-       // "kitty-alpha/alpha.app",
-      //  "kitty-code/code.app",
-     //   "kitty-compiler/compiler.app",
+    // "kitty-alpha/alpha.app",
+    //  "kitty-code/code.app",
+    //   "kitty-compiler/compiler.app",
     //    "kitty-entr/entr.app",
-   //     "kitty-left/left.app",
-        "kitty-main/main.app",
-   //     "kitty-primary/primary.app",
- //       "kitty-richard/richard.app",
-   //     "kitty-right/right.app",
-   //     "kitty-secondary/secondary.app",
+    //     "kitty-left/left.app",
+    "kitty-main/main.app",
+    //     "kitty-primary/primary.app",
+    //       "kitty-richard/richard.app",
+    //     "kitty-right/right.app",
+    //     "kitty-secondary/secondary.app",
   };
-  size_t apps_qty = sizeof(apps)/sizeof(apps[0]);
-  char *osa, *app_path;
-  for(size_t i = 0; i <apps_qty;i++){
+  size_t apps_qty = sizeof(apps) / sizeof(apps[0]);
+  char   *osa, *app_path;
+  for (size_t i = 0; i < apps_qty; i++) {
     focus_window_id(window_id);
-    usleep(1000*100);
-    move_mouse((int)(add_position->x),(int)(add_position->y));
-    usleep(1000*100);
+    usleep(1000 * 100);
+    move_mouse((int)(add_position->x), (int)(add_position->y));
+    usleep(1000 * 100);
     left_click_mouse();
-    usleep(1000*100);
-    asprintf(&app_path,"/Users/rick/repos/%s", apps[i]);
-    asprintf(&osa,SET_FILE,app_path);
-    errno=0;
-    if(!run_osascript(osa)){
+    usleep(1000 * 100);
+    asprintf(&app_path, "/Users/rick/repos/%s", apps[i]);
+    asprintf(&osa, SET_FILE, app_path);
+    errno = 0;
+    if (!run_osascript(osa)) {
       log_error("Failed to run set file osascript");
       return(false);
     }
-    usleep(1000*500);
+    usleep(1000 * 500);
   }
   vector_clear(words);
-  vector_push(words,(void*)(char*)"Accessibility");
+  vector_push(words, (void *)(char *)"Accessibility");
   r = tesseract_find_item_matching_word_locations(window_id, words);
-  log_info("Found  Results: %dx%d", (int)(r->window.rect.origin.x),(int)(r->window.rect.origin.y));
+  log_info("Found  Results: %dx%d", (int)(r->window.rect.origin.x), (int)(r->window.rect.origin.y));
 
   if (TESSERACT_UTILS_DEBUG_MODE) {
     log_debug("Closing System Preferences");
@@ -276,7 +280,7 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
            "\n%s",
            AC_GREEN, AC_RESETALL, milliseconds_to_string(timestamp() - r->started),
            AC_RED, AC_RESETALL, r->window.pid, (int)(r->window.rect.size.width), (int)(r->window.rect.size.height), r->window.name,
-           AC_RED, AC_RESETALL, (int)(r->window.rect.origin.x),(int)(r->window.rect.origin.y),
+           AC_RED, AC_RESETALL, (int)(r->window.rect.origin.x), (int)(r->window.rect.origin.y),
            AC_GREEN, AC_RESETALL, bytes_to_string(r->img_len), image_type_name(r->format),
            AC_MAGENTA, AC_RESETALL, AC_BRIGHT_YELLOW_BLACK AC_ITALIC AC_INVERSE, stringfn_trim(lines.strings[0]), AC_RESETALL,
            r->confidence, r->box, r->x, r->y, r->width, r->height, r->mode,
@@ -303,10 +307,10 @@ void report_tesseract_extraction_results(struct tesseract_extract_result_t *r){
 } /* report_tesseract_extraction_results */
 
 bool parse_tesseract_extraction_results(struct tesseract_extract_result_t *r){
-  r->determined_area.x_max_offset_perc          = (float)((float)((float)(r->x) / ((float)(r->source_file.width))));
-  r->determined_area.x_min_offset_perc          = (r->determined_area.x_max_offset_perc) / 2;
-  r->determined_area.y_min_offset_perc          = (float)((float)((float)(r->y) / ((float)(r->source_file.height))));
-  r->determined_area.y_max_offset_perc          = 1;
+  r->determined_area.x_max_offset_perc   = (float)((float)((float)(r->x) / ((float)(r->source_file.width))));
+  r->determined_area.x_min_offset_perc   = (r->determined_area.x_max_offset_perc) / 2;
+  r->determined_area.y_min_offset_perc   = (float)((float)((float)(r->y) / ((float)(r->source_file.height))));
+  r->determined_area.y_max_offset_perc   = 1;
   r->determined_area.x_max_offset_pixels = (int)((r->determined_area.x_max_offset_perc) * (float)(r->window.rect.size.width));
   r->determined_area.x_min_offset_pixels = (r->determined_area.x_max_offset_pixels) / 2;
   r->determined_area.y_min_offset_pixels = (int)((r->determined_area.y_min_offset_perc) * (float)(r->window.rect.size.height));
@@ -320,9 +324,9 @@ struct tesseract_extract_result_t *tesseract_find_item_matching_word_locations(s
   char                              *s;
   int                               w = 0, h = 0;
   CGImageRef                        image_refs[1];
-  size_t                            img_len    = 0;
-  unsigned char                     *img       = NULL;
-  enum image_type_id_t              format = TESSERACT_EXTRACT_IMAGE_TYPE;
+  size_t                            img_len = 0;
+  unsigned char                     *img    = NULL;
+  enum image_type_id_t              format  = TESSERACT_EXTRACT_IMAGE_TYPE;
   {
     if (TESSERACT_UTILS_DEBUG_MODE) {
       log_debug("Working with Window #%lu", window_id);
@@ -385,14 +389,14 @@ struct tesseract_extract_result_t *tesseract_find_item_matching_word_locations(s
           r->window             = *get_window_id_info(window_id);
           r->img                = img;
           r->img_len            = img_len;
-          r->format         = format;
+          r->format             = format;
           assert(r->window.window_id == window_id);
           return(r);
         }
       }
     }
   }
-} 
+} /* tesseract_find_item_matching_word_locations */
 
 static void __tesseract_capture_item(void *ARGS){
   unsigned long starteds[3];
@@ -408,8 +412,9 @@ static void __tesseract_capture_item(void *ARGS){
   r->img = save_cgref_to_image_type_memory(r->format, r->img_ref, &(r->img_len));
   assert(r->img_len > 0);
   assert(r->img != NULL);
-  if (TESSERACT_UTILS_DEBUG_MODE)
+  if (TESSERACT_UTILS_DEBUG_MODE) {
     log_info("\tCaptured %lux%lu %s Image of Window ID %lu in %s", r->img_width, r->img_height, bytes_to_string(r->img_len), r->id, milliseconds_to_string(timestamp() - starteds[0]));
+  }
 }
 
 static void __tesseract_extract_item(void *ARGS){
@@ -419,8 +424,9 @@ static void __tesseract_extract_item(void *ARGS){
   starteds[0] = timestamp();
   starteds[1] = timestamp();
   starteds[2] = timestamp();
-  if(TESSERACT_UTILS_DEBUG_MODE)
+  if (TESSERACT_UTILS_DEBUG_MODE) {
     log_info(AC_YELLOW "\tExtracting Item #%lu"AC_RESETALL, r->id);
+  }
 
   r->results_v = tesseract_extract_memory(r->img, r->img_len, RIL_TEXTLINE);
   if (TESSERACT_UTILS_DEBUG_MODE) {
@@ -444,9 +450,9 @@ struct Vector *tesseract_extract_items(struct Vector *v, size_t concurrency){
 
   for (size_t i = 0; i < vector_size(v); i++) {
     struct TesseractArgs *a = calloc(1, sizeof(struct TesseractArgs));
-    a->id     = (size_t)vector_get(v, i);
-    a->results_v     = vector_new();
-    a->format = IMAGE_TYPE_PNG;
+    a->id        = (size_t)vector_get(v, i);
+    a->results_v = vector_new();
+    a->format    = IMAGE_TYPE_PNG;
     vector_push(Args, (void *)a);
     if (!workqueue_push(capture_queues[i % concurrency], __tesseract_capture_item, a)) {
       log_error("Failed to push work function to queue\n");
@@ -461,8 +467,9 @@ struct Vector *tesseract_extract_items(struct Vector *v, size_t concurrency){
   for (size_t c = 0; c < concurrency; c++) {
     workqueue_release(capture_queues[c]);
   }
-  if(TESSERACT_UTILS_DEBUG_MODE)
+  if (TESSERACT_UTILS_DEBUG_MODE) {
     log_info("Captured in %s", milliseconds_to_string(timestamp() - cap_started));
+  }
   unsigned long extract_started = timestamp();
 
   for (size_t i = 0; i < vector_size(Args); i++) {
@@ -490,7 +497,7 @@ struct Vector *tesseract_extract_items(struct Vector *v, size_t concurrency){
              );
   }
   return(Args);
-}
+} /* tesseract_extract_items */
 struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data_len, unsigned long MODE){
   unsigned long ts     = timestamp();
   struct Vector *words = vector_new();

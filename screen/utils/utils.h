@@ -99,5 +99,5 @@ CGImageRef capture_display_id_rect(size_t display_id, CGRect rect);
 bool save_captures(struct screen_capture_t *S);
 CGImageRef capture_display_id(size_t display_id);
 CGImageRef preview_display_id(size_t display_id);
-  CGImageRef capture_display_id_width(size_t display_id, size_t width);
-  CGImageRef capture_display_id_height(size_t display_id, size_t height);
+CGImageRef capture_display_id_width(size_t display_id, size_t width);
+CGImageRef capture_display_id_height(size_t display_id, size_t height);

@@ -48,7 +48,7 @@
 #include "which/src/which.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>
 #include <CoreFoundation/CFString.h>
@@ -60,7 +60,7 @@
 #include <sys/resource.h>
 #define SYSTEM_PREFERENCES_SECURITY_APP_NAME       "System Preferences"
 #define SYSTEM_PREFERENCES_SECURITY_WINDOW_NAME    "Security & Privacy"
-#define OSASCRIPT_PATH "/usr/bin:/usr/local/bin"
+#define OSASCRIPT_PATH                             "/usr/bin:/usr/local/bin"
 static bool       PROCESS_UTILS_DEBUG_MODE         = false;
 static bool       PROCESS_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void);
@@ -143,40 +143,37 @@ static bool get_application_has_accessibility_access_0(){
 }
 
 void get_cputime(){
+  struct rusage r_usage;
 
-struct rusage r_usage;
+  if (getrusage(RUSAGE_SELF, &r_usage)) {
+    log_error("Failed to get rusage");
+  }else{
+    struct kinfo_proc info;
+    int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)getpid() };
+    size_t            len   = sizeof info;
+    memset(&info, 0, len);
+    sysctl(mib, (sizeof(mib) / sizeof(int)), &info, &len, NULL, 0);
 
-if (getrusage(RUSAGE_SELF, &r_usage)) {
-  log_error("Failed to get rusage");
-}else{
-      struct kinfo_proc info;
-    int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)getpid() };
-    size_t len = sizeof info;
-    memset(&info,0,len);
-    sysctl(mib, (sizeof(mib)/sizeof(int)), &info, &len, NULL, 0);
+    struct timeval wall_start = info.kp_proc.p_starttime;
 
+    struct timeval wall_now;
+    gettimeofday(&wall_now, NULL);
+    double         start     = wall_start.tv_sec + (wall_start.tv_usec / (float)1000000);
+    double         stop      = wall_now.tv_sec + (wall_now.tv_usec / (float)1000000);
+    double         wall_time = stop - start;
 
-      struct timeval wall_start = info.kp_proc.p_starttime;
-
-
-struct timeval wall_now;
-gettimeofday(&wall_now, NULL);
-double start = wall_start.tv_sec + (wall_start.tv_usec / (float)1000000);
-double stop = wall_now.tv_sec + (wall_now.tv_usec / (float)1000000);
-double wall_time = stop - start;
-
-  printf("Total User CPU = %ld.%d\n",
-            r_usage.ru_utime.tv_sec,
-            r_usage.ru_utime.tv_usec);
-  printf("Total System CPU = %ld.%d\n",
-            r_usage.ru_stime.tv_sec,
-            r_usage.ru_stime.tv_usec);
-  double cpu_time = r_usage.ru_utime.tv_sec + r_usage.ru_utime.tv_usec/(float)1000000 + r_usage.ru_stime.tv_sec + r_usage.ru_stime.tv_usec/(float)1000000;
-  double percentage = cpu_time / wall_time;
-  log_debug("time:%f", cpu_time);
-  log_debug("%%:%f", percentage);
-  log_debug("start:%f", start);
-  log_debug("time:%f", wall_time);
+    printf("Total User CPU = %ld.%d\n",
+           r_usage.ru_utime.tv_sec,
+           r_usage.ru_utime.tv_usec);
+    printf("Total System CPU = %ld.%d\n",
+           r_usage.ru_stime.tv_sec,
+           r_usage.ru_stime.tv_usec);
+    double cpu_time   = r_usage.ru_utime.tv_sec + r_usage.ru_utime.tv_usec / (float)1000000 + r_usage.ru_stime.tv_sec + r_usage.ru_stime.tv_usec / (float)1000000;
+    double percentage = cpu_time / wall_time;
+    log_debug("time:%f", cpu_time);
+    log_debug("%%:%f", percentage);
+    log_debug("start:%f", start);
+    log_debug("time:%f", wall_time);
   }
 }
 
@@ -293,7 +290,7 @@ struct Vector *get_all_process_infos_v(){
 struct process_info_t *get_process_info(int pid){
   struct process_info_t *I = calloc(1, sizeof(struct process_info_t));
 
-  I->pid                = pid;
+  I->pid = pid;
   if (I->pid == 0) {
     log_error("Invalid PID %d", I->pid);
     return(NULL);
@@ -303,11 +300,11 @@ struct process_info_t *get_process_info(int pid){
   I->open_connections_v = vector_new();
   I->open_files_v       = vector_new();
   //I->env_v       = get_process_env(I->pid);
-  I->env_v       = vector_new();
-  I->child_pids_v       = get_child_pids(I->pid);
-  I->ppid = get_process_ppid(I->pid);
-  I->ppids_v       = get_process_ppids(I->pid);
-  I->started            = timestamp();
+  I->env_v        = vector_new();
+  I->child_pids_v = get_child_pids(I->pid);
+  I->ppid         = get_process_ppid(I->pid);
+  I->ppids_v      = get_process_ppids(I->pid);
+  I->started      = timestamp();
 
   int bufferSize = proc_pidinfo(I->pid, PROC_PIDLISTFDS, 0, 0, 0);
 
@@ -389,7 +386,7 @@ int get_focused_window_id(){
   CFArrayRef    windows_list    = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements | kCGWindowListOptionAll, kCGNullWindowID); \
   size_t        windows_count   = (size_t)CFArrayGetCount(windows_list);                                                                     \
   struct Vector *window_infos_v = vector_new();                                                                                              \
-  int           r = -1;
+  int           r               = -1;
 
 #define WINDOW_DICTIONARY_INFO_REFS(DICT)                                                    \
   CFStringRef name_ref = CFDictionaryGetValue(DICT, kCGWindowOwnerName);                     \
@@ -417,90 +414,90 @@ int get_focused_window_id(){
   i->durs[WINDOW_INFO_DUR_TYPE_TOTAL].started = timestamp();         \
   i->started                                  = timestamp();
 
-#define WINDOW_DICTIONARY_SET_ITEMS()                                                      \
-  psn = PID2PSN(pid);                                                                      \
-  CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);                         \
-  CFNumberGetValue(memory_usage_ref, CFNumberGetType(memory_usage_ref), &memory_usage);    \
-  CGRect bounds;                                                                           \
-  CFNumberGetValue(store_type_ref, CFNumberGetType(store_type_ref), &store_type);          \
-  CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state); \
-  CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);             \
-  CFNumberGetValue(pid_ref, CFNumberGetType(pid_ref), &pid);                               \
-  if (is_onscreen_ref) is_onscreen = CFBooleanGetValue(is_onscreen_ref);                   \
-  CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);                          \
-  name                 = cfstring_copy(name_ref);                                          \
-  if (title_ref) title = cfstring_copy(title_ref);                                         \
-  is_focused           = ((size_t)focused_window_id == (size_t)window_id) ? true : false;\
-  int connection;\
-  uint64_t set_tags = 1;\
-  uint64_t clear_tags = 0;\
-  int did = 0;\
-  int space_count = 0;\
-  int display_count=0;\
- if(true){\
-  CGGetActiveDisplayList(0, NULL, &display_count);\
-  if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)\
-    log_info("qty displays:%d", display_count);\
-  CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);\
-  int        display_spaces_count = CFArrayGetCount(display_spaces_ref);\
-  uint32_t options = true ? 0x7 : 0x2;\
-  for (int i = 0; i < display_spaces_count; ++i) {\
-    CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);\
-    CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));\
-    int spaces_count = CFArrayGetCount(spaces_ref);\
-    if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)\
-      log_info("qty spaces:%d",spaces_count);\
-    uint64_t space_list[spaces_count];\
-    for (int j = 0; j < spaces_count; ++j) {\
-      CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);\
-      CFNumberRef sid_ref = CFDictionaryGetValue(space_ref, CFSTR("id64"));\
-      CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &space_list[j]);\
-      if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)\
-        log_info("space #%lu> ",space_list[j]);\
-    }\
-    CFArrayRef space_list_ref = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), spaces_count, kCFNumberSInt64Type);\
-    CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, 0, space_list_ref, options, &set_tags, &clear_tags);\
-    size_t qty = CFArrayGetCount(window_list_ref);\
-    if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)\
-      log_info("qty windows:%lu", qty);\
-    CFTypeRef query = SLSWindowQueryWindows(g_connection, window_list_ref, qty);\
-    CFTypeRef iterator = SLSWindowQueryResultCopyWindows(query);\
-    int window_count = 0;\
-    while (SLSWindowIteratorAdvance(iterator)) {\
-        uint32_t wid = SLSWindowIteratorGetWindowID(iterator);\
-        CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow,wid);\
-        int wqty = CFArrayGetCount(window_list);\
-      for (int I = 0; I < CFArrayGetCount(window_list); I++) {\
-        CFDictionaryRef windict  = CFArrayGetValueAtIndex(window_list, I);\
-        CFNumberRef     owner_pid_ref     = CFDictionaryGetValue(windict, kCGWindowOwnerPID);\
-        int owner_pid=0,connection=0;\
-        CFNumberGetValue(owner_pid_ref, CFNumberGetType(owner_pid_ref), &owner_pid);\
-        ProcessSerialNumber tempPSN;\
-        GetProcessForPID(owner_pid, &tempPSN);\
-        SLSGetConnectionIDForPSN(g_connection, &(tempPSN), &connection);\
-    AXUIElementRef a;\
-    AXUIElementRef w;\
-        a = AXUIElementCreateApplication(owner_pid);\
-        int lvl=0,lyr=0;\
-  SLSGetWindowLevel(connection, wid, &(lvl));\
-  CFStringRef         nr         = CFDictionaryGetValue(windict, kCGWindowName);         \
-    CFNumberRef     lr = CFDictionaryGetValue(windict, kCGWindowLayer);\
-    CFNumberGetValue(lr, kCFNumberIntType, &lyr);\
-        char *n = cfstring_copy(nr);\
-  CFBooleanRef        is_onscreen_ref   = CFDictionaryGetValue(windict, kCGWindowIsOnscreen);   \
-        bool os = false;\
-        if(is_onscreen_ref)\
-          os = CFBooleanGetValue(is_onscreen_ref);\
-        if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)\
-          log_info("window #%lu> display:%d|pid:%d|conn:%d|lvl:%d|lyr:%d\n\t|name:%s|onscreen:%s|",\
-            wid,\
-            i,\
-            owner_pid,connection,lvl,lyr,n,os?"Yes":"No"\
-            );\
-      }\
-    }\
-  }\
- }\
+#define WINDOW_DICTIONARY_SET_ITEMS()                                                                                                  \
+  psn = PID2PSN(pid);                                                                                                                  \
+  CFNumberGetValue(layer_ref, CFNumberGetType(layer_ref), &layer);                                                                     \
+  CFNumberGetValue(memory_usage_ref, CFNumberGetType(memory_usage_ref), &memory_usage);                                                \
+  CGRect bounds;                                                                                                                       \
+  CFNumberGetValue(store_type_ref, CFNumberGetType(store_type_ref), &store_type);                                                      \
+  CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state);                                             \
+  CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);                                                         \
+  CFNumberGetValue(pid_ref, CFNumberGetType(pid_ref), &pid);                                                                           \
+  if (is_onscreen_ref) is_onscreen = CFBooleanGetValue(is_onscreen_ref);                                                               \
+  CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);                                                                      \
+  name                 = cfstring_copy(name_ref);                                                                                      \
+  if (title_ref) title = cfstring_copy(title_ref);                                                                                     \
+  is_focused           = ((size_t)focused_window_id == (size_t)window_id) ? true : false;                                              \
+  int      connection;                                                                                                                 \
+  uint64_t set_tags      = 1;                                                                                                          \
+  uint64_t clear_tags    = 0;                                                                                                          \
+  int      did           = 0;                                                                                                          \
+  int      space_count   = 0;                                                                                                          \
+  int      display_count = 0;                                                                                                          \
+  if (true) {                                                                                                                          \
+    CGGetActiveDisplayList(0, NULL, &display_count);                                                                                   \
+    if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)                                                                                              \
+    log_info("qty displays:%d", display_count);                                                                                        \
+    CFArrayRef display_spaces_ref   = SLSCopyManagedDisplaySpaces(g_connection);                                                       \
+    int        display_spaces_count = CFArrayGetCount(display_spaces_ref);                                                             \
+    uint32_t   options              = true ? 0x7 : 0x2;                                                                                \
+    for (int i = 0; i < display_spaces_count; ++i) {                                                                                   \
+      CFDictionaryRef display_ref  = CFArrayGetValueAtIndex(display_spaces_ref, i);                                                    \
+      CFArrayRef      spaces_ref   = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));                                               \
+      int             spaces_count = CFArrayGetCount(spaces_ref);                                                                      \
+      if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)                                                                                            \
+      log_info("qty spaces:%d", spaces_count);                                                                                         \
+      uint64_t space_list[spaces_count];                                                                                               \
+      for (int j = 0; j < spaces_count; ++j) {                                                                                         \
+        CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);                                                             \
+        CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));                                                    \
+        CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &space_list[j]);                                                           \
+        if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)                                                                                          \
+        log_info("space #%lu> ", space_list[j]);                                                                                       \
+      }                                                                                                                                \
+      CFArrayRef space_list_ref  = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), spaces_count, kCFNumberSInt64Type);              \
+      CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, 0, space_list_ref, options, &set_tags, &clear_tags); \
+      size_t     qty             = CFArrayGetCount(window_list_ref);                                                                   \
+      if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)                                                                                            \
+      log_info("qty windows:%lu", qty);                                                                                                \
+      CFTypeRef query        = SLSWindowQueryWindows(g_connection, window_list_ref, qty);                                              \
+      CFTypeRef iterator     = SLSWindowQueryResultCopyWindows(query);                                                                 \
+      int       window_count = 0;                                                                                                      \
+      while (SLSWindowIteratorAdvance(iterator)) {                                                                                     \
+        uint32_t   wid         = SLSWindowIteratorGetWindowID(iterator);                                                               \
+        CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow, wid);         \
+        int        wqty        = CFArrayGetCount(window_list);                                                                         \
+        for (int I = 0; I < CFArrayGetCount(window_list); I++) {                                                                       \
+          CFDictionaryRef     windict = CFArrayGetValueAtIndex(window_list, I);                                                        \
+          CFNumberRef         owner_pid_ref = CFDictionaryGetValue(windict, kCGWindowOwnerPID);                                        \
+          int                 owner_pid = 0, connection = 0;                                                                           \
+          CFNumberGetValue(owner_pid_ref, CFNumberGetType(owner_pid_ref), &owner_pid);                                                 \
+          ProcessSerialNumber tempPSN;                                                                                                 \
+          GetProcessForPID(owner_pid, &tempPSN);                                                                                       \
+          SLSGetConnectionIDForPSN(g_connection, &(tempPSN), &connection);                                                             \
+          AXUIElementRef a;                                                                                                            \
+          AXUIElementRef w;                                                                                                            \
+          a = AXUIElementCreateApplication(owner_pid);                                                                                 \
+          int            lvl = 0, lyr = 0;                                                                                             \
+          SLSGetWindowLevel(connection, wid, &(lvl));                                                                                  \
+          CFStringRef    nr = CFDictionaryGetValue(windict, kCGWindowName);                                                            \
+          CFNumberRef    lr = CFDictionaryGetValue(windict, kCGWindowLayer);                                                           \
+          CFNumberGetValue(lr, kCFNumberIntType, &lyr);                                                                                \
+          char           *n              = cfstring_copy(nr);                                                                          \
+          CFBooleanRef   is_onscreen_ref = CFDictionaryGetValue(windict, kCGWindowIsOnscreen);                                         \
+          bool           os              = false;                                                                                      \
+          if (is_onscreen_ref)                                                                                                         \
+          os = CFBooleanGetValue(is_onscreen_ref);                                                                                     \
+          if (PROCESS_UTILS_VERBOSE_DEBUG_MODE)                                                                                        \
+          log_info("window #%lu> display:%d|pid:%d|conn:%d|lvl:%d|lyr:%d\n\t|name:%s|onscreen:%s|",                                    \
+                   wid,                                                                                                                \
+                   i,                                                                                                                  \
+                   owner_pid, connection, lvl, lyr, n, os?"Yes":"No"                                                                   \
+                   );                                                                                                                  \
+        }                                                                                                                              \
+      }                                                                                                                                \
+    }                                                                                                                                  \
+  }                                                                                                                                    \
 
 #define WINDOW_DICTIONARY_VALIDATE_ID(ID)  \
   {                                        \
@@ -515,16 +512,16 @@ int get_focused_window_id(){
   }                                           \
   if (r != 0) { free(i);  continue; }
 
-#define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS() \
-  if (\
-      !name \
-      || strlen(name) < 1 \
-      || pid < 1 \
-      || !title \
-      || ((int)bounds.size.width * bounds.size.height <= 1)\
-    ) { \
-    free(i);  \
-    continue; \
+#define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS()           \
+  if (                                                    \
+    !name                                                 \
+    || strlen(name) < 1                                   \
+    || pid < 1                                            \
+    || !title                                             \
+    || ((int)bounds.size.width * bounds.size.height <= 1) \
+    ) {                                                   \
+    free(i);                                              \
+    continue;                                             \
   }
 
 #define WINDOW_DICTIONARY_SET_WINDOW_INFO(BRIEF)                                                                         \
@@ -535,9 +532,9 @@ int get_focused_window_id(){
   i->name                                            = (name != NULL) ? strdup(name) : "";                               \
   i->title                                           = (title != NULL) ? strdup(title) : "";                             \
   i->memory_usage                                    = (size_t)memory_usage;                                             \
-  i->pid_app_list_qty = 0;\
+  i->pid_app_list_qty                                = 0;                                                                \
   i->app_window_ids_v                                = vector_new();                                                     \
-  i->app_window = NULL;\
+  i->app_window                                      = NULL;                                                             \
   i->is_minimized                                    = false;                                                            \
   i->is_fullscreen                                   = false;                                                            \
   i->can_minimize                                    = false;                                                            \
@@ -553,7 +550,7 @@ int get_focused_window_id(){
   i->space_id                                        = 0;                                                                \
   int wid = (int)(i->window_id);                                                                                         \
   i->durs[WINDOW_INFO_DUR_TYPE_SPACE_ID].started = timestamp();                                                          \
-  if (true||BRIEF == false) {                                                                                                  \
+  if (true || BRIEF == false) {                                                                                          \
     CFArrayRef window_list_ref = cfarray_of_cfnumbers(&wid, sizeof(int), 1, kCFNumberSInt32Type);                        \
     CFArrayRef space_list_ref  = SLSCopySpacesForWindows(g_connection, 0x7, window_list_ref);                            \
     int        space_qty       = CFArrayGetCount(space_list_ref);                                                        \
@@ -577,37 +574,37 @@ int get_focused_window_id(){
     if (wildcardcmp(EXCLUDED_WINDOW_INFO_NAMES[ei], i->name) == 1) is_excluded = true;                                           \
   }                                                                                                                              \
   if (is_excluded == false) {                                                                                                    \
-    if (true||BRIEF == false) {                                                                                                        \
+    if (true || BRIEF == false) {                                                                                                \
       if ((size_t)(i->pid) > (size_t)1) {                                                                                        \
         i->app = AXUIElementCreateApplication(i->pid);                                                                           \
         if (i->app) {                                                                                                            \
-    i->level = 0;\
-  SLSGetWindowLevel(g_connection, i->window_id, &(i->level));\
-    AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
+          i->level = 0;                                                                                                          \
+          SLSGetWindowLevel(g_connection, i->window_id, &(i->level));                                                            \
+          AXUIElementCopyAttributeValue(i->app, kAXWindowsAttribute, (CFTypeRef *)&(i->pid_app_list));                           \
           i->pid_app_list_qty = CFArrayGetCount(i->pid_app_list);                                                                \
           if (PROCESS_UTILS_DEBUG_MODE) {                                                                                        \
-            log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);\
+            log_info("%s> PID %d has %lu apps", i->name, i->pid, i->pid_app_list_qty);                                           \
           }                                                                                                                      \
           for (size_t x = 0; x < i->pid_app_list_qty; x++) {                                                                     \
             AXUIElementRef appWindow = CFArrayGetValueAtIndex(i->pid_app_list, x);                                               \
             CGWindowID     wid;                                                                                                  \
             _AXUIElementGetWindow(appWindow, &(wid));                                                                            \
-            if((size_t)wid != (size_t)(i->window_id)) continue;\
+            if ((size_t)wid != (size_t)(i->window_id)) continue;                                                                 \
             vector_push(i->app_window_ids_v, (void *)(size_t)wid);                                                               \
             if ((size_t)wid == (size_t)(i->window_id)) {                                                                         \
               i->app_window = appWindow;                                                                                         \
               CFBooleanRef is_fullscreen_ref;                                                                                    \
-    const void *role = NULL;\
-    if(AXUIElementCopyAttributeValue(i->app_window, kAXRoleAttribute, &role) == kAXErrorSuccess){\
-      i->role = cfstring_copy(role);\
-    }\
-    const void *srole = NULL;\
-    if(AXUIElementCopyAttributeValue(i->app_window, kAXSubroleAttribute, &srole) == kAXErrorSuccess){\
-      i->sub_role = cfstring_copy(srole);\
-    }\
-    if(PROCESS_UTILS_DEBUG_MODE){\
-        log_info("Window #%lu role: %s / sub role: %s", i->window_id, i->role,i->sub_role);\
-    }\
+              const void   *role = NULL;                                                                                         \
+              if (AXUIElementCopyAttributeValue(i->app_window, kAXRoleAttribute, &role) == kAXErrorSuccess) {                    \
+                i->role = cfstring_copy(role);                                                                                   \
+              }                                                                                                                  \
+              const void *srole = NULL;                                                                                          \
+              if (AXUIElementCopyAttributeValue(i->app_window, kAXSubroleAttribute, &srole) == kAXErrorSuccess) {                \
+                i->sub_role = cfstring_copy(srole);                                                                              \
+              }                                                                                                                  \
+              if (PROCESS_UTILS_DEBUG_MODE) {                                                                                    \
+                log_info("Window #%lu role: %s / sub role: %s", i->window_id, i->role, i->sub_role);                             \
+              }                                                                                                                  \
               if (AXUIElementCopyAttributeValue(i->app_window, CFSTR("AXFullScreen"), &is_fullscreen_ref) == kAXErrorSuccess) {  \
                 i->is_fullscreen = CFBooleanGetValue(is_fullscreen_ref);                                                         \
                 CFRelease(is_fullscreen_ref);                                                                                    \
@@ -624,16 +621,16 @@ int get_focused_window_id(){
         }                                                                                                                        \
       }                                                                                                                          \
     }                                                                                                                            \
-    if(i->pid_app_list_qty==0){\
-      continue;\
-    }\
-    if(!i->app_window){\
-      continue;\
-    }\
-    if(!i->sub_role||strcmp(i->sub_role,"AXStandardWindow")!=0){\
-      continue;\
-    }\
-    vector_push(window_infos_v, (void *)i);\
+    if (i->pid_app_list_qty == 0) {                                                                                              \
+      continue;                                                                                                                  \
+    }                                                                                                                            \
+    if (!i->app_window) {                                                                                                        \
+      continue;                                                                                                                  \
+    }                                                                                                                            \
+    if (!i->sub_role || strcmp(i->sub_role, "AXStandardWindow") != 0) {                                                          \
+      continue;                                                                                                                  \
+    }                                                                                                                            \
+    vector_push(window_infos_v, (void *)i);                                                                                      \
   }
 
 #define WINDOW_DICTIONARY_PRINT_ITEMS(FILE_DESCRIPTOR)                        \
@@ -714,7 +711,6 @@ struct Vector *get_window_infos_brief_by_id(size_t ID){
               );
   }
   return(window_infos_v);
-
 }
 struct Vector *get_window_infos_brief_named_v(char *NAMED){
   unsigned long started = timestamp();
@@ -802,19 +798,20 @@ struct Vector *get_window_infos_v(){
 }
 
 int open_system_preferences_get_window_id(){
-  int               wid = 0;
+  int                  wid = 0;
   bool                 found = false;
   struct Vector        *pre_window_infos_v, *post_window_infos_v;
   struct window_info_t *w;
   {
-    if(!run_osascript(CLOSE_SYSTEM_PREFERENCES)){
+    if (!run_osascript(CLOSE_SYSTEM_PREFERENCES)) {
       log_error("Failed to open system preferences");
       return(-1);
     }
     pre_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
-    if(PROCESS_UTILS_DEBUG_MODE)
-      log_debug("\n%s\n",OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD);
-    if(!run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD)){
+    if (PROCESS_UTILS_DEBUG_MODE) {
+      log_debug("\n%s\n", OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD);
+    }
+    if (!run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD)) {
       log_error("Failed to open system preferences");
       return(-1);
     }
@@ -828,7 +825,7 @@ int open_system_preferences_get_window_id(){
     if (PROCESS_UTILS_DEBUG_MODE) {
       log_info("%lu pre windows|%lu post windows", vector_size(pre_window_infos_v), vector_size(post_window_infos_v));
     }
-    if(vector_size(post_window_infos_v) <= vector_size(pre_window_infos_v)){
+    if (vector_size(post_window_infos_v) <= vector_size(pre_window_infos_v)) {
       log_error("Failed to find any new windows");
       return(-1);
     }
@@ -913,14 +910,15 @@ finish:
     log_info("ran move command with result %d in %s", r, milliseconds_to_string(timestamp() - ts));
   }
   return(ok);
+} /* process_utils_move_directory_contents */
 
-}
 bool run_osascript(char *OSASCRIPT_CONTENTS){
   unsigned long ts       = timestamp();
   bool          ok       = false;
   reproc_t      *process = NULL;
   int           r        = REPROC_ENOMEM;
   const char    *osascript;
+
   osascript = which("osascript");
   if (!osascript) {
     char *PATH = getenv("PATH");
@@ -972,7 +970,6 @@ static void __attribute__((constructor)) __constructor__process_utils(void){
   }
 }
 
-
 static bool PROCESS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_PROCESS") != NULL) {
@@ -1014,7 +1011,7 @@ struct Vector *get_process_ppids(int pid){
   while (true) {
     int _ppid = get_process_ppid(_pid);
     vector_push(v, (void *)(size_t)_ppid);
-    if (_ppid <= 1){
+    if (_ppid <= 1) {
       break;
     }
     _pid = _ppid;
@@ -1420,4 +1417,3 @@ done:
   }
   return(ret);
 }
-

@@ -2,8 +2,8 @@
 #ifndef IOKIT_UTILS_H
 #define IOKIT_UTILS_H
 #include "string-utils/string-utils.h"
-#include <ApplicationServices/ApplicationServices.h>
-#include <Carbon/Carbon.h>
+//#include <ApplicationServices/ApplicationServices.h>
+
 #include <CoreServices/CoreServices.h>
 #include <IOKit/hid/IOHIDKeys.h>
 #include <IOKit/hid/IOHIDManager.h>

@@ -1,19 +1,19 @@
 #pragma once
 #ifndef CAPTURE_TYPE_C
 #define CAPTURE_TYPE_C
-#define LOCAL_DEBUG_MODE    CAPTURE_TYPE_DEBUG_MODE
-#define THUMBNAIL_WIDTH     150
-#define WRITE_FILE          false
-#define WRITE_THUMBNAIL     false
-#define MAX_QUALITY    70
-#define MIN_QUALITY    20
-#define BAR_TERMINAL_WIDTH_PERCENTAGE .8
-#define BAR_TERMINAL_WIDTH_PERCENTAGE .8
-#define BAR_MIN_WIDTH 20
-#define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE .5
-#define BAR_MESSAGE_COMPRESSION_TEMPLATE "Compressing %lu Images of %s"
-#define BAR_MESSAGE_CAPTURE_TEMPLATE "Capturing %lu %s %s"
-#define BAR_MESSAGE_TEMPLATE "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
+#define LOCAL_DEBUG_MODE                     CAPTURE_TYPE_DEBUG_MODE
+#define THUMBNAIL_WIDTH                      150
+#define WRITE_FILE                           false
+#define WRITE_THUMBNAIL                      false
+#define MAX_QUALITY                          70
+#define MIN_QUALITY                          20
+#define BAR_TERMINAL_WIDTH_PERCENTAGE        .8
+#define BAR_TERMINAL_WIDTH_PERCENTAGE        .8
+#define BAR_MIN_WIDTH                        20
+#define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE    .5
+#define BAR_MESSAGE_COMPRESSION_TEMPLATE     "Compressing %lu Images of %s"
+#define BAR_MESSAGE_CAPTURE_TEMPLATE         "Capturing %lu %s %s"
+#define BAR_MESSAGE_TEMPLATE                 "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
 #include "capture/type/type.h"
 ////////////////////////////////////////////
@@ -49,7 +49,7 @@
 #include <png.h>
 #include <pthread.h>
 #ifndef QTY
-#define QTY(X)           (sizeof(X) / sizeof(X[0]))
+#define QTY(X)    (sizeof(X) / sizeof(X[0]))
 #endif
 #ifndef info
 #define info    log_info
@@ -76,15 +76,15 @@ static const struct cap_t *__caps[] = {
     .provider_type = CAPTURE_PROVIDER_TYPE_IDS,
     .recv_msg      = ^ void *(void *MSG)                 {
       struct cgimage_recv_t *r = (struct cgimage_recv_t *)MSG;
-      size_t id         = (size_t)vector_get(r->req->ids, (size_t)(r->index));
+      size_t id                = (size_t)vector_get(r->req->ids, (size_t)(r->index));
       debug("Capturing #%lu/%lu: (ID %lu)"
             "\n\t|Capture Type:" AC_YELLOW "%s" AC_RESETALL
             "\n\t|Capture Format:" AC_BLUE "%s" AC_RESETALL
             "\n\t|Capture Size Type:" AC_RED "%s" AC_RESETALL
             "\n\t|Capture Size:" AC_MAGENTA "%d" AC_RESETALL
             "%s",
-            r->index+1, vector_size(r->req->ids), id,
-            get_capture_type_name(r->req->type), 
+            r->index + 1, vector_size(r->req->ids), id,
+            get_capture_type_name(r->req->type),
             image_type_name(r->req->format),
             r->req->width > 0 ? "Width"
               : r->req->height > 0 ? "Height"
@@ -107,19 +107,19 @@ static const struct cap_t *__caps[] = {
       r->width    = CGImageGetWidth(r->img_ref);
       r->height   = CGImageGetHeight(r->img_ref);
       r->time.dur = timestamp() - r->time.started;
-      r->len = r->width * r->height * CGImageGetBitsPerPixel(r->img_ref) / 8;
+      r->len      = r->width * r->height * CGImageGetBitsPerPixel(r->img_ref) / 8;
       debug(
-          "Captured %lux%lu "
-          "%s %s "
-          "(ID %lu) "
-          "in %s"
-          "%s",
-          r->width, r->height,
-          get_capture_type_name(r->req->type),image_type_name(r->req->format), 
-          id, 
-          milliseconds_to_string(r->time.dur),
-          ""
-          );
+        "Captured %lux%lu "
+        "%s %s "
+        "(ID %lu) "
+        "in %s"
+        "%s",
+        r->width, r->height,
+        get_capture_type_name(r->req->type), image_type_name(r->req->format),
+        id,
+        milliseconds_to_string(r->time.dur),
+        ""
+        );
       return((void *)r);
     },
   },
@@ -140,9 +140,9 @@ static const struct cap_t *__caps[] = {
       r->time.dur         = timestamp() - r->time.started;
       assert(r->pixels != NULL);
       debug("Converted CGImageRef to %s RGB Pixels in %s",
-               bytes_to_string(r->len),
-               milliseconds_to_string(r->time.dur)
-               );
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
       return((void *)r);
     },
   },
@@ -154,7 +154,7 @@ static const struct cap_t *__caps[] = {
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
-      r->format             = IMAGE_TYPE_QOI;
+      r->format           = IMAGE_TYPE_QOI;
       r->msg              = (struct cgimage_recv_t *)MSG;
       r->time.captured_ts = r->msg->time.captured_ts;
       debug("Converting %lux%lu CGImageref to QOI", r->msg->width, r->msg->height);
@@ -188,7 +188,7 @@ static const struct cap_t *__caps[] = {
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_GIF;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->msg    = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to GIF", r->msg->width, r->msg->height);
       r->len              = 0;
       r->time.started     = timestamp();
@@ -219,7 +219,7 @@ static const struct cap_t *__caps[] = {
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_TIFF;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->msg    = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to TIFF", r->msg->width, r->msg->height);
       r->len          = 0;
       r->time.started = timestamp();
@@ -249,7 +249,7 @@ static const struct cap_t *__caps[] = {
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_BMP;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->msg    = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to BMP", r->msg->width, r->msg->height);
       r->time.captured_ts = r->msg->time.captured_ts;
       r->len              = 0;
@@ -281,7 +281,7 @@ static const struct cap_t *__caps[] = {
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_WEBP;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->msg    = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to WEBP", r->msg->width, r->msg->height);
       r->time.captured_ts = r->msg->time.captured_ts;
       r->analyze          = true;
@@ -312,7 +312,7 @@ static const struct cap_t *__caps[] = {
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_JPEG;
-      r->msg  = (struct cgimage_recv_t *)MSG;
+      r->msg    = (struct cgimage_recv_t *)MSG;
       debug("Converting %lux%lu CGImageref to JPEG", r->msg->width, r->msg->height);
       r->time.captured_ts = r->msg->time.captured_ts;
       r->analyze          = true;
@@ -342,26 +342,26 @@ static const struct cap_t *__caps[] = {
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
     .recv_msg      = ^ void *(void *MSG)                 {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
-      r->analyze  = true;
-      r->format             = IMAGE_TYPE_PNG;
+      r->analyze          = true;
+      r->format           = IMAGE_TYPE_PNG;
       r->msg              = (struct cgimage_recv_t *)MSG;
       r->time.captured_ts = r->msg->time.captured_ts;
-      r->len          = 0;
-      r->time.started = timestamp();
-      errno=0;
-      r->pixels = save_cgref_to_png_memory(r->msg->img_ref, &(r->len));
-      if(!r->pixels||r->len<1){
+      r->len              = 0;
+      r->time.started     = timestamp();
+      errno               = 0;
+      r->pixels           = save_cgref_to_png_memory(r->msg->img_ref, &(r->len));
+      if (!r->pixels || r->len < 1)                      {
         log_error("Failed to convert CGRef to PNG Pixels");
-      }else{
-        errno=0;
-        if (!analyze_image_pixels(r))                      {
+      }else                                              {
+        errno = 0;
+        if (!analyze_image_pixels(r))                    {
           log_error("Failed to analyze PNG");
-        }else{
+        }else                                            {
           debug("Converted CGImageRef to %s %lux%lu %s Pixels in %s",
-              bytes_to_string(r->len),
-              r->width,r->height,image_type_name(r->format),
-              milliseconds_to_string(r->time.dur)
-              );
+                bytes_to_string(r->len),
+                r->width, r->height, image_type_name(r->format),
+                milliseconds_to_string(r->time.dur)
+                );
         }
       }
       return((void *)r);
@@ -382,9 +382,9 @@ char *get_capture_type_name(enum capture_type_id_t type){
   }
 }
 static struct Vector *get_cap_providers(enum image_type_id_t format){
-  unsigned long started = timestamp();
-  struct Vector            *v = vector_new();
-  enum capture_chan_type_t t  = -1;
+  unsigned long            started = timestamp();
+  struct Vector            *v      = vector_new();
+  enum capture_chan_type_t t       = -1;
 
   for (size_t i = 1; i < CAPTURE_CHAN_TYPES_QTY; i++) {
     if (caps[i]) {
@@ -408,21 +408,21 @@ static struct Vector *get_cap_providers(enum image_type_id_t format){
     t = caps[t]->provider;
   }
   debug(
-      "Found " AC_YELLOW "%lu" AC_RESETALL 
-      " Capture Providers for Capture Format " AC_YELLOW "%s" AC_RESETALL 
-      " in " AC_YELLOW "%s" AC_RESETALL
-      "%s",
-      vector_size(v),
-      image_type_name(format),
-      milliseconds_to_string(timestamp() - started),
-      ""
-      );
+    "Found " AC_YELLOW "%lu" AC_RESETALL
+    " Capture Providers for Capture Format " AC_YELLOW "%s" AC_RESETALL
+    " in " AC_YELLOW "%s" AC_RESETALL
+    "%s",
+    vector_size(v),
+    image_type_name(format),
+    milliseconds_to_string(timestamp() - started),
+    ""
+    );
   return(v);
 }
 
 static bool init_capture_request_receiver(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
-    if(!cap->threads[i]){
+    if (!cap->threads[i]) {
       cap->threads[i] = calloc(1, sizeof(pthread_t));
     }
     assert(cap->threads[i] != NULL);
@@ -445,10 +445,9 @@ static bool init_capture_request_receiver(struct capture_image_request_t *req, s
   return(true);
 }
 
-
 static int receive_requests_handler(void *CAP){
-  unsigned long started   = timestamp();
-  struct cap_t *cap = (struct cap_t *)CAP;
+  unsigned long started = timestamp();
+  struct cap_t  *cap    = (struct cap_t *)CAP;
   void          *msg;
   size_t        qty = 0;
 
@@ -467,13 +466,13 @@ static int receive_requests_handler(void *CAP){
     chan_send(cap->send_chan, m);
   }
   debug(
-      AC_YELLOW "%s" AC_RESETALL " Receiver complete. Processed %lu items in %s"
-      "%s",
-      cap->name, 
-      qty, 
-      milliseconds_to_string(timestamp() - started),
-      ""
-      );
+    AC_YELLOW "%s" AC_RESETALL " Receiver complete. Processed %lu items in %s"
+    "%s",
+    cap->name,
+    qty,
+    milliseconds_to_string(timestamp() - started),
+    ""
+    );
   chan_send(cap->done_chan, (void *)0);
   return(EXIT_SUCCESS);
 }
@@ -484,8 +483,8 @@ static struct chan_t *compression_results_chan;
 
 static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
   struct capture_image_request_t *req = (struct capture_image_request_t *)REQ;
-  void                 *msg;
-  size_t               qty = 0, qqty = 0;
+  void                           *msg;
+  size_t                         qty = 0, qqty = 0;
 
   debug("compression recv waiting");
   struct Vector *compressed_results = vector_new();
@@ -507,87 +506,94 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
 static int run_compress_recv(void __attribute__((unused)) *CHAN){
   struct chan_t *chan = (struct chan_t *)CHAN;
   void          *msg;
-  char *buf;
-  size_t blen=0;
-  VipsImage *v = NULL;
-  size_t qty=0;
+  char          *buf;
+  size_t        blen = 0;
+  VipsImage     *v   = NULL;
+  size_t        qty  = 0;
+
   while (chan_recv(chan, &msg) == 0) {
     struct compress_t *c = (struct compress_t *)msg;
     qty++;
     c->started = timestamp();
     debug("Run Compress Recv:   type:%d|%s|PNG:%d|%s", c->format, image_type_name(c->format), IMAGE_TYPE_PNG, image_type_name(IMAGE_TYPE_PNG));
-      switch (c->format) {
+    switch (c->format) {
     case IMAGE_TYPE_WEBP:
-      v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
-      if(v)
-        vips_pngsave_buffer(v,&buf,&blen,"Q",100,NULL);
+      v = vips_image_new_from_buffer(c->pixels, c->len, "", NULL);
+      if (v) {
+        vips_pngsave_buffer(v, &buf, &blen, "Q", 100, NULL);
+      }
       break;
     case IMAGE_TYPE_PNG:
-      errno=0;
-      v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
-      if(v)
-        vips_pngsave_buffer(v,&buf,&blen,"compression",9,NULL);
-      errno=0;
-      if(c->quantize_mode && !compress_png_buffer(buf,&blen)){
+      errno = 0;
+      v     = vips_image_new_from_buffer(c->pixels, c->len, "", NULL);
+      if (v) {
+        vips_pngsave_buffer(v, &buf, &blen, "compression", 9, NULL);
+      }
+      errno = 0;
+      if (c->quantize_mode && !compress_png_buffer(buf, &blen)) {
         log_error("Failed to compress png buffer");
       }
 
       break;
     case IMAGE_TYPE_TIFF:
-      v = vips_image_new_from_buffer(c->pixels,c->len,"",NULL);
-      if(v)
-        if(vips_tiffsave_buffer(v,&buf,&blen, "compression",VIPS_FOREIGN_TIFF_COMPRESSION_JPEG,"tile",true,"pyramid",true,NULL))
+      v = vips_image_new_from_buffer(c->pixels, c->len, "", NULL);
+      if (v) {
+        if (vips_tiffsave_buffer(v, &buf, &blen, "compression", VIPS_FOREIGN_TIFF_COMPRESSION_JPEG, "tile", true, "pyramid", true, NULL)) {
           log_error("failed to save buffer");
+        }
+      }
       break;
-    default: 
-      errno=0;
-      if(CAPTURE_TYPE_DEBUG_MODE)
+    default:
+      errno = 0;
+      if (CAPTURE_TYPE_DEBUG_MODE) {
         log_warn("\nCompression not implemented for image type %s.", image_type_name(c->format));
+      }
       break;
     }
-      char *m;
-     if(v && blen>0 && buf && blen < c->len){
+    char *m;
+    if (v && blen > 0 && buf && blen < c->len) {
       free(c->pixels);
-      asprintf(&m,"\n✅ Compressed"
-          " "
-          AC_BLUE"%4s"AC_RESETALL
-          " "
-          AC_GREEN"%6s"AC_RESETALL
-          " "
-          "File of"
-          " "
-          "to"
-          " "
-  AC_DOTTED_UNDERLINE AC_ITALIC AC_YELLOW "%s" AC_RESETALL
-          " "
-          "in"
-          " "
-  AC_BOLD AC_YELLOW"%6s"AC_RESETALL
-          "",
-                  image_type_name(c->format),
-                  bytes_to_string(c->len),
-                  bytes_to_string(blen),
-                  milliseconds_to_string(timestamp() - c->started)
-      );
-    fflush(stdout);
-    printf(
-       "\t%s\n",
+      asprintf(&m, "\n✅ Compressed"
+               " "
+               AC_BLUE "%4s"AC_RESETALL
+               " "
+               AC_GREEN "%6s"AC_RESETALL
+               " "
+               "File of"
+               " "
+               "to"
+               " "
+               AC_DOTTED_UNDERLINE AC_ITALIC AC_YELLOW "%s" AC_RESETALL
+               " "
+               "in"
+               " "
+               AC_BOLD AC_YELLOW "%6s"AC_RESETALL
+               "",
+               image_type_name(c->format),
+               bytes_to_string(c->len),
+               bytes_to_string(blen),
+               milliseconds_to_string(timestamp() - c->started)
+               );
+      fflush(stdout);
+      printf(
+        "\t%s\n",
         m
         );
-    fflush(stdout);
+      fflush(stdout);
       c->pixels = buf;
-      c->len = blen;
+      c->len    = blen;
     }
-    if(v)
+    if (v) {
       g_object_unref(v);
+    }
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
     debug("Compressed #%lu from %s to %s in %s",
-                c->id,
-                bytes_to_string(c->prev_len),
-                bytes_to_string(c->len),
-                milliseconds_to_string(c->dur)
-                );
+          c->id,
+          bytes_to_string(c->prev_len),
+          bytes_to_string(c->len),
+          milliseconds_to_string(c->dur)
+          );
   }
   chan_send(compression_done_chan, (void *)0);
   return(EXIT_SUCCESS);
@@ -622,7 +628,7 @@ static bool issue_capture_image_request(struct capture_image_request_t *req, str
 }
 
 static bool analyze_image_pixels(struct capture_image_result_t *r){
-  r->id             = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
+  r->id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
   if (r->analyze) {
     if (r->format == IMAGE_TYPE_QOI) {
       QOIDecoder *qoi = QOIDecoder_New();
@@ -632,8 +638,9 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
         r->has_alpha         = QOIDecoder_HasAlpha(qoi);
         r->linear_colorspace = QOIDecoder_IsLinearColorspace(qoi);
       }
-      if(qoi)
+      if (qoi) {
         QOIDecoder_Delete(qoi);
+      }
     }else{
       VipsImage *image = NULL;
       errno = 0;
@@ -661,34 +668,36 @@ static bool wait_cap(struct capture_image_request_t *req, struct cap_t *cap){
 }
 
 struct Vector *capture_image(struct capture_image_request_t *req){
-  struct Vector *capture_results_v             = vector_new();
-  char *bar_msg;
-  size_t bar_msg_len,bar_len;
-  int term_width = 80;
-  chan_t        *results_chan  = chan_init(vector_size(req->ids));
-  struct cap_t *_caps[QTY(__caps)] = { 0 };
-  memcpy(_caps,__caps,sizeof(__caps));
+  struct Vector *capture_results_v = vector_new();
+  char          *bar_msg;
+  size_t        bar_msg_len, bar_len;
+  int           term_width          = 80;
+  chan_t        *results_chan       = chan_init(vector_size(req->ids));
+  struct cap_t  *_caps[QTY(__caps)] = { 0 };
+
+  memcpy(_caps, __caps, sizeof(__caps));
   caps = _caps;
 
-  if(req->progress_bar_mode){
+  if (req->progress_bar_mode) {
     req->bar = calloc(1, sizeof(struct cbar_t));
-    asprintf(&bar_msg, 
-        BAR_MESSAGE_CAPTURE_TEMPLATE,
-        vector_size(req->ids),image_type_name(req->format), 
-        get_capture_type_name(req->type)
-        );
-    bar_msg_len  = strlen(bar_msg);
-    term_width = clamp(get_terminal_width(), 40, 160);
-    asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);
+    asprintf(&bar_msg,
+             BAR_MESSAGE_CAPTURE_TEMPLATE,
+             vector_size(req->ids), image_type_name(req->format),
+             get_capture_type_name(req->type)
+             );
+    bar_msg_len = strlen(bar_msg);
+    term_width  = clamp(get_terminal_width(), 40, 160);
+    asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
     bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
     *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
     cbar_hide_cursor();
     req->bar->progress = 0.00;
     cbar_display_bar(req->bar);
-      fflush(stdout);
+    fflush(stdout);
   }
 
   struct Vector *providers = get_cap_providers(req->format);
+
   for (size_t i = 0; i < vector_size(providers); i++) {
     enum capture_chan_type_t c = (enum capture_chan_type_t)(size_t)vector_get(providers, i);
     if (i > 0) {
@@ -718,9 +727,9 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     if (caps[c]->provider_type == CAPTURE_PROVIDER_TYPE_IDS) {
       for (size_t i = 0; i < vector_size(req->ids); i++) {
         struct cgimage_recv_t *r = calloc(1, sizeof(struct cgimage_recv_t));
-        r->index = i;
-        r->req   = req;
-        r->width = req->width;
+        r->index  = i;
+        r->req    = req;
+        r->width  = req->width;
         r->height = req->height;
         chan_send(caps[c]->recv_chan, (void *)r);
       }
@@ -738,20 +747,20 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
   }
   struct capture_image_result_t *r;
-  size_t captured_images_len = 0;
+  size_t                        captured_images_len = 0;
 
   for (size_t i = 0; i < vector_size(req->ids); i++) {
     void *msg;
     if (chan_recv(results_chan, &msg) == 0) {
-      r = (struct capture_image_result_t *)msg;
+      r                    = (struct capture_image_result_t *)msg;
       captured_images_len += r->len;
       debug("Received Result #%lu/%lu | %lux%lu | %s | %s | %s | Linear Colorspace: %s | Has Alpha: %s |",
-                i + 1, vector_size(req->ids),
-                r->width, r->height, bytes_to_string(r->len), milliseconds_to_string(r->time.dur),
-                r->file,
-                r->linear_colorspace?"Yes":"No",
-                r->has_alpha?"Yes":"No"
-                );
+            i + 1, vector_size(req->ids),
+            r->width, r->height, bytes_to_string(r->len), milliseconds_to_string(r->time.dur),
+            r->file,
+            r->linear_colorspace?"Yes":"No",
+            r->has_alpha?"Yes":"No"
+            );
       r->time.captured_ts = timestamp();
       msg                 = (void *)r;
       vector_push(capture_results_v, msg);
@@ -778,7 +787,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     caps[c]->done_chan = NULL;
     for (int x = 0; x < req->concurrency; x++) {
       if (caps[c]->threads[x]) {
-          //free(caps[c]->threads[x]);
+        //free(caps[c]->threads[x]);
       }
     }
   }
@@ -789,22 +798,23 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     cbar_display_bar(req->bar);
     cbar_show_cursor();
     printf(
-        "\n"
-        );
+      "\n"
+      );
     fflush(stdout);
-    if(req->bar)
+    if (req->bar) {
       free(req->bar);
+    }
   }
 
   if (req->compress) {
-    void *compressed_images_msg;
-    struct Vector *compressed_images_msg_v = NULL, *compressed_images_v = vector_new();
+    void              *compressed_images_msg;
+    struct Vector     *compressed_images_msg_v = NULL, *compressed_images_v = vector_new();
     struct compress_t *compressed_image_msg;
-    if(req->progress_bar_mode){
+    if (req->progress_bar_mode) {
       req->bar = calloc(1, sizeof(struct cbar_t));
-      asprintf(&bar_msg, BAR_MESSAGE_COMPRESSION_TEMPLATE,vector_size(req->ids),bytes_to_string(captured_images_len));
-      bar_msg_len  = strlen(bar_msg);
-      asprintf(&bar_msg,BAR_MESSAGE_TEMPLATE,bar_msg);
+      asprintf(&bar_msg, BAR_MESSAGE_COMPRESSION_TEMPLATE, vector_size(req->ids), bytes_to_string(captured_images_len));
+      bar_msg_len = strlen(bar_msg);
+      asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
       bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
       *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
       cbar_hide_cursor();
@@ -816,10 +826,10 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       req->comp->chans[i]   = chan_init(vector_size(req->ids));
       req->comp->threads[i] = calloc(1, sizeof(pthread_t));
     }
-    req->comp->waiter      = calloc(1, sizeof(pthread_t));
-    req->comp->waiter_chan = chan_init(vector_size(req->ids));
-    compression_wait_chan  = chan_init(vector_size(req->ids));
-    compression_done_chan  = chan_init(0);
+    req->comp->waiter        = calloc(1, sizeof(pthread_t));
+    req->comp->waiter_chan   = chan_init(vector_size(req->ids));
+    compression_wait_chan    = chan_init(vector_size(req->ids));
+    compression_done_chan    = chan_init(0);
     compression_results_chan = chan_init(0);
     if (req->progress_bar_mode) {
       req->comp->bar = calloc(1, sizeof(struct cbar_t));
@@ -830,18 +840,18 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
     for (size_t i = 0; i < vector_size(capture_results_v); i++) {
       struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(capture_results_v, i);
-      struct compress_t       *c = calloc(1, sizeof(struct compress_t));
+      struct compress_t             *c = calloc(1, sizeof(struct compress_t));
       c->id             = r->id;
       c->pixels         = r->pixels;
       c->len            = r->len;
       c->prev_len       = r->len;
-      c->format           = r->format;
-      c->bar           = req->bar;
+      c->format         = r->format;
+      c->bar            = req->bar;
       c->max_quality    = MAX_QUALITY;
       c->min_quality    = MIN_QUALITY;
-      c->quantize_mode    = req->quantize_mode;
+      c->quantize_mode  = req->quantize_mode;
       c->capture_result = r;
-      chan_send(req->comp->chans[i%req->concurrency], (void *)c);
+      chan_send(req->comp->chans[i % req->concurrency], (void *)c);
     }
     for (int x = 0; x < req->concurrency; x++) {
       chan_close(req->comp->chans[x]);
@@ -852,28 +862,27 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     chan_close(compression_done_chan);
     chan_close(compression_wait_chan);
 
-
     for (size_t i = 0; i < vector_size(compressed_images_msg_v); i++) {
       compressed_image_msg = (struct compress_t *)vector_get(compressed_images_msg_v, i);
       debug("new vector item #%lu/%lu has %s image from %s image of type %d|%s",
-                i + 1, vector_size(compressed_images_msg_v),
-                bytes_to_string(compressed_image_msg->len),
-                bytes_to_string(compressed_image_msg->prev_len),
-                compressed_image_msg->format,
-                image_type_name(compressed_image_msg->format)
-                );
+            i + 1, vector_size(compressed_images_msg_v),
+            bytes_to_string(compressed_image_msg->len),
+            bytes_to_string(compressed_image_msg->prev_len),
+            compressed_image_msg->format,
+            image_type_name(compressed_image_msg->format)
+            );
       struct capture_image_result_t *r = compressed_image_msg->capture_result;
       r->pixels = compressed_image_msg->pixels;
       r->len    = compressed_image_msg->len;
       debug("new vector item #%lu/%lu with id %lu %s file %s has %s image of type %d|%s",
-                i + 1, vector_size(compressed_images_msg_v),
-                r->id,
-                bytes_to_string(fsio_file_size(r->file)),
-                r->file,
-                bytes_to_string(r->len),
-                r->type,
-                image_type_name(r->format)
-                );
+            i + 1, vector_size(compressed_images_msg_v),
+            r->id,
+            bytes_to_string(fsio_file_size(r->file)),
+            r->file,
+            bytes_to_string(r->len),
+            r->type,
+            image_type_name(r->format)
+            );
       vector_push(compressed_images_v, r);
     }
     capture_results_v = compressed_images_v;
@@ -882,12 +891,13 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       req->bar->progress = (float)1.00;
       cbar_display_bar(req->bar);
       cbar_show_cursor();
-    printf(
+      printf(
         "\n"
         );
       fflush(stdout);
-      if(req->bar)
+      if (req->bar) {
         free(req->bar);
+      }
     }
   }
 done:
@@ -895,23 +905,22 @@ done:
   return(capture_results_v);
 } /* capture*/
 
-
 struct Vector *db_tables_images(enum capture_type_id_t type, struct Vector *ids){
-      struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-      req->ids = ids;
-      req->format         = IMAGE_TYPE_QOI;
-      req->compress         = false;
-      req->quantize_mode = false;
-      req->type = type;
-      req->progress_bar_mode = false;
-      req->width        = 300;
-      req->height       = 0;
-      req->time.dur     = 0;
-      req->time.started = timestamp();
-      Dbg(vector_size(req->ids),%lu);
-      return(capture_image(req));
-}
+  struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
 
+  req->ids               = ids;
+  req->format            = IMAGE_TYPE_QOI;
+  req->compress          = false;
+  req->quantize_mode     = false;
+  req->type              = type;
+  req->progress_bar_mode = false;
+  req->width             = 300;
+  req->height            = 0;
+  req->time.dur          = 0;
+  req->time.started      = timestamp();
+  Dbg(vector_size(req->ids), %u);
+  return(capture_image(req));
+}
 
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__capture_window(void){

@@ -27,15 +27,15 @@ static void __attribute__((constructor)) __constructor__core_debug(void){
   log_debug("2");
   debug("2");
 
-  log_dbg("abc", % s);
+  log_dbg("abc", %s);
   int abc = 213;
-  log_dbg(abc, % d);
+  log_dbg(abc, %d);
 
   Debug("abc123 %d", abc);
   Info("abc123 %d", abc);
   Warn("abc123 %d", abc);
   Error("abc123 %d", abc);
-  Dbg(abc, % d);
+  Dbg(abc, %d);
 }
 ////////////////////////////////////////////
 

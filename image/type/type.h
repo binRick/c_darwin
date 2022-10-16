@@ -2,6 +2,7 @@
 #ifndef IMAGE_TYPE_H
 #define IMAGE_TYPE_H
 //////////////////////////////////////
+#include "vips/vips.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -11,7 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "vips/vips.h"
 //////////////////////////////////////
 enum image_type_id_t {
   IMAGE_TYPE_PNG = 1,
@@ -28,30 +28,30 @@ enum image_type_id_t {
 struct VipsImage;
 typedef int (*image_target_file_saver_t)(struct VipsImage *in, char *filename, ...);
 static const image_target_file_saver_t image_target_file_savers[] = {
-  [IMAGE_TYPE_PNG] = vips_pngsave,
-  [IMAGE_TYPE_GIF] = vips_gifsave,
+  [IMAGE_TYPE_PNG]  = vips_pngsave,
+  [IMAGE_TYPE_GIF]  = vips_gifsave,
   [IMAGE_TYPE_JPEG] = vips_jpegsave,
   [IMAGE_TYPE_TIFF] = vips_tiffsave,
   [IMAGE_TYPE_WEBP] = vips_webpsave,
 };
 /*
-vips_csvsave
-vips_fitssave
-vips_foreign_save
-vips_gifsave
-vips_heifsave
-vips_jp2ksave
-vips_jpegsave
-vips_jxlsave
-vips_magicksave
-vips_matrixsave
-vips_niftisave
-vips_pngsave
-vips_ppmsave
-vips_radsave
-vips_rawsave
-vips_tiffsave
-vips_vipssave
-vips_webpsave
-*/
+ * vips_csvsave
+ * vips_fitssave
+ * vips_foreign_save
+ * vips_gifsave
+ * vips_heifsave
+ * vips_jp2ksave
+ * vips_jpegsave
+ * vips_jxlsave
+ * vips_magicksave
+ * vips_matrixsave
+ * vips_niftisave
+ * vips_pngsave
+ * vips_ppmsave
+ * vips_radsave
+ * vips_rawsave
+ * vips_tiffsave
+ * vips_vipssave
+ * vips_webpsave
+ */
 #endif

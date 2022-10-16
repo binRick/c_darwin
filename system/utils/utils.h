@@ -1,10 +1,9 @@
 #pragma once
+#include "frameworks/frameworks.h"
 #include <assert.h>
-#include <ApplicationServices/ApplicationServices.h>
-#include <CoreFoundation/CoreFoundation.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <dirent.h>
 #include <getopt.h>
-#include <IOKit/IOKitLib.h>
 #include <mach/mach.h>
 #include <pwd.h>
 #include <stdbool.h>

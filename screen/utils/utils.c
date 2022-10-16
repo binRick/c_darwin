@@ -61,34 +61,35 @@ CGImageRef preview_display_id(size_t display_id){
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / PREVIEW_FACTOR, CGImageGetHeight(img_ref) / PREVIEW_FACTOR));
 }
 
-  CGImageRef capture_display_id_height(size_t display_id, size_t height){
-    CGImageRef img_ref = capture_display_id(display_id);
-    int        w[2], h[2];
+CGImageRef capture_display_id_height(size_t display_id, size_t height){
+  CGImageRef img_ref = capture_display_id(display_id);
+  int        w[2], h[2];
 
-    w[0] = CGImageGetWidth(img_ref);
-    h[0] = CGImageGetHeight(img_ref);
-    h[1] = height;
-    float factor = 1;
-    if(h[0] > 100){
-      factor = (float)(h[0]) / (float)(h[1]);
-    }
+  w[0] = CGImageGetWidth(img_ref);
+  h[0] = CGImageGetHeight(img_ref);
+  h[1] = height;
+  float factor = 1;
 
-    w[1] = (int)((float)w[0] / factor);
-    return(resize_cgimage(img_ref, w[1], h[1]));
+  if (h[0] > 100) {
+    factor = (float)(h[0]) / (float)(h[1]);
   }
 
-  CGImageRef capture_display_id_width(size_t display_id, size_t width){
-    CGImageRef img_ref = capture_display_id(display_id);
-    int        w[2], h[2];
+  w[1] = (int)((float)w[0] / factor);
+  return(resize_cgimage(img_ref, w[1], h[1]));
+}
 
-    w[0] = CGImageGetWidth(img_ref);
-    h[0] = CGImageGetHeight(img_ref);
-    w[1] = width;
-    float factor = (float)(w[0]) / (float)(w[1]);
+CGImageRef capture_display_id_width(size_t display_id, size_t width){
+  CGImageRef img_ref = capture_display_id(display_id);
+  int        w[2], h[2];
 
-    h[1] = (int)((float)h[0] / factor);
-    return(resize_cgimage(img_ref, w[1], h[1]));
-  }
+  w[0] = CGImageGetWidth(img_ref);
+  h[0] = CGImageGetHeight(img_ref);
+  w[1] = width;
+  float factor = (float)(w[0]) / (float)(w[1]);
+
+  h[1] = (int)((float)h[0] / factor);
+  return(resize_cgimage(img_ref, w[1], h[1]));
+}
 
 CGImageRef capture_display_id_rect(size_t display_id, CGRect rect){
   return(CGDisplayCreateImageForRect(display_id, rect));

@@ -1,9 +1,9 @@
 #pragma once
 #ifndef SPACE_UTILS_H
 #define SPACE_UTILS_H
-#include "frameworks/frameworks.h"
 #include "core/utils/utils.h"
-#include <ApplicationServices/ApplicationServices.h>
+#include "frameworks/frameworks.h"
+//#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 #include <stdbool.h>
@@ -33,8 +33,8 @@ bool get_space_is_visible(uint64_t sid);
 /////////////////////////////////////////////////
 int get_current_space_id(void);
 CGImageRef capture_space_id_rect(size_t space_id, CGRect rect);
-  CGImageRef capture_space_id_width(size_t space_id, size_t width);
-  CGImageRef capture_space_id_height(size_t space_id, size_t height);
+CGImageRef capture_space_id_width(size_t space_id, size_t width);
+CGImageRef capture_space_id_height(size_t space_id, size_t height);
 int get_total_spaces(void);
 uint32_t *get_space_window_list(uint64_t sid, int *count, bool include_minimized);
 uint32_t *get_space_window_list_for_connection(uint64_t *space_list, int space_count, int cid, int *count, bool include_minimized);

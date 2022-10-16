@@ -2,9 +2,9 @@
 #ifndef MENU_BAR_UTILS_H
 #define MENU_BAR_UTILS_H
 //////////////////////////////////////
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <ctype.h>
-#include <Carbon/Carbon.h>
+
 #include <CoreFoundation/CFBase.h>
 #include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CoreFoundation.h>

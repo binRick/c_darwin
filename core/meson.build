@@ -21,7 +21,7 @@ core_deps = [
   c_fsio_dep,
   c_stringfn_dep,
   c_img_dep,ansi_utils_dep,
-  c_string_buffer_dep,optparse99_dep,string_utils_dep,reproc_dep,frameworks_dep,
+  c_string_buffer_dep,optparse99_dep,string_utils_dep,reproc_dep,
   timestamp_dep,
   log_dep,chan_dep,clamp_dep,glib_dep,c_workqueue_dep,
   ms_dep,qoi_dep,

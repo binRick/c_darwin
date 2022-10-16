@@ -3,24 +3,24 @@
 #define LS_WIN_COMMANDS_H
 #include "dls/dls.h"
 ////////////////////////////////////////////
-#define COLOR_CAPTURE_MODE       "\x1b[38;2;50;252;142m" AC_BOLD AC_CURLY_UNDERLINE
-#define COLOR_CAPTURE_WINDOW_MODE  "\x1b[38;2;151;252;50m" AC_ITALIC 
-#define COLOR_CAPTURE_DISPLAY_MODE  "\x1b[38;2;97;50;50m" AC_ITALIC 
-#define COLOR_CAPTURE_SPACE_MODE  "\x1b[38;2;189;163;50m" AC_ITALIC 
-#define COLOR_FOCUS      "\x1b[38;2;151;252;50m" AC_UNDERLINE
-#define COLOR_SHOW       "\x1b[38;2;50;252;142m" AC_UNDERLINE
-#define COLOR_LIST       "\x1b[38;2;50;175;252m" AC_UNDERLINE
-#define COLOR_SPACE      "\x1b[38;2;97;252;50m" AC_UNDERLINE
-#define COLOR_INFO       "\x1b[38;2;189;50;252m" AC_UNDERLINE
-#define COLOR_DEBUG      "\x1b[38;2;252;50;127m" AC_UNDERLINE
-#define COLOR_WINDOW     "\x1b[38;2;252;163;50m" AC_UNDERLINE
-#define COLOR_MOVE       "\x1b[38;2;252;83;50m" AC_UNDERLINE
-#define COLOR_START      "\x1b[38;2;62;252;50m" AC_UNDERLINE
-#define COLOR_CAPTURE    "\x1b[38;2;50;252;50m" AC_UNDERLINE
-#define COLOR_GET        "\x1b[38;2;252;50;252m" AC_UNDERLINE
-#define COLOR_SET        "\x1b[38;2;252;163;252m" AC_UNDERLINE
-#define COLOR_HELP       "\x1b[38;2;50;50;252m" AC_UNDERLINE
-#define COLOR_ICNS       "\x1b[38;2;252;252;252m" AC_UNDERLINE
+#define COLOR_CAPTURE_MODE            "\x1b[38;2;50;252;142m" AC_BOLD AC_CURLY_UNDERLINE
+#define COLOR_CAPTURE_WINDOW_MODE     "\x1b[38;2;151;252;50m" AC_ITALIC
+#define COLOR_CAPTURE_DISPLAY_MODE    "\x1b[38;2;97;50;50m" AC_ITALIC
+#define COLOR_CAPTURE_SPACE_MODE      "\x1b[38;2;189;163;50m" AC_ITALIC
+#define COLOR_FOCUS                   "\x1b[38;2;151;252;50m" AC_UNDERLINE
+#define COLOR_SHOW                    "\x1b[38;2;50;252;142m" AC_UNDERLINE
+#define COLOR_LIST                    "\x1b[38;2;50;175;252m" AC_UNDERLINE
+#define COLOR_SPACE                   "\x1b[38;2;97;252;50m" AC_UNDERLINE
+#define COLOR_INFO                    "\x1b[38;2;189;50;252m" AC_UNDERLINE
+#define COLOR_DEBUG                   "\x1b[38;2;252;50;127m" AC_UNDERLINE
+#define COLOR_WINDOW                  "\x1b[38;2;252;163;50m" AC_UNDERLINE
+#define COLOR_MOVE                    "\x1b[38;2;252;83;50m" AC_UNDERLINE
+#define COLOR_START                   "\x1b[38;2;62;252;50m" AC_UNDERLINE
+#define COLOR_CAPTURE                 "\x1b[38;2;50;252;50m" AC_UNDERLINE
+#define COLOR_GET                     "\x1b[38;2;252;50;252m" AC_UNDERLINE
+#define COLOR_SET                     "\x1b[38;2;252;163;252m" AC_UNDERLINE
+#define COLOR_HELP                    "\x1b[38;2;50;50;252m" AC_UNDERLINE
+#define COLOR_ICNS                    "\x1b[38;2;252;252;252m" AC_UNDERLINE
 typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 typedef char (^common_option_description)(void *sorts);
 enum common_option_group_t {

@@ -3,166 +3,166 @@ static void __attribute__((constructor)) __constructor__dls(void);
 static bool dls_normalize_arguments(int *argc, char *argv[]);
 static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
-static bool DARWIN_LS_DEBUG_MODE = false;
+static bool                   DARWIN_LS_DEBUG_MODE = false;
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
-#define COMMON_OPTIONS_BASE          \
-        common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-#define COMMON_OPTIONS_UI          \
-        common_options_b[COMMON_OPTION_VERBOSE_MODE](args),\
-        common_options_b[COMMON_OPTION_DEBUG_MODE](args),\
-        common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),\
-        common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args),\
-        common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-#define COMMON_OPTIONS_CAPTURE_RESULT_IMAGE_OPTIONS          \
-        common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
-#define COMMON_OPTIONS_CAPTURE_RESULT_FILE_OPTIONS          \
-        common_options_b[COMMON_OPTION_OUTPUT_FILE](args),\
-        common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
-#define COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS          \
-        common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args),\
-        common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),\
-        COMMON_OPTIONS_CAPTURE_RESULT_FILE_OPTIONS \
-        COMMON_OPTIONS_CAPTURE_RESULT_IMAGE_OPTIONS
-#define COMMON_OPTIONS_CAPTURE_SIZE_FILTERS          \
-        common_options_b[COMMON_OPTION_HEIGHT_GREATER](args),\
-        common_options_b[COMMON_OPTION_HEIGHT_LESS](args),\
-        common_options_b[COMMON_OPTION_WIDTH_GREATER](args),\
-        common_options_b[COMMON_OPTION_WIDTH_LESS](args),
-#define COMMON_OPTIONS_CAPTURE_RESULT_FILTERS          \
-        common_options_b[COMMON_OPTION_CURRENT_SPACE](args),\
-        common_options_b[COMMON_OPTION_NOT_CURRENT_SPACE](args),\
-        common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),\
-        common_options_b[COMMON_OPTION_NOT_CURRENT_DISPLAY](args),\
-        common_options_b[COMMON_OPTION_SPACE_ID](args),\
-        common_options_b[COMMON_OPTION_PID](args),\
-        common_options_b[COMMON_OPTION_APPLICATION_NAME](args),\
-        common_options_b[COMMON_OPTION_DISPLAY_ID](args),\
-        common_options_b[COMMON_OPTION_PID](args),\
-        common_options_b[COMMON_OPTION_APPLICATION_NAME](args),\
-        common_options_b[COMMON_OPTION_NOT_MINIMIZED](args),\
-        common_options_b[COMMON_OPTION_MINIMIZED](args),\
-        COMMON_OPTIONS_CAPTURE_SIZE_FILTERS
-#define COMMON_OPTIONS_LIMIT_OPTIONS          \
-        common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS          \
-        common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args),\
-        common_options_b[COMMON_OPTION_IMAGE_FORMATS](args),
-#define COMMON_OPTIONS_CAPTURE_OPTIONS          \
-        common_options_b[COMMON_OPTION_COMPRESS](args),\
-        common_options_b[COMMON_OPTION_QUANTIZE_MODE](args),\
-        common_options_b[COMMON_OPTION_CONCURRENCY](args),\
-        COMMON_OPTIONS_LIMIT_OPTIONS \
-        COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS
-#define COMMON_OPTIONS_ID\
-        common_options_b[COMMON_OPTION_ID](args),\
-        common_options_b[COMMON_OPTION_RANDOM_ID](args),\
-        common_options_b[COMMON_OPTION_ALL_MODE](args),
-#define COMMON_OPTIONS_SORT \
-        common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
-        common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
-#define COMMON_OPTIONS_SIZE \
-        common_options_b[COMMON_OPTION_WIDTH](args),\
-        common_options_b[COMMON_OPTION_HEIGHT](args),
+#define COMMON_OPTIONS_BASE \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+#define COMMON_OPTIONS_UI                                          \
+  common_options_b[COMMON_OPTION_VERBOSE_MODE](args),              \
+  common_options_b[COMMON_OPTION_DEBUG_MODE](args),                \
+  common_options_b[COMMON_OPTION_ENABLE_PROGRESS_BAR_MODE](args),  \
+  common_options_b[COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE](args), \
+  common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_IMAGE_OPTIONS \
+  common_options_b[COMMON_OPTION_WRITE_IMAGES_MODE](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_FILE_OPTIONS   \
+  common_options_b[COMMON_OPTION_OUTPUT_FILE](args), \
+  common_options_b[COMMON_OPTION_DISPLAY_OUTPUT_FILE](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS                               \
+  common_options_b[COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE](args), \
+  common_options_b[COMMON_OPTION_WRITE_DIRECTORY](args),                    \
+  COMMON_OPTIONS_CAPTURE_RESULT_FILE_OPTIONS                                \
+  COMMON_OPTIONS_CAPTURE_RESULT_IMAGE_OPTIONS
+#define COMMON_OPTIONS_CAPTURE_SIZE_FILTERS             \
+  common_options_b[COMMON_OPTION_HEIGHT_GREATER](args), \
+  common_options_b[COMMON_OPTION_HEIGHT_LESS](args),    \
+  common_options_b[COMMON_OPTION_WIDTH_GREATER](args),  \
+  common_options_b[COMMON_OPTION_WIDTH_LESS](args),
+#define COMMON_OPTIONS_CAPTURE_RESULT_FILTERS                \
+  common_options_b[COMMON_OPTION_CURRENT_SPACE](args),       \
+  common_options_b[COMMON_OPTION_NOT_CURRENT_SPACE](args),   \
+  common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),     \
+  common_options_b[COMMON_OPTION_NOT_CURRENT_DISPLAY](args), \
+  common_options_b[COMMON_OPTION_SPACE_ID](args),            \
+  common_options_b[COMMON_OPTION_PID](args),                 \
+  common_options_b[COMMON_OPTION_APPLICATION_NAME](args),    \
+  common_options_b[COMMON_OPTION_DISPLAY_ID](args),          \
+  common_options_b[COMMON_OPTION_PID](args),                 \
+  common_options_b[COMMON_OPTION_APPLICATION_NAME](args),    \
+  common_options_b[COMMON_OPTION_NOT_MINIMIZED](args),       \
+  common_options_b[COMMON_OPTION_MINIMIZED](args),           \
+  COMMON_OPTIONS_CAPTURE_SIZE_FILTERS
+#define COMMON_OPTIONS_LIMIT_OPTIONS \
+  common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS            \
+  common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args), \
+  common_options_b[COMMON_OPTION_IMAGE_FORMATS](args),
+#define COMMON_OPTIONS_CAPTURE_OPTIONS                 \
+  common_options_b[COMMON_OPTION_COMPRESS](args),      \
+  common_options_b[COMMON_OPTION_QUANTIZE_MODE](args), \
+  common_options_b[COMMON_OPTION_CONCURRENCY](args),   \
+  COMMON_OPTIONS_LIMIT_OPTIONS                         \
+  COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS
+#define COMMON_OPTIONS_ID                          \
+  common_options_b[COMMON_OPTION_ID](args),        \
+  common_options_b[COMMON_OPTION_RANDOM_ID](args), \
+  common_options_b[COMMON_OPTION_ALL_MODE](args),
+#define COMMON_OPTIONS_SORT                                 \
+  common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args), \
+  common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),
+#define COMMON_OPTIONS_SIZE                    \
+  common_options_b[COMMON_OPTION_WIDTH](args), \
+  common_options_b[COMMON_OPTION_HEIGHT](args),
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-#define COMMON_OPTIONS_CAPTURE_TYPE\
-        common_options_b[COMMON_OPTION_CAPTURE_WINDOW_MODE](args),\
-        common_options_b[COMMON_OPTION_CAPTURE_SPACE_MODE](args),\
-        common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args),\
-        COMMON_OPTIONS_ID
+#define COMMON_OPTIONS_CAPTURE_TYPE                           \
+  common_options_b[COMMON_OPTION_CAPTURE_WINDOW_MODE](args),  \
+  common_options_b[COMMON_OPTION_CAPTURE_SPACE_MODE](args),   \
+  common_options_b[COMMON_OPTION_CAPTURE_DISPLAY_MODE](args), \
+  COMMON_OPTIONS_ID
 #define COMMON_OPTIONS_LAYOUT_LIST
 #define COMMON_OPTIONS_LAYOUT_SHOW
 #define COMMON_OPTIONS_LAYOUT_APPLY
-#define COMMON_OPTIONS_LAYOUT\
-        COMMON_OPTIONS_UI
-#define COMMON_OPTIONS_TABLE\
-        common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-        COMMON_OPTIONS_SORT \
-        COMMON_OPTIONS_SIZE\
-        COMMON_OPTIONS_LIMIT_OPTIONS\
-        COMMON_OPTIONS_UI
+#define COMMON_OPTIONS_LAYOUT \
+  COMMON_OPTIONS_UI
+#define COMMON_OPTIONS_TABLE                         \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  COMMON_OPTIONS_SORT                                \
+  COMMON_OPTIONS_SIZE                                \
+  COMMON_OPTIONS_LIMIT_OPTIONS                       \
+  COMMON_OPTIONS_UI
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-#define COMMON_OPTIONS_ANIMATE \
-        COMMON_OPTIONS_BASE\
-        COMMON_OPTIONS_CAPTURE_TYPE\
-        COMMON_OPTIONS_UI\
-        COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
-        COMMON_OPTIONS_CAPTURE_OPTIONS\
-        COMMON_OPTIONS_SIZE \
-        common_options_b[COMMON_OPTION_DURATION_SECONDS](args),\
-        common_options_b[COMMON_OPTION_FRAME_RATE](args),
-#define COMMON_OPTIONS_WINDOWS \
-        COMMON_OPTIONS_BASE \
-        COMMON_OPTIONS_UI\
-        COMMON_OPTIONS_CAPTURE_RESULT_FILTERS\
-        COMMON_OPTIONS_TABLE\
-        common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args),\
-        common_options_b[COMMON_OPTION_HIDE_COLUMNS](args),\
-        common_options_b[COMMON_OPTION_SHOW_COLUMNS](args),
-#define COMMON_OPTIONS_CAPTURE\
-        COMMON_OPTIONS_BASE\
-        COMMON_OPTIONS_CAPTURE_TYPE\
-        COMMON_OPTIONS_UI\
-        COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
-        COMMON_OPTIONS_CAPTURE_OPTIONS\
-        COMMON_OPTIONS_SIZE
-#define COMMON_OPTIONS_EXTRACT\
-        COMMON_OPTIONS_BASE\
-        COMMON_OPTIONS_UI\
-        COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS\
-        COMMON_OPTIONS_CAPTURE_OPTIONS\
-        COMMON_OPTIONS_CAPTURE_TYPE
-#define COMMON_OPTIONS_PROCESSES\
-        COMMON_OPTIONS_TABLE
-#define COMMON_OPTIONS_CREATE_SPACE\
-        COMMON_OPTIONS_CAPTURE\
-        COMMON_OPTIONS_TABLE
-#define COMMON_OPTIONS_WINDOW_IDS\
-        common_options_b[COMMON_OPTION_WINDOW_IDS](args),
-#define COMMON_OPTIONS_FOCUS\
-        COMMON_OPTIONS_BASE\
-        COMMON_OPTIONS_UI\
-        COMMON_OPTIONS_WINDOW_IDS\
-        common_options_b[COMMON_OPTION_PID](args),
-#define COMMON_OPTIONS_FOCUSED\
-        COMMON_OPTIONS_FOCUS
-#define COMMON_OPTIONS_MENU_BAR\
-        common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-#define COMMON_OPTIONS_DB\
-        COMMON_OPTIONS_BASE\
-        COMMON_OPTIONS_UI\
-        common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-#define COMMON_OPTIONS_DB_TABLES\
-        COMMON_OPTIONS_DB
-#define COMMON_OPTIONS_DB_INFO\
-        COMMON_OPTIONS_DB
-#define COMMON_OPTIONS_DB_INIT\
-        COMMON_OPTIONS_DB
-#define COMMON_OPTIONS_DB_TEST\
-        COMMON_OPTIONS_DB
-#define COMMON_OPTIONS_DB_LOAD\
-        COMMON_OPTIONS_DB\
-        common_options_b[COMMON_OPTION_DB_TABLES](args),
-#define COMMON_OPTIONS_DB_TABLE_IDS\
-        COMMON_OPTIONS_DB\
-        common_options_b[COMMON_OPTION_DB_TABLES](args),
+#define COMMON_OPTIONS_ANIMATE                            \
+  COMMON_OPTIONS_BASE                                     \
+  COMMON_OPTIONS_CAPTURE_TYPE                             \
+  COMMON_OPTIONS_UI                                       \
+  COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS                   \
+  COMMON_OPTIONS_CAPTURE_OPTIONS                          \
+  COMMON_OPTIONS_SIZE                                     \
+  common_options_b[COMMON_OPTION_DURATION_SECONDS](args), \
+  common_options_b[COMMON_OPTION_FRAME_RATE](args),
+#define COMMON_OPTIONS_WINDOWS                            \
+  COMMON_OPTIONS_BASE                                     \
+  COMMON_OPTIONS_UI                                       \
+  COMMON_OPTIONS_CAPTURE_RESULT_FILTERS                   \
+  COMMON_OPTIONS_TABLE                                    \
+  common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args), \
+  common_options_b[COMMON_OPTION_HIDE_COLUMNS](args),     \
+  common_options_b[COMMON_OPTION_SHOW_COLUMNS](args),
+#define COMMON_OPTIONS_CAPTURE          \
+  COMMON_OPTIONS_BASE                   \
+  COMMON_OPTIONS_CAPTURE_TYPE           \
+  COMMON_OPTIONS_UI                     \
+  COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS \
+  COMMON_OPTIONS_CAPTURE_OPTIONS        \
+  COMMON_OPTIONS_SIZE
+#define COMMON_OPTIONS_EXTRACT          \
+  COMMON_OPTIONS_BASE                   \
+  COMMON_OPTIONS_UI                     \
+  COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS \
+  COMMON_OPTIONS_CAPTURE_OPTIONS        \
+  COMMON_OPTIONS_CAPTURE_TYPE
+#define COMMON_OPTIONS_PROCESSES \
+  COMMON_OPTIONS_TABLE
+#define COMMON_OPTIONS_CREATE_SPACE \
+  COMMON_OPTIONS_CAPTURE            \
+  COMMON_OPTIONS_TABLE
+#define COMMON_OPTIONS_WINDOW_IDS \
+  common_options_b[COMMON_OPTION_WINDOW_IDS](args),
+#define COMMON_OPTIONS_FOCUS \
+  COMMON_OPTIONS_BASE        \
+  COMMON_OPTIONS_UI          \
+  COMMON_OPTIONS_WINDOW_IDS  \
+  common_options_b[COMMON_OPTION_PID](args),
+#define COMMON_OPTIONS_FOCUSED \
+  COMMON_OPTIONS_FOCUS
+#define COMMON_OPTIONS_MENU_BAR \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+#define COMMON_OPTIONS_DB \
+  COMMON_OPTIONS_BASE     \
+  COMMON_OPTIONS_UI       \
+  common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
+#define COMMON_OPTIONS_DB_TABLES \
+  COMMON_OPTIONS_DB
+#define COMMON_OPTIONS_DB_INFO \
+  COMMON_OPTIONS_DB
+#define COMMON_OPTIONS_DB_INIT \
+  COMMON_OPTIONS_DB
+#define COMMON_OPTIONS_DB_TEST \
+  COMMON_OPTIONS_DB
+#define COMMON_OPTIONS_DB_LOAD \
+  COMMON_OPTIONS_DB            \
+  common_options_b[COMMON_OPTION_DB_TABLES](args),
+#define COMMON_OPTIONS_DB_TABLE_IDS \
+  COMMON_OPTIONS_DB                 \
+  common_options_b[COMMON_OPTION_DB_TABLES](args),
 #define COMMON_OPTIONS_ICON
-#define COMMON_OPTIONS_DB_ROWS\
-        COMMON_OPTIONS_DB\
-        common_options_b[COMMON_OPTION_DB_TABLES](args),
-#define COMMON_OPTIONS_DISPLAYS\
-        common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-        common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_COPY\
-        common_options_b[COMMON_OPTION_CONTENT](args),
+#define COMMON_OPTIONS_DB_ROWS \
+  COMMON_OPTIONS_DB            \
+  common_options_b[COMMON_OPTION_DB_TABLES](args),
+#define COMMON_OPTIONS_DISPLAYS                      \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_COPY \
+  common_options_b[COMMON_OPTION_CONTENT](args),
 #define COMMON_OPTIONS_SPACE
 #define COMMON_OPTIONS_SPACE_LIST
 #define COMMON_OPTIONS_SPACE_CREATE
 #define COMMON_OPTIONS_WINDOW
 #define COMMON_OPTIONS_PASTE
 #define COMMON_OPTIONS_CLIPBOARD
-#define COMMON_OPTIONS_HOTKEYS\
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-          common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_HOTKEYS                       \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_HOTKEYS_LIST
 #define COMMON_OPTIONS_HOTKEYS_SERVER
 #define COMMON_OPTIONS_WINDOW_LIST
@@ -170,126 +170,128 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 #define COMMON_OPTIONS_WINDOW_UNSTICKY
 #define COMMON_OPTIONS_WINDOW_ALL_SPACES
 #define COMMON_OPTIONS_WINDOW_NOT_ALL_SPACES
-#define COMMON_OPTIONS_WINDOW_SPACE\
-          common_options_b[COMMON_OPTION_ID](args),\
-          common_options_b[COMMON_OPTION_SPACE_ID](args),
-#define COMMON_OPTIONS_WINDOW_MINIMIZE\
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-          common_options_b[COMMON_OPTION_ID](args),
-#define COMMON_OPTIONS_WINDOW_UNMINIMIZE\
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-          common_options_b[COMMON_OPTION_ID](args),
-#define COMMON_OPTIONS_WINDOW_RESIZE\
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-          common_options_b[COMMON_OPTION_ID](args),\
-          common_options_b[COMMON_OPTION_RANDOM_ID](args),\
-          common_options_b[COMMON_OPTION_WINDOW_WIDTH](args),\
-          common_options_b[COMMON_OPTION_WINDOW_HEIGHT](args),
-#define COMMON_OPTIONS_WINDOW_MOVE\
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-          common_options_b[COMMON_OPTION_ID](args),\
-          common_options_b[COMMON_OPTION_WINDOW_X](args),\
-          common_options_b[COMMON_OPTION_WINDOW_Y](args),
+#define COMMON_OPTIONS_WINDOW_SPACE         \
+  common_options_b[COMMON_OPTION_ID](args), \
+  common_options_b[COMMON_OPTION_SPACE_ID](args),
+#define COMMON_OPTIONS_WINDOW_MINIMIZE               \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  common_options_b[COMMON_OPTION_ID](args),
+#define COMMON_OPTIONS_WINDOW_UNMINIMIZE             \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  common_options_b[COMMON_OPTION_ID](args),
+#define COMMON_OPTIONS_WINDOW_RESIZE                  \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),  \
+  common_options_b[COMMON_OPTION_ID](args),           \
+  common_options_b[COMMON_OPTION_RANDOM_ID](args),    \
+  common_options_b[COMMON_OPTION_WINDOW_WIDTH](args), \
+  common_options_b[COMMON_OPTION_WINDOW_HEIGHT](args),
+#define COMMON_OPTIONS_WINDOW_MOVE                   \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  common_options_b[COMMON_OPTION_ID](args),          \
+  common_options_b[COMMON_OPTION_WINDOW_X](args),    \
+  common_options_b[COMMON_OPTION_WINDOW_Y](args),
 //#########################################
-#define SUBCOMMANDS_HOTKEYS\
-            CREATE_SUBCOMMAND(HOTKEYS_LIST,),\
-            CREATE_SUBCOMMAND(HOTKEYS_SERVER,),
-#define SUBCOMMANDS_CLIPBOARD\
-            CREATE_SUBCOMMAND(COPY,),\
-            CREATE_SUBCOMMAND(PASTE,),
-#define SUBCOMMANDS_LAYOUT\
-            CREATE_SUBCOMMAND(LAYOUT_LIST,),\
-            CREATE_SUBCOMMAND(LAYOUT_APPLY,),\
-            CREATE_SUBCOMMAND(LAYOUT_SHOW,),
-#define SUBCOMMANDS_WINDOW\
-            CREATE_SUBCOMMAND(WINDOW_LIST,),\
-            CREATE_SUBCOMMAND(WINDOW_MOVE,),\
-            CREATE_SUBCOMMAND(WINDOW_SPACE,),\
-            CREATE_SUBCOMMAND(WINDOW_MINIMIZE,),\
-            CREATE_SUBCOMMAND(WINDOW_UNMINIMIZE,),\
-            CREATE_SUBCOMMAND(WINDOW_STICKY,),\
-            CREATE_SUBCOMMAND(WINDOW_UNSTICKY,),\
-            CREATE_SUBCOMMAND(WINDOW_ALL_SPACES,),\
-            CREATE_SUBCOMMAND(WINDOW_NOT_ALL_SPACES,),\
-            CREATE_SUBCOMMAND(WINDOW_RESIZE,),
-#define SUBCOMMANDS_SPACE\
-            CREATE_SUBCOMMAND(SPACE_LIST,),\
-            CREATE_SUBCOMMAND(SPACE_CREATE,),
-#define SUBCOMMANDS_DB\
-            CREATE_SUBCOMMAND(DB_INIT,),\
-            CREATE_SUBCOMMAND(DB_TEST,),\
-            CREATE_SUBCOMMAND(DB_INFO,),\
-            CREATE_SUBCOMMAND(DB_LOAD,),\
-            CREATE_SUBCOMMAND(DB_TABLES,),\
-            CREATE_SUBCOMMAND(DB_ROWS,),\
-            CREATE_SUBCOMMAND(DB_TABLE_IDS,),\
+#define SUBCOMMANDS_HOTKEYS          \
+  CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
+  CREATE_SUBCOMMAND(HOTKEYS_SERVER, ),
+#define SUBCOMMANDS_CLIPBOARD \
+  CREATE_SUBCOMMAND(COPY, ),  \
+  CREATE_SUBCOMMAND(PASTE, ),
+#define SUBCOMMANDS_LAYOUT           \
+  CREATE_SUBCOMMAND(LAYOUT_LIST, ),  \
+  CREATE_SUBCOMMAND(LAYOUT_APPLY, ), \
+  CREATE_SUBCOMMAND(LAYOUT_SHOW, ),
+#define SUBCOMMANDS_WINDOW                    \
+  CREATE_SUBCOMMAND(WINDOW_LIST, ),           \
+  CREATE_SUBCOMMAND(WINDOW_MOVE, ),           \
+  CREATE_SUBCOMMAND(WINDOW_SPACE, ),          \
+  CREATE_SUBCOMMAND(WINDOW_MINIMIZE, ),       \
+  CREATE_SUBCOMMAND(WINDOW_UNMINIMIZE, ),     \
+  CREATE_SUBCOMMAND(WINDOW_STICKY, ),         \
+  CREATE_SUBCOMMAND(WINDOW_UNSTICKY, ),       \
+  CREATE_SUBCOMMAND(WINDOW_ALL_SPACES, ),     \
+  CREATE_SUBCOMMAND(WINDOW_NOT_ALL_SPACES, ), \
+  CREATE_SUBCOMMAND(WINDOW_RESIZE, ),
+#define SUBCOMMANDS_SPACE          \
+  CREATE_SUBCOMMAND(SPACE_LIST, ), \
+  CREATE_SUBCOMMAND(SPACE_CREATE, ),
+#define SUBCOMMANDS_DB               \
+  CREATE_SUBCOMMAND(DB_INIT, ),      \
+  CREATE_SUBCOMMAND(DB_TEST, ),      \
+  CREATE_SUBCOMMAND(DB_INFO, ),      \
+  CREATE_SUBCOMMAND(DB_LOAD, ),      \
+  CREATE_SUBCOMMAND(DB_TABLES, ),    \
+  CREATE_SUBCOMMAND(DB_ROWS, ),      \
+  CREATE_SUBCOMMAND(DB_TABLE_IDS, ), \
 //#########################################
-#define CREATE_SUBCOMMAND(NAME,SUBCOMMANDS)\
-      {\
-        .name        = cmds[COMMAND_##NAME].name,\
-        .description = cmds[COMMAND_##NAME].description,\
-        .function    = cmds[COMMAND_##NAME].fxn,\
-        .about       = get_command_about(COMMAND_##NAME),\
-        .options     = (struct optparse_opt[]){\
-          COMMON_OPTIONS_##NAME\
-          { END_OF_OPTIONS },\
-        },\
-        .subcommands     = (struct optparse_cmd[]) { SUBCOMMANDS { END_OF_SUBCOMMANDS },\
-        }\
-      }
+#define CREATE_SUBCOMMAND(NAME, SUBCOMMANDS)                                     \
+  {                                                                              \
+    .name        = cmds[COMMAND_ ## NAME].name,                                  \
+    .description = cmds[COMMAND_ ## NAME].description,                           \
+    .function    = cmds[COMMAND_ ## NAME].fxn,                                   \
+    .about       = get_command_about(COMMAND_ ## NAME),                          \
+    .options     = (struct optparse_opt[]){                                      \
+      COMMON_OPTIONS_ ## NAME                                                    \
+      { END_OF_OPTIONS },                                                        \
+    },                                                                           \
+    .subcommands = (struct optparse_cmd[]) { SUBCOMMANDS { END_OF_SUBCOMMANDS }, \
+    }                                                                            \
+  }
 struct normalized_argv_t {
-  char *mode, *executable;
+  char          *mode, *executable;
   struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
 };
-struct args_t                 *args                = &(struct args_t){
-  .verbose_mode        = false, .debug_mode = false,
-  .space_id            = -1,
-  .display_id          = -1,
-  .id           = 0,
-  .capture_type         = DEFAULT_CAPTURE_TYPE,
+struct args_t *args = &(struct args_t){
+  .verbose_mode                       = false, .debug_mode = false,
+  .space_id                           = -1,
+  .display_id                         = -1,
+  .id                                 = 0,
+  .capture_type                       = DEFAULT_CAPTURE_TYPE,
   .capture_mode[DEFAULT_CAPTURE_TYPE] = true,
-  .progress_bar_mode = DEFAULT_PROGRESS_BAR_ENABLED,
-  .output_mode         = DEFAULT_OUTPUT_MODE,
-  .sort_key            = NULL,
-  .sort_direction      = "asc",
-  .current_space_only  = false,
-  .clear_screen        = false,
-  .minimized_only      = false,
-  .application_name    = NULL,
-  .width_greater       = -1, .width_less = -1,
-  .height_greater      = -1, .height_less = -1,
-  .width               = -1, .height = -1,
-  .output_file         = NULL,
-  .concurrency         = 1,
-  .display_mode = false,
-  .all_mode         = false,
-  .limit               = 50,
-  .font_name           = NULL, .font_family = NULL, .font_style = NULL,
-  .exact_match         = false, .case_sensitive = false,
-  .retries             = 0,
-  .duration_seconds    = 10,
-  .write_images_mode = false,
+  .progress_bar_mode                  = DEFAULT_PROGRESS_BAR_ENABLED,
+  .output_mode                        = DEFAULT_OUTPUT_MODE,
+  .sort_key                           = NULL,
+  .sort_direction                     = "asc",
+  .current_space_only                 = false,
+  .clear_screen                       = false,
+  .minimized_only                     = false,
+  .application_name                   = NULL,
+  .width_greater                      = -1, .width_less = -1,
+  .height_greater                     = -1, .height_less = -1,
+  .width                              = -1, .height = -1,
+  .output_file                        = NULL,
+  .concurrency                        = 1,
+  .display_mode                       = false,
+  .all_mode                           = false,
+  .limit                              = 50,
+  .font_name                          = NULL, .font_family = NULL, .font_style = NULL,
+  .exact_match                        = false, .case_sensitive = false,
+  .retries                            = 0,
+  .duration_seconds                   = 10,
+  .write_images_mode                  = false,
   .purge_write_directory_before_write = false,
-  .write_directory = "/tmp",
-  .formats_v = NULL,
-  .format_ids_v = NULL,
-  .pid = -1, .windowids=NULL,
-  .icon_sizes_v = NULL,
-  .format_names_qty=0,
-  .hide_columns_qty=0,
+  .write_directory                    = "/tmp",
+  .formats_v                          = NULL,
+  .format_ids_v                       = NULL,
+  .pid                                = -1, .windowids = NULL,
+  .icon_sizes_v                       = NULL,
+  .format_names_qty                   = 0,
+  .hide_columns_qty                   = 0,
 };
 
 ////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   VIPS_INIT(argv[0]);
-  args->pid=getpid();
-  if(DEBUG_ARGV)
-    dls_print_arg_v("pre",AC_YELLOW,argc, argv);
-  if(NORMALIZE_ARGV)
+  args->pid = getpid();
+  if (DEBUG_ARGV) {
+    dls_print_arg_v("pre", AC_YELLOW, argc, argv);
+  }
+  if (NORMALIZE_ARGV) {
     dls_normalize_arguments(&argc, argv);
-  if(DEBUG_ARGV)
-    dls_print_arg_v("post",AC_MAGENTA,argc, argv);
-
+  }
+  if (DEBUG_ARGV) {
+    dls_print_arg_v("post", AC_MAGENTA, argc, argv);
+  }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
@@ -315,21 +317,21 @@ int main(int argc, char *argv[]) {
         .function    = optparse_print_help_subcmd,
       },
 //////////////////////////////////////////
-      CREATE_SUBCOMMAND(WINDOWS,),
-      CREATE_SUBCOMMAND(CAPTURE,),
-      CREATE_SUBCOMMAND(EXTRACT,),
-      CREATE_SUBCOMMAND(ANIMATE,),
-      CREATE_SUBCOMMAND(PROCESSES,),
-      CREATE_SUBCOMMAND(FOCUS,),
-      CREATE_SUBCOMMAND(FOCUSED,),
-      CREATE_SUBCOMMAND(MENU_BAR,),
-      CREATE_SUBCOMMAND(DISPLAYS,),
-      CREATE_SUBCOMMAND(DB,SUBCOMMANDS_DB),
-      CREATE_SUBCOMMAND(CLIPBOARD,SUBCOMMANDS_CLIPBOARD),
-      CREATE_SUBCOMMAND(LAYOUT,SUBCOMMANDS_LAYOUT),
-      CREATE_SUBCOMMAND(HOTKEYS,SUBCOMMANDS_HOTKEYS),
-      CREATE_SUBCOMMAND(WINDOW,SUBCOMMANDS_WINDOW),
-      CREATE_SUBCOMMAND(SPACE,SUBCOMMANDS_SPACE),
+      CREATE_SUBCOMMAND(WINDOWS, ),
+      CREATE_SUBCOMMAND(CAPTURE, ),
+      CREATE_SUBCOMMAND(EXTRACT, ),
+      CREATE_SUBCOMMAND(ANIMATE, ),
+      CREATE_SUBCOMMAND(PROCESSES, ),
+      CREATE_SUBCOMMAND(FOCUS, ),
+      CREATE_SUBCOMMAND(FOCUSED, ),
+      CREATE_SUBCOMMAND(MENU_BAR, ),
+      CREATE_SUBCOMMAND(DISPLAYS, ),
+      CREATE_SUBCOMMAND(DB, SUBCOMMANDS_DB),
+      CREATE_SUBCOMMAND(CLIPBOARD, SUBCOMMANDS_CLIPBOARD),
+      CREATE_SUBCOMMAND(LAYOUT, SUBCOMMANDS_LAYOUT),
+      CREATE_SUBCOMMAND(HOTKEYS, SUBCOMMANDS_HOTKEYS),
+      CREATE_SUBCOMMAND(WINDOW, SUBCOMMANDS_WINDOW),
+      CREATE_SUBCOMMAND(SPACE, SUBCOMMANDS_SPACE),
 #undef CREATE_SUBCOMMAND
       {
         .name        = cmds[COMMAND_ALACRITTYS].name,
@@ -534,39 +536,39 @@ int main(int argc, char *argv[]) {
           { END_OF_OPTIONS },
         },
       },/*
-      {
-        .name        = "focused-server",
-        .description = "Start Focused Server",
-        .function    = cmds[COMMAND_FOCUSED_SERVER].fxn,
-        .about       = "💾" "\t" COLOR_START "Start Focused Server" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = "focused-client",
-        .description = "Start Focused Client",
-        .function    = cmds[COMMAND_FOCUSED_CLIENT].fxn,
-        .about       = "🍏" "\t" COLOR_START "Start Focused Client" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = "grayscale-png",
-        .description = "Grayscale PNG",
-        .function    = cmds[COMMAND_GRAYSCALE_PNG_FILE].fxn,
-        .about       = "☁️" "\t" COLOR_GET "Grayscale PNG" AC_RESETALL,
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_INPUT_FILE](args),
-          common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
-          common_options_b[COMMON_OPTION_RESIZE_FACTOR](args),
-          { END_OF_OPTIONS },
-        },
-      },*/
+         * {
+         * .name        = "focused-server",
+         * .description = "Start Focused Server",
+         * .function    = cmds[COMMAND_FOCUSED_SERVER].fxn,
+         * .about       = "💾" "\t" COLOR_START "Start Focused Server" AC_RESETALL,
+         * .options     = (struct optparse_opt[]){
+         * common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+         * { END_OF_OPTIONS },
+         * },
+         * },
+         * {
+         * .name        = "focused-client",
+         * .description = "Start Focused Client",
+         * .function    = cmds[COMMAND_FOCUSED_CLIENT].fxn,
+         * .about       = "🍏" "\t" COLOR_START "Start Focused Client" AC_RESETALL,
+         * .options     = (struct optparse_opt[]){
+         * common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+         * { END_OF_OPTIONS },
+         * },
+         * },
+         * {
+         * .name        = "grayscale-png",
+         * .description = "Grayscale PNG",
+         * .function    = cmds[COMMAND_GRAYSCALE_PNG_FILE].fxn,
+         * .about       = "☁️" "\t" COLOR_GET "Grayscale PNG" AC_RESETALL,
+         * .options     = (struct optparse_opt[]){
+         * common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
+         * common_options_b[COMMON_OPTION_INPUT_FILE](args),
+         * common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
+         * common_options_b[COMMON_OPTION_RESIZE_FACTOR](args),
+         * { END_OF_OPTIONS },
+         * },
+         * },*/
       {
         .name        = "get-icon-png",
         .description = "Get App Icon as PNG",
@@ -693,69 +695,77 @@ int main(int argc, char *argv[]) {
 } /* main */
 
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]){
-  printf(AC_GREEN "%s\n" AC_RESETALL,title);
-  for(int i=0;i<argc;i++){
-    printf("#%d> %s%s"AC_RESETALL "\n", i, color,argv[i]);
+  printf(AC_GREEN "%s\n" AC_RESETALL, title);
+  for (int i = 0; i < argc; i++) {
+    printf("#%d> %s%s"AC_RESETALL "\n", i, color, argv[i]);
   }
-  char *cmd = stringfn_join(argv," ",0,argc);
-  printf("\t\t\t%s%s"AC_RESETALL "\n", color,cmd);
+  char *cmd = stringfn_join(argv, " ", 0, argc);
+  printf("\t\t\t%s%s"AC_RESETALL "\n", color, cmd);
   free(cmd);
-
 }
 static struct normalized_argv_t *dls_argv_normalized_argv_t(int argc, char *argv[]){
-  struct normalized_argv_t *r = calloc(1,sizeof(struct normalized_argv_t));
-  r->arg_v = dls_argv_to_arg_v(argc,argv);
-  char *cur = NULL;
+  struct normalized_argv_t *r = calloc(1, sizeof(struct normalized_argv_t));
+
+  r->arg_v = dls_argv_to_arg_v(argc, argv);
+  char          *cur    = NULL;
   struct Vector *prev_v = vector_new();
-  for(size_t i=0;i<vector_size(r->arg_v);i++){
-    cur = (char*)vector_get(r->arg_v,i);
-  log_info("%lu", vector_size(prev_v));
-    if(!cur)continue;
-    if(i==0){
-        r->executable = cur;
+
+  for (size_t i = 0; i < vector_size(r->arg_v); i++) {
+    cur = (char *)vector_get(r->arg_v, i);
+    log_info("%lu", vector_size(prev_v));
+    if (!cur) {
+      continue;
     }
-    for(size_t x=0;x<vector_size(prev_v);x++){
-      char *prev = (x>0) ? (char*)vector_get(prev_v,x-1) : NULL;
-      Dbg(prev,%s);
-      if(prev && dls_get_arg_is_ordered(cur,prev)){
-        log_info("#%lu> args need to be swapped: %s should be after %s",i, prev,cur);
-        vector_set(r->arg_v,x,strdup(cur));
-        vector_set(r->arg_v,i,strdup(prev));
+    if (i == 0) {
+      r->executable = cur;
+    }
+    for (size_t x = 0; x < vector_size(prev_v); x++) {
+      char *prev = (x > 0) ? (char *)vector_get(prev_v, x - 1) : NULL;
+      Dbg(prev, %s);
+      if (prev && dls_get_arg_is_ordered(cur, prev)) {
+        log_info("#%lu> args need to be swapped: %s should be after %s", i, prev, cur);
+        vector_set(r->arg_v, x, strdup(cur));
+        vector_set(r->arg_v, i, strdup(prev));
       }
     }
-    vector_push(prev_v,(void*)cur);
-    if(i > 0 && !r->mode && !stringfn_starts_with(cur,"-")){
+    vector_push(prev_v, (void *)cur);
+    if (i > 0 && !r->mode && !stringfn_starts_with(cur, "-")) {
       char *aliased = dls_get_alias_wildcard_glob_name(cur);
-      if(aliased){
+      if (aliased) {
         r->mode = strdup(aliased);
-        vector_set(r->arg_v,i,(void*)r->mode);
+        vector_set(r->arg_v, i, (void *)r->mode);
         argv[i] = r->mode;
       }else{
         r->mode = cur;
       }
     }else{
-      if(!r->mode)
-        vector_push(r->pre_mode_arg_v,cur);
-      else
-        vector_push(r->post_mode_arg_v,cur);
+      if (!r->mode) {
+        vector_push(r->pre_mode_arg_v, cur);
+      }else{
+        vector_push(r->post_mode_arg_v, cur);
+      }
     }
   }
-  for(size_t i=0;i<vector_size(r->arg_v);i++){
-    char *s = (char*)vector_get(r->arg_v,i);
-    if(strcmp(argv[i],s) != 0)
+  for (size_t i = 0; i < vector_size(r->arg_v); i++) {
+    char *s = (char *)vector_get(r->arg_v, i);
+    if (strcmp(argv[i], s) != 0) {
       argv[i] = s;
+    }
   }
   return(r);
-}
+} /* dls_argv_normalized_argv_t */
 static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]){
   struct Vector *arg_v = vector_new();
-  for(int i=0;i<argc;i++){
-    vector_push(arg_v,(void*)strdup(argv[i]));
+
+  for (int i = 0; i < argc; i++) {
+    vector_push(arg_v, (void *)strdup(argv[i]));
   }
   return(arg_v);
 }
+
 static bool dls_normalize_arguments(int *argc, char *argv[]){
-  struct normalized_argv_t *r = dls_argv_normalized_argv_t(*argc,argv);
+  struct normalized_argv_t *r = dls_argv_normalized_argv_t(*argc, argv);
+
   log_info("Mode: %s", r->mode);
   *argc = vector_size(r->arg_v);
 }
@@ -766,9 +776,9 @@ static void __attribute__((constructor)) __constructor__dls(void){
   errno    = 0;
   whereami = core_utils_whereami_report();
   if (DARWIN_LS_DEBUG_MODE) {
-      log_debug("  >Whereami Report<\n\tExecutable:%s\n\tDirectory:%s\n\tBasename:%s\n",
-                whereami->executable, whereami->executable_directory, whereami->executable_basename
-                );
+    log_debug("  >Whereami Report<\n\tExecutable:%s\n\tDirectory:%s\n\tBasename:%s\n",
+              whereami->executable, whereami->executable_directory, whereami->executable_basename
+              );
   }
   errno = 0;
   if (is_authorized_for_accessibility() == false) {

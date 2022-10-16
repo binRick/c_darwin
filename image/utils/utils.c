@@ -53,21 +53,21 @@ enum image_conversion_test_type_t {
 int image_conversion_compressions[] = { 8 };
 int image_conversion_qualities[]    = { 100 };
 /*
-vips_jpegsave_buffer(
-vips_webpsave_buffer(
-vips_tiffsave_buffer(
-vips_magicksave_buffer(
-vips_pngsave_buffer(
-vips_radsave_buffer(
-vips_gifsave_buffer(
-vips_jp2ksave_buffer(
-vips_jxlsave_buffer(
-vips_dzsave_buffer(
-*/
+ * vips_jpegsave_buffer(
+ * vips_webpsave_buffer(
+ * vips_tiffsave_buffer(
+ * vips_magicksave_buffer(
+ * vips_pngsave_buffer(
+ * vips_radsave_buffer(
+ * vips_gifsave_buffer(
+ * vips_jp2ksave_buffer(
+ * vips_jxlsave_buffer(
+ * vips_dzsave_buffer(
+ */
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   [IMAGE_TYPE_PNG] =  {
     .file_extension             = "png",                         .name = "PNG",
-    .save_buffer_fxn = vips_pngsave_buffer,
+    .save_buffer_fxn            = vips_pngsave_buffer,
     .get_format                 = ^ CFStringRef (void){ return(kUTTypePNG);                                         },
     .validate_header            = ^ bool (unsigned char *image_buf){ return(('P' == image_buf[1] && 'N' == image_buf[2] && 'G' == image_buf[3]) ? true : false); },
     .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(8, sizeof(unsigned char)); read_image_format_file(image_path, buf, 8, 16); return(buf); },
@@ -79,12 +79,12 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_GIF] =  {
     .file_extension             = "gif",
-    .save_buffer_fxn = vips_gifsave_buffer,
+    .save_buffer_fxn            = vips_gifsave_buffer,
     .name                       = "GIF",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeGIF);                                         },
     .validate_header            = ^ bool (unsigned char *image_buf){ return(('G' == image_buf[0] && 'I' == image_buf[1] && 'F' == image_buf[2]) ? true : false); },
     .read_file_header           = ^ unsigned char *(char *image_path){ unsigned char *buf = calloc(4, sizeof(unsigned char)); read_image_format_file(image_path, buf, 4, 6); return(buf); },
-    .get_dimensions_from_header = ^ bool (unsigned char *buf,int *width,                                                            int *height){
+    .get_dimensions_from_header = ^ bool (unsigned char *buf,int *width,                                                 int *height){
       *width  = read_16bytes_little_endian_image_buffer(buf);
       *height = read_16bytes_little_endian_image_buffer(buf + 2);
       return((*width > 0 && *height > 0) ? true : false);
@@ -92,7 +92,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_TIFF] = {
     .file_extension             = "tiff",
-    .save_buffer_fxn = vips_tiffsave_buffer,
+    .save_buffer_fxn            = vips_tiffsave_buffer,
     .name                       = "TIFF",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeTIFF);                                        },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
@@ -103,13 +103,13 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
     },
   },
   [IMAGE_TYPE_WEBP] = {
-    .file_extension             = "webp",
+    .file_extension  = "webp",
     .save_buffer_fxn = vips_webpsave_buffer,
-    .name                       = "WEBP",
+    .name            = "WEBP",
   },
   [IMAGE_TYPE_JPEG] = {
     .file_extension             = "jpeg",
-    .save_buffer_fxn = vips_jpegsave_buffer,
+    .save_buffer_fxn            = vips_jpegsave_buffer,
     .name                       = "JPEG",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeJPEG);                                        },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((0xff == image_buf[0] && 0xd8 == image_buf[1]) ? true : false); },
@@ -121,7 +121,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_BMP] =  {
     .file_extension             = "bmp",
-    .save_buffer_fxn = NULL,
+    .save_buffer_fxn            = NULL,
     .name                       = "BMP",
     .get_format                 = ^ CFStringRef (void){ return(kUTTypeBMP);                                         },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
@@ -133,7 +133,7 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   },
   [IMAGE_TYPE_QOI] =  {
     .file_extension             = "qoi",
-    .save_buffer_fxn = NULL,
+    .save_buffer_fxn            = NULL,
     .name                       = "QOI",
     .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
     .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
@@ -312,9 +312,9 @@ char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
 
 struct spng_info_t *spng_test(FILE *fp){
   struct spng_info_t *i = calloc(1, sizeof(struct spng_info_t));
+
   return(i);
 }
-
 
 bool image_conversions(char *file){
   return(true);
@@ -323,6 +323,7 @@ bool image_conversions(char *file){
 static void read_image_format_file(const char *path, unsigned char *buf, int len, int offset) {
   int fd = open(path, O_RDONLY); assert(fd >= 0);   assert(pread(fd, buf, len, offset) >= 0); close(fd);
 }
+
 bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef image, char *image_file){
   unsigned long started = timestamp();
   bool          success = false; CFStringRef path; CFURLRef url; CGImageDestinationRef destination;
@@ -370,7 +371,6 @@ unsigned char *save_cgref_to_gif_memory(CGImageRef image, size_t *len){
   return(save_cgref_to_image_type_memory(IMAGE_TYPE_GIF, image, len));
 }
 
-
 unsigned char *save_cgref_to_jpeg_memory(CGImageRef image, size_t *len){
   return(save_cgref_to_image_type_memory(IMAGE_TYPE_JPEG, image, len));
 }
@@ -404,7 +404,7 @@ bool save_cgref_to_tiff_file(CGImageRef image, char *image_file) {
 }
 
 bool save_qoi_pixels_to_qoi_file(void *pixels, size_t len, char *image_file){
-  return(fsio_write_binary_file(image_file,pixels,len));
+  return(fsio_write_binary_file(image_file, pixels, len));
 }
 
 bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
@@ -421,26 +421,28 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
 }
 
 unsigned char *save_cgref_to_webp_memory(CGImageRef image, size_t *len){
-  unsigned char *rgb=NULL,*buf=NULL;
-  size_t rgb_len=0;
-  VipsImage *v;
+  unsigned char *rgb = NULL, *buf = NULL;
+  size_t        rgb_len = 0;
+  VipsImage     *v;
+
   *len = 0;
-  rgb = save_cgref_to_rgb_memory(image,&rgb_len);
-  if(!rgb||rgb_len<1){
-      log_error("Failed to save cgref to rgb");
+  rgb  = save_cgref_to_rgb_memory(image, &rgb_len);
+  if (!rgb || rgb_len < 1) {
+    log_error("Failed to save cgref to rgb");
   }else{
-    errno=0;
-    v = vips_image_new_from_memory(rgb,rgb_len,CGImageGetWidth(image),CGImageGetHeight(image),4,VIPS_FORMAT_UCHAR);
-    if(!v){
+    errno = 0;
+    v     = vips_image_new_from_memory(rgb, rgb_len, CGImageGetWidth(image), CGImageGetHeight(image), 4, VIPS_FORMAT_UCHAR);
+    if (!v) {
       log_error("Failed to load from buffer");
     }else{
-      if(IMAGE_UTILS_DEBUG_MODE)
+      if (IMAGE_UTILS_DEBUG_MODE) {
         log_debug("\nLoaded %s PNG Pixels to %dx%d %s Webp VIPImage using",
-                        bytes_to_string(rgb_len),
-                        vips_image_get_width(v), vips_image_get_height(v),
-                        bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(v))
-                        );
-      if(vips_webpsave_buffer(v,&buf, len, NULL)){
+                  bytes_to_string(rgb_len),
+                  vips_image_get_width(v), vips_image_get_height(v),
+                  bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(v))
+                  );
+      }
+      if (vips_webpsave_buffer(v, &buf, len, NULL)) {
         log_error("Failed to save to buffer");
       }
       g_object_unref(v);
@@ -454,16 +456,17 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);
   size_t        len  = 0;
   unsigned char *rgb = NULL;
+
   _ts[0] = timestamp();
-  rgb = save_cgref_to_rgb_memory(image_ref,&len);
+  rgb    = save_cgref_to_rgb_memory(image_ref, &len);
   _ts[1] = timestamp() - _ts[0];
   if (IMAGE_UTILS_DEBUG_MODE) {
     log_debug("[cgref to rgb] decoded %dx%d RGB (rgb len: %s/%lu) in %s",
-                w,h,
-                bytes_to_string(len),
-                len,
-                milliseconds_to_string(_ts[1])
-                );
+              w, h,
+              bytes_to_string(len),
+              len,
+              milliseconds_to_string(_ts[1])
+              );
   }
 
   qoi_desc *desc = &(qoi_desc){
@@ -472,10 +475,12 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
     .channels   = 4,
     .colorspace = QOI_SRGB,
   };
-  errno=0;
+
+  errno  = 0;
   _ts[0] = timestamp();
   void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
-  if(!qoi_pixels){
+
+  if (!qoi_pixels) {
     log_error("Failed to qoi encode");
   }else{
     _ts[1] = timestamp() - _ts[0];
@@ -580,29 +585,30 @@ unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, 
 }
 
 unsigned char *save_cgref_to_rgb_memory(CGImageRef img_ref, size_t *len){
-  unsigned char     *buffer = NULL;
-  int               width = CGImageGetWidth(img_ref), height = CGImageGetHeight(img_ref);
-  CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
-  CGContextRef context = CGBitmapContextCreate(NULL,
-                                               width, height,
-                                               8,
-                                               width*4,
-                                               CGColorSpaceCreateDeviceRGB(),
-                                               kCGImageAlphaNoneSkipLast
-                                               );
+  unsigned char *buffer = NULL;
+  int           width = CGImageGetWidth(img_ref), height = CGImageGetHeight(img_ref);
+  CGRect        newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
+  CGContextRef  context = CGBitmapContextCreate(NULL,
+                                                width, height,
+                                                8,
+                                                width * 4,
+                                                CGColorSpaceCreateDeviceRGB(),
+                                                kCGImageAlphaNoneSkipLast
+                                                );
+
   CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
   CGContextDrawImage(context, newRect, img_ref);
-  CGImageRef newImageRef = CGBitmapContextCreateImage(context);
+  CGImageRef        newImageRef  = CGBitmapContextCreateImage(context);
   CGDataProviderRef provider_ref = CGImageGetDataProvider(newImageRef);
   CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
-  *len = CFDataGetLength(data_ref);
+
+  *len   = CFDataGetLength(data_ref);
   buffer = calloc(*len, sizeof(unsigned char));
   memcpy(buffer, CFDataGetBytePtr(data_ref), *len);
   CFRelease(context);
   CFRelease(data_ref);
   return(buffer);
 }
-
 
 CGImageRef rgb_pixels_to_png_cgimage_ref(unsigned char *rgb_pixels, int width, int height){
   CFMutableDataRef      data     = CFDataCreateMutable(kCFAllocatorDefault, 0);
@@ -700,6 +706,7 @@ unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgb
 
   unsigned char *output_file_data;
   unsigned int  out_status = lodepng_encode(&output_file_data, len, raw_8bit_pixels, width, height, &state);
+
   if (out_status) {
     fprintf(stderr, "Can't encode image: %s\n", lodepng_error_text(out_status));
     return(NULL);
@@ -710,7 +717,7 @@ unsigned char *imagequant_encode_rgb_pixels_to_png_buffer(unsigned char *raw_rgb
 fail:
   *len = 0;
   return(NULL);
-}
+} /* imagequant_encode_rgb_pixels_to_png_buffer */
 
 static void __attribute__((constructor)) __constructor__image_utils(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_IMAGE_UTILS") != NULL) {

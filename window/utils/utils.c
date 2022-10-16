@@ -3,26 +3,26 @@
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
-#include "core/utils/utils.h"
+#include "capture/type/type.h"
+#include "capture/utils/utils.h"
 #include "core/core.h"
 #include "core/utils/utils.h"
+#include "core/utils/utils.h"
+#include "db/db.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
 #include "process/process.h"
-#include "capture/type/type.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
+#include "sqldbal/src/sqldbal.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log/log.h"
 #include "timestamp/timestamp.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
 #include "window/utils/utils.h"
-#include "sqldbal/src/sqldbal.h"
-#include "capture/utils/utils.h"
-#include "db/db.h"
 #include <errno.h>
 #include <mach/clock.h>
 #include <mach/mach.h>
@@ -38,36 +38,38 @@
 #define MIN_VALID_WINDOW_HEIGHT    100
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static char *get_axerror_name(AXError err);
+
 ///////////////////////////////////////////////////////////////////////////////
 bool window_db_load(struct sqldbal_db *db){
-  struct Vector *v=get_window_infos_v();
+  struct Vector        *v = get_window_infos_v();
   struct window_info_t *w;
-  int rc;
-  struct sqldbal_stmt      *stmt;
-  uint64_t ts = (uint64_t)(timestamp());
+  int                  rc;
+  struct sqldbal_stmt  *stmt;
+  uint64_t             ts = (uint64_t)(timestamp());
+
 //struct Vector *captures_v = db_table_images_from_ids(CAPTURE_TYPE_WINDOW, v);
 //Dbg(vector_size(captures_v),%lu);
-  for(size_t i=0;i<vector_size(v);i++){
-    w = (struct window_info_t*)vector_get(v,i);
-    log_info("Loading Window #%lu/%lu> %lu :: %s",i+1,vector_size(v),w->window_id,TABLE_NAME_WINDOWS);
+  for (size_t i = 0; i < vector_size(v); i++) {
+    w = (struct window_info_t *)vector_get(v, i);
+    log_info("Loading Window #%lu/%lu> %lu :: %s", i + 1, vector_size(v), w->window_id, TABLE_NAME_WINDOWS);
 /*
-    struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-    req->ids = v;
-    req->format         = IMAGE_TYPE_QOI;
-    req->compress         = false;
-    req->quantize_mode = false;
-    req->type = CAPTURE_TYPE_WINDOW;
-    req->progress_bar_mode = false;
-    req->width        = 300;
-    req->height       = 0;
-    req->time.dur     = 0;
-    req->time.started = timestamp();
-    */
+ *  struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+ *  req->ids = v;
+ *  req->format         = IMAGE_TYPE_QOI;
+ *  req->compress         = false;
+ *  req->quantize_mode = false;
+ *  req->type = CAPTURE_TYPE_WINDOW;
+ *  req->progress_bar_mode = false;
+ *  req->width        = 300;
+ *  req->height       = 0;
+ *  req->time.dur     = 0;
+ *  req->time.started = timestamp();
+ */
 
     rc = sqldbal_stmt_prepare(db,
-                            "INSERT INTO "TABLE_NAME_WINDOWS"(id, ts, is_focused) VALUES(?, ?, ?)",
-                            -1,
-                            &stmt);
+                              "INSERT INTO "TABLE_NAME_WINDOWS "(id, ts, is_focused) VALUES(?, ?, ?)",
+                              -1,
+                              &stmt);
     assert(rc == SQLDBAL_STATUS_OK);
     rc = sqldbal_stmt_bind_int64(stmt, 0, (uint64_t)(w->window_id));
     assert(rc == SQLDBAL_STATUS_OK);
@@ -79,10 +81,9 @@ bool window_db_load(struct sqldbal_db *db){
     assert(rc == SQLDBAL_STATUS_OK);
     rc = sqldbal_stmt_close(stmt);
     assert(rc == SQLDBAL_STATUS_OK);
-
   }
   vector_release(v);
-return(true);
+  return(true);
 }
 
 bool unminimize_window_id(size_t window_id){
@@ -115,7 +116,6 @@ bool unminimize_window_id(size_t window_id){
     return(false);
   }
   return(true);
-
 }
 
 bool minimize_window_id(size_t window_id){
@@ -266,27 +266,30 @@ pid_t get_window_id_pid(size_t window_id){
   CFArrayRef           windowList;
   CFDictionaryRef      window;
   struct window_info_t *w = NULL;
-  int wid; pid_t pid;
+  int                  wid; pid_t pid;
 
   windowList = CGWindowListCopyWindowInfo(
     (kCGWindowListExcludeDesktopElements),
     kCGNullWindowID
     );
   for (int i = 0; i < CFArrayGetCount(windowList) && (WINDOW_ID <= 0); i++) {
-      window = CFArrayGetValueAtIndex(windowList, i);
-      CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowNumber),
-                       kCGWindowIDCFNumberType,
-                       &wid);
-      if((size_t)wid != (size_t)window_id)
-        continue;
-      CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowOwnerPID),
-                       kCGWindowIDCFNumberType,
-                       &pid);
-      if(pid)
-        return(pid);
+    window = CFArrayGetValueAtIndex(windowList, i);
+    CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowNumber),
+                     kCGWindowIDCFNumberType,
+                     &wid);
+    if ((size_t)wid != (size_t)window_id) {
+      continue;
+    }
+    CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowOwnerPID),
+                     kCGWindowIDCFNumberType,
+                     &pid);
+    if (pid) {
+      return(pid);
+    }
   }
   return(0);
 }
+
 size_t get_pid_window_id(int PID){
   size_t               WINDOW_ID = 0, tmp_WINDOW_ID = 0;
   CFArrayRef           windowList;
@@ -675,9 +678,10 @@ void minimize_window(struct window_info_t *w){
     log_error("Failed to set minimized property");
   }
 }
+
 void focus_window_id_psn(size_t window_id, ProcessSerialNumber psn){
   errno = 0;
-  AXError             err;
+  AXError err;
   errno = 0;
   err   = SetFrontProcessWithOptions(&psn, kSetFrontProcessFrontWindowOnly);
   if (err != kAXErrorSuccess) {
@@ -707,10 +711,11 @@ void focus_window_id_psn(size_t window_id, ProcessSerialNumber psn){
 }
 
 void focus_window_id(size_t window_id){
-  pid_t pid = get_window_id_pid(window_id);
+  pid_t               pid = get_window_id_pid(window_id);
   ProcessSerialNumber psn = PID2PSN(pid);
-  log_debug("%lu|%d|%d|%d",window_id,pid,psn.highLongOfPSN,psn.lowLongOfPSN);
-  return(focus_window_id_psn(window_id,psn));
+
+  log_debug("%lu|%d|%d|%d", window_id, pid, psn.highLongOfPSN, psn.lowLongOfPSN);
+  return(focus_window_id_psn(window_id, psn));
 }
 
 void focus_window(struct window_info_t *w){
@@ -1289,9 +1294,9 @@ void print_all_window_items(FILE *rsp) {
 
 struct Vector *get_captured_window_infos_v(){
   struct Vector *v = vector_new();
+
   return(v);
 }
-
 
 CGImageRef capture_window_id_height(size_t window_id, size_t height){
   CGImageRef img_ref = capture_window_id(window_id);
@@ -1299,12 +1304,12 @@ CGImageRef capture_window_id_height(size_t window_id, size_t height){
 
   w[0] = CGImageGetWidth(img_ref);
   h[0] = CGImageGetHeight(img_ref);
-  if(h[0] < height){
+  if (h[0] < height) {
     return(img_ref);
   }else{
     h[1] = height;
     float factor = 1;
-    if(h[0] > 100){
+    if (h[0] > 100) {
       factor = (float)(h[0]) / (float)(h[1]);
     }
 
@@ -1316,8 +1321,9 @@ CGImageRef capture_window_id_height(size_t window_id, size_t height){
 CGImageRef capture_window_id_width(size_t window_id, size_t width){
   CGImageRef img_ref = capture_window_id(window_id);
   int        w[2], h[2];
+
   w[0] = CGImageGetWidth(img_ref);
-  if(w[0] < width){
+  if (w[0] < width) {
     return(img_ref);
   }else{
     h[0] = CGImageGetHeight(img_ref);
@@ -1334,8 +1340,6 @@ CGImageRef preview_window_id(size_t window_id){
 
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
 }
-
-
 
 CGImageRef capture_window_id_rect(size_t window_id, CGRect rect){
   uint64_t   wid       = (uint64_t)(window_id);

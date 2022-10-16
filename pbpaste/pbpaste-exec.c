@@ -35,7 +35,7 @@ char *pbpaste_exec(void){
                       index      = 0;
 
   result = subprocess_create(command_line, 0, &subprocess);
-  assert_eq(result, 0, % d);
+  assert_eq(result, 0, %d);
   do {
     bytes_read = subprocess_read_stdout(&subprocess, stdout_buffer, STDOUT_READ_BUFFER_SIZE - 1);
     if (bytes_read > 0) {
@@ -44,8 +44,8 @@ char *pbpaste_exec(void){
     index += bytes_read;
   } while (bytes_read != 0);
   result = subprocess_join(&subprocess, &exited);
-  assert_eq(result, 0, % d);
-  assert_eq(exited, 0, % d);
+  assert_eq(result, 0, %d);
+  assert_eq(exited, 0, %d);
   READ_STDOUT = stringbuffer_to_string(SB);
   stringbuffer_release(SB);
 

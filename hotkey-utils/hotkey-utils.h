@@ -63,13 +63,13 @@ struct hk_app_t {
   const char *name;
 };
 struct hk_layout_t {
-  const char *app, *mode, *name;
-  const float width;
-  const int app_margins[4], content_margins[4];
-  const bool debug;
-  const int display;
+  const char            *app, *mode, *name;
+  const float           width;
+  const int             app_margins[4], content_margins[4];
+  const bool            debug;
+  const int             display;
   const struct hk_app_t *apps;
-  size_t apps_count;
+  size_t                apps_count;
 };
 struct key_t {
   const char         *name, *key, *action;
@@ -78,16 +78,16 @@ struct key_t {
   enum action_type_t action_type;
 };
 struct hotkeys_config_t {
-  const char   *name, *todo_app;
-  const int    todo_width;
-  struct key_t *keys;
+  const char         *name, *todo_app;
+  const int          todo_width;
+  struct key_t       *keys;
   struct hk_layout_t *layouts;
-  size_t       keys_count, layouts_count;
+  size_t             keys_count, layouts_count;
 };
 //////////////////////////////////////
 static const cyaml_strval_t action_type_strings[] = {
   { "None",                                        ACTION_TYPE_NONE                                             },
-  { "NormalizeLayout",                         ACTION_TYPE_NORMALIZE_LAYOUT                             },
+  { "NormalizeLayout",                             ACTION_TYPE_NORMALIZE_LAYOUT                                 },
   { "ActivateApplication",                         ACTION_TYPE_ACTIVATE_APPLICATION                             },
   { "DeactivateApplication",                       ACTION_TYPE_DEACTIVATE_APPLICATION                           },
   { "MinimizeApplication",                         ACTION_TYPE_MINIMIZE_APPLICATION,                            },
@@ -210,7 +210,7 @@ int run_hotkeys_server();
 //////////////////////////////////////
 static struct action_type_handler_t __attribute__((unused)) action_type_handlers[] = {
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_NORMALIZE_LAYOUT]   =                           { .fxn = normalize_layout,                             },
+  [ACTION_TYPE_NORMALIZE_LAYOUT] =                                 { .fxn = normalize_layout,                                 },
 ////////////////////////////////////////////////////////////
   [ACTION_TYPE_ACTIVATE_APPLICATION]   =                           { .fxn = activate_application,                             },
   [ACTION_TYPE_DEACTIVATE_APPLICATION] =                           { .fxn = deactivate_application,                           },

@@ -53,22 +53,22 @@ struct capture_image_request_t {
   cbar_t                 *bar;
 };
 struct cgimage_recv_t {
-  void                  *msg;
-  CGImageRef            img_ref;
-  size_t                width, height, index, len;
-  struct capture_image_request_t  *req;
-  struct capture_time_t time;
+  void                           *msg;
+  CGImageRef                     img_ref;
+  size_t                         width, height, index, len;
+  struct capture_image_request_t *req;
+  struct capture_time_t          time;
 };
 struct capture_image_result_t {
-  struct cgimage_recv_t *msg;
-  enum capture_type_id_t  type;
-  enum image_type_id_t  format;
-  char                  *file, *thumbnail_file;
-  unsigned char         *pixels;
-  size_t                width, height, len, id;
-  bool                  has_alpha, linear_colorspace, analyze;
-  struct capture_time_t time;
-  unsigned long         ts, delta_ms;
+  struct cgimage_recv_t  *msg;
+  enum capture_type_id_t type;
+  enum image_type_id_t   format;
+  char                   *file, *thumbnail_file;
+  unsigned char          *pixels;
+  size_t                 width, height, len, id;
+  bool                   has_alpha, linear_colorspace, analyze;
+  struct capture_time_t  time;
+  unsigned long          ts, delta_ms;
 };
 enum capture_chan_type_t {
   CAPTURE_CHAN_TYPE_CGIMAGE = 1,
@@ -97,16 +97,16 @@ struct compress_req_t {
   cbar_t    *bar;
 };
 struct compress_t {
-  unsigned char           *pixels;
-  size_t                  len;
-  size_t                  prev_len;
-  int                     min_quality, max_quality;
-  enum image_type_id_t    format;
-  size_t                  id;
+  unsigned char                 *pixels;
+  size_t                        len;
+  size_t                        prev_len;
+  int                           min_quality, max_quality;
+  enum image_type_id_t          format;
+  size_t                        id;
   struct capture_image_result_t *capture_result;
-  unsigned long           started, dur;
-  bool quantize_mode;
-  cbar_t *bar;
+  unsigned long                 started, dur;
+  bool                          quantize_mode;
+  cbar_t                        *bar;
 };
 struct cap_t {
   char                         *name;

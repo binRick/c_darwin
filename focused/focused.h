@@ -7,7 +7,7 @@
 #include "osx-keys/osx-keys.h"
 #include <assert.h>
 #include <ctype.h>
-#include <Carbon/Carbon.h>
+
 #include <CoreFoundation/CFBase.h>
 #include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CoreFoundation.h>

@@ -11,7 +11,6 @@
 #include <string.h>
 #include <unistd.h>
 //////////////////////////////////////
-#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 #include <IOKit/ps/IOPowerSources.h>

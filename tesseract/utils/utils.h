@@ -52,7 +52,7 @@ struct tesseract_extract_result_t {
   struct window_info_t                          window;
   struct tesseract_determined_area_t            determined_area;
   enum capture_type_id_t                        type;
-  enum image_type_id_t                        format;
+  enum image_type_id_t                          format;
   unsigned char                                 *img;
   size_t                                        img_len;
 };

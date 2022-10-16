@@ -2,52 +2,52 @@
 #ifndef DLS_COMMANDS_C
 #define DLS_COMMANDS_C
 #include "c_vector/vector/vector.h"
-#include "db/db.h"
-#include "space/utils/utils.h"
-#include "capture/utils/utils.h"
-#include "fancy-progress/src/fancy-progress.h"
-#include "image/utils/utils.h"
 #include "capture/animate/animate.h"
+#include "capture/save/save.h"
 #include "capture/type/type.h"
-#include "system/utils/utils.h"
-#include "process/utils/utils.h"
+#include "capture/utils/utils.h"
 #include "clamp/clamp.h"
+#include "db/db.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
+#include "fancy-progress/src/fancy-progress.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "httpserver-utils/httpserver-utils.h"
 #include "httpserver/httpserver.h"
+#include "image/utils/utils.h"
 #include "keylogger/keylogger.h"
 #include "kitty/msg/msg.h"
 #include "pasteboard/pasteboard.h"
+#include "process/utils/utils.h"
+#include "space/utils/utils.h"
+#include "system/utils/utils.h"
 #include "table/sort/sort.h"
 #include "table/utils/utils.h"
 #include "tesseract/utils/utils.h"
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-#include "capture/save/save.h"
-#define MAX_CONCURRENCY   25
-#define MAX_FRAME_RATE    30
-#define MAX_LIMIT         99
-#define MAX_DURATION      300
-#define MAX_WINDOW_SIZE   4000
-#define MAX_DURATION      300
-#define IS_COMMAND_VERBOSE_MODE (args->verbose_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
-#define IS_COMMAND_DEBUG_MODE (args->debug_mode||DARWIN_LS_COMMANDS_DEBUG_MODE)
-#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE (IS_COMMAND_DEBUG_MODE||IS_COMMAND_VERBOSE_MODE)
-#define CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE 300
-#define MIN_FILE_EXTENSION_LENGTH 3
-#define OPEN_SECURITY_RETRY_INTERVAL_MS      1000
-#define OPEN_SECURITY_DEFAULT_RETRIES_QTY    3
-#define LIST_SUBCOMMAND(CAPS,LOWER,PLURAL,FXN)\
-  [COMMAND_##CAPS] = { .name = LOWER, .icon = "🥑", .color = COLOR_LIST, .description = "List " PLURAL, .fxn  = *FXN, }
-#define COMMAND_DB_COMMON(){ do { initialize_args(args); } while(0); }
-#define CREATE_CHECK_COMMAND_PROTOTYPE(NAME,ARGS) static void _check_##NAME(ARGS);
+#define MAX_CONCURRENCY                        25
+#define MAX_FRAME_RATE                         30
+#define MAX_LIMIT                              99
+#define MAX_DURATION                           300
+#define MAX_WINDOW_SIZE                        4000
+#define MAX_DURATION                           300
+#define IS_COMMAND_VERBOSE_MODE                (args->verbose_mode || DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_DEBUG_MODE                  (args->debug_mode || DARWIN_LS_COMMANDS_DEBUG_MODE)
+#define IS_COMMAND_VERBOSE_OR_DEBUG_MODE       (IS_COMMAND_DEBUG_MODE || IS_COMMAND_VERBOSE_MODE)
+#define CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE    300
+#define MIN_FILE_EXTENSION_LENGTH              3
+#define OPEN_SECURITY_RETRY_INTERVAL_MS        1000
+#define OPEN_SECURITY_DEFAULT_RETRIES_QTY      3
+#define LIST_SUBCOMMAND(CAPS, LOWER, PLURAL, FXN) \
+  [COMMAND_ ## CAPS] = { .name = LOWER, .icon = "🥑", .color = COLOR_LIST, .description = "List " PLURAL, .fxn = *FXN, }
+#define COMMAND_DB_COMMON()                           { do { initialize_args(args); } while (0); }
+#define CREATE_CHECK_COMMAND_PROTOTYPE(NAME, ARGS)    static void _check_ ## NAME(ARGS);
 #define LIST_HANDLER(NAME)                                                \
   static void _command_list_ ## NAME(){                                   \
-    initialize_args(args);\
-    debug_dls_arguments();\
+    initialize_args(args);                                                \
+    debug_dls_arguments();                                                \
     struct list_table_t *filter = &(struct list_table_t){                 \
       .limit    = args->limit,                                            \
       .sort_key = args->sort_key, .sort_direction = args->sort_direction, \
@@ -61,57 +61,57 @@
     }                                                                     \
     exit(EXIT_SUCCESS);                                                   \
   }
-#define COMMAND(ICON,CMD,NAME,__COLOR__,DESC,FXN)\
-  [COMMAND_##CMD] =         {\
-    .name        = NAME, \
-    .icon = ICON,\
-    .color = __COLOR__,\
-    .description = DESC,\
-    .fxn         = FXN\
+#define COMMAND(ICON, CMD, NAME, __COLOR__, DESC, FXN) \
+  [COMMAND_ ## CMD] = {                                \
+    .name        = NAME,                               \
+    .icon        = ICON,                               \
+    .color       = __COLOR__,                          \
+    .description = DESC,                               \
+    .fxn         = FXN                                 \
   },
-#define COMMON_OPTION_LIST(OPTION,SHORT,LONG,DESC,NAME,DEST,SIZE)\
-  [COMMON_OPTION_##OPTION] = ^ struct optparse_opt (struct args_t *args){\
-    return((struct optparse_opt){\
-      .short_name = SHORT,\
-      .long_name = LONG,\
-      .description = DESC,\
-      .arg_name = NAME,\
-      .arg_data_type = DATA_TYPE_STR,\
-      .arg_delim = ",",\
-      .arg_dest = &(args->DEST),\
-      .arg_dest_size = &(args->SIZE),\
-    });\
+#define COMMON_OPTION_LIST(OPTION, SHORT, LONG, DESC, NAME, DEST, SIZE)     \
+  [COMMON_OPTION_ ## OPTION] = ^ struct optparse_opt (struct args_t *args){ \
+    return((struct optparse_opt){                                           \
+      .short_name = SHORT,                                                  \
+      .long_name = LONG,                                                    \
+      .description = DESC,                                                  \
+      .arg_name = NAME,                                                     \
+      .arg_data_type = DATA_TYPE_STR,                                       \
+      .arg_delim = ",",                                                     \
+      .arg_dest = &(args->DEST),                                            \
+      .arg_dest_size = &(args->SIZE),                                       \
+    });                                                                     \
   },
-#define CLAMP_ARG_TYPE(ARGS,ARG,TYPE) clamp(ARGS->ARG,arg_clamps[TYPE].min,arg_clamps[TYPE].max)
-#define CREATE_BOOLEAN_COMMAND_OPTION(NAME,SHORT,LONG,DESC,ARG)\
-  [COMMON_OPTION_##NAME] = ^ struct optparse_opt (struct args_t *args){\
-    return((struct optparse_opt)                                             {\
-      .short_name = SHORT,\
-      .long_name = LONG,\
-      .description = DESC,\
-      .flag_type = FLAG_TYPE_SET_TRUE,\
-      .flag = &(args->ARG),\
-    });\
+#define CLAMP_ARG_TYPE(ARGS, ARG, TYPE)    clamp(ARGS->ARG, arg_clamps[TYPE].min, arg_clamps[TYPE].max)
+#define CREATE_BOOLEAN_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)            \
+  [COMMON_OPTION_ ## NAME] = ^ struct optparse_opt (struct args_t *args){      \
+    return((struct optparse_opt)                                             { \
+      .short_name = SHORT,                                                     \
+      .long_name = LONG,                                                       \
+      .description = DESC,                                                     \
+      .flag_type = FLAG_TYPE_SET_TRUE,                                         \
+      .flag = &(args->ARG),                                                    \
+    });                                                                        \
   },
-#define COMMAND_PROTOTYPE(FXN) static void _command_##FXN(void);
-#define COMMON_OPTION_CAPTURE_MODE(TYPE,NAME,UCFIRST)\
-  [COMMON_OPTION_CAPTURE_##TYPE##_MODE] = ^ struct optparse_opt (struct args_t *args){\
-    return((struct optparse_opt){\
-      .long_name = NAME,\
-      .group = COMMON_OPTION_GROUP_CAPTURE_MODE,\
-      .flag_type = FLAG_TYPE_SET_TRUE,\
-      .flag = &(args->capture_mode[CAPTURE_TYPE_##TYPE]),\
-      .function = check_cmds[CHECK_COMMAND_CAPTURE_##TYPE##_MODE].fxn,\
-      .description =   COLOR_CAPTURE_MODE "Capture" AC_RESETALL " " \
-               COLOR_CAPTURE_##TYPE##_MODE UCFIRST AC_RESETALL,\
-    });\
+#define COMMAND_PROTOTYPE(FXN)             static void _command_ ## FXN(void);
+#define COMMON_OPTION_CAPTURE_MODE(TYPE, NAME, UCFIRST)                                    \
+  [COMMON_OPTION_CAPTURE_ ## TYPE ## _MODE] = ^ struct optparse_opt (struct args_t *args){ \
+    return((struct optparse_opt){                                                          \
+      .long_name = NAME,                                                                   \
+      .group = COMMON_OPTION_GROUP_CAPTURE_MODE,                                           \
+      .flag_type = FLAG_TYPE_SET_TRUE,                                                     \
+      .flag = &(args->capture_mode[CAPTURE_TYPE_ ## TYPE]),                                \
+      .function = check_cmds[CHECK_COMMAND_CAPTURE_ ## TYPE ## _MODE].fxn,                 \
+      .description = COLOR_CAPTURE_MODE "Capture" AC_RESETALL " "                          \
+                     COLOR_CAPTURE_ ## TYPE ## _MODE UCFIRST AC_RESETALL,                  \
+    });                                                                                    \
   }
-#define debug(M, ...)    {            \
-      do {                              \
-        if (IS_COMMAND_VERBOSE_OR_DEBUG_MODE) {\
-          log_debug(M, ## __VA_ARGS__); \
-        }                               \
-      } while (0); }
+#define debug(M, ...)                      {  \
+    do {                                      \
+      if (IS_COMMAND_VERBOSE_OR_DEBUG_MODE) { \
+        log_debug(M, ## __VA_ARGS__);         \
+      }                                       \
+    } while (0); }
 /////////////////////////////////////////////////////////////////////////////////////
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void debug_dls_arguments();
@@ -120,32 +120,32 @@ static void __attribute__((constructor)) __constructor__darwin_ls_commands(void)
 static const struct arg_clamp_t {
   signed long min, max;
 } arg_clamps[] = {
- [ARG_CLAMP_TYPE_WINDOW_SIZE] = {.min = -1, .max = MAX_WINDOW_SIZE},
- [ARG_CLAMP_TYPE_FRAME_RATE] =  {.min =  1, .max = MAX_FRAME_RATE},
- [ARG_CLAMP_TYPE_CONCURRENCY] = {.min =  1, .max = MAX_CONCURRENCY},
- [ARG_CLAMP_TYPE_DURATION] =    {.min =  1, .max = MAX_DURATION},
- [ARG_CLAMP_TYPE_LIMIT] =       {.min =  1, .max = MAX_LIMIT},
+  [ARG_CLAMP_TYPE_WINDOW_SIZE] = { .min = -1, .max = MAX_WINDOW_SIZE },
+  [ARG_CLAMP_TYPE_FRAME_RATE]  = { .min = 1,  .max = MAX_FRAME_RATE  },
+  [ARG_CLAMP_TYPE_CONCURRENCY] = { .min = 1,  .max = MAX_CONCURRENCY },
+  [ARG_CLAMP_TYPE_DURATION]    = { .min = 1,  .max = MAX_DURATION    },
+  [ARG_CLAMP_TYPE_LIMIT]       = { .min = 1,  .max = MAX_LIMIT       },
 };
 static const struct {
   struct Vector *(*get_structs_v_function)(void);
-  size_t (^get_struct_index_pk)(struct Vector *structs, size_t index);
+  size_t        (^get_struct_index_pk)(struct Vector *structs, size_t index);
 } capture_type_getters[] = {
-  [CAPTURE_TYPE_WINDOW] = { 
-    .get_structs_v_function = get_window_infos_v, 
-    .get_struct_index_pk = ^size_t (struct Vector *structs, size_t index){
-      return( ((struct window_info_t*)vector_get(structs,index))->window_id );
+  [CAPTURE_TYPE_WINDOW] =  {
+    .get_structs_v_function = get_window_infos_v,
+    .get_struct_index_pk    = ^ size_t (struct Vector *structs, size_t index){
+      return(((struct window_info_t *)vector_get(structs, index))->window_id);
     },
   },
-  [CAPTURE_TYPE_SPACE] = { 
-    .get_structs_v_function = get_spaces_v, 
-    .get_struct_index_pk = ^size_t (struct Vector *structs, size_t index){
-      return( ((struct space_t*)vector_get(structs,index))->id );
+  [CAPTURE_TYPE_SPACE] =   {
+    .get_structs_v_function = get_spaces_v,
+    .get_struct_index_pk    = ^ size_t (struct Vector *structs, size_t index){
+      return(((struct space_t *)vector_get(structs, index))->id);
     },
   },
-  [CAPTURE_TYPE_DISPLAY] = { 
-    .get_structs_v_function = get_displays_v, 
-    .get_struct_index_pk = ^size_t (struct Vector *structs, size_t index){
-      return( ((struct display_t*)vector_get(structs,index))->display_id );
+  [CAPTURE_TYPE_DISPLAY] = {
+    .get_structs_v_function = get_displays_v,
+    .get_struct_index_pk    = ^ size_t (struct Vector *structs, size_t index){
+      return(((struct display_t *)vector_get(structs, index))->display_id);
     },
   },
 };
@@ -153,124 +153,134 @@ static const struct capture_mode_t {
   unsigned long started, dur;
   struct Vector *ids, *requests, *results;
   union mode_request_t {
-    struct capture_image_request_t capture;
+    struct capture_image_request_t     capture;
     struct capture_animation_request_t animation;
   } request;
   union mode_result_t {
-    struct capture_image_result_t capture;
+    struct capture_image_result_t     capture;
     struct capture_animation_result_t animation;
-  } result;
+  }                            result;
   struct mode_result_handled_t {
     unsigned long started, dur;
-  } handled;
+  }                            handled;
   union mode_request_t *(^request_creator)(enum capture_type_id_t type, struct Vector *ids_v);
   union mode_result_t *(^request_handler)(union mode_request_t *req);
   struct mode_result_handled_t *(^result_handler)(union mode_result_t *res);
 } capture_modes[CAPTURE_MODE_TYPES_QTY] = {
-  [CAPTURE_MODE_TYPE_IMAGE] = {
-      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
-          struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-          req->ids          = ids_v;
-          req->concurrency  = args->concurrency;
-          req->type         = CAPTURE_TYPE_WINDOW;
-          req->compress         = args->compress;
-          req->progress_bar_mode = true;
-          req->format       = (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,0);
-          req->width        = args->width > 0 ? args->width : 0;
-          req->height       = args->height > 0 ? args->height : 0;
-          req->compress = args->compress;
-          req->time.started = timestamp();
-          req->time.dur     = 0;
-        return(req);
-      },
-      .request_handler = ^union mode_result_t *(union mode_request_t *req){
-        return(capture_image(req));
-      },
-      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
-        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
+  [CAPTURE_MODE_TYPE_IMAGE] =     {
+    .request_creator                        = ^ union mode_request_t *(enum capture_type_id_t type,        struct Vector *ids_v){
+      struct capture_image_request_t *req   = calloc(1,                                                    sizeof(struct capture_image_request_t));
+      req->ids               = ids_v;
+      req->concurrency       = args->concurrency;
+      req->type              = CAPTURE_TYPE_WINDOW;
+      req->compress          = args->compress;
+      req->progress_bar_mode = true;
+      req->format            = (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, 0);
+      req->width             = args->width > 0 ? args->width : 0;
+      req->height            = args->height > 0 ? args->height : 0;
+      req->compress          = args->compress;
+      req->time.started      = timestamp();
+      req->time.dur          = 0;
+      return(req);
+    },
+    .request_handler                        = ^ union mode_result_t *(union mode_request_t *req){
+      return(capture_image(req));
+    },
+    .result_handler                         = ^ struct mode_result_handled_t *(union mode_result_t *res){
+      struct mode_result_handled_t *handled = calloc(1,                                                    sizeof(struct mode_result_handled_t));
       //    struct capture_image_result_t *r;
-        for (size_t i = 0; i < vector_size(res); i++) {
-      //    r = (struct capture_image_result_t *)vector_get(res, i);
-        }
-        return(handled);
-      },
+      for (size_t i                         = 0; i < vector_size(res); i++) {
+        //    r = (struct capture_image_result_t *)vector_get(res, i);
+      }
+      return(handled);
+    },
   },
   [CAPTURE_MODE_TYPE_ANIMATION] = {
-      .request_creator = ^union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
-          struct capture_animation_request_t *req = calloc(1, sizeof(struct capture_animation_request_t));
-          struct capture_image_request_t *img = calloc(1, sizeof(struct capture_image_request_t));
-          img->ids        = ids_v;
-          img->concurrency  = args->concurrency;
-          img->type         = CAPTURE_TYPE_WINDOW;
-          img->progress_bar_mode = false;
-          img->compress = args->compress;
-          img->format       = IMAGE_TYPE_GIF;
-          img->width        = args->width > 0 ? args->width : 0;
-          img->height       = args->height > 0 ? args->height : 0;
-          img->time.started = timestamp();
-          img->time.dur     = 0;
-        return(req);
-      },
-      .request_handler = ^union mode_result_t *(union mode_request_t *req){
-        struct capture_animation_result_t *res = calloc(1, sizeof(struct capture_animation_result_t));
-        return(res);
-      },
-      .result_handler = ^struct mode_result_handled_t *(union mode_result_t *res){
-        struct mode_result_handled_t *handled = calloc(1, sizeof(struct mode_result_handled_t));
-        return(handled);
-      },
+    .request_creator                          = ^ union mode_request_t *(enum capture_type_id_t type, struct Vector *ids_v){
+      struct capture_animation_request_t *req = calloc(1,                                             sizeof(struct capture_animation_request_t));
+      struct capture_image_request_t *img     = calloc(1,                                             sizeof(struct capture_image_request_t));
+      img->ids               = ids_v;
+      img->concurrency       = args->concurrency;
+      img->type              = CAPTURE_TYPE_WINDOW;
+      img->progress_bar_mode = false;
+      img->compress          = args->compress;
+      img->format            = IMAGE_TYPE_GIF;
+      img->width             = args->width > 0 ? args->width : 0;
+      img->height            = args->height > 0 ? args->height : 0;
+      img->time.started      = timestamp();
+      img->time.dur          = 0;
+      return(req);
+    },
+    .request_handler                          = ^ union mode_result_t *(union mode_request_t *req){
+      struct capture_animation_result_t *res  = calloc(1,                                             sizeof(struct capture_animation_result_t));
+      return(res);
+    },
+    .result_handler                           = ^ struct mode_result_handled_t *(union mode_result_t *res){
+      struct mode_result_handled_t *handled   = calloc(1,                                             sizeof(struct mode_result_handled_t));
+      return(handled);
+    },
   },
 };
+
 static bool initialize_args(struct args_t *ARGS){
   if (args->clear_screen == true) {
     fprintf(stdout, "%s", AC_CLS);
   }
-  ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS,concurrency,ARG_CLAMP_TYPE_CONCURRENCY);
-  ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS,duration_seconds,ARG_CLAMP_TYPE_DURATION);
-  ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS,frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
-  ARGS->width       = CLAMP_ARG_TYPE(ARGS,width, ARG_CLAMP_TYPE_WINDOW_SIZE);
-  ARGS->height       = CLAMP_ARG_TYPE(ARGS,height, ARG_CLAMP_TYPE_WINDOW_SIZE);
-  ARGS->limit      = CLAMP_ARG_TYPE(ARGS,limit, ARG_CLAMP_TYPE_LIMIT);
+  ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS, concurrency, ARG_CLAMP_TYPE_CONCURRENCY);
+  ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS, duration_seconds, ARG_CLAMP_TYPE_DURATION);
+  ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS, frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
+  ARGS->width            = CLAMP_ARG_TYPE(ARGS, width, ARG_CLAMP_TYPE_WINDOW_SIZE);
+  ARGS->height           = CLAMP_ARG_TYPE(ARGS, height, ARG_CLAMP_TYPE_WINDOW_SIZE);
+  ARGS->limit            = CLAMP_ARG_TYPE(ARGS, limit, ARG_CLAMP_TYPE_LIMIT);
   ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
-  if(args->db_tables_qty==1 && strcmp(args->db_tables[0],"all")==0){
+  if (args->db_tables_qty == 1 && strcmp(args->db_tables[0], "all") == 0) {
     struct Vector *tbls = db_tables_v();
-    if(args->db_tables)free(args->db_tables);
-    args->db_tables = calloc(vector_size(tbls),sizeof(char*));
-    args->db_tables_qty=vector_size(tbls);
-    for(size_t i = 0; i <vector_size(tbls);i++){
-      char *tbl = (char*)vector_get(tbls,i);
+    if (args->db_tables) {
+      free(args->db_tables);
+    }
+    args->db_tables     = calloc(vector_size(tbls), sizeof(char *));
+    args->db_tables_qty = vector_size(tbls);
+    for (size_t i = 0; i < vector_size(tbls); i++) {
+      char *tbl = (char *)vector_get(tbls, i);
       args->db_tables[i] = tbl;
     }
   }
-  if(!ARGS->format_ids_v)
+  if (!ARGS->format_ids_v) {
     ARGS->format_ids_v = vector_new();
-  if(!ARGS->formats_v)
+  }
+  if (!ARGS->formats_v) {
     ARGS->formats_v = vector_new();
-  if(vector_size(ARGS->format_ids_v)==0){
-    vector_push(ARGS->format_ids_v,(void*)(IMAGE_TYPE_PNG));
+  }
+  if (vector_size(ARGS->format_ids_v) == 0) {
+    vector_push(ARGS->format_ids_v, (void *)(IMAGE_TYPE_PNG));
   }
   return(true);
 }
 static struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
   struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
-  for(size_t i = 0; i <vector_size(structs) && vector_size(ids) < limit;i++)
-    vector_push(ids,(void*)capture_type_getters[id].get_struct_index_pk(structs,i));
+
+  for (size_t i = 0; i < vector_size(structs) && vector_size(ids) < limit; i++) {
+    vector_push(ids, (void *)capture_type_getters[id].get_struct_index_pk(structs, i));
+  }
   vector_release(structs);
   return(ids);
 }
 static struct Vector *get_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id){
   struct Vector *ids = NULL;
+
   if (all) {
     ids = get_all_capture_type_ids(type, limit);
   }else if (args->id > 0) {
     ids = vector_new();
-    vector_push(ids, (void*)(size_t)(id));
+    vector_push(ids, (void *)(size_t)(id));
   }
   return(ids);
 }
+
 static void debug_dls_arguments(){
-  if (!IS_COMMAND_DEBUG_MODE)
+  if (!IS_COMMAND_DEBUG_MODE) {
     return;
+  }
   log_debug("All Mode:  %s", args->all_mode?"Yes":"No");
   log_debug("display :  %s", args->display_mode?"Yes":"No");
   log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
@@ -293,71 +303,71 @@ static void debug_dls_arguments(){
   log_debug("compress :  %s", args->compress?"Yes":"No");
 }
 ////////////////////////////////////////////
-  COMMAND_PROTOTYPE(layout_list)
-  COMMAND_PROTOTYPE(layout_apply)
-  COMMAND_PROTOTYPE(layout_show)
-  COMMAND_PROTOTYPE(window_sticky)
-  COMMAND_PROTOTYPE(window_unsticky)
-  COMMAND_PROTOTYPE(window_all_spaces)
-  COMMAND_PROTOTYPE(window_not_all_spaces)
-  COMMAND_PROTOTYPE(hotkeys_server)
-  COMMAND_PROTOTYPE(db_init)
-  COMMAND_PROTOTYPE(db_tables)
-  COMMAND_PROTOTYPE(db_load)
-  COMMAND_PROTOTYPE(db_info)
-  COMMAND_PROTOTYPE(db_test)
-  COMMAND_PROTOTYPE(db_rows)
-  COMMAND_PROTOTYPE(db_table_ids)
-  COMMAND_PROTOTYPE(animate)
-  COMMAND_PROTOTYPE(app_icns_path)
-  COMMAND_PROTOTYPE(app_info_plist_path)
-  COMMAND_PROTOTYPE(capture)
-  COMMAND_PROTOTYPE(clear_icons_cache)
-  COMMAND_PROTOTYPE(copy)
-  COMMAND_PROTOTYPE(create_space)
-  COMMAND_PROTOTYPE(dock)
-  COMMAND_PROTOTYPE(extract)
-  COMMAND_PROTOTYPE(focus)
-  COMMAND_PROTOTYPE(focused)
-  COMMAND_PROTOTYPE(grayscale_png)
-  COMMAND_PROTOTYPE(httpserver)
-  COMMAND_PROTOTYPE(icon_info)
-  COMMAND_PROTOTYPE(image_conversions)
-  COMMAND_PROTOTYPE(layout)
-  COMMAND_PROTOTYPE(list_alacritty)
-  COMMAND_PROTOTYPE(list_app)
-  COMMAND_PROTOTYPE(list_display)
-  COMMAND_PROTOTYPE(list_font)
-  COMMAND_PROTOTYPE(list_hotkey)
-  COMMAND_PROTOTYPE(list_kitty)
-  COMMAND_PROTOTYPE(list_monitor)
-  COMMAND_PROTOTYPE(list_process)
-  COMMAND_PROTOTYPE(list_space)
-  COMMAND_PROTOTYPE(list_usb)
-  COMMAND_PROTOTYPE(list_window)
-  COMMAND_PROTOTYPE(menu_bar)
-  COMMAND_PROTOTYPE(minimize_window)
-  COMMAND_PROTOTYPE(move_window)
-  COMMAND_PROTOTYPE(open_security)
-  COMMAND_PROTOTYPE(parse_xml_file)
-  COMMAND_PROTOTYPE(paste)
-  COMMAND_PROTOTYPE(pid_is_minimized)
-  COMMAND_PROTOTYPE(resize_window)
-  COMMAND_PROTOTYPE(save_app_icon_to_icns)
-  COMMAND_PROTOTYPE(save_app_icon_to_png)
-  COMMAND_PROTOTYPE(set_space)
-  COMMAND_PROTOTYPE(set_space_index)
-  COMMAND_PROTOTYPE(set_window_space)
-  COMMAND_PROTOTYPE(unminimize_window)
-  COMMAND_PROTOTYPE(window_id_info)
-  COMMAND_PROTOTYPE(window_is_minimized)
-  COMMAND_PROTOTYPE(window_layer)
-  COMMAND_PROTOTYPE(window_level)
-  COMMAND_PROTOTYPE(write_app_icon_from_png)
-  COMMAND_PROTOTYPE(write_app_icon_icns)
+COMMAND_PROTOTYPE(layout_list)
+COMMAND_PROTOTYPE(layout_apply)
+COMMAND_PROTOTYPE(layout_show)
+COMMAND_PROTOTYPE(window_sticky)
+COMMAND_PROTOTYPE(window_unsticky)
+COMMAND_PROTOTYPE(window_all_spaces)
+COMMAND_PROTOTYPE(window_not_all_spaces)
+COMMAND_PROTOTYPE(hotkeys_server)
+COMMAND_PROTOTYPE(db_init)
+COMMAND_PROTOTYPE(db_tables)
+COMMAND_PROTOTYPE(db_load)
+COMMAND_PROTOTYPE(db_info)
+COMMAND_PROTOTYPE(db_test)
+COMMAND_PROTOTYPE(db_rows)
+COMMAND_PROTOTYPE(db_table_ids)
+COMMAND_PROTOTYPE(animate)
+COMMAND_PROTOTYPE(app_icns_path)
+COMMAND_PROTOTYPE(app_info_plist_path)
+COMMAND_PROTOTYPE(capture)
+COMMAND_PROTOTYPE(clear_icons_cache)
+COMMAND_PROTOTYPE(copy)
+COMMAND_PROTOTYPE(create_space)
+COMMAND_PROTOTYPE(dock)
+COMMAND_PROTOTYPE(extract)
+COMMAND_PROTOTYPE(focus)
+COMMAND_PROTOTYPE(focused)
+COMMAND_PROTOTYPE(grayscale_png)
+COMMAND_PROTOTYPE(httpserver)
+COMMAND_PROTOTYPE(icon_info)
+COMMAND_PROTOTYPE(image_conversions)
+COMMAND_PROTOTYPE(layout)
+COMMAND_PROTOTYPE(list_alacritty)
+COMMAND_PROTOTYPE(list_app)
+COMMAND_PROTOTYPE(list_display)
+COMMAND_PROTOTYPE(list_font)
+COMMAND_PROTOTYPE(list_hotkey)
+COMMAND_PROTOTYPE(list_kitty)
+COMMAND_PROTOTYPE(list_monitor)
+COMMAND_PROTOTYPE(list_process)
+COMMAND_PROTOTYPE(list_space)
+COMMAND_PROTOTYPE(list_usb)
+COMMAND_PROTOTYPE(list_window)
+COMMAND_PROTOTYPE(menu_bar)
+COMMAND_PROTOTYPE(minimize_window)
+COMMAND_PROTOTYPE(move_window)
+COMMAND_PROTOTYPE(open_security)
+COMMAND_PROTOTYPE(parse_xml_file)
+COMMAND_PROTOTYPE(paste)
+COMMAND_PROTOTYPE(pid_is_minimized)
+COMMAND_PROTOTYPE(resize_window)
+COMMAND_PROTOTYPE(save_app_icon_to_icns)
+COMMAND_PROTOTYPE(save_app_icon_to_png)
+COMMAND_PROTOTYPE(set_space)
+COMMAND_PROTOTYPE(set_space_index)
+COMMAND_PROTOTYPE(set_window_space)
+COMMAND_PROTOTYPE(unminimize_window)
+COMMAND_PROTOTYPE(window_id_info)
+COMMAND_PROTOTYPE(window_is_minimized)
+COMMAND_PROTOTYPE(window_layer)
+COMMAND_PROTOTYPE(window_level)
+COMMAND_PROTOTYPE(write_app_icon_from_png)
+COMMAND_PROTOTYPE(write_app_icon_icns)
 ////////////////////////////////////////////
-CREATE_CHECK_COMMAND_PROTOTYPE(write_directory,void)
-CREATE_CHECK_COMMAND_PROTOTYPE(id,size_t id)
+CREATE_CHECK_COMMAND_PROTOTYPE(write_directory, void)
+CREATE_CHECK_COMMAND_PROTOTYPE(id, size_t id)
 static void _check_formats(char *formats);
 static void _check_sort_direction_desc(void);
 static void _check_capture_window_mode(void);
@@ -388,39 +398,39 @@ static void _set_windowids(char *windowids);
 ////////////////////////////////////////////
 common_option_b    common_options_b[] = {
 /////////////////////////////////////////////////////
-  COMMON_OPTION_CAPTURE_MODE(DISPLAY,"display","Display"),
-  COMMON_OPTION_CAPTURE_MODE(SPACE,"space","Space"),
-  COMMON_OPTION_CAPTURE_MODE(WINDOW,"window","Window"),
+  COMMON_OPTION_CAPTURE_MODE(DISPLAY,                               "display", "Display"),
+  COMMON_OPTION_CAPTURE_MODE(SPACE,                                 "space",   "Space"),
+  COMMON_OPTION_CAPTURE_MODE(WINDOW,                                "window",  "Window"),
 #undef COMMON_OPTION_CAPTURE_MODE
-  COMMON_OPTION_LIST(SHOW_COLUMNS,'K',"show", "Show Columns","COLUMN-NAMES",show_columns,show_columns_qty)
-  COMMON_OPTION_LIST(HIDE_COLUMNS,'H',"hide", "Hide Columns","COLUMN-NAMES",hide_columns,hide_columns_qty)
-  COMMON_OPTION_LIST(DB_TABLES,'t',"tables","Database Tables","TABLE-NAMES",db_tables,db_tables_qty)
+  COMMON_OPTION_LIST(SHOW_COLUMNS,                                  'K',       "show",               "Show Columns",                                                            "COLUMN-NAMES", show_columns, show_columns_qty)
+  COMMON_OPTION_LIST(HIDE_COLUMNS,                                  'H',       "hide",               "Hide Columns",                                                            "COLUMN-NAMES", hide_columns, hide_columns_qty)
+  COMMON_OPTION_LIST(DB_TABLES,                                     't',       "tables",             "Database Tables",                                                         "TABLE-NAMES",  db_tables, db_tables_qty)
 #undef COMMON_OPTION_LIST
-  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,'C',"clear","Clear Screen",clear_screen)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,0,"not-current-space","Windows not on Currently Focused Space only",not_current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,0,"current-space","Windows on Currently Focused Space only",current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,0,"not-current-display","Windows not on Currently Focused Display only",not_current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_DISPLAY,0,"current-display","Windows on Currently Focused Display only",current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(PURGE_WRITE_DIRECTORY_BEFORE_WRITE,0,"purge","Purge Contents of Write Directory Before any Writes. Must Prefix --dir",purge_write_directory_before_write)
-  CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,'Q',"quantize","Enable Quantized Compression",quantize_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,'A',"all","All IDs",all_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,0,"not-minimized","Show Non Minimized Only",not_minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,0,"minimized","Show Minimized Only",minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,0,"clear-icons-cache","Clear Icons Cache",clear_icons_cache)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,0,"non-duplicate","Show Non Duplicate Fonts",non_duplicate)
-  CREATE_BOOLEAN_COMMAND_OPTION(DUPLICATE,0,"duplicate","Show Duplicate Fonts",duplicate)
-  CREATE_BOOLEAN_COMMAND_OPTION(CASE_SENSITIVE,0,"case-sensitive","Case Sensitive Match",case_sensitive)
-  CREATE_BOOLEAN_COMMAND_OPTION(EXACT_MATCH,'e',"exact-match","Exact Match",exact_match)
-  CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,'d',"debug","Enable Debug Mode",debug_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,'v',"verbose","Enable Verbose Mode",verbose_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,'z',"compress","Enable Compression",compress)
-  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,0,"grayscale","Enable Grayscale Mode",grayscale_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,'D',"display","Display Result",display_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,0,"write","Write Results",write_images_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,'p',"progress","Enable Progress Bar",progress_bar_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,                       'C',       "clear",              "Clear Screen",                                                            clear_screen)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,                  0,         "not-current-space",  "Windows not on Currently Focused Space only",                             not_current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,                      0,         "current-space",      "Windows on Currently Focused Space only",                                 current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,                0,         "not-current-display","Windows not on Currently Focused Display only",                           not_current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_DISPLAY,                    0,         "current-display",    "Windows on Currently Focused Display only",                               current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(PURGE_WRITE_DIRECTORY_BEFORE_WRITE, 0,         "purge",              "Purge Contents of Write Directory Before any Writes. Must Prefix --dir",  purge_write_directory_before_write)
+  CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,                      'Q',       "quantize",           "Enable Quantized Compression",                                            quantize_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,                           'A',       "all",                "All IDs",                                                                 all_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,                      0,         "not-minimized",      "Show Non Minimized Only",                                                 not_minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,                          0,         "minimized",          "Show Minimized Only",                                                     minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,                  0,         "clear-icons-cache",  "Clear Icons Cache",                                                       clear_icons_cache)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,                      0,         "non-duplicate",      "Show Non Duplicate Fonts",                                                non_duplicate)
+  CREATE_BOOLEAN_COMMAND_OPTION(DUPLICATE,                          0,         "duplicate",          "Show Duplicate Fonts",                                                    duplicate)
+  CREATE_BOOLEAN_COMMAND_OPTION(CASE_SENSITIVE,                     0,         "case-sensitive",     "Case Sensitive Match",                                                    case_sensitive)
+  CREATE_BOOLEAN_COMMAND_OPTION(EXACT_MATCH,                        'e',       "exact-match",        "Exact Match",                                                             exact_match)
+  CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,                         'd',       "debug",              "Enable Debug Mode",                                                       debug_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,                       'v',       "verbose",            "Enable Verbose Mode",                                                     verbose_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,                           'z',       "compress",           "Enable Compression",                                                      compress)
+  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,                     0,         "grayscale",          "Enable Grayscale Mode",                                                   grayscale_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,                'D',       "display",            "Display Result",                                                          display_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,                  0,         "write",              "Write Results",                                                           write_images_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,           'p',       "progress",           "Enable Progress Bar",                                                     progress_bar_mode)
 #undef CREATE_BOOLEAN_COMMAND_OPTION
 /////////////////////////////////////////////////////
-  [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .long_name = "height-less",
       .description = "Height Less Than",
@@ -430,7 +440,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->height_less),
     });
   },
-  [COMMON_OPTION_HEIGHT_GREATER] = ^ struct optparse_opt (struct args_t *args)                              {
+  [COMMON_OPTION_HEIGHT_GREATER] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .long_name = "height-greater",
       .description = "Height Greater Than",
@@ -440,7 +450,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->height_greater),
     });
   },
-  [COMMON_OPTION_CONCURRENCY] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_CONCURRENCY] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'c',
       .long_name = "concurrency",
@@ -451,7 +461,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->concurrency),
     });
   },
-  [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                                      {
+  [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'H',
       .long_name = "height",
@@ -461,7 +471,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->height),
     });
   },
-  [COMMON_OPTION_WIDTH] = ^ struct optparse_opt (struct args_t *args)                                       {
+  [COMMON_OPTION_WIDTH] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'W',
       .long_name = "width",
@@ -471,7 +481,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->width),
     });
   },
-  [COMMON_OPTION_WIDTH_LESS] = ^ struct optparse_opt (struct args_t *args)                                  {
+  [COMMON_OPTION_WIDTH_LESS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .long_name = "width-less",
       .description = "Width Less Than",
@@ -481,7 +491,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->width_less),
     });
   },
-  [COMMON_OPTION_WIDTH_GREATER] = ^ struct optparse_opt (struct args_t *args)                               {
+  [COMMON_OPTION_WIDTH_GREATER] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .long_name = "width-greater",
       .description = "Width Greater Than",
@@ -491,7 +501,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->width_greater),
     });
   },
-  [COMMON_OPTION_SORT_FONT_KEYS] = ^ struct optparse_opt (struct args_t *args)                              {
+  [COMMON_OPTION_SORT_FONT_KEYS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
@@ -501,7 +511,7 @@ common_option_b    common_options_b[] = {
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  [COMMON_OPTION_SORT_APP_KEYS] = ^ struct optparse_opt (struct args_t *args)                               {
+  [COMMON_OPTION_SORT_APP_KEYS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
@@ -511,7 +521,7 @@ common_option_b    common_options_b[] = {
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  [COMMON_OPTION_SORT_WINDOW_KEYS] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_SORT_WINDOW_KEYS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
@@ -522,7 +532,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->sort_key),
     });
   },
-  [COMMON_OPTION_SORT_KEY] = ^ struct optparse_opt (struct args_t *args)                                    {
+  [COMMON_OPTION_SORT_KEY] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'S',
       .long_name = "sort-by",
@@ -532,7 +542,7 @@ common_option_b    common_options_b[] = {
       .arg_data_type = DATA_TYPE_STR,
     });
   },
-  [COMMON_OPTION_HELP_SUBCMD] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args)         {
+  [COMMON_OPTION_HELP_SUBCMD] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'h',
       .long_name = "help",
@@ -540,7 +550,7 @@ common_option_b    common_options_b[] = {
       .function = optparse_print_help,
     });
   },
-  [COMMON_OPTION_SORT_DIRECTION_ASC] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args)  {
+  [COMMON_OPTION_SORT_DIRECTION_ASC] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args) {
     return((struct optparse_opt)                                                                            {
       .long_name = "asc",
       .description = "Sort Ascending",
@@ -554,7 +564,7 @@ common_option_b    common_options_b[] = {
       .function = check_cmds[CHECK_COMMAND_SORT_DIRECTION_DESC].fxn,
     });
   },
-  [COMMON_OPTION_RANDOM_ID] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_RANDOM_ID] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "random-id",
@@ -563,7 +573,7 @@ common_option_b    common_options_b[] = {
       .group = COMMON_OPTION_GROUP_ID,
     });
   },
-  [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args)                                         {
+  [COMMON_OPTION_PID] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'p',
       .long_name = "pid",
@@ -573,7 +583,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->pid),
     });
   },
-  [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args)                {
+  [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'h',
       .long_name = "help",
@@ -581,7 +591,7 @@ common_option_b    common_options_b[] = {
       .function = optparse_print_help,
     });
   },
-  [COMMON_OPTION_INPUT_GIF_FILE] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_INPUT_GIF_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'i',
       .long_name = "input-gif",
@@ -591,7 +601,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->input_gif_file),
     });
   },
-  [COMMON_OPTION_ICON_SIZES] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_ICON_SIZES] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "icon-sizes",
@@ -602,7 +612,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->sizes),
     });
   },
-  [COMMON_OPTION_WRITE_DIRECTORY] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_WRITE_DIRECTORY] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .long_name = "dir",
       .description = "Write Files to Specified Directory",
@@ -612,7 +622,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->write_directory),
     });
   },
-  [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'n',
       .long_name = "name",
@@ -623,7 +633,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->application_name),
     });
   },
-  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'P',
       .long_name = "path",
@@ -634,7 +644,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->application_path),
     });
   },
-  [COMMON_OPTION_RESIZE_FACTOR] = ^ struct optparse_opt (struct args_t *args)                               {
+  [COMMON_OPTION_RESIZE_FACTOR] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "resize-factor",
@@ -645,7 +655,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->resize_factor),
     });
   },
-  [COMMON_OPTION_XML_FILE] = ^ struct optparse_opt (struct args_t *args)                                    {
+  [COMMON_OPTION_XML_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'x',
       .long_name = "xml-file",
@@ -656,7 +666,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->xml_file_path),
     });
   },
-  [COMMON_OPTION_WINDOW_IDS] = ^ struct optparse_opt (struct args_t *args)                              {
+  [COMMON_OPTION_WINDOW_IDS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'w',
       .long_name = "window",
@@ -667,7 +677,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->windowids),
     });
   },
-  [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)                              {
+  [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'i',
       .long_name = "in",
@@ -678,7 +688,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->input_png_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args)                             {
+  [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'o',
       .long_name = "out",
@@ -689,7 +699,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->output_png_file),
     });
   },
-  [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)                             {
+  [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'i',
       .long_name = "in",
@@ -700,7 +710,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->input_icns_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'o',
       .long_name = "out",
@@ -711,7 +721,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->output_icns_file),
     });
   },
-  [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                                  {
+  [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'i',
       .long_name = "in",
@@ -723,7 +733,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->input_file),
     });
   },
-  [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'o',
       .long_name = "out",
@@ -734,7 +744,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->output_file),
     });
   },
-  [COMMON_OPTION_IMAGE_FORMATS] = ^ struct optparse_opt (struct args_t *args)                                {
+  [COMMON_OPTION_IMAGE_FORMATS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "formats",
@@ -745,7 +755,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->formats),
     });
   },
-  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'm',
       .long_name = "mode",
@@ -756,7 +766,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->output_mode_s),
     });
   },
-  [COMMON_OPTION_LIMIT] = ^ struct optparse_opt (struct args_t *args)                                       {
+  [COMMON_OPTION_LIMIT] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'l',
       .long_name = "limit",
@@ -766,7 +776,7 @@ common_option_b    common_options_b[] = {
       .arg_data_type = DATA_TYPE_INT,
     });
   },
-  [COMMON_OPTION_ID] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_ID] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'i',
       .long_name = "id",
@@ -776,7 +786,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->id),
     });
   },
-  [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args)                            {
+  [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "duration",
@@ -786,7 +796,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->duration_seconds),
     });
   },
-  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args)                                    {
+  [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'x',
       .long_name = "window-x",
@@ -796,7 +806,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->x),
     });
   },
-  [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 't',
       .long_name = "type",
@@ -806,7 +816,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->font_type),
     });
   },
-  [COMMON_OPTION_FONT_STYLE] = ^ struct optparse_opt (struct args_t *args)                                  {
+  [COMMON_OPTION_FONT_STYLE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "style",
@@ -816,7 +826,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->font_style),
     });
   },
-  [COMMON_OPTION_FONT_FAMILY] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_FONT_FAMILY] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'f',
       .long_name = "family",
@@ -826,7 +836,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->font_family),
     });
   },
-  [COMMON_OPTION_FONT_NAME] = ^ struct optparse_opt (struct args_t *args)                                   {
+  [COMMON_OPTION_FONT_NAME] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'n',
       .long_name = "name",
@@ -836,7 +846,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->font_name),
     });
   },
-  [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args)                                     {
+  [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'c',
       .long_name = "content",
@@ -846,7 +856,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->content),
     });
   },
-  [COMMON_OPTION_RETRIES] = ^ struct optparse_opt (struct args_t *args)                                     {
+  [COMMON_OPTION_RETRIES] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "retries",
@@ -856,7 +866,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->retries),
     });
   },
-  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args)                                    {
+  [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'y',
       .long_name = "window-y",
@@ -866,7 +876,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->y),
     });
   },
-  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args)                                {
+  [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'W',
       .long_name = "window-width",
@@ -877,7 +887,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->width),
     });
   },
-  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args)                               {
+  [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'H',
       .long_name = "window-height",
@@ -897,7 +907,7 @@ common_option_b    common_options_b[] = {
       .flag = &(args->progress_bar_mode),
     });
   },
-  [COMMON_OPTION_WINDOW_WIDTH_GROUP] = ^ struct optparse_opt (struct args_t *args)                          {
+  [COMMON_OPTION_WINDOW_WIDTH_GROUP] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'W',
       .long_name = "window-width",
@@ -909,7 +919,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->width_or_height_group),
     });
   },
-  [COMMON_OPTION_FRAME_RATE] = ^ struct optparse_opt (struct args_t *args)                                  {
+  [COMMON_OPTION_FRAME_RATE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'F',
       .long_name = "frame-rate",
@@ -919,7 +929,7 @@ common_option_b    common_options_b[] = {
       .arg_data_type = DATA_TYPE_INT,
     });
   },
-  [COMMON_OPTION_RUN_HOTKEYS] = ^ struct optparse_opt (struct args_t *args)                                 {
+  [COMMON_OPTION_RUN_HOTKEYS] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'r',
       .long_name = "run",
@@ -939,7 +949,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->width_or_height_group),
     });
   },
-  [COMMON_OPTION_DISPLAY_ID] = ^ struct optparse_opt (struct args_t *args)                                  {
+  [COMMON_OPTION_DISPLAY_ID] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'd',
       .long_name = "display-id",
@@ -949,7 +959,7 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->display_id),
     });
   },
-  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args)                                    {
+  [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 's',
       .long_name = "space-id",
@@ -962,41 +972,41 @@ common_option_b    common_options_b[] = {
 };
 ////////////////////////////////////////////
 struct check_cmd_t check_cmds[] = {
-  [CHECK_COMMAND_WRITE_DIRECTORY] =               {
+  [CHECK_COMMAND_WRITE_DIRECTORY] =      {
     .fxn           = (void (*)(void))(*_check_write_directory),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_RANDOM_ID] =               {
-    .fxn           = (void (*)(void))(*_check_random_id),
+  [CHECK_COMMAND_RANDOM_ID] =            {
+    .fxn = (void (*)(void))(*_check_random_id),
   },
-  [CHECK_COMMAND_CAPTURE_WINDOW_MODE] = { .fxn = (void (*)(void))(*_check_capture_window_mode), },
-  [CHECK_COMMAND_CAPTURE_SPACE_MODE] = { .fxn = (void (*)(void))(*_check_capture_space_mode), },
+  [CHECK_COMMAND_CAPTURE_WINDOW_MODE]  = { .fxn = (void (*)(void))(*_check_capture_window_mode),  },
+  [CHECK_COMMAND_CAPTURE_SPACE_MODE]   = { .fxn = (void (*)(void))(*_check_capture_space_mode),   },
   [CHECK_COMMAND_CAPTURE_DISPLAY_MODE] = { .fxn = (void (*)(void))(*_check_capture_display_mode), },
-  [CHECK_COMMAND_CONCURRENCY] =         {
+  [CHECK_COMMAND_CONCURRENCY]          = {
     .fxn           = (void (*)(void))(*_check_concurrency),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_LESS] =         {
+  [CHECK_COMMAND_HEIGHT_LESS] =          {
     .fxn           = (void (*)(void))(*_check_height_less),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_GREATER] =      {
+  [CHECK_COMMAND_HEIGHT_GREATER] =       {
     .fxn           = (void (*)(void))(*_check_height_greater),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH_LESS] =          {
+  [CHECK_COMMAND_WIDTH_LESS] =           {
     .fxn           = (void (*)(void))(*_check_width_less),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_WIDTH_GREATER] =       {
+  [CHECK_COMMAND_WIDTH_GREATER] =        {
     .fxn           = (void (*)(void))(*_check_width_greater),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_ID] =    {
+  [CHECK_COMMAND_ID] =                   {
     .fxn           = (void (*)(void))(*_check_id),
     .arg_data_type = DATA_TYPE_UINT64,
   },
-  [CHECK_COMMAND_PID] =                 {
+  [CHECK_COMMAND_PID] =                  {
     .fxn           = (void (*)(void))(*_check_pid),
     .arg_data_type = DATA_TYPE_INT,
   },
@@ -1004,33 +1014,33 @@ struct check_cmd_t check_cmds[] = {
     .fxn           = (void (*)(void))(*_check_icon_sizes),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_APPLICATION_NAME] =    {
+  [CHECK_COMMAND_APPLICATION_NAME] =     {
     .fxn           = (void (*)(void))(*_check_application_name),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_APPLICATION_PATH] =    {
+  [CHECK_COMMAND_APPLICATION_PATH] =     {
     .fxn           = (void (*)(void))(*_check_application_path),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_SORT_DIRECTION_DESC] = {
+  [CHECK_COMMAND_SORT_DIRECTION_DESC] =  {
     .fxn = (void (*)(void))(*_check_sort_direction_desc),
   },
-  [CHECK_COMMAND_SORT_DIRECTION_ASC] =  {
+  [CHECK_COMMAND_SORT_DIRECTION_ASC] =   {
     .fxn = (void (*)(void))(*_check_sort_direction_asc),
   },
-  [CHECK_COMMAND_WIDTH_GROUP] =         {
+  [CHECK_COMMAND_WIDTH_GROUP] =          {
     .fxn           = (void (*)(void))(*_check_width_group),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_HEIGHT_GROUP] =        {
+  [CHECK_COMMAND_HEIGHT_GROUP] =         {
     .fxn           = (void (*)(void))(*_check_height_group),
     .arg_data_type = DATA_TYPE_INT,
   },
-  [CHECK_COMMAND_RESIZE_FACTOR] =       {
+  [CHECK_COMMAND_RESIZE_FACTOR] =        {
     .fxn           = (void (*)(void))(*_check_resize_factor),
     .arg_data_type = DATA_TYPE_DBL,
   },
-  [CHECK_COMMAND_INPUT_ICNS_FILE] =     {
+  [CHECK_COMMAND_INPUT_ICNS_FILE] =      {
     .fxn           = (void (*)(void))(*_check_input_icns_file),
     .arg_data_type = DATA_TYPE_STR,
   },
@@ -1038,217 +1048,217 @@ struct check_cmd_t check_cmds[] = {
     .fxn           = (void (*)(void))(*_check_formats),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_INPUT_PNG_FILE] =      {
+  [CHECK_COMMAND_INPUT_PNG_FILE] =       {
     .fxn           = (void (*)(void))(*_check_input_png_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_PNG_FILE] =     {
+  [CHECK_COMMAND_OUTPUT_PNG_FILE] =      {
     .fxn           = (void (*)(void))(*_check_output_png_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_ICNS_FILE] =    {
+  [CHECK_COMMAND_OUTPUT_ICNS_FILE] =     {
     .fxn           = (void (*)(void))(*_check_output_icns_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_MODE] =         {
+  [CHECK_COMMAND_OUTPUT_MODE] =          {
     .fxn           = (void (*)(void))(*_check_output_mode),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_XML_FILE] =            {
+  [CHECK_COMMAND_XML_FILE] =             {
     .fxn           = (void (*)(void))(*_check_xml_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_WINDOW_IDS] =         {
+  [CHECK_COMMAND_WINDOW_IDS] =           {
     .fxn           = (void (*)(void))(*_set_windowids),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_OUTPUT_FILE] =         {
+  [CHECK_COMMAND_OUTPUT_FILE] =          {
     .fxn           = (void (*)(void))(*_check_output_file),
     .arg_data_type = DATA_TYPE_STR,
   },
-  [CHECK_COMMAND_TYPES_QTY] =           { 0},
+  [CHECK_COMMAND_TYPES_QTY] =            { 0 },
 };
 
 struct cmd_t       cmds[] = {
   [COMMAND_CLIPBOARD] =           {
-    .name = "clipboard",           .icon = "☯", .color = COLOR_WINDOW, .description = "Clipboard",
+    .name = "clipboard", .icon = "☯", .color = COLOR_WINDOW, .description = "Clipboard",
   },
-  [COMMAND_RESIZE_WINDOW] =         {
+  [COMMAND_RESIZE_WINDOW] =       {
     .name = "resize-window",           .icon = "💡", .color = COLOR_WINDOW, .description = "Resize Window",
     .fxn  = (*_command_resize_window),
   },
-  [COMMAND_WINDOW_LEVEL] =          {
+  [COMMAND_WINDOW_LEVEL] =        {
     .name        = "window-level",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window Level",
     .fxn         = (*_command_window_level),
   },
-  [COMMAND_WINDOW_LAYER] =          {
+  [COMMAND_WINDOW_LAYER] =        {
     .name        = "window-layer",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window Layer",
     .fxn         = (*_command_window_layer),
   },
-  [COMMAND_WINDOW_IS_MINIMIZED] =   {
+  [COMMAND_WINDOW_IS_MINIMIZED] = {
     .name        = "window-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window is Minimized",
     .fxn         = (*_command_window_is_minimized),
   },
-  [COMMAND_PID_IS_MINIMIZED] =      {
+  [COMMAND_PID_IS_MINIMIZED] =    {
     .name        = "pid-minimized",              .icon = "🔅", .color = COLOR_WINDOW,
     .description = "PID is Minimized",
     .fxn         = (*_command_pid_is_minimized),
   },
-  [COMMAND_SET_WINDOW_SPACE] =      {
+  [COMMAND_SET_WINDOW_SPACE] =    {
     .fxn = (*_command_set_window_space)
   },
-  [COMMAND_FOCUSED] =         {
-    .name        = "focused", .icon = "💮", .color = COLOR_SHOW,
+  [COMMAND_FOCUSED] =             {
+    .name        = "focused",      .icon = "💮", .color = COLOR_SHOW,
     .description = "Focused Info",
     .fxn         = (*_command_focused)
   },
-  [COMMAND_FOCUS] =          {
+  [COMMAND_FOCUS] =               {
     .name = "focus",           .icon = "🔅", .color = COLOR_WINDOW, .description = "Focus",
     .fxn  = (*_command_focus),
   },
-  [COMMAND_SET_SPACE] =             {
+  [COMMAND_SET_SPACE] =           {
     .name = "set-space",           .icon = "💣", .color = COLOR_SPACE, .description = "Set Space",
     .fxn  = (*_command_set_space),
   },
-  [COMMAND_SET_SPACE_INDEX] =       {
+  [COMMAND_SET_SPACE_INDEX] =     {
     .fxn = (*_command_set_space_index)
   },
-  [COMMAND_WINDOW_ID_INFO] =        {
+  [COMMAND_WINDOW_ID_INFO] =      {
     .name        = "window-id-info",           .icon = "🔅", .color = COLOR_WINDOW,
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
-  [COMMAND_SECURITY] =              {
+  [COMMAND_SECURITY] =            {
     .name = "security", .icon = "🐾", .color = COLOR_WINDOW, .description = "Open Security",
     .fxn  = (*_command_open_security)
   },
-  [COMMAND_HTTPSERVER] =            {
+  [COMMAND_HTTPSERVER] =          {
     .fxn = (*_command_httpserver)
   },
-  [COMMAND_MENU_BAR] =              {
+  [COMMAND_MENU_BAR] =            {
     .name        = "menu-bar",      .icon = "📀", .color = COLOR_SHOW,
     .description = "Menu Bar Info",
     .fxn         = (*_command_menu_bar)
   },
-  [COMMAND_DOCK] =                  {
+  [COMMAND_DOCK] =                {
     .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
     .description = "Dock Info",
     .fxn         = (*_command_dock)
   },
-  COMMAND("🍎",DB, "db", AC_RED, "Database Operations",0)
-  COMMAND("🐜",DB_INIT,"init", AC_RED, "Initialize Database",*_command_db_init)
-  COMMAND("💮",DB_TEST,"test", AC_YELLOW, "Database Test",*_command_db_test)
-  COMMAND("💮",DB_LOAD,"load", AC_GREEN, "Database Load",*_command_db_load)
-  COMMAND("🚛",DB_TABLES,"tables", AC_RED, "Database Tables",*_command_db_tables)
-  COMMAND("💮",DB_INFO,"info", AC_RED, "Database Info",*_command_db_info)
-  COMMAND("💮",DB_ROWS,"rows", AC_RED, "Database Info",*_command_db_rows)
-  COMMAND("💮",DB_TABLE_IDS,"ids", AC_RED, "Table IDs",*_command_db_table_ids)
-  COMMAND("💮",HOTKEYS_SERVER,"server", AC_RED, "Hotkeys Server",*_command_hotkeys_server)
-  COMMAND("💮",HOTKEYS_LIST,"list", AC_RED, "List Hotkeys",*_command_list_hotkey)
-  COMMAND("💮",LAYOUT_LIST,"list", AC_RED, "List Layouts",*_command_layout_list)
-  COMMAND("💮",LAYOUT_APPLY,"apply", AC_RED, "Apply Layout",*_command_layout_apply)
-  COMMAND("💮",LAYOUT_SHOW,"show", AC_RED, "Show Layout",*_command_layout_show)
-  COMMAND("💮",LIST,"list", AC_RED, "List",0)
-  COMMAND("💮",ICON,"icon", AC_RED, "Icon",0)
-  COMMAND("💮",WINDOW,"window", AC_RED, "Window",0)
-  COMMAND("💮",WINDOW_LIST,"list", AC_RED, "List Windows",*_command_list_window)
-  COMMAND("💮",WINDOW_MOVE,"move", AC_RED, "Move Window",*_command_move_window)
-  COMMAND("💮",WINDOW_STICKY,"sticky", AC_RED, "Set Window Sticky",*_command_window_sticky)
-  COMMAND("💮",WINDOW_UNSTICKY,"unsticky", AC_RED, "Unset Window Sticky",*_command_window_unsticky)
-  COMMAND("💮",WINDOW_RESIZE,"resize", AC_RED, "Resize Window",*_command_resize_window)
-  COMMAND("💮",WINDOW_ALL_SPACES,"all-spaces", AC_RED, "Window All Spaces",*_command_window_all_spaces)
-  COMMAND("💮",WINDOW_NOT_ALL_SPACES,"not-all-spaces", AC_RED, "Window Not All Spaces",*_command_window_not_all_spaces)
-  COMMAND("💮",WINDOW_MINIMIZE,"minimize", AC_RED, "Minimize Window",*_command_minimize_window)
-  COMMAND("💮",WINDOW_UNMINIMIZE,"unminimize", AC_RED, "Unminimize Window",*_command_unminimize_window)
-  COMMAND("💮",WINDOW_SPACE,"space", AC_RED, "Set Window Space",*_command_set_window_space)
-  COMMAND("💮",SPACE,"space", AC_RED, "Spaces",0)
-  COMMAND("💮",SPACE_CREATE,"create", AC_RED, "Create Space",0)
-  COMMAND("💮",SPACE_LIST,"list", AC_RED, "List Spaces",0)
+  COMMAND("🍎", DB, "db", AC_RED, "Database Operations", 0)
+  COMMAND("🐜", DB_INIT, "init", AC_RED, "Initialize Database", *_command_db_init)
+  COMMAND("💮", DB_TEST, "test", AC_YELLOW, "Database Test", *_command_db_test)
+  COMMAND("💮", DB_LOAD, "load", AC_GREEN, "Database Load", *_command_db_load)
+  COMMAND("🚛", DB_TABLES, "tables", AC_RED, "Database Tables", *_command_db_tables)
+  COMMAND("💮", DB_INFO, "info", AC_RED, "Database Info", *_command_db_info)
+  COMMAND("💮", DB_ROWS, "rows", AC_RED, "Database Info", *_command_db_rows)
+  COMMAND("💮", DB_TABLE_IDS, "ids", AC_RED, "Table IDs", *_command_db_table_ids)
+  COMMAND("💮", HOTKEYS_SERVER, "server", AC_RED, "Hotkeys Server", *_command_hotkeys_server)
+  COMMAND("💮", HOTKEYS_LIST, "list", AC_RED, "List Hotkeys", *_command_list_hotkey)
+  COMMAND("💮", LAYOUT_LIST, "list", AC_RED, "List Layouts", *_command_layout_list)
+  COMMAND("💮", LAYOUT_APPLY, "apply", AC_RED, "Apply Layout", *_command_layout_apply)
+  COMMAND("💮", LAYOUT_SHOW, "show", AC_RED, "Show Layout", *_command_layout_show)
+  COMMAND("💮", LIST, "list", AC_RED, "List", 0)
+  COMMAND("💮", ICON, "icon", AC_RED, "Icon", 0)
+  COMMAND("💮", WINDOW, "window", AC_RED, "Window", 0)
+  COMMAND("💮", WINDOW_LIST, "list", AC_RED, "List Windows", *_command_list_window)
+  COMMAND("💮", WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
+  COMMAND("💮", WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
+  COMMAND("💮", WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
+  COMMAND("💮", WINDOW_RESIZE, "resize", AC_RED, "Resize Window", *_command_resize_window)
+  COMMAND("💮", WINDOW_ALL_SPACES, "all-spaces", AC_RED, "Window All Spaces", *_command_window_all_spaces)
+  COMMAND("💮", WINDOW_NOT_ALL_SPACES, "not-all-spaces", AC_RED, "Window Not All Spaces", *_command_window_not_all_spaces)
+  COMMAND("💮", WINDOW_MINIMIZE, "minimize", AC_RED, "Minimize Window", *_command_minimize_window)
+  COMMAND("💮", WINDOW_UNMINIMIZE, "unminimize", AC_RED, "Unminimize Window", *_command_unminimize_window)
+  COMMAND("💮", WINDOW_SPACE, "space", AC_RED, "Set Window Space", *_command_set_window_space)
+  COMMAND("💮", SPACE, "space", AC_RED, "Spaces", 0)
+  COMMAND("💮", SPACE_CREATE, "create", AC_RED, "Create Space", 0)
+  COMMAND("💮", SPACE_LIST, "list", AC_RED, "List Spaces", 0)
 #undef COMMAND_PROTOTYPE
 #undef COMMAND
-  [COMMAND_CAPTURE] =               {
-    .name        = "capture",          .icon = "💤", .color = COLOR_CAPTURE,
+  [COMMAND_CAPTURE] =             {
+    .name        = "capture",            .icon = "💤", .color = COLOR_CAPTURE,
     .description = "Capture Screenshot",
-    .fxn = (*_command_capture)
+    .fxn         = (*_command_capture)
   },
-  [COMMAND_ANIMATE] =      {
+  [COMMAND_ANIMATE] =             {
     .name        = "animate",          .icon = "💤", .color = COLOR_CAPTURE,
     .description = "Animated Capture",
     .fxn         = (*_command_animate)
-  },  
-  [COMMAND_EXTRACT] =        {
-    .name        = "extract",          .icon = "🙀", .color = COLOR_CAPTURE,
-    .description = "Extract Capture",
-    .fxn = (*_command_extract)
   },
-  [COMMAND_IMAGE_CONVERSIONS] =     {
+  [COMMAND_EXTRACT] =             {
+    .name        = "extract",         .icon = "🙀", .color = COLOR_CAPTURE,
+    .description = "Extract Capture",
+    .fxn         = (*_command_extract)
+  },
+  [COMMAND_IMAGE_CONVERSIONS] =   {
     .name        = "image-conversions", .icon = "💮", .color = COLOR_LIST,
     .description = "Image Conversions",
     .fxn         = (*_command_image_conversions)
   },
-  [COMMAND_PASTE] =                 {
+  [COMMAND_PASTE] =               {
     .name        = "paste",           .icon = "💮", .color = COLOR_LIST,
     .description = "Clipboard Paste",
     .fxn         = (*_command_paste)
   },
-  [COMMAND_LAYOUT] =                  {
-    .name        = "layout",           .icon = "💮", .color = COLOR_LIST,
+  [COMMAND_LAYOUT] =              {
+    .name        = "layout", .icon = "💮", .color = COLOR_LIST,
     .description = "Layout",
     .fxn         = (*_command_layout)
   },
-  [COMMAND_COPY] =                  {
+  [COMMAND_COPY] =                {
     .name        = "copy",           .icon = "💮", .color = COLOR_LIST,
     .description = "Clipboard Copy",
     .fxn         = (*_command_copy)
   },
-  [COMMAND_SAVE_APP_ICON_ICNS] =    {
+  [COMMAND_SAVE_APP_ICON_ICNS] =  {
     .fxn = (*_command_save_app_icon_to_icns)
   },
-  [COMMAND_SAVE_APP_ICON_PNG] =     {
+  [COMMAND_SAVE_APP_ICON_PNG] =   {
     .fxn = (*_command_save_app_icon_to_png)
   },
-  [COMMAND_SET_APP_ICON_PNG] =      {
+  [COMMAND_SET_APP_ICON_PNG] =    {
     .fxn = (*_command_write_app_icon_from_png)
   },
-  [COMMAND_SET_APP_ICON_ICNS] =     {
+  [COMMAND_SET_APP_ICON_ICNS] =   {
     .fxn = (*_command_write_app_icon_icns)
   },
-  [COMMAND_ICON_INFO] =             {
+  [COMMAND_ICON_INFO] =           {
     .fxn = (*_command_icon_info)
   },
-  [COMMAND_APP_PLIST_INFO_PATH] =   {
+  [COMMAND_APP_PLIST_INFO_PATH] = {
     .fxn = (*_command_app_info_plist_path)
   },
-  [COMMAND_APP_ICNS_PATH] =         {
+  [COMMAND_APP_ICNS_PATH] =       {
     .fxn = (*_command_app_icns_path)
   },
-  [COMMAND_PARSE_XML_FILE] =        {
+  [COMMAND_PARSE_XML_FILE] =      {
     .fxn = (*_command_parse_xml_file)
   },
-  [COMMAND_GRAYSCALE_PNG_FILE] =    {
+  [COMMAND_GRAYSCALE_PNG_FILE] =  {
     .fxn = (*_command_grayscale_png)
   },
-  [COMMAND_CLEAR_ICONS_CACHE] =     {
+  [COMMAND_CLEAR_ICONS_CACHE] =   {
     .fxn = (*_command_clear_icons_cache)
   },
-//////////////////////////////////////////////////////////  
-//////////////////////////////////////////////////////////  
-  LIST_SUBCOMMAND(SPACES,"spaces","Spaces",_command_list_space),
-  LIST_SUBCOMMAND(DISPLAYS,"displays","Displays",_command_list_display),
-  LIST_SUBCOMMAND(APPS,"apps","Applications",_command_list_app),
-  LIST_SUBCOMMAND(FONTS,"fonts","Fonts",_command_list_font),
-  LIST_SUBCOMMAND(PROCESSES,"processes","Processes",_command_list_process),
-  LIST_SUBCOMMAND(KITTYS,"kittys","Kittys",_command_list_kitty),
-  LIST_SUBCOMMAND(USBS,"usbs","USB Devices",_command_list_usb),
-  LIST_SUBCOMMAND(MONITORS,"monitors","Monitors",_command_list_monitor),
-  LIST_SUBCOMMAND(HOTKEYS,"hotkeys","Hot Keys",_command_list_hotkey),
-  LIST_SUBCOMMAND(WINDOWS,"windows","Windows",_command_list_window),
-  LIST_SUBCOMMAND(ALACRITTYS,"alacrittys","Alacrittys",_command_list_alacritty),
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+  LIST_SUBCOMMAND(SPACES, "spaces", "Spaces", _command_list_space),
+  LIST_SUBCOMMAND(DISPLAYS, "displays", "Displays", _command_list_display),
+  LIST_SUBCOMMAND(APPS, "apps", "Applications", _command_list_app),
+  LIST_SUBCOMMAND(FONTS, "fonts", "Fonts", _command_list_font),
+  LIST_SUBCOMMAND(PROCESSES, "processes", "Processes", _command_list_process),
+  LIST_SUBCOMMAND(KITTYS, "kittys", "Kittys", _command_list_kitty),
+  LIST_SUBCOMMAND(USBS, "usbs", "USB Devices", _command_list_usb),
+  LIST_SUBCOMMAND(MONITORS, "monitors", "Monitors", _command_list_monitor),
+  LIST_SUBCOMMAND(HOTKEYS, "hotkeys", "Hot Keys", _command_list_hotkey),
+  LIST_SUBCOMMAND(WINDOWS, "windows", "Windows", _command_list_window),
+  LIST_SUBCOMMAND(ALACRITTYS, "alacrittys", "Alacrittys", _command_list_alacritty),
 #undef LIST_SUBCOMMAND
-  [COMMAND_TYPES_QTY] = {0},
+  [COMMAND_TYPES_QTY] =           { 0},
 };
 
 ////////////////////////////////////////////
@@ -1284,51 +1294,59 @@ static int hotkey_callback(char *KEYS){
 
 ////////////////////////////////////////////
 static void _check_formats(char *formats){
-  if(formats)
+  if (formats) {
     formats = stringfn_mut_trim(formats);
-  if(strcmp(formats,"all")==0){
+  }
+  if (strcmp(formats, "all") == 0) {
     formats = get_image_format_names_csv();
   }
 
-  args->formats_v = vector_new();
+  args->formats_v    = vector_new();
   args->format_ids_v = vector_new();
-  char *msg[2] = { 0 };
+  char                *msg[2] = { 0 };
   struct StringBuffer *sb[2];
   sb[0] = stringbuffer_new();
   sb[1] = stringbuffer_new();
-  struct StringFNStrings split = stringfn_split(formats,',');
-  char *line=NULL;
-  for(int i=0;i<split.count;i++){
+  struct StringFNStrings split = stringfn_split(formats, ',');
+  char                   *line = NULL;
+  for (int i = 0; i < split.count; i++) {
     line = stringfn_mut_trim(split.strings[i]);
-    if(strcmp(line,"cgimage")==0)
+    if (strcmp(line, "cgimage") == 0) {
       continue;
-    if(strcmp(line,"rgb")==0)
-      continue;
-    if(strcmp(line,"bmp")==0)
-      continue;
-    debug(" - %s",line);
-    vector_push(args->formats_v,(void*)line);
-    vector_push(args->format_ids_v,(void*)get_format_name(line));
-  }
-  for(size_t i=0;i<vector_size(args->formats_v);i++){
-    if(i<vector_size(args->formats_v) && i > 0){
-      stringbuffer_append_string(sb[0],", ");
-      stringbuffer_append_string(sb[1],", ");
     }
-    stringbuffer_append_string(sb[0],(char*)(vector_get(args->formats_v,i)));
-    stringbuffer_append_int(sb[1],(int)(size_t)(vector_get(args->format_ids_v,i)));
+    if (strcmp(line, "rgb") == 0) {
+      continue;
+    }
+    if (strcmp(line, "bmp") == 0) {
+      continue;
+    }
+    debug(" - %s", line);
+    vector_push(args->formats_v, (void *)line);
+    vector_push(args->format_ids_v, (void *)get_format_name(line));
+  }
+  for (size_t i = 0; i < vector_size(args->formats_v); i++) {
+    if (i < vector_size(args->formats_v) && i > 0) {
+      stringbuffer_append_string(sb[0], ", ");
+      stringbuffer_append_string(sb[1], ", ");
+    }
+    stringbuffer_append_string(sb[0], (char *)(vector_get(args->formats_v, i)));
+    stringbuffer_append_int(sb[1], (int)(size_t)(vector_get(args->format_ids_v, i)));
   }
   msg[0] = stringbuffer_to_string(sb[0]);
   msg[1] = stringbuffer_to_string(sb[1]);
   stringbuffer_release(sb[0]);
   stringfn_release_strings_struct(split);
-  debug("Checking %lu formats: %s, %lu format ids: %s", 
-      vector_size(args->formats_v),msg[0],
-      vector_size(args->format_ids_v), msg[1]
-      );
-  if(msg[0])free(msg[0]);
-  if(msg[1])free(msg[1]);
-}
+  debug("Checking %lu formats: %s, %lu format ids: %s",
+        vector_size(args->formats_v), msg[0],
+        vector_size(args->format_ids_v), msg[1]
+        );
+  if (msg[0]) {
+    free(msg[0]);
+  }
+  if (msg[1]) {
+    free(msg[1]);
+  }
+} /* _check_formats */
 
 static void _check_sort_direction_desc(){
   args->sort_direction = "desc";
@@ -1377,48 +1395,50 @@ static void _check_pid(){
     exit(EXIT_FAILURE);
   }
   log_debug("check pid %d", args->pid);
-  if(args->id<1 && args->pid>0){
+  if (args->id < 1 && args->pid > 0) {
     args->id = get_pid_window_id(args->pid);
   }
-  if(args->id<1){
-    log_error("Invalid ID %d",args->id);
+  if (args->id < 1) {
+    log_error("Invalid ID %d", args->id);
     exit(EXIT_FAILURE);
   }
-  if(args->pid == get_focused_pid()){
-    log_warn("PID %d is already focused",args->pid);
+  if (args->pid == get_focused_pid()) {
+    log_warn("PID %d is already focused", args->pid);
     return(EXIT_SUCCESS);
   }
   return(EXIT_SUCCESS);
 }
 
 static void _check_icon_sizes(char *strs){
-    args->icon_sizes_v = vector_new();
-  if(strs)
+  args->icon_sizes_v = vector_new();
+  if (strs) {
     strs = stringfn_mut_trim(strs);
-  if(strcmp(strs,"all")==0){
+  }
+  if (strcmp(strs, "all") == 0) {
     args->icon_sizes_v = get_app_icon_sizes_v();
   }
 
-  struct StringFNStrings split = stringfn_split(strs,',');
-  char *line=NULL;
-  for(int i=0;i<split.count;i++){
+  struct StringFNStrings split = stringfn_split(strs, ',');
+  char                   *line = NULL;
+  for (int i = 0; i < split.count; i++) {
     line = stringfn_mut_trim(split.strings[i]);
 
-    if(!app_icon_size_is_valid(atoi(line)))
-        continue;
-    debug(" - %s",line);
-    vector_push(args->icon_sizes_v,(void*)(size_t)atoi(line));
+    if (!app_icon_size_is_valid(atoi(line))) {
+      continue;
+    }
+    debug(" - %s", line);
+    vector_push(args->icon_sizes_v, (void *)(size_t)atoi(line));
   }
   stringfn_release_strings_struct(split);
-  if(vector_size(args->icon_sizes_v)<1){
+  if (vector_size(args->icon_sizes_v) < 1) {
     log_error("Invalid Icon Sizes");
     exit(EXIT_FAILURE);
   }
   debug("Loaded %lu icon sizes",
-      vector_size(args->icon_sizes_v)
-      );
+        vector_size(args->icon_sizes_v)
+        );
   return(EXIT_SUCCESS);
-  }
+}
 
 static void _check_application_name(char *application_name){
   args->application_name = application_name;
@@ -1451,11 +1471,10 @@ static void _check_output_png_file(char *output_png_file){
   return(EXIT_SUCCESS);
 }
 
-
 static void _check_random_id(void){
-  switch(args->capture_type){
-    case CAPTURE_TYPE_WINDOW: args->id = get_random_window_info()->window_id; break;
-    default: log_error("Invalid capture type"); return(EXIT_FAILURE); break;
+  switch (args->capture_type) {
+  case CAPTURE_TYPE_WINDOW: args->id = get_random_window_info()->window_id; break;
+  default: log_error("Invalid capture type"); return(EXIT_FAILURE); break;
   }
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
     log_debug("random id:%d|",
@@ -1474,14 +1493,25 @@ static void _check_input_png_file(char *input_png_file){
 }
 
 static void _check_capture_mode(enum capture_type_id_t type){
-  if(IS_COMMAND_DEBUG_MODE)
+  if (IS_COMMAND_DEBUG_MODE) {
     log_info("Setting capture mode to %d|%s", type, get_capture_type_name(type));
+  }
   args->capture_type = type;
   return;
 }
-static void _check_capture_space_mode(void){ return(_check_capture_mode(CAPTURE_TYPE_SPACE)); }
-static void _check_capture_display_mode(void){ return(_check_capture_mode(CAPTURE_TYPE_DISPLAY)); }
-static void _check_capture_window_mode(void){ return(_check_capture_mode(CAPTURE_TYPE_WINDOW)); }
+
+static void _check_capture_space_mode(void){
+  return(_check_capture_mode(CAPTURE_TYPE_SPACE));
+}
+
+static void _check_capture_display_mode(void){
+  return(_check_capture_mode(CAPTURE_TYPE_DISPLAY));
+}
+
+static void _check_capture_window_mode(void){
+  return(_check_capture_mode(CAPTURE_TYPE_WINDOW));
+}
+
 static void _check_concurrency(int c){
   args->concurrency = (c > MAX_CONCURRENCY) ? MAX_CONCURRENCY : c;
   args->concurrency = (args->concurrency < 1) ? 1 : args->concurrency;
@@ -1553,57 +1583,62 @@ static void _check_width_group(uint16_t width){
 static void _check_write_directory(void){
   char *test_files[3], *new_dir;
 
-  if(args->purge_write_directory_before_write && fsio_dir_exists(args->write_directory)){
-    asprintf(&new_dir,"%s/.%s-%lld-dls-purged-dir",
-        dirname(args->write_directory),
-        basename(args->write_directory),
-        timestamp()
-        );
-    if(DARWIN_LS_COMMANDS_DEBUG_MODE)
-      log_info("moving %s to %s",args->write_directory,new_dir);
-    errno=0;
-    if(!process_utils_move_directory_contents(args->write_directory,new_dir)){
-      log_error("Failed to move \"%s\" to \"%s\"",args->write_directory,new_dir);
+  if (args->purge_write_directory_before_write && fsio_dir_exists(args->write_directory)) {
+    asprintf(&new_dir, "%s/.%s-%lld-dls-purged-dir",
+             dirname(args->write_directory),
+             basename(args->write_directory),
+             timestamp()
+             );
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+      log_info("moving %s to %s", args->write_directory, new_dir);
+    }
+    errno = 0;
+    if (!process_utils_move_directory_contents(args->write_directory, new_dir)) {
+      log_error("Failed to move \"%s\" to \"%s\"", args->write_directory, new_dir);
       exit(EXIT_FAILURE);
     }
   }
-  if(!stringfn_starts_with(args->write_directory,"/")){
-    asprintf(&(args->write_directory),"%s/%s",
-        gettempdir(),
-        args->write_directory
-        );
+  if (!stringfn_starts_with(args->write_directory, "/")) {
+    asprintf(&(args->write_directory), "%s/%s",
+             gettempdir(),
+             args->write_directory
+             );
   }
-  asprintf(&test_files[0],".dls-test-file-%lld-%d.%s",timestamp(),getpid(),"txt");
-  asprintf(&test_files[1],"%s/%s",args->write_directory,test_files[0]);
-  asprintf(&test_files[2],"%d",getpid());
+  asprintf(&test_files[0], ".dls-test-file-%lld-%d.%s", timestamp(), getpid(), "txt");
+  asprintf(&test_files[1], "%s/%s", args->write_directory, test_files[0]);
+  asprintf(&test_files[2], "%d", getpid());
 
-  errno=0;
-  if(!fsio_dir_exists(args->write_directory) && 
-    (!fsio_mkdirs(args->write_directory,S_IRWXU | S_IRWXG | S_IRWXO)||!fsio_dir_exists(args->write_directory)))
-     goto fail;
-  if(!fsio_write_text_file(test_files[1],test_files[2])|| (atoi(fsio_read_text_file(test_files[1]))!=getpid())|| !fsio_remove(test_files[1]))
-     goto fail;
+  errno = 0;
+  if (!fsio_dir_exists(args->write_directory)
+      && (!fsio_mkdirs(args->write_directory, S_IRWXU | S_IRWXG | S_IRWXO) || !fsio_dir_exists(args->write_directory))) {
+    goto fail;
+  }
+  if (!fsio_write_text_file(test_files[1], test_files[2]) || (atoi(fsio_read_text_file(test_files[1])) != getpid()) || !fsio_remove(test_files[1])) {
+    goto fail;
+  }
 
   char td[PATH_MAX];
-  asprintf(&td,"%s/",args->write_directory);
+
+  asprintf(&td, "%s/", args->write_directory);
   return(EXIT_SUCCESS);
+
 fail:
-  fprintf(stderr, "Invalid \"Write Directory\" "AC_YELLOW "%s"AC_RESETALL": "AC_RED"%s"AC_RESETALL
-      "\n",  
-      args->write_directory,
-      strerror(errno) ? strerror(errno) : "Unknown Error"
-      );
+  fprintf(stderr, "Invalid \"Write Directory\" "AC_YELLOW "%s"AC_RESETALL ": "AC_RED "%s"AC_RESETALL
+          "\n",
+          args->write_directory,
+          strerror(errno) ? strerror(errno) : "Unknown Error"
+          );
   exit(EXIT_FAILURE);
-}
+} /* _check_write_directory */
 
 static void _check_id(size_t id){
-  log_info("id:%lu",id);
+  log_info("id:%lu", id);
   if (id < 1) {
     log_error("ID too small");
     goto do_error;
   }
   args->id = id;
-  log_info("id:%d",args->id);
+  log_info("id:%d", args->id);
   return(EXIT_SUCCESS);
 
 do_error:
@@ -1741,21 +1776,22 @@ static void _command_image_conversions(){
 }
 
 static void _command_save_app_icon_to_png(){
-  bool rm_output_png_file=false;
-  bool ok = false;
-  size_t size=0;
-  for(size_t i = 0; i <vector_size(args->icon_sizes_v);i++){
-    if(!args->output_png_file){
-      asprintf(&(args->output_png_file),"%s%lld.png",gettempdir(),timestamp());
-      rm_output_png_file=true;
+  bool   rm_output_png_file = false;
+  bool   ok                 = false;
+  size_t size               = 0;
+
+  for (size_t i = 0; i < vector_size(args->icon_sizes_v); i++) {
+    if (!args->output_png_file) {
+      asprintf(&(args->output_png_file), "%s%lld.png", gettempdir(), timestamp());
+      rm_output_png_file = true;
     }
-    size = (size_t)vector_get(args->icon_sizes_v,i);
-    ok = write_app_icon_to_png(args->application_path,args->output_png_file,size);
-    if(ok && kitty_display_image_buffer_resized_width(fsio_read_binary_file(args->output_png_file), fsio_file_size(args->output_png_file),size)){
-       printf("\n");
-       fflush(stdout);
+    size = (size_t)vector_get(args->icon_sizes_v, i);
+    ok   = write_app_icon_to_png(args->application_path, args->output_png_file, size);
+    if (ok && kitty_display_image_buffer_resized_width(fsio_read_binary_file(args->output_png_file), fsio_file_size(args->output_png_file), size)) {
+      printf("\n");
+      fflush(stdout);
     }
-    if(rm_output_png_file){
+    if (rm_output_png_file) {
       fsio_remove(args->output_png_file);
     }
   }
@@ -1795,7 +1831,6 @@ static void _command_write_app_icon_icns(){
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-
 static void _command_httpserver(){
   log_debug("Starting HTTP Server");
   exit(httpserver_main());
@@ -1806,7 +1841,6 @@ static void _command_set_space_index(){
   exit(EXIT_SUCCESS);
 }
 
-
 static void _command_animate(){
   initialize_args(args);
   debug_dls_arguments();
@@ -1815,34 +1849,34 @@ static void _command_animate(){
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
   for (size_t x = 0; x < vector_size(ids); x++) {
     struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-    unsigned long             prev_ts = 0, last_ts = 0, delta_ms = 0;
-    req->ids        = vector_new();
+    unsigned long                  prev_ts = 0, last_ts = 0, delta_ms = 0;
+    req->ids = vector_new();
     args->id = (size_t)vector_get(ids, x);
     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
-    req->concurrency  = args->concurrency;
-    req->type         = CAPTURE_TYPE_WINDOW;
+    req->concurrency       = args->concurrency;
+    req->type              = CAPTURE_TYPE_WINDOW;
     req->progress_bar_mode = args->progress_bar_mode;
-    req->compress = args->compress;
-    req->format       = IMAGE_TYPE_GIF;
-    req->width =    args->width;
-    req->height =    args->height;
-    req->time.dur     = 0;
-    req->time.started = timestamp();
+    req->compress          = args->compress;
+    req->format            = IMAGE_TYPE_GIF;
+    req->width             = args->width;
+    req->height            = args->height;
+    req->time.dur          = 0;
+    req->time.started      = timestamp();
     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
     acap->expected_frames_qty = expected_frames_qty;
-    size_t                    qty = vector_size(acap->frames_v);
-  end_ts = timestamp() + (args->duration_seconds * 1000);
-    while ((unsigned long)timestamp() < (unsigned long)end_ts){// || expected_frames_qty > qty) {
+    size_t                            qty = vector_size(acap->frames_v);
+    end_ts = timestamp() + (args->duration_seconds * 1000);
+    while ((unsigned long)timestamp() < (unsigned long)end_ts) {// || expected_frames_qty > qty) {
       unsigned long s = timestamp();
       req->progress_bar_mode = args->progress_bar_mode;
-      results  = capture_image(req);
-      prev_ts  = last_ts;
-      last_ts  = timestamp();
-      delta_ms = last_ts - prev_ts;
+      results                = capture_image(req);
+      prev_ts                = last_ts;
+      last_ts                = timestamp();
+      delta_ms               = last_ts - prev_ts;
       size_t q = vector_size(results);
       for (size_t i = 0; i < q; i++) {
         struct capture_image_result_t *r = (struct capture_image_result_t *)vector_get(results, i);
-        r->delta_ms = delta_ms;
+        r->delta_ms       = delta_ms;
         req->time.started = i == 0 ? timestamp() : req->time.started;
         chan_send(acap->chan, (void *)r);
 //        get_cputime();
@@ -1885,159 +1919,166 @@ static void _command_animate(){
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
 
-
 static char *get_type_format_output_file(size_t id, char *dir, enum capture_type_id_t type, enum image_type_id_t format_id){
   char *output_file = NULL;
-  asprintf(&output_file,"%s/%s-%lu.%s", 
-    dir ? dir : gettempdir(),
-    stringfn_to_lowercase(get_capture_type_name(type)),
-    id,
-    image_type_extension(format_id)
-  );
+
+  asprintf(&output_file, "%s/%s-%lu.%s",
+           dir ? dir : gettempdir(),
+           stringfn_to_lowercase(get_capture_type_name(type)),
+           id,
+           image_type_extension(format_id)
+           );
   return(output_file);
 }
 
 static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
   struct capture_image_result_t *r = NULL;
+
   for (size_t i = 0; i < vector_size(results_v); i++) {
     r = (struct capture_image_result_t *)vector_get(results_v, i);
-    if(r)
+    if (r) {
       r->file = get_type_format_output_file(r->id, dir, type, format_id);
+    }
   }
   return(true);
 }
 
 static bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
-
 /*
-static const char *strings[] = {
-  "Lorem ipsum dolor sit amet",
-  "Consectetur adipiscing elit",
-  "Vivamus faucibus sagittis dui, tincidunt rhoncus mi",
-  "Fringilla sollicitudin. Donec eget sagittis",
-  "Quam, vitae fringilla nisl",
-  "Donec dolor justo, hendrerit sed accumsan id, sodales",
-  "Eu odio",
-  "Nunc vehicula hendrerit risus, vel condimentum dui rutrum sed.",
-  "Quisque metus enim, pellentesque nec nibh sit amet.",
-  "Commodo molestie diam."
-};
-
-  int i, r;
-  fancy_progress_start();
-  srand(time(NULL));
-  for (i = 0; i <= 100; i++) {
-    r = rand() % 10;
-    fprintf(stdout, "%s...\n", strings[r]);
-    fancy_progress_step(((float)i / 150) * 100);
-    usleep(50 * 1000);
-  }
-  fancy_progress_stop();
-  */
-if(false){
+ * static const char *strings[] = {
+ * "Lorem ipsum dolor sit amet",
+ * "Consectetur adipiscing elit",
+ * "Vivamus faucibus sagittis dui, tincidunt rhoncus mi",
+ * "Fringilla sollicitudin. Donec eget sagittis",
+ * "Quam, vitae fringilla nisl",
+ * "Donec dolor justo, hendrerit sed accumsan id, sodales",
+ * "Eu odio",
+ * "Nunc vehicula hendrerit risus, vel condimentum dui rutrum sed.",
+ * "Quisque metus enim, pellentesque nec nibh sit amet.",
+ * "Commodo molestie diam."
+ * };
+ *
+ * int i, r;
+ * fancy_progress_start();
+ * srand(time(NULL));
+ * for (i = 0; i <= 100; i++) {
+ *  r = rand() % 10;
+ *  fprintf(stdout, "%s...\n", strings[r]);
+ *  fancy_progress_step(((float)i / 150) * 100);
+ *  usleep(50 * 1000);
+ * }
+ * fancy_progress_stop();
+ */
+  if (false) {
     cbar_t bars[] = {
-        cbar(64, "Bar1: [$E RGB(8, 25, 104);"
-                 "FG_RED; $E$F'-'$F$E RESET;"
-                 "$E$N' '$N] $P%$E RESET;"
-                 "$E"
-                 ),
-        cbar(64, "Bar2: [$E RGB(8, 25, 104);"
-                 "FG_YELLOW; $E$F'-'$F$E RESET;"
-                 "$E$N' '$N] $P%$E RESET;"
-                 "$E"
-                 ),
-        cbar(64, "Bar3: [$E RGB(8, 25, 104);"
-                 "BOLD; $E$F'-'$F$E RESET;"
-                 "$E$N' '$N] $P%$E RESET;"
-                 "$E"
-                 ),
+      cbar(64, "Bar1: [$E RGB(8, 25, 104);"
+           "FG_RED; $E$F'-'$F$E RESET;"
+           "$E$N' '$N] $P%$E RESET;"
+           "$E"
+           ),
+      cbar(64, "Bar2: [$E RGB(8, 25, 104);"
+           "FG_YELLOW; $E$F'-'$F$E RESET;"
+           "$E$N' '$N] $P%$E RESET;"
+           "$E"
+           ),
+      cbar(64, "Bar3: [$E RGB(8, 25, 104);"
+           "BOLD; $E$F'-'$F$E RESET;"
+           "$E$N' '$N] $P%$E RESET;"
+           "$E"
+           ),
     };
-    bool complete = false;
+    bool   complete = false;
     cbar_hide_cursor();
-    while(!complete){
-        complete = true;
-        for(size_t i = 0; i < 3; i++){
-            bars[i].progress += 0.0001*(i+1);
-            if(bars[i].progress <= 1.0) complete = false;
+    while (!complete) {
+      complete = true;
+      for (size_t i = 0; i < 3; i++) {
+        bars[i].progress += 0.0001 * (i + 1);
+        if (bars[i].progress <= 1.0) {
+          complete = false;
         }
-        cbar_display_bars(bars, 3);
-        usleep(0.001*100000.0);
+      }
+      cbar_display_bars(bars, 3);
+      usleep(0.001 * 100000.0);
     }
     cbar_show_cursor();
-    printf("\n\n\n\n");  
+    printf("\n\n\n\n");
     fflush(stdout);
-}
+  }
 
-    struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
-    fprintf(stdout,
-        "✅ Wrote"
-        " "
-        AC_CYAN "%2lu"AC_RESETALL
-        " "
-        AC_BLUE"%4s"AC_RESETALL 
-        " "
-        "Files totaling"
-        " "
-        AC_GREEN"%6s"AC_RESETALL 
-        " "
-        "to"
-        " "
-AC_DOTTED_UNDERLINE AC_ITALIC AC_YELLOW "%s" AC_RESETALL
-        " "
-        "in"
-        " "
-AC_BOLD AC_YELLOW"%6s"AC_RESETALL 
-        "\n",
-                res->qty,
-                image_type_name(format_id),
-                bytes_to_string(res->bytes),
-                args->write_directory,
-                milliseconds_to_string(res->dur)
-    );
-    fflush(stdout);
+  struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
+  fprintf(stdout,
+          "✅ Wrote"
+          " "
+          AC_CYAN "%2lu"AC_RESETALL
+          " "
+          AC_BLUE "%4s"AC_RESETALL
+          " "
+          "Files totaling"
+          " "
+          AC_GREEN "%6s"AC_RESETALL
+          " "
+          "to"
+          " "
+          AC_DOTTED_UNDERLINE AC_ITALIC AC_YELLOW "%s" AC_RESETALL
+          " "
+          "in"
+          " "
+          AC_BOLD AC_YELLOW "%6s"AC_RESETALL
+          "\n",
+          res->qty,
+          image_type_name(format_id),
+          bytes_to_string(res->bytes),
+          args->write_directory,
+          milliseconds_to_string(res->dur)
+          );
+  fflush(stdout);
 //  if(res)
   //  free(res);
   return(true);
-}
+} /* save_results */
 
 static bool display_results(struct Vector *results_v){
-    struct capture_image_result_t *r = NULL;
-    for (size_t i = 0; i < vector_size(results_v); i++) {
-      r = (struct capture_image_result_t *)vector_get(results_v, i);
-      if (r->len > 0 && r->pixels) {
-        debug("Displaying %lux%lu %s File", r->width,r->height,bytes_to_string(r->len));
-        if(kitty_display_image_buffer_resized_width(r->pixels, r->len,CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE))
-          printf("\n");
+  struct capture_image_result_t *r = NULL;
+
+  for (size_t i = 0; i < vector_size(results_v); i++) {
+    r = (struct capture_image_result_t *)vector_get(results_v, i);
+    if (r->len > 0 && r->pixels) {
+      debug("Displaying %lux%lu %s File", r->width, r->height, bytes_to_string(r->len));
+      if (kitty_display_image_buffer_resized_width(r->pixels, r->len, CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE)) {
+        printf("\n");
       }
     }
-    if(r)free(r);
-    return(true);
+  }
+  if (r) {
+    free(r);
+  }
+  return(true);
 }
 
-
 static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height){
-  struct Vector *results_v;
+  struct Vector                  *results_v;
   struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-  req->ids = ids;
-  req->concurrency  = clamp(concurrency, 1, vector_size(req->ids));
-  req->format         = format_id;
-  req->compress         = compress;
-  req->quantize_mode = args->quantize_mode;
-  req->type = capture_type;
-  req->progress_bar_mode = progress_bar_mode;     
-  req->width        = width > 0 ? width : 0;
-  req->height       = height > 0 ? height : 0;
-  req->time.dur     = 0;
-  req->time.started = timestamp();
-  results_v = capture_image(req);
+
+  req->ids               = ids;
+  req->concurrency       = clamp(concurrency, 1, vector_size(req->ids));
+  req->format            = format_id;
+  req->compress          = compress;
+  req->quantize_mode     = args->quantize_mode;
+  req->type              = capture_type;
+  req->progress_bar_mode = progress_bar_mode;
+  req->width             = width > 0 ? width : 0;
+  req->height            = height > 0 ? height : 0;
+  req->time.dur          = 0;
+  req->time.started      = timestamp();
+  results_v              = capture_image(req);
   //free(req);
   return(results_v);
 }
 
-
 static void _command_extract(){
-  if(DARWIN_LS_COMMANDS_DEBUG_MODE)
-    log_info("Capturing using mode %d|%s", args->capture_type,get_capture_type_name(args->capture_type));
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    log_info("Capturing using mode %d|%s", args->capture_type, get_capture_type_name(args->capture_type));
+  }
   initialize_args(args);
   debug_dls_arguments();
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
@@ -2046,56 +2087,56 @@ static void _command_extract(){
   log_info("Extracted %lu Results", vector_size(results));
   exit(EXIT_SUCCESS);
 }
+
 static void _command_capture(){
   initialize_args(args);
   debug_dls_arguments();
   struct list_table_t *filter = &(struct list_table_t){
     .sort_key       = stringfn_to_lowercase(args->sort_key),
     .sort_direction = stringfn_to_lowercase(args->sort_direction),
-    .limit          = args->limit, 
+    .limit          = args->limit,
   };
-  struct Vector *ids =  get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
-  for(size_t i = 0; i <vector_size(args->format_ids_v);i++){
+  struct Vector *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
+  for (size_t i = 0; i < vector_size(args->format_ids_v); i++) {
     struct Vector *results_v = capture(
-        (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), 
-        ids, 
-        args->concurrency, 
-        args->compress, 
-        args->capture_type, 
-        args->progress_bar_mode, 
-        args->width, 
-        args->height
-    );
-    set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v);
-    if(args->write_images_mode){
-      errno=0;
-      if(!save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v,i), results_v, args->concurrency, args->progress_bar_mode)){
+      (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i),
+      ids,
+      args->concurrency,
+      args->compress,
+      args->capture_type,
+      args->progress_bar_mode,
+      args->width,
+      args->height
+      );
+    set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v);
+    if (args->write_images_mode) {
+      errno = 0;
+      if (!save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v, args->concurrency, args->progress_bar_mode)) {
         log_error("Failed to save results");
       }
     }
-    if (args->display_mode){
-      errno=0;
-      if(!display_results(results_v)){
+    if (args->display_mode) {
+      errno = 0;
+      if (!display_results(results_v)) {
         log_error("Failed to display results");
       }
     }
 
     switch (args->output_mode) {
     case OUTPUT_MODE_TABLE:
-      if(false)
+      if (false) {
         list_captured_window_table(filter);
+      }
       break;
     case OUTPUT_MODE_JSON:
       break;
     case OUTPUT_MODE_TEXT:
       break;
     }
-}
-
+  }
 
   exit(EXIT_SUCCESS);
 } /* _command_capture*/
-
 
 static void _command_list_font(){
   struct list_table_t *filter = &(struct list_table_t){
@@ -2193,7 +2234,6 @@ static void _command_window_unsticky(){
   exit(EXIT_SUCCESS);
 }
 
-
 static void _command_window_level(){
   int level = get_window_id_level((size_t)args->id);
 
@@ -2232,6 +2272,7 @@ static void _command_pid_is_minimized(){
 static void _command_unminimize_window(){
   exit((unminimize_window_id(args->id) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
+
 static void _command_minimize_window(){
   exit((minimize_window_id(args->id) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
@@ -2239,6 +2280,7 @@ static void _command_minimize_window(){
 static void _command_window_not_all_spaces(){
   exit(EXIT_SUCCESS);
 }
+
 static void _command_window_all_spaces(){
   exit(EXIT_SUCCESS);
 }
@@ -2301,14 +2343,14 @@ static void _command_set_space(){
   exit(EXIT_FAILURE);
 } /* _command_set_space */
 
-
 static void _command_focus(){
   initialize_args(args);
   debug_dls_arguments();
-  if(args->id>0)
+  if (args->id > 0) {
     focus_window_id(args->id);
-  else if(args->pid>0)
+  }else if (args->pid > 0) {
     focus_pid(args->id);
+  }
   //else if(strlen(args->windowids)>0)
 //    if(false)
 //      focus_window_id(args->windowids);
@@ -2318,7 +2360,7 @@ static void _command_focus(){
 static void _command_focused(){
   initialize_args(args);
   debug_dls_arguments();
-  if(args->pid>0){
+  if (args->pid > 0) {
     int pid = get_focused_pid();
     log_info(
       "\t" AC_YELLOW AC_UNDERLINE "Focused PID" AC_RESETALL
@@ -2373,78 +2415,75 @@ static void _command_focused(){
     stringbuffer_release(sb);
   }
 
-  if(args->window){
-  struct window_info_t *w = get_focused_window();
+  if (args->window) {
+    struct window_info_t *w = get_focused_window();
 
-  log_info(
-    "\t" AC_YELLOW AC_UNDERLINE "Focused Window" AC_RESETALL
-    "\n\tWindow ID    :       %lu"
-    "\n\tPID          :       %d"
-    "\n\tApplication  :       %s"
-    "\n\tSpace ID     :       %lu"
-    "\n\tDisplay ID   :       %lu"
-    "\n",
-    w->window_id,
-    w->pid,
-    w->name,
-    w->space_id,
-    w->display_id
-    );
-
-
+    log_info(
+      "\t" AC_YELLOW AC_UNDERLINE "Focused Window" AC_RESETALL
+      "\n\tWindow ID    :       %lu"
+      "\n\tPID          :       %d"
+      "\n\tApplication  :       %s"
+      "\n\tSpace ID     :       %lu"
+      "\n\tDisplay ID   :       %lu"
+      "\n",
+      w->window_id,
+      w->pid,
+      w->name,
+      w->space_id,
+      w->display_id
+      );
   }
 
   unsigned long dur = timestamp() - started;
 
   fprintf(stdout,
-    "\t" AC_YELLOW AC_CURLY_UNDERLINE AC_BOLD "Focused Space" AC_RESETALL
-    "\n\tSpace ID                    :       %d"
-    "\n\tType                        :       %d"
-    "\n\tUUID                        :       %s"
-    "\n\t# Window IDs                :       %lu" AC_RESETALL AC_BLUE "%s" AC_RESETALL "\n"
-    "\n\t# Minimized Window IDs      :       %lu"
-    "\n\t# Non Minimized Window IDs  :       %lu"
-    "\n\t# Owners                    :       %lu" AC_RESETALL "\t" AC_CYAN "%s" AC_RESETALL
-    "\n\tDisplay ID                  :       %d"
-    "\n\tIs Fullscreen               :       %s" AC_RESETALL
-    "\n\tIs Visible                  :       %s" AC_RESETALL
-    "\n\tIs User                     :       %s" AC_RESETALL
-    "\n\tIs System                   :       %s" AC_RESETALL
-    "\n\tIs Active                   :       %s" AC_RESETALL
-    "\n\tCan Create Tile             :       %s" AC_RESETALL
-    "\n\tManagement Mode             :       %d"
-    "\n\tSize                        :       %dx%d" AC_RESETALL
-    "\n\tPosition                    :       %dx%d" AC_RESETALL
-    "\n\tDuration                    :       %s" AC_RESETALL
-    "\n%s",
-    _space_id,
-    _space_type,
-    _space_uuid,
-    vector_size(_space_window_ids_v), _space_window_ids_csv,
-    vector_size(_space_minimized_window_ids_v),
-    vector_size(_space_non_minimized_window_ids_v),
-    vector_size(_space_owners), _space_owners_csv,
-    _space_display_id,
-    (_space_is_fullscreen == true) ? AC_GREEN "Yes" : AC_RED "No",
-    (_space_is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
-    (_space_is_user == true) ? AC_GREEN "Yes" : AC_RED "No",
-    (_space_is_system == true) ? AC_GREEN "Yes" : AC_RED "No",
-    (_space_is_active == true) ? AC_GREEN "Yes" : AC_RED "No",
-    (_space_can_create_tile == true) ? AC_GREEN "Yes" : AC_RED "No",
-    _space_management_mode,
-    (int)_space_rect.size.width, (int)_space_rect.size.height,
-    (int)_space_rect.origin.x, (int)_space_rect.origin.y,
-    milliseconds_to_string(dur),
-    ""
-    );
+          "\t" AC_YELLOW AC_CURLY_UNDERLINE AC_BOLD "Focused Space" AC_RESETALL
+          "\n\tSpace ID                    :       %d"
+          "\n\tType                        :       %d"
+          "\n\tUUID                        :       %s"
+          "\n\t# Window IDs                :       %lu" AC_RESETALL AC_BLUE "%s" AC_RESETALL "\n"
+          "\n\t# Minimized Window IDs      :       %lu"
+          "\n\t# Non Minimized Window IDs  :       %lu"
+          "\n\t# Owners                    :       %lu" AC_RESETALL "\t" AC_CYAN "%s" AC_RESETALL
+          "\n\tDisplay ID                  :       %d"
+          "\n\tIs Fullscreen               :       %s" AC_RESETALL
+          "\n\tIs Visible                  :       %s" AC_RESETALL
+          "\n\tIs User                     :       %s" AC_RESETALL
+          "\n\tIs System                   :       %s" AC_RESETALL
+          "\n\tIs Active                   :       %s" AC_RESETALL
+          "\n\tCan Create Tile             :       %s" AC_RESETALL
+          "\n\tManagement Mode             :       %d"
+          "\n\tSize                        :       %dx%d" AC_RESETALL
+          "\n\tPosition                    :       %dx%d" AC_RESETALL
+          "\n\tDuration                    :       %s" AC_RESETALL
+          "\n%s",
+          _space_id,
+          _space_type,
+          _space_uuid,
+          vector_size(_space_window_ids_v), _space_window_ids_csv,
+          vector_size(_space_minimized_window_ids_v),
+          vector_size(_space_non_minimized_window_ids_v),
+          vector_size(_space_owners), _space_owners_csv,
+          _space_display_id,
+          (_space_is_fullscreen == true) ? AC_GREEN "Yes" : AC_RED "No",
+          (_space_is_visible == true) ? AC_GREEN "Yes" : AC_RED "No",
+          (_space_is_user == true) ? AC_GREEN "Yes" : AC_RED "No",
+          (_space_is_system == true) ? AC_GREEN "Yes" : AC_RED "No",
+          (_space_is_active == true) ? AC_GREEN "Yes" : AC_RED "No",
+          (_space_can_create_tile == true) ? AC_GREEN "Yes" : AC_RED "No",
+          _space_management_mode,
+          (int)_space_rect.size.width, (int)_space_rect.size.height,
+          (int)_space_rect.origin.x, (int)_space_rect.origin.y,
+          milliseconds_to_string(dur),
+          ""
+          );
   exit(EXIT_SUCCESS);
 } /* _command_focused_space */
 
-
 static void _command_create_space(){
+  uint64_t space_id      = (uint64_t)(get_current_space_id());
+  int      display_space = (int)(get_current_display_id());
 
-  uint64_t space_id = (uint64_t)(get_current_space_id());
-  int display_space = (int)(get_current_display_id());
   log_info("creating space on %llu|%d.....", space_id, display_space);
 
   exit(EXIT_SUCCESS);
@@ -2454,58 +2493,60 @@ static void _command_layout(){
 //  layout_test();
   struct layout_request_t *req; struct layout_result_t *res;
   {
-    req = layout_init_request();
-    req->debug = true;
-    req->mode = LAYOUT_MODE_HORIZONTAL;
-    req->max_width = 5000;
-    req->max_height = 3000;
-    req->master_width = (int)((float)(req->max_width) * 2.0/3.0);
-    res = layout_request(req);
+    req               = layout_init_request();
+    req->debug        = true;
+    req->mode         = LAYOUT_MODE_HORIZONTAL;
+    req->max_width    = 5000;
+    req->max_height   = 3000;
+    req->master_width = (int)((float)(req->max_width) * 2.0 / 3.0);
+    res               = layout_request(req);
     free(res);
   }
   {
     req->mode = LAYOUT_MODE_VERTICAL;
-    res = layout_request(req);
+    res       = layout_request(req);
     free(res);
   }
+
   free(req);
   exit(EXIT_SUCCESS);
 }
 
-
-
 static void _command_db_rows(){
   COMMAND_DB_COMMON();
-  for(size_t i=0;i<args->db_tables_qty;i++)
-    if(!db_rows(args->db_tables[i]))
-      log_error("Failed to List Table %s Rows",args->db_tables[i]);
+  for (size_t i = 0; i < args->db_tables_qty; i++) {
+    if (!db_rows(args->db_tables[i])) {
+      log_error("Failed to List Table %s Rows", args->db_tables[i]);
+    }
+  }
   exit(EXIT_SUCCESS);
 }
 
 static void _command_db_table_ids(){
   COMMAND_DB_COMMON();
   struct Vector *v;
-  for(size_t i=0;i<args->db_tables_qty;i++)
-    if((v=db_table_ids_v(args->db_tables[i])))
-      printf("Table %s has %lu rows\n",args->db_tables[i],vector_size(v));
-    else{
-      log_error("Failed to List Table %s IDs",args->db_tables[i]);
+  for (size_t i = 0; i < args->db_tables_qty; i++) {
+    if ((v = db_table_ids_v(args->db_tables[i]))) {
+      printf("Table %s has %lu rows\n", args->db_tables[i], vector_size(v));
+    }else{
+      log_error("Failed to List Table %s IDs", args->db_tables[i]);
       exit(EXIT_FAILURE);
     }
+  }
   exit(EXIT_SUCCESS);
 }
 
 static void _command_db_tables(){
   COMMAND_DB_COMMON();
   struct Vector *v;
-  if((v=db_tables_v())){
-      printf("Database has %lu tables\n",vector_size(v));
-      for(size_t i=0;i<vector_size(v);i++){
-        printf(" - %s\n",(char*)vector_get(v,i));
-      }
+  if ((v = db_tables_v())) {
+    printf("Database has %lu tables\n", vector_size(v));
+    for (size_t i = 0; i < vector_size(v); i++) {
+      printf(" - %s\n", (char *)vector_get(v, i));
+    }
   }else{
-      log_error("Failed to List Tables");
-      exit(EXIT_FAILURE);
+    log_error("Failed to List Tables");
+    exit(EXIT_FAILURE);
   }
   vector_release(v);
   exit(EXIT_SUCCESS);
@@ -2515,15 +2556,16 @@ static void _command_db_load(){
   COMMAND_DB_COMMON();
   log_info("loading");
   struct Vector *tbls;
-  assert((tbls=db_tables_v()));
-  char *tbl;
-  for(size_t i=0;i<vector_size(tbls);i++){
-    tbl = (char*)vector_get(tbls,i);
-    for(size_t x=0;x<args->db_tables_qty;x++){
-      if( (int)db_loader_name_id(args->db_tables[x]) >= 0 && strcmp(args->db_tables[x],tbl)==0){
-        Dbg(db_loader_name_id(args->db_tables[x]),%d);
-        if(!db_loader_name(tbl))
-          log_error("Failed to load %s",tbl);
+  assert((tbls = db_tables_v()));
+  char          *tbl;
+  for (size_t i = 0; i < vector_size(tbls); i++) {
+    tbl = (char *)vector_get(tbls, i);
+    for (size_t x = 0; x < args->db_tables_qty; x++) {
+      if ((int)db_loader_name_id(args->db_tables[x]) >= 0 && strcmp(args->db_tables[x], tbl) == 0) {
+        Dbg(db_loader_name_id(args->db_tables[x]), %d);
+        if (!db_loader_name(tbl)) {
+          log_error("Failed to load %s", tbl);
+        }
       }
     }
   }
@@ -2532,13 +2574,13 @@ static void _command_db_load(){
 
 static void _command_db_test(){
   COMMAND_DB_COMMON();
-  assert(db_test()==true);
+  assert(db_test() == true);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_db_info(){
   COMMAND_DB_COMMON();
-  assert(db_info()==true);
+  assert(db_info() == true);
   exit(EXIT_SUCCESS);
 }
 
@@ -2578,14 +2620,17 @@ static void _command_list_alacritty(){
 static void _command_layout_apply(){
   exit(EXIT_SUCCESS);
 }
+
 static void _command_layout_show(){
   exit(EXIT_SUCCESS);
 }
+
 static void _command_layout_list(){
   exit(EXIT_SUCCESS);
 }
+
 static void _set_windowids(char *windowids){
-  log_debug("%s",windowids);
+  log_debug("%s", windowids);
 }
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
@@ -2604,7 +2649,7 @@ LIST_HANDLER(display)
 LIST_HANDLER(window)
 #undef LIST_HANDLER
 #undef LOCAL_DEBUG_MODE
-#undef debug  
+#undef debug
 char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height){
   switch (width_or_height) {
   case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT: return("height"); break;

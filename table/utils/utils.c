@@ -1,20 +1,20 @@
 #pragma once
 #ifndef TABLE_UTILS_C
 #define TABLE_UTILS_C
-#define LOCAL_DEBUG_MODE       TABLE_UTILS_DEBUG_MODE
-#define DEFAULT_FONTS_LIMIT    50
-#define DEFAULT_APPS_LIMIT     50
-#define CAPTURED_WINDOW_COLUMNS "ID","Width","Height","Dur","Size","Compressed","Application","File","Format"
-#define MONITOR_COLUMNS        "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
-#define PROCESS_COLUMNS        "PID", "Open Ports", "Open Files", "Open Connections","PPID","PPIDs","# Env","# PIDs","Dur"
-#define KITTY_COLUMNS          "PID"
-#define USB_COLUMNS            "Product", "Manufacturer"
-#define FONT_COLUMNS           "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
-#define APP_COLUMNS            "ID", "Name", "Version", "Path"
-#define WINDOW_COLUMNS         "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Can Min", "Full", "Dur"
-#define SPACE_COLUMNS          "ID", "Current", "Window IDs", "Windows"
-#define HOTKEY_COLUMNS         "ID", "Name", "Key", "Action", "Enabled"
-#define DISPLAY_COLUMNS        "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows","Offset","Center"
+#define LOCAL_DEBUG_MODE           TABLE_UTILS_DEBUG_MODE
+#define DEFAULT_FONTS_LIMIT        50
+#define DEFAULT_APPS_LIMIT         50
+#define CAPTURED_WINDOW_COLUMNS    "ID", "Width", "Height", "Dur", "Size", "Compressed", "Application", "File", "Format"
+#define MONITOR_COLUMNS            "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
+#define PROCESS_COLUMNS            "PID", "Open Ports", "Open Files", "Open Connections", "PPID", "PPIDs", "# Env", "# PIDs", "Dur"
+#define KITTY_COLUMNS              "PID"
+#define USB_COLUMNS                "Product", "Manufacturer"
+#define FONT_COLUMNS               "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
+#define APP_COLUMNS                "ID", "Name", "Version", "Path"
+#define WINDOW_COLUMNS             "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Can Min", "Full", "Dur"
+#define SPACE_COLUMNS              "ID", "Current", "Window IDs", "Windows"
+#define HOTKEY_COLUMNS             "ID", "Name", "Key", "Action", "Enabled"
+#define DISPLAY_COLUMNS            "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows", "Offset", "Center"
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
@@ -320,7 +320,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
 
-      return skip_row;
+      return(skip_row);
     },
   },
   [TABLE_TYPE_WINDOW] = &(struct table_logic_t){
@@ -412,10 +412,11 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
-      return skip_row;
+      return(skip_row);
+
       cur_display_id = get_current_display_id();
       cur_space_id   = get_current_space_id();
-      if (args->application_name && string_compare_skip_row(args->application_name,                                            w->name,                               args->exact_match,                        args->case_sensitive)) {
+      if (args->application_name && string_compare_skip_row(args->application_name,                  w->name,                               args->exact_match,                        args->case_sensitive)) {
         skip_row = true;
       }
       if (args->application_name) {
@@ -542,8 +543,8 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    display->height,
                    vector_size(display->space_ids_v),
                    vector_size(display->window_ids_v),
-                   display->offset_x,display->offset_y,
-                   display->center_x,display->center_y,
+                   display->offset_x,                                                                display->offset_y,
+                   display->center_x,                                                                display->center_y,
                    "");
     },
     .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){

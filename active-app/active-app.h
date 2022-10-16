@@ -1,6 +1,6 @@
 #pragma once
 #include <assert.h>
-#include <Carbon/Carbon.h>
+
 #include <fnmatch.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
@@ -14,9 +14,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "frameworks/frameworks.h"
+//#include <ApplicationServices/ApplicationServices.h>
 
-#include <ApplicationServices/ApplicationServices.h>
-#include <Carbon/Carbon.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

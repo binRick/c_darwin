@@ -7,7 +7,7 @@
 #include "space/utils/utils.h"
 #include "window/utils/utils.h"
 #include <ctype.h>
-#include <Carbon/Carbon.h>
+
 #include <errno.h>
 #include <inttypes.h>
 #include <stdbool.h>

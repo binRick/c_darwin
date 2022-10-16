@@ -2,6 +2,9 @@
 #ifndef CAPTURE_SAVE_H
 #define CAPTURE_SAVE_H
 //////////////////////////////////////
+#include "c_vector/vector/vector.h"
+#include "capture/type/type.h"
+#include "image/type/type.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -11,12 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "c_vector/vector/vector.h"
-#include "capture/type/type.h"
-#include "image/type/type.h"
 
 struct save_capture_result_t {
-  size_t qty, bytes;
+  size_t        qty, bytes;
   unsigned long dur, started;
 };
 

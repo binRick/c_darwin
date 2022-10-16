@@ -48,8 +48,8 @@ struct kitty_term_t {
   int height, width;
 };
 union kitty_size_t {
-  struct kitty_percent_t percent;
-  struct kitty_term_t term;
+  struct kitty_percent_t        percent;
+  struct kitty_term_t           term;
   struct kitty_position_pixel_t *pixel;
 };
 struct kitty_render_title_t {
@@ -61,15 +61,15 @@ struct kitty_style_t {
   struct kitty_render_title *title;
 };
 union kitty_position_t {
-  struct kitty_percent_t percent;
-  struct kitty_term_t term;
-  enum kitty_corner_t corner;
+  struct kitty_percent_t       percent;
+  struct kitty_term_t          term;
+  enum kitty_corner_t          corner;
   enum kitty_msg_resize_type_t type;
 };
 struct kitty_write_t {
   union kitty_position_t *pos;
   union kitty_size_t     *size;
-  struct kitty_render_t   *render;
+  struct kitty_render_t  *render;
 };
 
 char *kitty_msg_delete_images(void);

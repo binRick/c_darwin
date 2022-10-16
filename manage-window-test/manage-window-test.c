@@ -82,10 +82,11 @@ TEST t_manage_window_move(){
 
 TEST t_manage_window_resize(){
   struct window_info_t *w = get_window_id_info(cfg->WINDOWID);
+
   ASSERT_NEQm("Failed to get focused window", w, NULL);
   unsigned long started_wait = timestamp();
   bool          ok           = resize_window(w, cfg->WIDTH, cfg->HEIGHT);
-  unsigned long dur_ms = timestamp() - started_wait;
+  unsigned long dur_ms       = timestamp() - started_wait;
 
   ASSERT_EQm("Failed to resize window", ok, true);
   asprintf(&msg, "Resized Window ID %lu to %dx%d in %s", w->window_id, cfg->WIDTH, cfg->HEIGHT, milliseconds_to_string(dur_ms));

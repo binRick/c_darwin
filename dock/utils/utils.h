@@ -2,7 +2,7 @@
 #ifndef DOCK_UTILS_H
 #define DOCK_UTILS_H
 //////////////////////////////////////
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <ctype.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>

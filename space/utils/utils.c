@@ -2,15 +2,15 @@
 #ifndef SPACE_UTILS_C
 #define SPACE_UTILS_C
 #include "core/utils/utils.h"
+#include "db/db.h"
 #include "display/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
 #include "log/log.h"
 #include "space/utils/utils.h"
-#include "string-utils/string-utils.h"
-#include <ApplicationServices/ApplicationServices.h>
 #include "sqldbal/src/sqldbal.h"
-#include "db/db.h"
+#include "string-utils/string-utils.h"
+//#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreServices/CoreServices.h>
 static bool SPACE_UTILS_DEBUG_MODE = false;
@@ -52,18 +52,19 @@ struct Vector *get_space_ids_v(){
 }
 
 bool space_db_load(struct sqldbal_db *db){
-  struct Vector *v=get_spaces_v();
-  struct space_t *s;
-  int rc;
-  struct sqldbal_stmt      *stmt;
-  uint64_t ts = (uint64_t)(timestamp());
-  for(size_t i=0;i<vector_size(v);i++){
-    s = (struct space_t*)vector_get(v,i);
-    log_info("Loading Space #%lu/%lu> %d",i+1,vector_size(v),s->id);
+  struct Vector       *v = get_spaces_v();
+  struct space_t      *s;
+  int                 rc;
+  struct sqldbal_stmt *stmt;
+  uint64_t            ts = (uint64_t)(timestamp());
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    s = (struct space_t *)vector_get(v, i);
+    log_info("Loading Space #%lu/%lu> %d", i + 1, vector_size(v), s->id);
     rc = sqldbal_stmt_prepare(db,
-                            "INSERT INTO "TABLE_NAME_SPACES"(id, ts, is_current) VALUES(?, ?, ?)",
-                            -1,
-                            &stmt);
+                              "INSERT INTO "TABLE_NAME_SPACES "(id, ts, is_current) VALUES(?, ?, ?)",
+                              -1,
+                              &stmt);
     assert(rc == SQLDBAL_STATUS_OK);
     rc = sqldbal_stmt_bind_int64(stmt, 0, (uint64_t)(s->id));
     assert(rc == SQLDBAL_STATUS_OK);
@@ -73,9 +74,8 @@ bool space_db_load(struct sqldbal_db *db){
     assert(rc == SQLDBAL_STATUS_OK);
     rc = sqldbal_stmt_execute(stmt);
     assert(rc == SQLDBAL_STATUS_OK);
-    rc = sqldbal_stmt_close(stmt);  
+    rc = sqldbal_stmt_close(stmt);
     assert(rc == SQLDBAL_STATUS_OK);
-
   }
   vector_release(v);
   return(true);
@@ -190,42 +190,42 @@ CGImageRef preview_space_id(uint32_t space_id) {
   return(resize_cgimage(img_ref, CGImageGetWidth(img_ref) / 5, CGImageGetHeight(img_ref) / 5));
 }
 
-  CGImageRef capture_space_id_height(size_t space_id, size_t height){
-    CGImageRef img_ref = capture_space_id(space_id);
-    int        w[2], h[2];
+CGImageRef capture_space_id_height(size_t space_id, size_t height){
+  CGImageRef img_ref = capture_space_id(space_id);
+  int        w[2], h[2];
 
-    w[0] = CGImageGetWidth(img_ref);
-    h[0] = CGImageGetHeight(img_ref);
-    h[1] = height;
-    float factor = 1;
-    if(h[0] > 100){
-      factor = (float)(h[0]) / (float)(h[1]);
-    }
+  w[0] = CGImageGetWidth(img_ref);
+  h[0] = CGImageGetHeight(img_ref);
+  h[1] = height;
+  float factor = 1;
 
-    w[1] = (int)((float)w[0] / factor);
-    return(resize_cgimage(img_ref, w[1], h[1]));
+  if (h[0] > 100) {
+    factor = (float)(h[0]) / (float)(h[1]);
   }
 
-  CGImageRef capture_space_id_width(size_t space_id, size_t width){
-    CGImageRef img_ref = capture_space_id(space_id);
-    int        w[2], h[2];
+  w[1] = (int)((float)w[0] / factor);
+  return(resize_cgimage(img_ref, w[1], h[1]));
+}
 
-    w[0] = CGImageGetWidth(img_ref);
-    h[0] = CGImageGetHeight(img_ref);
-    w[1] = width;
-    float factor = (float)(w[0]) / (float)(w[1]);
+CGImageRef capture_space_id_width(size_t space_id, size_t width){
+  CGImageRef img_ref = capture_space_id(space_id);
+  int        w[2], h[2];
 
-    h[1] = (int)((float)h[0] / factor);
-    return(resize_cgimage(img_ref, w[1], h[1]));
-  }
+  w[0] = CGImageGetWidth(img_ref);
+  h[0] = CGImageGetHeight(img_ref);
+  w[1] = width;
+  float factor = (float)(w[0]) / (float)(w[1]);
+
+  h[1] = (int)((float)h[0] / factor);
+  return(resize_cgimage(img_ref, w[1], h[1]));
+}
 
 CGImageRef capture_space_id_rect(size_t space_id, CGRect rect){
-  CGImageRef img_ref = capture_space_id(space_id);
-  int new_width = (int)(rect.size.width);
-  int new_height = (int)(rect.size.height);
+  CGImageRef img_ref    = capture_space_id(space_id);
+  int        new_width  = (int)(rect.size.width);
+  int        new_height = (int)(rect.size.height);
 
   return(resize_cgimage(img_ref, new_width, new_height));
-
 }
 
 CGImageRef capture_space_id(uint32_t sid) {

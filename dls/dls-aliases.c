@@ -15,31 +15,34 @@ static char *alias_names[] = {
 };
 
 static char *alias_name_globs[ALIAS_TYPES_QTY][MAX_ALIASES] = {
-  [ALIAS_TYPE_WINDOW]  = { "win",  "w", NULL, },
-  [ALIAS_TYPE_SPACE]   = { "sp",   "s", NULL, },
-  [ALIAS_TYPE_DISPLAY] = { "disp", "d", NULL, },
+  [ALIAS_TYPE_WINDOW]  = { "win",  "w",  NULL, },
+  [ALIAS_TYPE_SPACE]   = { "sp",   "s",  NULL, },
+  [ALIAS_TYPE_DISPLAY] = { "disp", "d",  NULL, },
   [ALIAS_TYPE_PROCESS] = { "proc", "ps", NULL, },
 };
 static const struct dls_ordered_arg_t {
   char *before, *after;
-} dls_ordered_args[] = {
+}                   dls_ordered_args[] = {
   { .before = "-D", .after = "-A", },
 };
-static const size_t dls_ordered_args_qty = (sizeof(dls_ordered_args)/sizeof(dls_ordered_args[0]));
+static const size_t dls_ordered_args_qty = (sizeof(dls_ordered_args) / sizeof(dls_ordered_args[0]));
 
-bool dls_get_arg_is_ordered(char *arg1,char *arg2){
-  if(!arg1||!arg2)return false;
-  for(size_t i=0;i<dls_ordered_args_qty;i++){
-    if(
-        strcmp(arg2,dls_ordered_args[i].after)==0
-        &&
-        strcmp(arg1,dls_ordered_args[i].before)==0
-    ){
-      return true;
+bool dls_get_arg_is_ordered(char *arg1, char *arg2){
+  if (!arg1 || !arg2) {
+    return(false);
+  }
+  for (size_t i = 0; i < dls_ordered_args_qty; i++) {
+    if (
+      strcmp(arg2, dls_ordered_args[i].after) == 0
+      &&
+      strcmp(arg1, dls_ordered_args[i].before) == 0
+      ) {
+      return(true);
     }
   }
-  return false;
-};
+  return(false);
+}
+
 char *dls_get_alias_type_name(enum alias_type_t type){
   return(alias_names[type]);
 }

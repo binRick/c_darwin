@@ -30,7 +30,7 @@
 #define TRIPLE_CLICK        3
 ////////////////////////////////////////////
 static bool               mouse_utils_DEBUG_MODE = false;
-static CGEventTapLocation tapH = kCGHIDEventTap;
+static CGEventTapLocation tapH                   = kCGHIDEventTap;
 ///////////////////////////////////////////////////////////////////////
 
 CGPoint *get_mouse_location(){

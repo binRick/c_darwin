@@ -3,7 +3,7 @@
 #define DISPLAY_UTILS_H
 //////////////////////////////////////
 #include "c_vector/vector/vector.h"
-#include <ApplicationServices/ApplicationServices.h>
+////#include <ApplicationServices/ApplicationServices.h>
 #include <ctype.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>
@@ -23,8 +23,8 @@
 struct display_t {
   size_t        display_id, index;
   int           width, height;
-  int offset_x, offset_y;
-  int center_x, center_y;
+  int           offset_x, offset_y;
+  int           center_x, center_y;
   char          *uuid;
   bool          is_main;
   struct Vector *space_ids_v, *window_ids_v;

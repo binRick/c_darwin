@@ -2,6 +2,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 //////////////////////////////////////
+#include "db/db.h"
 #include "frameworks/frameworks.h"
 #include <assert.h>
 #include <ctype.h>
@@ -9,7 +10,6 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "db/db.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

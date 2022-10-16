@@ -1,12 +1,12 @@
 #pragma once
 #ifndef TABLE_SORT_H
 #define TABLE_SORT_H
-#define MAX_SORT_TYPES        32
-#define WINDOW_SORT_STRUCT    window_info_t
+#define MAX_SORT_TYPES                 32
+#define WINDOW_SORT_STRUCT             window_info_t
 #define CAPTURED_WINDOW_SORT_STRUCT    window_info_t
-#define FONT_SORT_STRUCT      font_t
-#define APP_SORT_STRUCT       app_t
-#define SORT_PARAMS           const void __attribute__((unused)) * i0, const void __attribute__((unused)) * i1
+#define FONT_SORT_STRUCT               font_t
+#define APP_SORT_STRUCT                app_t
+#define SORT_PARAMS                    const void __attribute__((unused)) * i0, const void __attribute__((unused)) * i1
 //////////////////////////////////////
 #include "app/app.h"
 #include "app/utils/utils.h"
@@ -25,21 +25,21 @@
 //////////////////////////////////////
 typedef int (*sort_function)(SORT_PARAMS);
 
-#define SORT_FUNCTIONS()                                      \
-  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, family)         \
-  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, name)           \
-  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, style)          \
-  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, type)           \
-  SORT_FUNCTION_STR(app, APP_SORT_STRUCT *, name)             \
-  SORT_FUNCTION_INT(font, FONT_SORT_STRUCT *, size)           \
-  SORT_FUNCTION_INT(font, FONT_SORT_STRUCT *, duplicate)      \
-  SORT_FUNCTION_INT(font, FONT_SORT_STRUCT *, typefaces_qty)  \
-  SORT_FUNCTION_STR(window, WINDOW_SORT_STRUCT *, name)       \
-  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, window_id)  \
-  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, pid)        \
-  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, display_id) \
-  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, space_id)   \
-  SORT_FUNCTION_INT(captured_window, CAPTURED_WINDOW_SORT_STRUCT *, window_id)   \
+#define SORT_FUNCTIONS()                                                       \
+  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, family)                          \
+  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, name)                            \
+  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, style)                           \
+  SORT_FUNCTION_STR(font, FONT_SORT_STRUCT *, type)                            \
+  SORT_FUNCTION_STR(app, APP_SORT_STRUCT *, name)                              \
+  SORT_FUNCTION_INT(font, FONT_SORT_STRUCT *, size)                            \
+  SORT_FUNCTION_INT(font, FONT_SORT_STRUCT *, duplicate)                       \
+  SORT_FUNCTION_INT(font, FONT_SORT_STRUCT *, typefaces_qty)                   \
+  SORT_FUNCTION_STR(window, WINDOW_SORT_STRUCT *, name)                        \
+  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, window_id)                   \
+  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, pid)                         \
+  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, display_id)                  \
+  SORT_FUNCTION_INT(window, WINDOW_SORT_STRUCT *, space_id)                    \
+  SORT_FUNCTION_INT(captured_window, CAPTURED_WINDOW_SORT_STRUCT *, window_id) \
 
 #define SORT_FUNCTION_STR(NAME, TYPE, ITEM)        \
   int NAME ## _sort_ ## ITEM ## _asc(SORT_PARAMS); \
@@ -135,83 +135,83 @@ struct sort_t {
   const struct sort_handler_t *handlers[SORT_BY_TYPES_QTY];
 };
 static struct sort_t __attribute__((unused)) * sort_types[SORT_TYPES_QTY] = {
-  [SORT_TYPE_APP]                                                         = &(struct sort_t){
+  [SORT_TYPE_APP]                                                         = &(struct sort_t)         {
     .enabled              = true,
-    .handlers             =                                                                 {
-      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { app_sort_name_asc, app_sort_name_desc                   },
+    .handlers             =                                                                          {
+      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                                 {
+        .functions =                                                                                 { app_sort_name_asc, app_sort_name_desc                   },
       },
     },
   },
   [SORT_TYPE_CAPTURED_WINDOW] = &(struct sort_t)                                                     {
     .enabled               = true,
-    .handlers              =                                                                {
-      [SORT_BY_TYPE_SPACE] = &(struct sort_handler_t)                                       {
-        .functions              =                                                           {
+    .handlers              =                                                                         {
+      [SORT_BY_TYPE_SPACE] = &(struct sort_handler_t)                                                {
+        .functions              =                                                                    {
           [SORT_DIRECTION_ASC]  = window_sort_space_id_asc,
           [SORT_DIRECTION_DESC] = window_sort_space_id_desc,
         },
       },
-      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { window_sort_name_asc,       window_sort_name_desc              },
+      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                                 {
+        .functions =                                                                                 { window_sort_name_asc,       window_sort_name_desc              },
       },
-      [SORT_BY_TYPE_DISPLAY] = &(struct sort_handler_t)                                     {
-        .functions =                                                                        { window_sort_display_id_asc, window_sort_space_id_desc          },
+      [SORT_BY_TYPE_DISPLAY] = &(struct sort_handler_t)                                              {
+        .functions =                                                                                 { window_sort_display_id_asc, window_sort_space_id_desc          },
       },
-      [SORT_BY_TYPE_PID] = &(struct sort_handler_t)                                         {
-        .functions =                                                                        { window_sort_pid_asc,        window_sort_pid_desc               },
+      [SORT_BY_TYPE_PID] = &(struct sort_handler_t)                                                  {
+        .functions =                                                                                 { window_sort_pid_asc,        window_sort_pid_desc               },
       },
-      [SORT_BY_TYPE_ID] = &(struct sort_handler_t)                                          {
-        .functions =                                                                        { window_sort_window_id_asc,  window_sort_window_id_desc         },
+      [SORT_BY_TYPE_ID] = &(struct sort_handler_t)                                                   {
+        .functions =                                                                                 { window_sort_window_id_asc,  window_sort_window_id_desc         },
       },
     },
   },
-  [SORT_TYPE_WINDOW] = &(struct sort_t)                                                     {
+  [SORT_TYPE_WINDOW] = &(struct sort_t)                                                              {
     .enabled               = true,
-    .handlers              =                                                                {
-      [SORT_BY_TYPE_SPACE] = &(struct sort_handler_t)                                       {
-        .functions              =                                                           {
+    .handlers              =                                                                         {
+      [SORT_BY_TYPE_SPACE] = &(struct sort_handler_t)                                                {
+        .functions              =                                                                    {
           [SORT_DIRECTION_ASC]  = window_sort_space_id_asc,
           [SORT_DIRECTION_DESC] = window_sort_space_id_desc,
         },
       },
-      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { window_sort_name_asc,       window_sort_name_desc              },
+      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                                 {
+        .functions =                                                                                 { window_sort_name_asc,       window_sort_name_desc              },
       },
-      [SORT_BY_TYPE_DISPLAY] = &(struct sort_handler_t)                                     {
-        .functions =                                                                        { window_sort_display_id_asc, window_sort_space_id_desc          },
+      [SORT_BY_TYPE_DISPLAY] = &(struct sort_handler_t)                                              {
+        .functions =                                                                                 { window_sort_display_id_asc, window_sort_space_id_desc          },
       },
-      [SORT_BY_TYPE_PID] = &(struct sort_handler_t)                                         {
-        .functions =                                                                        { window_sort_pid_asc,        window_sort_pid_desc               },
+      [SORT_BY_TYPE_PID] = &(struct sort_handler_t)                                                  {
+        .functions =                                                                                 { window_sort_pid_asc,        window_sort_pid_desc               },
       },
-      [SORT_BY_TYPE_ID] = &(struct sort_handler_t)                                          {
-        .functions =                                                                        { window_sort_window_id_asc,  window_sort_window_id_desc         },
+      [SORT_BY_TYPE_ID] = &(struct sort_handler_t)                                                   {
+        .functions =                                                                                 { window_sort_window_id_asc,  window_sort_window_id_desc         },
       },
     },
   },
-  [SORT_TYPE_FONT] = &(struct sort_t)                                                       {
+  [SORT_TYPE_FONT] = &(struct sort_t)                                                                {
     .enabled              = true,
-    .handlers             =                                                                 {
-      [SORT_BY_TYPE_SIZE] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { font_sort_size_asc,          font_sort_size_desc                 },
+    .handlers             =                                                                          {
+      [SORT_BY_TYPE_SIZE] = &(struct sort_handler_t)                                                 {
+        .functions =                                                                                 { font_sort_size_asc,          font_sort_size_desc                 },
       },
-      [SORT_BY_TYPE_TYPEFACES] = &(struct sort_handler_t)                                   {
-        .functions =                                                                        { font_sort_typefaces_qty_asc, font_sort_family_desc               },
+      [SORT_BY_TYPE_TYPEFACES] = &(struct sort_handler_t)                                            {
+        .functions =                                                                                 { font_sort_typefaces_qty_asc, font_sort_family_desc               },
       },
-      [SORT_BY_TYPE_TYPE] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { font_sort_type_asc,          font_sort_type_desc                 },
+      [SORT_BY_TYPE_TYPE] = &(struct sort_handler_t)                                                 {
+        .functions =                                                                                 { font_sort_type_asc,          font_sort_type_desc                 },
       },
-      [SORT_BY_TYPE_STYLE] = &(struct sort_handler_t)                                       {
-        .functions =                                                                        { font_sort_style_asc,         font_sort_style_desc                },
+      [SORT_BY_TYPE_STYLE] = &(struct sort_handler_t)                                                {
+        .functions =                                                                                 { font_sort_style_asc,         font_sort_style_desc                },
       },
-      [SORT_BY_TYPE_FAMILY] = &(struct sort_handler_t)                                      {
-        .functions =                                                                        { font_sort_family_asc,        font_sort_family_desc               },
+      [SORT_BY_TYPE_FAMILY] = &(struct sort_handler_t)                                               {
+        .functions =                                                                                 { font_sort_family_asc,        font_sort_family_desc               },
       },
-      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                        {
-        .functions =                                                                        { font_sort_name_asc,          font_sort_name_desc                 },
+      [SORT_BY_TYPE_NAME] = &(struct sort_handler_t)                                                 {
+        .functions =                                                                                 { font_sort_name_asc,          font_sort_name_desc                 },
       },
-      [SORT_BY_TYPE_DUPLICATE] = &(struct sort_handler_t)                                   {
-        .functions =                                                                        { font_sort_duplicate_asc,     font_sort_duplicate_desc            },
+      [SORT_BY_TYPE_DUPLICATE] = &(struct sort_handler_t)                                            {
+        .functions =                                                                                 { font_sort_duplicate_asc,     font_sort_duplicate_desc            },
       },
     },
   },

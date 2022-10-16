@@ -5,9 +5,9 @@
 #include "icns/src/icns.h"
 #include "icon-utils/icon-xml-utils.h"
 #include <assert.h>
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <ctype.h>
-#include <Carbon/Carbon.h>
+
 #include <CoreVideo/CVPixelBuffer.h>
 #include <errno.h>
 #include <inttypes.h>

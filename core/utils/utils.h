@@ -22,6 +22,7 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "cbars/include/cbars/cbars.h"
+#include "clamp/clamp.h"
 #include "hashmap.h/hashmap.h"
 #include "log/log.h"
 #include "ms/ms.h"
@@ -29,16 +30,6 @@
 #include "timestamp/timestamp.h"
 #include "whereami/src/whereami.h"
 #include "wildcardcmp/wildcardcmp.h"
-#include "clamp/clamp.h"
-
-#include <ApplicationServices/ApplicationServices.h>
-#include <Carbon/Carbon.h>
-#include <CoreFoundation/CFBase.h>
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreServices/CoreServices.h>
-#include <IOKit/hid/IOHIDKeys.h>
-#include <IOKit/hid/IOHIDManager.h>
-#include <IOKit/IOKitLib.h>
 //////////////////////////////////////////////////////////////
 #include <stdbool.h>
 #include <stdint.h>
@@ -53,13 +44,20 @@
 #include "process/utils/utils.h"
 #include "table/utils/utils.h"
 #include "window/utils/utils.h"
+////#include <ApplicationServices/ApplicationServices.h>
+#include <Carbon/Carbon.h>
+#include <CoreFoundation/CFBase.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreServices/CoreServices.h>
+#include <IOKit/hid/IOHIDKeys.h>
+#include <IOKit/hid/IOHIDManager.h>
+#include <IOKit/IOKitLib.h>
 //////////////////////////////////////////////////////////////
 struct offset_t {
   int left_offset, right_offset, top_offset, bottom_offset;
 };
 bool window_id_is_minimized(size_t window_id);
 char *get_encoding_type_name(int encoding);
-
 
 //////////////////////////////////////
 struct whereami_report_t {

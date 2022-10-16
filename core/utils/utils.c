@@ -50,7 +50,7 @@ static void __attribute__((constructor)) __constructor__core_utils(void){
 #include "string-utils/string-utils.h"
 #include "timestamp/timestamp.h"
 #include "window/utils/utils.h"
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 #include <bsm/libbsm.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>
@@ -75,6 +75,7 @@ static void __attribute__((constructor)) __constructor__core_utils(void){
 #include <sys/syslimits.h>
 #include <time.h>
 #include <unistd.h>
+
 bool window_id_is_minimized(size_t window_id){
   return(false);
 
