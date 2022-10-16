@@ -10,19 +10,10 @@ space_utils_dirs = [
   ]
 space_utils_deps = [
   core_dep,
-  c_vector_dep,vips_dep,
-  c_stringfn_dep,
-  parson_dep,sqldbal_dep,
-  string_utils_dep,
+  vips_dep,
   image_utils_dep,
-  log_dep,core_dep,
-  ansi_codes_dep,
-  timestamp_dep,
-  bytes_dep, ms_dep,
-  hash_dep,
-  module_dep,
   process_dep,
-  timestamp_dep,display_utils_dep,process_utils_dep,
+  display_utils_dep,process_utils_dep,
 ]
 space_utils_link_flags = [
   osx_ldflags,

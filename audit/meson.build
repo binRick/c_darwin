@@ -4,19 +4,7 @@ audit_srcs = [
 audit_link_flags = []
 audit_c_args = []
 audit_deps = [
-  ansi_codes_dep,
-  djbhash_dep,
-  c_stringfn_dep,
-  c_vector_dep,
-  tiny_regex_c_dep,
-  socket99_dep,
-  c_string_buffer_dep,
-  c_stringfn_dep,
-  str_replace_dep,
-  occurrences_dep,
-  parson_dep,
-  c_fsio_dep,  
-    
+  core_dep,
   kitty_dep,  
 ]
 audit_dirs = [

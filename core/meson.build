@@ -28,6 +28,8 @@ core_deps = [
   spng_dep,msf_gif_dep,libforks_dep,
   djbhash_dep,
   subprocess_dep,c_forever_dep,tinydir_dep,tiny_regex_c_dep,smaz_dep,c_timer_dep,uuid4_dep,
+  str_replace_dep,module_dep,querystring_c_dep,
+  occurrences_dep,
   which_dep,parson_dep,
   iowow_dep,murmurhash_dep,c_eventemitter_dep,libcyaml_dep,
   msgpack_c_dep,base64_simple_dep,hexify_c_dep,msgbox_dep,libspinner_dep,
