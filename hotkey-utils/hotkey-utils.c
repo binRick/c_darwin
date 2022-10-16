@@ -31,6 +31,7 @@ static char *EXECUTABLE_PATH_DIRNAME;
 static libforks_ServerConn      conn;
 static pid_t fork_server_pid;
 ///////////////////////////////////////////////////////////////////////
+static struct hotkeys_config_t *hk_get_config();
 static void handle_sigterm(int signum) {
   (void)signum;
   log_info("Hotkey Server SIGTERM");
@@ -386,26 +387,92 @@ int fullscreen_application(void *APPLICATION_NAME){
   return(EXIT_SUCCESS);
 }
 
+int hk_get_layout_name_index(char *name){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  int r=-1;
+  for(size_t i = 0; r == -1 && i < cfg->layouts_count;i++)
+    if(strcmp(cfg->layouts[i].name,name)==0)
+      r=i;
+  free(cfg);
+  return(r);
+}
+
+bool hk_print_layout(char *name){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  int I = hk_get_layout_name_index(name);
+  if(I<0){
+    log_error("Layout not found");
+    return(false);
+  }
+  printf(
+       AC_YELLOW "%s\n" AC_RESETALL
+       AC_GREEN " Width: %d%%\n" AC_RESETALL
+       AC_CYAN " Mode: %s\n" AC_RESETALL
+       AC_MAGENTA " Display: %d\n" AC_RESETALL
+       AC_BLUE " %lu Apps:\n" AC_RESETALL
+        "%s",
+      cfg->layouts[I].name,
+      (int)(cfg->layouts[I].width),
+      cfg->layouts[I].mode,
+      cfg->layouts[I].display,
+      cfg->layouts[I].apps_count,
+        "");
+  for(size_t i = 0; i < cfg->layouts[I].apps_count;i++){
+    printf("  - %s\n",cfg->layouts[I].apps[i].name);
+  }
+  struct layout_request_t *req; struct layout_result_t *res;
+  req = layout_init_request();
+  req->debug = true;
+  req->mode = LAYOUT_MODE_HORIZONTAL;
+  req->max_width = get_display_width();
+  req->max_height = get_display_height();
+  req->master_width = (int)((float)(req->max_width) * (float)(cfg->layouts[I].width)/100);
+  req->master_width = req->max_height;
+  for(size_t i=0; i < cfg->layouts[I].apps_count;i++){
+    req->qty++;
+  }
+  res = layout_request(req);
+  free(req);free(res);
+    return(true);
+  }
+
+bool hk_list_layouts(){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  for(size_t i = 0; i < cfg->layouts_count;i++){
+    printf("%s\n",cfg->layouts[i].name);
+  }
+  free(cfg);
+  return(true);
+}
+
+static struct hotkeys_config_t *hk_get_config(){
+  return(load_yaml_config_file_path(get_homedir_yaml_config_file_path()));
+}
+
 int normalize_layout(void *LAYOUT){
   char *n = (char*)LAYOUT;
-  char                    *config_path = get_homedir_yaml_config_file_path();
-  struct hotkeys_config_t *cfg         = load_yaml_config_file_path(config_path);
+  int I = hk_get_layout_name_index(n);
+  if(I<0){
+    log_error("Layout not found");
+    return(false);
+  }
+  struct hotkeys_config_t *cfg         = hk_get_config();
   struct hk_layout_t *l = hk_get_layout(cfg, n);
   log_info("normalizing layout \"%s\" using %s and app %s to width %f",n,l->name,l->app,l->width);
   struct layout_request_t *req; struct layout_result_t *res;
   req = layout_init_request();
   req->debug = true;
   req->mode = LAYOUT_MODE_HORIZONTAL;
-  log_debug("%lu",cfg->layouts[0].apps_count);
-  for(size_t i=0; i < cfg->layouts[0].apps_count;i++){
-    vector_push(req->ids_v,(void*)i);
+  log_debug("%lu",cfg->layouts[I].apps_count);
+  for(size_t i=0; i < cfg->layouts[I].apps_count;i++){
+    req->qty++;
   }
   req->max_width = get_display_width()/100;
   req->max_height = get_display_height()/1;
   req->master_width = (int)((float)(req->max_width) * (float)l->width);
   res = layout_request(req);
   /*
-  for(size_t i=0; i < cfg->layouts[0].apps_count;i++){
+  for(size_t i=0; i < cfg->layouts[I].apps_count;i++){
     struct layout_content_result_t *c = (struct hk_layout_content_result_t*)        vector_get(res->contents_v,i);
     Dbg(c->x,%lu);
     Dbg(c->y,%lu);
@@ -414,6 +481,7 @@ int normalize_layout(void *LAYOUT){
   }
   */
   free(res);
+  free(cfg);
   return(EXIT_SUCCESS);
 }
 

@@ -69,6 +69,17 @@
     .description = DESC,                               \
     .fxn         = FXN                                 \
   },
+#define CREATE_STRING_COMMON_OPTION(OPTION, SHORT, LONG, DESC, NAME, DEST)  \
+  [COMMON_OPTION_ ## OPTION] = ^ struct optparse_opt (struct args_t *args){ \
+    return((struct optparse_opt){                                           \
+      .short_name = SHORT,                                                  \
+      .long_name = LONG,                                                    \
+      .description = DESC,                                                  \
+      .arg_name = NAME,                                                     \
+      .arg_data_type = DATA_TYPE_STR,                                       \
+      .arg_dest = &(args->DEST),                                            \
+    });                                                                     \
+  },
 #define COMMON_OPTION_LIST(OPTION, SHORT, LONG, DESC, NAME, DEST, SIZE)     \
   [COMMON_OPTION_ ## OPTION] = ^ struct optparse_opt (struct args_t *args){ \
     return((struct optparse_opt){                                           \
@@ -304,8 +315,10 @@ static void debug_dls_arguments(){
 }
 ////////////////////////////////////////////
 COMMAND_PROTOTYPE(layout_list)
+COMMAND_PROTOTYPE(layout_test)
 COMMAND_PROTOTYPE(layout_apply)
 COMMAND_PROTOTYPE(layout_show)
+COMMAND_PROTOTYPE(layout_render)
 COMMAND_PROTOTYPE(window_sticky)
 COMMAND_PROTOTYPE(window_unsticky)
 COMMAND_PROTOTYPE(window_all_spaces)
@@ -333,7 +346,6 @@ COMMAND_PROTOTYPE(grayscale_png)
 COMMAND_PROTOTYPE(httpserver)
 COMMAND_PROTOTYPE(icon_info)
 COMMAND_PROTOTYPE(image_conversions)
-COMMAND_PROTOTYPE(layout)
 COMMAND_PROTOTYPE(list_alacritty)
 COMMAND_PROTOTYPE(list_app)
 COMMAND_PROTOTYPE(list_display)
@@ -406,6 +418,8 @@ common_option_b    common_options_b[] = {
   COMMON_OPTION_LIST(HIDE_COLUMNS,                                  'H',       "hide",               "Hide Columns",                                                            "COLUMN-NAMES", hide_columns, hide_columns_qty)
   COMMON_OPTION_LIST(DB_TABLES,                                     't',       "tables",             "Database Tables",                                                         "TABLE-NAMES",  db_tables, db_tables_qty)
 #undef COMMON_OPTION_LIST
+  CREATE_STRING_COMMON_OPTION(LAYOUT_NAME,                          'n',       "name",               "Layout Name",                                                             "LAYOUT-NAME",  layout_name)
+#undef CREATE_STRING_COMMON_OPTION
   CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,                       'C',       "clear",              "Clear Screen",                                                            clear_screen)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,                  0,         "not-current-space",  "Windows not on Currently Focused Space only",                             not_current_display_only)
   CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,                      0,         "current-space",      "Windows on Currently Focused Space only",                                 current_display_only)
@@ -1158,9 +1172,12 @@ struct cmd_t       cmds[] = {
   COMMAND("💮", DB_TABLE_IDS, "ids", AC_RED, "Table IDs", *_command_db_table_ids)
   COMMAND("💮", HOTKEYS_SERVER, "server", AC_RED, "Hotkeys Server", *_command_hotkeys_server)
   COMMAND("💮", HOTKEYS_LIST, "list", AC_RED, "List Hotkeys", *_command_list_hotkey)
+  COMMAND("💮", LAYOUT, "layout", AC_RED, "Layouts", 0)
   COMMAND("💮", LAYOUT_LIST, "list", AC_RED, "List Layouts", *_command_layout_list)
+  COMMAND("💮", LAYOUT_TEST, "test", AC_RED, "Test Layout", *_command_layout_test)
   COMMAND("💮", LAYOUT_APPLY, "apply", AC_RED, "Apply Layout", *_command_layout_apply)
   COMMAND("💮", LAYOUT_SHOW, "show", AC_RED, "Show Layout", *_command_layout_show)
+  COMMAND("💮", LAYOUT_RENDER, "render", AC_RED, "Render Layout", *_command_layout_render)
   COMMAND("💮", LIST, "list", AC_RED, "List", 0)
   COMMAND("💮", ICON, "icon", AC_RED, "Icon", 0)
   COMMAND("💮", WINDOW, "window", AC_RED, "Window", 0)
@@ -1203,11 +1220,6 @@ struct cmd_t       cmds[] = {
     .name        = "paste",           .icon = "💮", .color = COLOR_LIST,
     .description = "Clipboard Paste",
     .fxn         = (*_command_paste)
-  },
-  [COMMAND_LAYOUT] =              {
-    .name        = "layout", .icon = "💮", .color = COLOR_LIST,
-    .description = "Layout",
-    .fxn         = (*_command_layout)
   },
   [COMMAND_COPY] =                {
     .name        = "copy",           .icon = "💮", .color = COLOR_LIST,
@@ -2489,29 +2501,6 @@ static void _command_create_space(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_layout(){
-//  layout_test();
-  struct layout_request_t *req; struct layout_result_t *res;
-  {
-    req               = layout_init_request();
-    req->debug        = true;
-    req->mode         = LAYOUT_MODE_HORIZONTAL;
-    req->max_width    = 5000;
-    req->max_height   = 3000;
-    req->master_width = (int)((float)(req->max_width) * 2.0 / 3.0);
-    res               = layout_request(req);
-    free(res);
-  }
-  {
-    req->mode = LAYOUT_MODE_VERTICAL;
-    res       = layout_request(req);
-    free(res);
-  }
-
-  free(req);
-  exit(EXIT_SUCCESS);
-}
-
 static void _command_db_rows(){
   COMMAND_DB_COMMON();
   for (size_t i = 0; i < args->db_tables_qty; i++) {
@@ -2617,16 +2606,43 @@ static void _command_list_alacritty(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_layout_test(){
+  struct layout_request_t *req; struct layout_result_t *res;
+  {
+    req               = layout_init_request();
+    req->debug        = true;
+    req->mode         = LAYOUT_MODE_HORIZONTAL;
+    req->max_width    = 5000;
+    req->max_height   = 3000;
+    req->master_width = (int)((float)(req->max_width) * 2.0 / 3.0);
+    req->qty          = 2;
+    res               = layout_request(req);
+    free(res);
+  }
+  {
+    req->mode = LAYOUT_MODE_VERTICAL;
+    res       = layout_request(req);
+    free(res);
+  }
+
+  free(req);
+  exit(EXIT_SUCCESS);
+}
+
 static void _command_layout_apply(){
   exit(EXIT_SUCCESS);
 }
 
-static void _command_layout_show(){
+static void _command_layout_render(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_layout_show(){
+  exit((hk_print_layout(args->layout_name))? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
 static void _command_layout_list(){
-  exit(EXIT_SUCCESS);
+  exit(hk_list_layouts()?EXIT_SUCCESS:EXIT_FAILURE);
 }
 
 static void _set_windowids(char *windowids){

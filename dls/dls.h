@@ -88,7 +88,7 @@ struct args_t {
   struct Vector                        *icon_sizes_v;
   double                               resize_factor;
   bool                                 display_mode, all_mode, clear_screen, compress, exact_match, case_sensitive, duplicate, non_duplicate, write_file, write_thumbnail, purge_write_directory_before_write, random_ids_mode, clear_icons_cache, minimized_only, not_minimized_only, verbose_mode, debug_mode, progress_bar_mode, write_images_mode, capture_mode[999], capture_window_mode, capture_space_mode, capture_display_mode, current_space_only, current_display_only, not_current_display_only, not_current_space_only, grayscale_mode, quantize_mode;
-  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *formats, *sort_direction, *application_name, *write_directory, *application_path, *output_icns_file, *input_icns_file, *output_png_file, *input_png_file, *input_file, *output_file, *output_mode_s, *xml_file_path, *content, *sizes, *input_gif_file;
+  char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *formats, *sort_direction, *application_name, *write_directory, *application_path, *output_icns_file, *input_icns_file, *output_png_file, *input_png_file, *input_file, *output_file, *output_mode_s, *xml_file_path, *content, *sizes, *input_gif_file, *layout_name;
 };
 //////////////////////////////////////
 struct args_t                 *args;

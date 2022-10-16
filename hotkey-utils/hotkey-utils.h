@@ -246,4 +246,6 @@ static struct action_type_handler_t __attribute__((unused)) action_type_handlers
 };
 char *get_hotkey_type_action_name(enum action_type_t action);
 struct Vector *get_config_keys_v();
+bool hk_list_layouts();
+bool hk_print_layout(char *name);
 #endif

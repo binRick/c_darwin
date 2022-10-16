@@ -2,6 +2,7 @@
 #ifndef MOUSE_UTILS_H
 #define MOUSE_UTILS_H
 //////////////////////////////////////
+#include "frameworks/frameworks.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -12,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "frameworks/frameworks.h"
 //////////////////////////////////////
 CGPoint *get_mouse_location(void);
 void move_mouse(int posX, int posY);
