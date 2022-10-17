@@ -39,7 +39,7 @@ core_deps = [
   socket99_dep,pngquant_dep,glib_dep,
   wildcardcmp_dep,
   bytes_dep,tempdir_dep,fs_c_dep,b64_dep,fancy_progress_dep,
-  url_h_dep,vips_dep,
+  url_h_dep,vips_dep,hashmap_h_dep,
 ]
 
 core_c_args = [

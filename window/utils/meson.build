@@ -4,6 +4,7 @@ window_utils_srcs = [
 ]
 window_utils_c_args = [
   '-Wno-address',
+  '-Wno-int-to-pointer-cast',
   ]
 window_utils_dirs = [
     '.',

@@ -18,6 +18,7 @@ window_deps = [
 ]
 
 window_c_args = [
+  '-Wno-unused-variable',
 ]
 
 window_link_args = [

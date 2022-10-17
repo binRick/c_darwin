@@ -21,19 +21,21 @@
 #define ICON_RESIZE                   "🚛"
 #define ICON_INFO                     "🚛"
 #define ICON_ROW                      "🚛"
-#define ICON_IDS                      "🚛"
+#define ICON_ID                      "🚛"
 #define ICON_SERVER                   "🚛"
 #define ICON_DB                       "🔋"
 #define ICON_CAPTURE                  "🔋"
 #define ICON_SPACE                    "🔋"
 #define ICON_DISPLAY                  "🔋"
 #define ICON_EXTRACT                  "🔋"
+#define ICON_QTY                  "🔋"
 #define COLOR_CAPTURE_MODE            "\x1b[38;2;50;252;142m" AC_BOLD AC_CURLY_UNDERLINE
 #define COLOR_CAPTURE_WINDOW_MODE     "\x1b[38;2;151;252;50m" AC_ITALIC
 #define COLOR_CAPTURE_DISPLAY_MODE    "\x1b[38;2;97;50;50m" AC_ITALIC
 #define COLOR_CAPTURE_SPACE_MODE      "\x1b[38;2;189;163;50m" AC_ITALIC
 #define COLOR_FOCUS                   "\x1b[38;2;151;252;50m"
 #define COLOR_ID                      "\x1b[38;2;162;194;208m"
+#define COLOR_QTY                      "\x1b[38;2;162;194;208m"
 #define COLOR_CAPTURE                 "\x1b[38;2;162;194;208m"
 #define COLOR_INIT                    "\x1b[38;2;162;194;208m"
 #define COLOR_NAME                    "\x1b[38;2;162;194;208m"
@@ -315,6 +317,9 @@ enum command_type_t {
   COMMAND_WINDOW_IS_MINIMIZED,
   COMMAND_WINDOW_LAYER,
   COMMAND_WINDOW_LEVEL,
+  COMMAND_WINDOW_IDS,
+  COMMAND_WINDOW_QTY,
+  COMMAND_WINDOW_NAMES,
   COMMAND_IMAGE_CONVERSIONS,
   COMMAND_SECURITY,
   COMMAND_PASTE,

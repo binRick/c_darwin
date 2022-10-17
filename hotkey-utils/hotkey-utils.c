@@ -7,6 +7,7 @@
 ////////////////////////////////////////////
 #include "core/core.h"
 #include "capture/capture.h"
+#include "hash/hash.h"
 ////////////////////////////////////////////
 #define HOTKEY_UTILS_HASH_SEED    212136436
 #define RELOAD_CONFIG_MS 10000
@@ -674,6 +675,33 @@ bool hk_show_layout(char *name){
     log_error("Layout not found");
     return(false);
   }
+  hash_t *names = hash_new();
+  for(size_t i = 0; i < cfg->layouts[I].apps_count;i++){
+    char *name = cfg->layouts[I].apps[i].name;
+    hash_set(names,name,(void*)(size_t)0);
+  }
+  hash_t *ids = get_first_window_id_from_names(names);
+  hash_each(ids, {
+      if(HOTKEY_UTILS_DEBUG_MODE)
+        log_debug("%s first id:%lu",key,(size_t)val);
+  })
+  hash_free(ids);
+
+  hash_t *ids_v = get_window_ids_v_from_names(names);
+  hash_free(names);
+  hash_each(ids_v, {
+      if(HOTKEY_UTILS_DEBUG_MODE)
+        log_debug("%s:%lu Window IDs",key,vector_size((struct Vector*)val));
+      for(size_t i = 0;i<vector_size((struct Vector*)val);i++){
+        if(HOTKEY_UTILS_DEBUG_MODE)
+          log_debug("\t%lu", (size_t)vector_get((struct Vector*)val,i));
+      }
+  })
+
+  unsigned long s = timestamp();
+  hash_t *window_props = get_window_properties_map();
+  log_debug("got props in %s", milliseconds_to_string(timestamp() -s));
+
   printf(
        AC_YELLOW "%s\n" AC_RESETALL
        AC_GREEN " Width: %d%%\n" AC_RESETALL

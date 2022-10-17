@@ -36,6 +36,7 @@ darwin_ls_deps = [
   capture_animate_dep,
   capture_save_dep,
   layout_utils_dep,
+  window_dep,
 ]
 
 darwin_ls_c_args = [

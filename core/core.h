@@ -40,6 +40,8 @@
 #include "timelib/timelib.h"
 #include "date.c/date.h"
 #include "tempdir.c/tempdir.h"
+#include "hashmap.h/hashmap.h"
+#include "hash/hash.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"

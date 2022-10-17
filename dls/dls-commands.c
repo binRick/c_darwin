@@ -315,12 +315,18 @@ static void debug_dls_arguments(){
   log_debug("compress :  %s", args->compress?"Yes":"No");
 }
 ////////////////////////////////////////////
+static void _command_print_ids_v(struct Vector *ids);
+static void _command_print_qty(size_t qty);
+static void _command_print_strings_v(struct Vector *strings);
 COMMAND_PROTOTYPE(layout_list)
 COMMAND_PROTOTYPE(layout_test)
 COMMAND_PROTOTYPE(layout_apply)
 COMMAND_PROTOTYPE(layout_show)
 COMMAND_PROTOTYPE(layout_render)
 COMMAND_PROTOTYPE(layout_names)
+COMMAND_PROTOTYPE(window_ids)
+COMMAND_PROTOTYPE(window_names)
+COMMAND_PROTOTYPE(window_qty)
 COMMAND_PROTOTYPE(window_sticky)
 COMMAND_PROTOTYPE(window_unsticky)
 COMMAND_PROTOTYPE(window_all_spaces)
@@ -1175,7 +1181,7 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_TABLE, DB_TABLES, "tables", COLOR_TABLE, "Database Tables", *_command_db_tables)
   COMMAND(ICON_INFO, DB_INFO, "info", COLOR_INFO, "Database Info", *_command_db_info)
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
-  COMMAND(ICON_IDS, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
+  COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
   COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkeys Server", *_command_hotkeys_server)
   COMMAND(ICON_LIST, HOTKEYS_LIST, "list", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
   COMMAND(ICON_LIST, ICON_LIST, "list", COLOR_LIST, "List Icons", *_command_icon_list)
@@ -1190,6 +1196,9 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
   COMMAND(ICON_LIST, WINDOW_LIST, "list", AC_RED, "List Windows", *_command_list_window)
+  COMMAND(ICON_ID, WINDOW_IDS, "ids", COLOR_ID, "List Window IDs", *_command_window_ids)
+  COMMAND(ICON_QTY, WINDOW_QTY, "qty",COLOR_QTY, "List Windows Quantity", *_command_window_qty)
+  COMMAND(ICON_NAME, WINDOW_NAMES, "names",COLOR_NAME, "List Windows Names", *_command_window_names)
   COMMAND(ICON_MOVE, WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
   COMMAND(ICON_STICKY, WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
   COMMAND(ICON_STICKY, WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
@@ -2601,6 +2610,37 @@ static void _command_db_init(){
   exit(EXIT_SUCCESS);
 }
 #undef COMMAND_DB_COMMON
+
+
+static void _command_print_strings_v(struct Vector *strings){
+  for(size_t i=0;i<vector_size(strings) && i < args->limit;i++){
+    printf("%s\n",(char*)(vector_get(strings,i)));
+  }
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_print_qty(size_t qty){
+  printf("%lu\n",(size_t)(qty));
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_print_ids_v(struct Vector *ids){
+  for(size_t i=0;i<vector_size(ids) && i < args->limit;i++){
+    printf("%lu\n",(size_t)(vector_get(ids,i)));
+  }
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_window_qty(){
+  return(_command_print_qty(require(window)->qty()));
+}
+
+static void _command_window_names(){
+  return(_command_print_strings_v(require(window)->names()));
+}
+static void _command_window_ids(){
+  return(_command_print_ids_v(require(window)->ids()));
+}
 
 static void _command_capture_display(){
   args->capture_type = CAPTURE_TYPE_DISPLAY;

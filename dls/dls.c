@@ -136,8 +136,6 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   COMMON_OPTIONS_TABLE
 #define COMMON_OPTIONS_CREATE_SPACE \
   COMMON_OPTIONS_TABLE
-#define COMMON_OPTIONS_WINDOW_IDS \
-  common_options_b[COMMON_OPTION_WINDOW_IDS](args),
 #define COMMON_OPTIONS_FOCUS \
   COMMON_OPTIONS_BASE        \
   COMMON_OPTIONS_UI          \
@@ -183,9 +181,16 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 #define COMMON_OPTIONS_HOTKEYS                       \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_HOTKEYS_LIST
+#define COMMON_OPTIONS_HOTKEYS_LIST\
+  common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_HOTKEYS_SERVER
-#define COMMON_OPTIONS_WINDOW_LIST
+#define COMMON_OPTIONS_WINDOW_LIST\
+  common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_WINDOW_NAMES\
+  common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_WINDOW_QTY
+#define COMMON_OPTIONS_WINDOW_IDS\
+  common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_WINDOW_STICKY
 #define COMMON_OPTIONS_WINDOW_UNSTICKY
 #define COMMON_OPTIONS_WINDOW_ALL_SPACES
@@ -239,7 +244,10 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   CREATE_SUBCOMMAND(LAYOUT_RENDER, ), \
   CREATE_SUBCOMMAND(LAYOUT_TEST, ),
 #define SUBCOMMANDS_WINDOW                    \
+  CREATE_SUBCOMMAND(WINDOW_IDS, ),           \
   CREATE_SUBCOMMAND(WINDOW_LIST, ),           \
+  CREATE_SUBCOMMAND(WINDOW_QTY, ),           \
+  CREATE_SUBCOMMAND(WINDOW_NAMES, ),           \
   CREATE_SUBCOMMAND(WINDOW_MOVE, ),           \
   CREATE_SUBCOMMAND(WINDOW_SPACE, ),          \
   CREATE_SUBCOMMAND(WINDOW_MINIMIZE, ),       \
@@ -281,6 +289,7 @@ struct normalized_argv_t {
   struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
 };
 struct args_t *args = &(struct args_t){
+  .limit = 999,
   .verbose_mode                       = false, .debug_mode = false,
   .space_id                           = -1,
   .display_id                         = -1,
@@ -302,7 +311,6 @@ struct args_t *args = &(struct args_t){
   .concurrency                        = 1,
   .display_mode                       = false,
   .all_mode                           = false,
-  .limit                              = 50,
   .font_name                          = NULL, .font_family = NULL, .font_style = NULL,
   .exact_match                        = false, .case_sensitive = false,
   .retries                            = 0,
