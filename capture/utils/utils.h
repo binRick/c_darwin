@@ -48,4 +48,5 @@ CGImageRef capture_type_capture(enum capture_type_id_t capture_type_id, size_t c
 CGImageRef capture_type_preview(enum capture_type_id_t capture_type_id, size_t capture_id);
 CGImageRef capture_type_capture_rect(enum capture_type_id_t capture_type_id, size_t capture_id, CGRect rect);
 //////////////////////////////////////
+bool capture_db_load(struct sqldbal_db *db);
 #endif

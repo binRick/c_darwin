@@ -3,6 +3,7 @@
 #define DB_C
 #include "db/db.h"
 #include "sqldbal/src/sqldbal.h"
+#include "capture/utils/utils.h"
 #define DB_DRIVER           SQLDBAL_DRIVER_SQLITE
 #define DB_PORT             NULL
 #define DB_USERNAME         NULL
@@ -35,11 +36,13 @@ static struct sqldbal_db            *db                        = NULL;
 static const db_loader_fxn          db_loaders[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = space_db_load,
   [DB_LOADER_WINDOWS] = window_db_load,
+  [DB_LOADER_CAPTURES] = capture_db_load,
 };
 
 static const char                   *db_loader_names[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = "spaces",
   [DB_LOADER_WINDOWS] = "windows",
+  [DB_LOADER_CAPTURES] = "captures",
 };
 static const enum capture_type_id_t db_loader_capture_types[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = CAPTURE_TYPE_SPACE,
@@ -106,9 +109,9 @@ static bool db_create_tables(void){
                                                     ", %s"                                         \
                                                     ")", TABLE, FIELDS);                           \
                                            errno = 0;                                              \
-                                           rc    = sqldbal_exec(db, sql, NULL, NULL);              \
-                                           if (rc != SQLDBAL_STATUS_OK) {                          \
+                                           if(SQLDBAL_STATUS_OK != sqldbal_exec(db, sql, NULL, NULL)){\
                                              log_error("Failed to create table %s", TABLE);        \
+                                             exit(EXIT_FAILURE);\
                                            }                                                       \
                                          }while (0); }
 /////////////////////////////////////////////////////////////
@@ -116,6 +119,7 @@ static bool db_create_tables(void){
   CREATE_TABLE(TABLE_NAME_SPACES, TABLE_FIELDS_SPACES);
   CREATE_TABLE(TABLE_NAME_PROCESSES, TABLE_FIELDS_PROCESSES);
   CREATE_TABLE(TABLE_NAME_COLORS, TABLE_FIELDS_COLORS);
+  CREATE_TABLE(TABLE_NAME_CAPTURES, TABLE_FIELDS_CAPTURES);
 /////////////////////////////////////////////////////////////
 #undef CREATE_TABLE
   return(true);

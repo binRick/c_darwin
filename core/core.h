@@ -42,6 +42,9 @@
 #include "tempdir.c/tempdir.h"
 #include "hashmap.h/hashmap.h"
 #include "hash/hash.h"
+#include "submodules/bitfield/bitfield.h"
+#include "submodules/levenshtein/deps/levenshtein.c/levenshtein.h"
+#include "submodules/c_exception/lib/CException.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"

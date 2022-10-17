@@ -111,9 +111,9 @@ struct compress_t {
 struct cap_t {
   char                         *name;
   enum image_type_id_t         format;
-  chan_t                       *recv_chan, *send_chan, *done_chan;
+  chan_t                       *recv_chan, *send_chan, *done_chan, *db_chan,*db_done_chan;
   bool                         enabled, debug, compress;
-  pthread_t                    *threads[MAX_QUEUES];
+  pthread_t                    *threads[MAX_QUEUES], *db_threads[MAX_QUEUES];
   size_t                       qty, total_qty;
   enum capture_provider_type_t provider_type;
   enum capture_chan_type_t     provider;
@@ -121,7 +121,7 @@ struct cap_t {
   cbar_t                       *bar;
 };
 struct capture_chan_t {
-  chan_t               *chan, *done_chan;
+  chan_t               *chan, *done_chan,*db_done_chan;
   size_t               qty;
   bool                 enabled, debug;
   queue_handler_t      provider, receiver;

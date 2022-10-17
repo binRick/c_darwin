@@ -211,4 +211,36 @@ static void __attribute__((constructor)) __constructor__capture_utils(void){
   asprintf(&capture_types_cache_dir, "%s/%s", gettempdir(), "capture-utils");
   fsio_mkdirs(capture_types_cache_dir, 0700);
 }
+
+bool capture_db_load(struct sqldbal_db *db){
+  struct Vector        *v = get_window_infos_v();
+  struct window_info_t *w;
+  int                  rc;
+  struct sqldbal_stmt  *stmt;
+  uint64_t             ts = (uint64_t)(timestamp());
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    w = (struct window_info_t *)vector_get(v, i);
+    log_info("Loading Capture #%lu/%lu> %lu :: %s", i + 1, vector_size(v), w->window_id, TABLE_NAME_WINDOWS);
+
+    rc = sqldbal_stmt_prepare(db,
+                              "INSERT INTO "TABLE_NAME_CAPTURES "(id, ts, is_focused) VALUES(?, ?, ?)",
+                              -1,
+                              &stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 0, (uint64_t)(w->window_id));
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 1, ts);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_bind_int64(stmt, 2, (uint64_t)(w->is_focused));
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_execute(stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+    rc = sqldbal_stmt_close(stmt);
+    assert(rc == SQLDBAL_STATUS_OK);
+  }
+  vector_release(v);
+  return(true);
+}
+
 #endif

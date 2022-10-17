@@ -1157,23 +1157,10 @@ struct cmd_t       cmds[] = {
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
-  [COMMAND_SECURITY] =            {
-    .name = "security", .icon = "🐾", .color = COLOR_WINDOW, .description = "Open Security",
-    .fxn  = (*_command_open_security)
-  },
-  [COMMAND_HTTPSERVER] =          {
-    .fxn = (*_command_httpserver)
-  },
-  [COMMAND_MENU_BAR] =            {
-    .name        = "menu-bar",      .icon = "📀", .color = COLOR_SHOW,
-    .description = "Menu Bar Info",
-    .fxn         = (*_command_menu_bar)
-  },
-  [COMMAND_DOCK] =                {
-    .name        = "dock",      .icon = "📡", .color = COLOR_SHOW,
-    .description = "Dock Info",
-    .fxn         = (*_command_dock)
-  },
+  COMMAND(ICON_SECURITY, SECURITY, "security", COLOR_SECURITY, "Security Automation", *_command_open_security)
+  COMMAND(ICON_HTTP, HTTPSERVER, "http", COLOR_HTTP, "HTTP Server", *_command_httpserver)
+  COMMAND(ICON_MENU, MENU_BAR, "menu-bar", COLOR_MENU, "Menu Bar Info", *_command_menu_bar)
+  COMMAND(ICON_DOCK, DOCK, "dock", COLOR_DOCK, "Dock Info", *_command_dock)
   COMMAND(ICON_DB, DB, "db", AC_RED, "Database Manager", 0)
   COMMAND(ICON_INIT, DB_INIT, "init", COLOR_INIT, "Initialize Database", *_command_db_init)
   COMMAND(ICON_TEST, DB_TEST, "test", COLOR_TEST, "Database Test", *_command_db_test)
@@ -1183,19 +1170,19 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
   COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
   COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkeys Server", *_command_hotkeys_server)
-  COMMAND(ICON_LIST, HOTKEYS_LIST, "list", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
-  COMMAND(ICON_LIST, ICON_LIST, "list", COLOR_LIST, "List Icons", *_command_icon_list)
+  COMMAND(ICON_LIST, HOTKEYS_LIST, "ls", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
+  COMMAND(ICON_LIST, ICON_LIST, "ls", COLOR_LIST, "List Icons", *_command_icon_list)
   COMMAND(ICON_LAYOUT, LAYOUT, "layout", COLOR_LAYOUT, "Layout Manager", 0)
-  COMMAND(ICON_LIST, LAYOUT_LIST, "list", COLOR_LIST, "List Layouts", *_command_layout_list)
+  COMMAND(ICON_LIST, LAYOUT_LIST, "ls", COLOR_LIST, "List Layouts", *_command_layout_list)
   COMMAND(ICON_NAME, LAYOUT_NAMES, "names", COLOR_NAME, "List Layout Names", *_command_layout_names)
   COMMAND(ICON_TEST, LAYOUT_TEST, "test", COLOR_TEST, "Test Layout", *_command_layout_test)
   COMMAND(ICON_APPLY, LAYOUT_APPLY, "apply", COLOR_APPLY, "Apply Layout", *_command_layout_apply)
   COMMAND(ICON_SHOW, LAYOUT_SHOW, "show", COLOR_SHOW, "Show Layout", *_command_layout_show)
   COMMAND(ICON_RENDER, LAYOUT_RENDER, "render", COLOR_RENDER, "Render Layout", *_command_layout_render)
-  COMMAND(ICON_LIST, LIST, "list", COLOR_LIST, "List", 0)
+  COMMAND(ICON_LIST, LIST, "ls", COLOR_LIST, "List", 0)
   COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
-  COMMAND(ICON_LIST, WINDOW_LIST, "list", AC_RED, "List Windows", *_command_list_window)
+  COMMAND(ICON_LIST, WINDOW_LIST, "ls", AC_RED, "List Windows", *_command_list_window)
   COMMAND(ICON_ID, WINDOW_IDS, "ids", COLOR_ID, "List Window IDs", *_command_window_ids)
   COMMAND(ICON_QTY, WINDOW_QTY, "qty",COLOR_QTY, "List Windows Quantity", *_command_window_qty)
   COMMAND(ICON_NAME, WINDOW_NAMES, "names",COLOR_NAME, "List Windows Names", *_command_window_names)
@@ -1203,14 +1190,14 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_STICKY, WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
   COMMAND(ICON_STICKY, WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
   COMMAND(ICON_RESIZE, WINDOW_RESIZE, "resize", AC_RED, "Resize Window", *_command_resize_window)
-  COMMAND("💮", WINDOW_ALL_SPACES, "all-spaces", AC_RED, "Window All Spaces", *_command_window_all_spaces)
-  COMMAND("💮", WINDOW_NOT_ALL_SPACES, "not-all-spaces", AC_RED, "Window Not All Spaces", *_command_window_not_all_spaces)
-  COMMAND("💮", WINDOW_MINIMIZE, "minimize", AC_RED, "Minimize Window", *_command_minimize_window)
-  COMMAND("💮", WINDOW_UNMINIMIZE, "unminimize", AC_RED, "Unminimize Window", *_command_unminimize_window)
-  COMMAND("💮", WINDOW_SPACE, "space", AC_RED, "Set Window Space", *_command_set_window_space)
-  COMMAND("💮", SPACE, "space", AC_RED, "Spaces", 0)
-  COMMAND("💮", SPACE_CREATE, "create", AC_RED, "Create Space", 0)
-  COMMAND("💮", SPACE_LIST, "list", AC_RED, "List Spaces", 0)
+  COMMAND(ICON_ALL, WINDOW_ALL_SPACES, "all-spaces", AC_RED, "Window All Spaces", *_command_window_all_spaces)
+  COMMAND(ICON_NOT_ALL, WINDOW_NOT_ALL_SPACES, "not-all-spaces", AC_RED, "Window Not All Spaces", *_command_window_not_all_spaces)
+  COMMAND(ICON_MINIMIZE, WINDOW_MINIMIZE, "minimize", AC_RED, "Minimize Window", *_command_minimize_window)
+  COMMAND(ICON_UNMINIMIZE, WINDOW_UNMINIMIZE, "unminimize", AC_RED, "Unminimize Window", *_command_unminimize_window)
+  COMMAND(ICON_SPACE, WINDOW_SPACE, "space", AC_RED, "Set Window Space", *_command_set_window_space)
+  COMMAND(ICON_SPACE, SPACE, "space", AC_RED, "Spaces", 0)
+  COMMAND(ICON_CREATE, SPACE_CREATE, "create", AC_RED, "Create Space", 0)
+  COMMAND(ICON_LIST, SPACE_LIST, "ls", AC_RED, "List Spaces", 0)
   COMMAND(ICON_CAPTURE, CAPTURE, "capture", COLOR_CAPTURE, "Capture Image", 0)
   COMMAND(ICON_WINDOW, CAPTURE_WINDOW, "window", COLOR_WINDOW, "Capture Window", *_command_capture_window)
   COMMAND(ICON_SPACE, CAPTURE_SPACE, "space", COLOR_SPACE, "Capture Space", *_command_capture_space)
@@ -1222,63 +1209,21 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_WINDOW, EXTRACT_WINDOW, "window", COLOR_WINDOW, "Extract Window", *_command_extract)
   COMMAND(ICON_SPACE, EXTRACT_SPACE, "space", COLOR_SPACE, "Extract Space", *_command_extract)
   COMMAND(ICON_DISPLAY, EXTRACT_DISPLAY, "display", COLOR_DISPLAY, "Extract Display", *_command_extract)
+  COMMAND(ICON_PASTE, PASTE, "paste", COLOR_PASTE, "Paste Clipboard", *_command_paste)
+  COMMAND(ICON_COPY, COPY, "copy", COLOR_COPY, "Copy Clipboard", *_command_copy)
+  COMMAND(ICON_ANIMATE, ANIMATE, "animate", COLOR_ANIMATE, "Animated Capture", *_command_animate)
+  COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)
+  COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)
+  COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)
+  COMMAND(ICON_WRITE, SET_APP_ICON_ICNS, "icns", COLOR_ICNS, "Set App Icons from ICNS", *_command_write_app_icon_icns)
+  COMMAND(ICON_INFO, ICON_INFO, "info", COLOR_INFO, "App Icons Info", *_command_icon_info)
+  COMMAND(ICON_PATH, APP_ICNS_PATH, "path", COLOR_PATH, "App Icons Path", *_command_app_icns_path)
+  COMMAND(ICON_CLEAR, CLEAR_ICONS_CACHE, "clear", COLOR_CLEAR, "Clear App Icons Cache", *_command_clear_icons_cache)
+  COMMAND(ICON_XML, PARSE_XML_FILE, "parse", COLOR_XML, "Parse XML File", *_command_parse_xml_file)
+  COMMAND(ICON_GRAY, GRAYSCALE_PNG_FILE, "grayscale", COLOR_GRAY, "Grayscale Mode", *_command_grayscale_png)
+  COMMAND(ICON_IMAGE, IMAGE_CONVERSIONS, "image-conversions", COLOR_IMAGE, "Image Conversions", *_command_image_conversions)
 #undef COMMAND_PROTOTYPE
 #undef COMMAND
-  [COMMAND_ANIMATE] =             {
-    .name        = "animate",          .icon = "💤", .color = COLOR_CAPTURE,
-    .description = "Animated Capture",
-    .fxn         = (*_command_animate)
-  },
-  [COMMAND_EXTRACT] =             {
-    .name        = "extract",         .icon = "🙀", .color = COLOR_CAPTURE,
-    .description = "Extract Capture",
-    .fxn         = (*_command_extract)
-  },
-  [COMMAND_IMAGE_CONVERSIONS] =   {
-    .name        = "image-conversions", .icon = "💮", .color = COLOR_LIST,
-    .description = "Image Conversions",
-    .fxn         = (*_command_image_conversions)
-  },
-  [COMMAND_PASTE] =               {
-    .name        = "paste",           .icon = "💮", .color = COLOR_LIST,
-    .description = "Clipboard Paste",
-    .fxn         = (*_command_paste)
-  },
-  [COMMAND_COPY] =                {
-    .name        = "copy",           .icon = "💮", .color = COLOR_LIST,
-    .description = "Clipboard Copy",
-    .fxn         = (*_command_copy)
-  },
-  [COMMAND_SAVE_APP_ICON_ICNS] =  {
-    .fxn = (*_command_save_app_icon_to_icns)
-  },
-  [COMMAND_SAVE_APP_ICON_PNG] =   {
-    .fxn = (*_command_save_app_icon_to_png)
-  },
-  [COMMAND_SET_APP_ICON_PNG] =    {
-    .fxn = (*_command_write_app_icon_from_png)
-  },
-  [COMMAND_SET_APP_ICON_ICNS] =   {
-    .fxn = (*_command_write_app_icon_icns)
-  },
-  [COMMAND_ICON_INFO] =           {
-    .fxn = (*_command_icon_info)
-  },
-  [COMMAND_APP_PLIST_INFO_PATH] = {
-    .fxn = (*_command_app_info_plist_path)
-  },
-  [COMMAND_APP_ICNS_PATH] =       {
-    .fxn = (*_command_app_icns_path)
-  },
-  [COMMAND_PARSE_XML_FILE] =      {
-    .fxn = (*_command_parse_xml_file)
-  },
-  [COMMAND_GRAYSCALE_PNG_FILE] =  {
-    .fxn = (*_command_grayscale_png)
-  },
-  [COMMAND_CLEAR_ICONS_CACHE] =   {
-    .fxn = (*_command_clear_icons_cache)
-  },
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
   LIST_SUBCOMMAND(SPACES, "spaces", "Spaces", _command_list_space),

@@ -68,6 +68,7 @@ static bool analyze_image_pixels(struct capture_image_result_t *r);
 static bool init_capture_request_receiver(struct capture_image_request_t *req, struct cap_t *cap);
 static int receive_requests_handler(void *CAP);
 static bool issue_capture_image_request(struct capture_image_request_t *req, struct cap_t *cap);
+static int record_db_capture_handler(void *CAP);
 static const struct cap_t *__caps[] = {
   [CAPTURE_CHAN_TYPE_CGIMAGE] = &(struct cap_t)          {
     .name          = "CGImage Capture",
@@ -420,31 +421,68 @@ static struct Vector *get_cap_providers(enum image_type_id_t format){
   return(v);
 }
 
+static chan_t *db_done_chan = NULL;
 static bool init_capture_request_receiver(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     if (!cap->threads[i]) {
       cap->threads[i] = calloc(1, sizeof(pthread_t));
     }
     assert(cap->threads[i] != NULL);
+      if (!cap->db_threads[i]) {
+        cap->db_threads[i] = calloc(1, sizeof(pthread_t));
+      }
+      assert(cap->db_threads[i] != NULL);
   }
   if (!cap->recv_chan) {
     cap->recv_chan = chan_init(vector_size(req->ids) * 2);
   }
+  if (!cap->db_chan) {
+    cap->db_chan = chan_init(vector_size(req->ids) * 2);
+  }
   if (!cap->send_chan) {
     cap->send_chan = chan_init(vector_size(req->ids) * 2);
+  }
+  if (!db_done_chan) {
+    db_done_chan = chan_init(vector_size(req->ids)*2);
   }
   if (!cap->done_chan) {
     cap->done_chan = chan_init(req->concurrency);
   }
   cap->qty       = vector_size(req->ids) / req->concurrency;
   cap->total_qty = vector_size(req->ids);
+  assert(cap->db_chan != NULL);
+  assert(db_done_chan != NULL);
   assert(cap->send_chan != NULL);
   assert(cap->recv_chan != NULL);
   assert(cap->done_chan != NULL);
   assert(cap->qty > 0);
+
+  for (int i = 0; i < req->concurrency; i++) {
+      if (pthread_create(cap->db_threads[i], NULL, record_db_capture_handler, (void *)cap) != 0) {
+        log_error("Failed to created DB Thread #%d", i);
+        return(false);
+      }
+    }
+
   return(true);
 }
+static int record_db_capture_handler(void *CAP){
+  unsigned long started = timestamp();
+  struct cap_t  *cap    = (struct cap_t *)CAP;
+  void          *msg;
+  size_t        qty = 0;
 
+    log_info("db waiting");
+  while (chan_recv(cap->db_chan, &msg) == 0) {
+    qty++;
+    log_info("> Received DB Request #%lu.", qty);
+    continue;
+  }
+    log_info("db done sending");
+ chan_send(db_done_chan, (void *)0);
+    log_info("db done sent");
+  return(EXIT_SUCCESS);
+}
 static int receive_requests_handler(void *CAP){
   unsigned long started = timestamp();
   struct cap_t  *cap    = (struct cap_t *)CAP;
@@ -663,6 +701,7 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
 static bool wait_cap(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     pthread_join(cap->threads[i], NULL);
+    pthread_join(cap->db_threads[i], NULL);
   }
   return(true);
 }
@@ -712,14 +751,12 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
     if (!init_capture_request_receiver(req, caps[c])) {
       log_error("Failed to initialize capture #%d: %s", c, caps[c]->name);
-      goto done;
     }
   }
   for (size_t i = 0; i < vector_size(providers); i++) {
     enum capture_chan_type_t c = (enum capture_chan_type_t)(size_t)vector_get(providers, i);
     if (!issue_capture_image_request(req, caps[c])) {
       log_error("Failed to start capture #%d: %s", c, caps[c]->name);
-      goto done;
     }
   }
   for (size_t i = 0; i < vector_size(providers); i++) {
@@ -743,8 +780,15 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
     if (!wait_cap(req, caps[c])) {
       log_error("Failed to wait capture #%d: %s", c, caps[c]->name);
-      goto done;
     }
+      size_t completed=0;
+      chan_close(caps[c]->db_chan);
+      chan_close(db_done_chan);
+      for (int i = 0; i < vector_size(req->ids); i++) {
+        chan_recv(db_done_chan, (void *)0);
+        completed++;
+        log_debug("db done #%lu/%lu",completed,vector_size(req->ids));
+      }
   }
   struct capture_image_result_t *r;
   size_t                        captured_images_len = 0;
@@ -774,6 +818,9 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     if (chan_is_closed(caps[c]->done_chan) == 0) {
       chan_close(caps[c]->done_chan);
     }
+    if (chan_is_closed(caps[c]->db_chan) == 0) {
+      chan_close(caps[c]->db_chan);
+    }
     if (chan_is_closed(caps[c]->send_chan) == 0) {
       chan_close(caps[c]->send_chan);
     }
@@ -784,6 +831,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     chan_dispose(caps[c]->done_chan);
     caps[c]->recv_chan = NULL;
     caps[c]->send_chan = NULL;
+    caps[c]->db_chan = NULL;
     caps[c]->done_chan = NULL;
     for (int x = 0; x < req->concurrency; x++) {
       if (caps[c]->threads[x]) {

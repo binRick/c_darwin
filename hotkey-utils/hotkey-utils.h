@@ -17,6 +17,10 @@ struct hotkeys_libforks_param_t {
   int socket_fd;
   int websocket_server_port;
 };
+enum hk_bitfield_t {
+  HK_BITFIELD_WINDOW,
+  HK_BITFIELDS_QTY,
+};
 int hotkeys_exec_with_callback(void ( *cb )(char *));
 enum action_type_t {
   ACTION_TYPE_NONE,
