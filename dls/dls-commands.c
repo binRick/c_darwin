@@ -295,6 +295,7 @@ static void debug_dls_arguments(){
   log_debug("All Mode:  %s", args->all_mode?"Yes":"No");
   log_debug("display :  %s", args->display_mode?"Yes":"No");
   log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
+  log_debug("DB Save Mode? :  %s", args->db_save_mode?"Yes":"No");
   log_debug("purge write dir :  %s", args->purge_write_directory_before_write?"Yes":"No");
   log_debug("write dir :  %s", args->write_directory);
   log_debug("Capture Type :  %d (%s)", args->capture_type, get_capture_type_name(args->capture_type));
@@ -454,6 +455,7 @@ common_option_b    common_options_b[] = {
   CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,                'D',       "display",            "Display Result",                                                          display_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,                  0,         "write",              "Write Results",                                                           write_images_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,           'p',       "progress",           "Enable Progress Bar",                                                     progress_bar_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(DB_SAVE,           'b',       "db",           "Save Results to DB",                                                     db_save_mode)
 #undef CREATE_BOOLEAN_COMMAND_OPTION
 /////////////////////////////////////////////////////
   [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args) {
@@ -1184,8 +1186,8 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
   COMMAND(ICON_LIST, WINDOW_LIST, "ls", AC_RED, "List Windows", *_command_list_window)
   COMMAND(ICON_ID, WINDOW_IDS, "ids", COLOR_ID, "List Window IDs", *_command_window_ids)
-  COMMAND(ICON_QTY, WINDOW_QTY, "qty",COLOR_QTY, "List Windows Quantity", *_command_window_qty)
-  COMMAND(ICON_NAME, WINDOW_NAMES, "names",COLOR_NAME, "List Windows Names", *_command_window_names)
+  COMMAND(ICON_QTY, WINDOW_QTY, "qty", COLOR_QTY, "List Windows Quantity", *_command_window_qty)
+  COMMAND(ICON_NAME, WINDOW_NAMES, "names", COLOR_NAME, "List Windows Names", *_command_window_names)
   COMMAND(ICON_MOVE, WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
   COMMAND(ICON_STICKY, WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
   COMMAND(ICON_STICKY, WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
@@ -1841,6 +1843,7 @@ static void _command_animate(){
     req->format            = IMAGE_TYPE_GIF;
     req->width             = args->width;
     req->height            = args->height;
+    req->db_save_mode            = args->db_save_mode;
     req->time.dur          = 0;
     req->time.started      = timestamp();
     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
@@ -2036,7 +2039,7 @@ static bool display_results(struct Vector *results_v){
   return(true);
 }
 
-static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height){
+static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height, bool db_save_mode){
   struct Vector                  *results_v;
   struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
 
@@ -2049,10 +2052,10 @@ static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids
   req->progress_bar_mode = progress_bar_mode;
   req->width             = width > 0 ? width : 0;
   req->height            = height > 0 ? height : 0;
+  req->db_save_mode      = db_save_mode;
   req->time.dur          = 0;
   req->time.started      = timestamp();
   results_v              = capture_image(req);
-  //free(req);
   return(results_v);
 }
 
@@ -2087,7 +2090,8 @@ static void _command_capture(){
       args->capture_type,
       args->progress_bar_mode,
       args->width,
-      args->height
+      args->height,
+      args->db_save_mode
       );
     set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v);
     if (args->write_images_mode) {
@@ -2556,22 +2560,21 @@ static void _command_db_init(){
 }
 #undef COMMAND_DB_COMMON
 
-
 static void _command_print_strings_v(struct Vector *strings){
-  for(size_t i=0;i<vector_size(strings) && i < args->limit;i++){
-    printf("%s\n",(char*)(vector_get(strings,i)));
+  for (size_t i = 0; i < vector_size(strings) && i < args->limit; i++) {
+    printf("%s\n", (char *)(vector_get(strings, i)));
   }
   exit(EXIT_SUCCESS);
 }
 
 static void _command_print_qty(size_t qty){
-  printf("%lu\n",(size_t)(qty));
+  printf("%lu\n", (size_t)(qty));
   exit(EXIT_SUCCESS);
 }
 
 static void _command_print_ids_v(struct Vector *ids){
-  for(size_t i=0;i<vector_size(ids) && i < args->limit;i++){
-    printf("%lu\n",(size_t)(vector_get(ids,i)));
+  for (size_t i = 0; i < vector_size(ids) && i < args->limit; i++) {
+    printf("%lu\n", (size_t)(vector_get(ids, i)));
   }
   exit(EXIT_SUCCESS);
 }
@@ -2583,6 +2586,7 @@ static void _command_window_qty(){
 static void _command_window_names(){
   return(_command_print_strings_v(require(window)->names()));
 }
+
 static void _command_window_ids(){
   return(_command_print_ids_v(require(window)->ids()));
 }
@@ -2663,6 +2667,7 @@ static void _command_layout_show(){
 static void _command_layout_names(){
   exit(hk_print_layout_names()?EXIT_SUCCESS:EXIT_FAILURE);
 }
+
 static void _command_layout_list(){
   exit(hk_list_layouts()?EXIT_SUCCESS:EXIT_FAILURE);
 }

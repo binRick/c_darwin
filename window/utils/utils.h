@@ -62,20 +62,20 @@ static const char *ax_error_str[] = {
 static const char *window_levels[] = { "Base", "Minimum", "Desktop", "Backstop", "Normal", "Floating", "TornOffMenu", "Dock", "MainMenu", "Status", "ModalPanel", "PopUpMenu", "Dragging", "ScreenSaver", "Maximum", "Overlay", "Help", "Utility", "DesktopIcon", "Cursor", "AssistiveTechHigh" };
 ///////////////////////////////////////////////////
 struct window_iteration_process_t {
-  struct rusage r_usage;
+  struct rusage     r_usage;
   struct kinfo_proc info;
 };
 struct window_iteration_t {
-  char *name, *role, *subrole;
-  CGWindowID id;
-  pid_t pid;
-  bool can_minimize;
-  CFDictionaryRef window;
-  AXUIElementRef app;
-  hash_t *map;
-  ProcessSerialNumber psn;
+  char                              *name, *role, *subrole;
+  CGWindowID                        id;
+  pid_t                             pid;
+  bool                              can_minimize;
+  CFDictionaryRef                   window;
+  AXUIElementRef                    app;
+  hash_t                            *map;
+  ProcessSerialNumber               psn;
   struct window_iteration_process_t process;
-  hash_t *spaces, *displays, *apps, *copied;
+  hash_t                            *spaces, *displays, *apps, *copied;
 };
 struct sqldbal_db;
 int get_window_id_space_id(size_t window_id);

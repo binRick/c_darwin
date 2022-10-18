@@ -45,7 +45,7 @@ struct capture_image_request_t {
   struct Vector          *ids;
   int                    concurrency;
   int                    width, height;
-  bool                   compress, progress_bar_mode, quantize_mode;
+  bool                   compress, progress_bar_mode, quantize_mode, db_save_mode;
   enum capture_type_id_t type;
   enum image_type_id_t   format;
   struct capture_time_t  time;
@@ -111,7 +111,7 @@ struct compress_t {
 struct cap_t {
   char                         *name;
   enum image_type_id_t         format;
-  chan_t                       *recv_chan, *send_chan, *done_chan, *db_chan,*db_done_chan;
+  chan_t                       *recv_chan, *send_chan, *done_chan, *db_chan, *db_done_chan;
   bool                         enabled, debug, compress;
   pthread_t                    *threads[MAX_QUEUES], *db_threads[MAX_QUEUES];
   size_t                       qty, total_qty;
@@ -121,7 +121,7 @@ struct cap_t {
   cbar_t                       *bar;
 };
 struct capture_chan_t {
-  chan_t               *chan, *done_chan,*db_done_chan;
+  chan_t               *chan, *done_chan, *db_done_chan;
   size_t               qty;
   bool                 enabled, debug;
   queue_handler_t      provider, receiver;

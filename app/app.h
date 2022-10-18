@@ -2,7 +2,7 @@
 #ifndef APP_H
 #define APP_H
 //////////////////////////////////////
-#include "core/core.h"
 #include "app/utils/utils.h"
+#include "core/core.h"
 //////////////////////////////////////
 #endif

@@ -12,7 +12,7 @@
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
 ////////////////////////////////////////////
-static bool      APP_DEBUG_MODE = false;
+static bool APP_DEBUG_MODE = false;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__app(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_APP") != NULL) {

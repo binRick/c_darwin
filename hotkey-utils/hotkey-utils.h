@@ -2,6 +2,7 @@
 #ifndef HOTKEY_UTILS_H
 #define HOTKEY_UTILS_H
 //////////////////////////////////////
+#include "core/core.h"
 #include "libcyaml/include/cyaml/cyaml.h"
 #include "libforks/libforks.h"
 #include <ctype.h>
@@ -12,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "core/core.h"
 struct hotkeys_libforks_param_t {
   int socket_fd;
   int websocket_server_port;

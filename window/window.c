@@ -10,7 +10,7 @@ MODULE_FUNCTIONS(MODULE_FUNCTION)
 int window_module_init(module(window) *exports) {
   clib_module_init(window, exports);
   exports->mode = WINDOW_NONE;
-  return 0;
+  return(0);
 }
 
 void window_module_deinit(module(window) *exports) {

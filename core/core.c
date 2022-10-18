@@ -13,15 +13,18 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
-
+#include <termios.h>
 ////////////////////////////////////////////
 static bool CORE_DEBUG_MODE = false;
+pthread_mutex_t *core_stdout_mutex;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__core(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_core") != NULL) {
     log_debug("Enabling core Debug Mode");
     CORE_DEBUG_MODE = true;
   }
+  core_stdout_mutex = calloc(1,sizeof(pthread_mutex_t));
+  pthread_mutex_init(core_stdout_mutex,(void*)0);
 }
 ////////////////////////////////////////////
 #endif

@@ -15,7 +15,7 @@
 #include "table/utils/utils.h"
 static bool WINDOW_INFO_DEBUG_MODE = false;
 ////////////////////////////////////////////
-static int window_event_types[] = {
+static int  window_event_types[] = {
   kEventWindowHidden,
   kEventWindowActivated,
   kEventWindowBoundsChanged,

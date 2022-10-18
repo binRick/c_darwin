@@ -9,11 +9,11 @@
 #define MAX_QUALITY                          70
 #define MIN_QUALITY                          20
 #define BAR_TERMINAL_WIDTH_PERCENTAGE        .8
-#define BAR_TERMINAL_WIDTH_PERCENTAGE        .8
 #define BAR_MIN_WIDTH                        20
 #define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE    .5
-#define BAR_MESSAGE_COMPRESSION_TEMPLATE     "Compressing %lu Images of %s"
-#define BAR_MESSAGE_CAPTURE_TEMPLATE         "Capturing %lu %s %s"
+#define BAR_MESSAGE_COMPRESSION_TEMPLATE     "Compress %5lu %s %ss " AC_RESETALL AC_YELLOW AC_UNDERLINE AC_ITALIC "%s" AC_RESETALL "\t\t"
+#define BAR_MESSAGE_CAPTURE_TEMPLATE         "Capturing %4lu %s %5s\t\t"
+#define BAR_MESSAGE_DB_SAVE_TEMPLATE         "Saving %7lu %s %6ss of " AC_RESETALL AC_YELLOW AC_UNDERLINE AC_ITALIC "%s"  AC_RESETALL "\t"
 #define BAR_MESSAGE_TEMPLATE                 "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
 #include "capture/type/type.h"
@@ -424,28 +424,29 @@ static struct Vector *get_cap_providers(enum image_type_id_t format){
 }
 
 static chan_t *db_done_chan = NULL;
+
 static bool init_capture_request_receiver(struct capture_image_request_t *req, struct cap_t *cap){
   for (int i = 0; i < req->concurrency; i++) {
     if (!cap->threads[i]) {
       cap->threads[i] = calloc(1, sizeof(pthread_t));
     }
     assert(cap->threads[i] != NULL);
-      if (!cap->db_threads[i]) {
-        cap->db_threads[i] = calloc(1, sizeof(pthread_t));
-      }
-      assert(cap->db_threads[i] != NULL);
+    if (!cap->db_threads[i]) {
+      cap->db_threads[i] = calloc(1, sizeof(pthread_t));
+    }
+    assert(cap->db_threads[i] != NULL);
   }
   if (!cap->recv_chan) {
     cap->recv_chan = chan_init(vector_size(req->ids) * 2);
   }
+  db_chan = chan_init(vector_size(req->ids) * 2);
   if (!db_chan) {
-    db_chan = chan_init(vector_size(req->ids) * 2);
   }
   if (!cap->send_chan) {
     cap->send_chan = chan_init(vector_size(req->ids) * 2);
   }
+  db_done_chan = chan_init(vector_size(req->ids) * 2);
   if (!db_done_chan) {
-    db_done_chan = chan_init(vector_size(req->ids)*2);
   }
   if (!cap->done_chan) {
     cap->done_chan = chan_init(req->concurrency);
@@ -460,66 +461,78 @@ static bool init_capture_request_receiver(struct capture_image_request_t *req, s
   assert(cap->qty > 0);
 
   for (int i = 0; i < req->concurrency; i++) {
-      if (pthread_create(cap->db_threads[i], NULL, record_db_capture_handler, (void *)cap) != 0) {
-        log_error("Failed to created DB Thread #%d", i);
-        return(false);
-      }
+    if (pthread_create(cap->db_threads[i], NULL, record_db_capture_handler, (void *)cap) != 0) {
+      log_error("Failed to created DB Thread #%d", i);
+      return(false);
     }
+  }
 
   return(true);
-}
-static int record_db_capture_handler(void *VOID){
- void          *msg;
- size_t        qty = 0;
+} /* init_capture_request_receiver */
 
-    struct capture_image_result_t *r;
- while (chan_recv(db_chan, &msg) == 0) {
+static int record_db_capture_handler(void *VOID){
+  void                          *msg;
+  size_t                        qty = 0;
+
+  struct capture_image_result_t *r;
+
+  while (chan_recv(db_chan, &msg) == 0) {
     qty++;
-    r = (struct capture_image_result_t*)msg;
-    debug("> Received DB Request #%lu :: len:%s|dur:%s|fmt:%s|type:%s|size:%lux%lu|id:%lu|", 
-        qty,
-        bytes_to_string(r->len),
-        milliseconds_to_string(r->time.dur),
-        image_type_name(r->format),
-        get_capture_type_name(r->type),
-        r->width,r->height,
-        r->id
-        );
+    r = (struct capture_image_result_t *)msg;
+    debug("> Received DB Request #%lu :: len:%s|dur:%s|fmt:%s|type:%s|size:%lux%lu|id:%lu|",
+          qty,
+          bytes_to_string(r->len),
+          milliseconds_to_string(r->time.dur),
+          image_type_name(r->format),
+          get_capture_type_name(r->type),
+          r->width, r->height,
+          r->id
+          );
     hash_t *maps[3];
     hash_t *db_map = hash_new();
     maps[0] = hash_new();
     maps[1] = hash_new();
     maps[2] = hash_new();
-    hash_set(maps[0],"id",(void*)(r->id));
-    hash_set(maps[0],"width",(void*)(r->width));
-    hash_set(maps[0],"height",(void*)(r->height));
-    hash_set(maps[0],"size",(void*)(r->len));
-    hash_set(maps[2],"pixels",(void*)(r->pixels));
-    hash_set(maps[2],"pixels_len",(void*)(r->len));
-    hash_set(maps[0],"pixels_len",(void*)(r->len));
-    hash_set(maps[0],"dur",(void*)(r->time.dur));
-    hash_set(maps[0],"format",(void*)(r->format));
-    hash_set(maps[0],"type",(void*)(r->type));
-    hash_set(maps[1],"type_name",(void*)(get_capture_type_name(r->type)));
-    hash_set(maps[1],"format_name",(void*)(image_type_name(r->format)));
-    hash_set(db_map,"int",(void*)(maps[0]));
-    hash_set(db_map,"text",(void*)(maps[1]));
-    hash_set(db_map,"blob",(void*)(maps[2]));
-    unsigned long _s = timestamp();
-    if(!db_capture_save(db_map)){
+    hash_set(maps[0], "id", (void *)(r->id));
+    hash_set(maps[0], "width", (void *)(r->width));
+    hash_set(maps[0], "height", (void *)(r->height));
+    hash_set(maps[0], "size", (void *)(r->len));
+    hash_set(maps[2], "pixels", (void *)(r->pixels));
+    hash_set(maps[2], "pixels_len", (void *)(r->len));
+    hash_set(maps[0], "pixels_len", (void *)(r->len));
+    hash_set(maps[0], "dur", (void *)(r->time.dur));
+    hash_set(maps[0], "format", (void *)(r->format));
+    hash_set(maps[0], "type", (void *)(r->type));
+    hash_set(maps[1], "type_name", (void *)(get_capture_type_name(r->type)));
+    hash_set(maps[1], "format_name", (void *)(image_type_name(r->format)));
+    hash_set(db_map, "int", (void *)(maps[0]));
+    hash_set(db_map, "text", (void *)(maps[1]));
+    hash_set(db_map, "blob", (void *)(maps[2]));
+    unsigned long _s     = timestamp();
+    int           row_id = -1;
+    if ((row_id = db_capture_save(db_map)) < 1) {
       log_error("Failed to save db capture");
     }else{
-      log_info("Saved %s %s %s Capture to DB in %s!",
-          bytes_to_string(r->len),
-          image_type_name(r->format),
-          get_capture_type_name(r->type),
-          milliseconds_to_string(timestamp()-_s)
-          );
+      hash_free(maps[0]);
+      hash_free(maps[1]);
+      hash_free(maps[2]);
+      hash_free(db_map);
+      pthread_mutex_lock(core_stdout_mutex);
+      debug("Saved %s %s %s Capture to DB Row #%d in %s!",
+               bytes_to_string(r->len),
+               image_type_name(r->format),
+               get_capture_type_name(r->type),
+               row_id,
+               milliseconds_to_string(timestamp() - _s)
+               );
+      fflush(stdout);
+      pthread_mutex_unlock(core_stdout_mutex);
     }
- }
- chan_send(db_done_chan, (void *)0);
- return(EXIT_SUCCESS);
-}
+  }
+  chan_send(db_done_chan, (void *)0);
+  return(EXIT_SUCCESS);
+} /* record_db_capture_handler */
+
 static int receive_requests_handler(void *CAP){
   unsigned long started = timestamp();
   struct cap_t  *cap    = (struct cap_t *)CAP;
@@ -536,7 +549,10 @@ static int receive_requests_handler(void *CAP){
     }
     if (cap->bar) {
       cap->bar->progress += (float)((float)1 / (float)(cap->total_qty));
+    pthread_mutex_lock(core_stdout_mutex);
       cbar_display_bar(cap->bar);
+      fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
     }
     chan_send(cap->send_chan, m);
   }
@@ -568,7 +584,10 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
     qty++;
     if (req->bar) {
       req->bar->progress += (float)((float)1 / (float)(vector_size(req->ids)));
+    pthread_mutex_lock(core_stdout_mutex);
       cbar_display_bar(req->bar);
+      fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
     }
     vector_push(compressed_results, msg);
   }
@@ -621,14 +640,20 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
     default:
       errno = 0;
       if (CAPTURE_TYPE_DEBUG_MODE) {
-        log_warn("\nCompression not implemented for image type %s.", image_type_name(c->format));
+        log_warn("Compression not implemented for image type %s.", image_type_name(c->format));
       }
       break;
     }
     char *m;
     if (v && blen > 0 && buf && blen < c->len) {
-      free(c->pixels);
-      asprintf(&m, "✅ Compressed"
+      if(c->pixels)
+        free(c->pixels);
+      asprintf(&m, 
+          "\033[1A"
+          "\n"
+          "\033[2K"
+          "\033[0J"
+          "✅ Compressed"
                " "
                AC_BLUE "%4s"AC_RESETALL
                " "
@@ -649,12 +674,13 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
                bytes_to_string(blen),
                milliseconds_to_string(timestamp() - c->started)
                );
-      fflush(stdout);
+      pthread_mutex_lock(core_stdout_mutex);
       printf(
-        "%s\n",
+        "%s",
         m
         );
       fflush(stdout);
+      pthread_mutex_unlock(core_stdout_mutex);
       c->pixels = buf;
       c->len    = blen;
     }
@@ -663,12 +689,15 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
     }
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
+    pthread_mutex_lock(core_stdout_mutex);
     debug("Compressed #%lu from %s to %s in %s",
           c->id,
           bytes_to_string(c->prev_len),
           bytes_to_string(c->len),
           milliseconds_to_string(c->dur)
           );
+      fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
   }
   chan_send(compression_done_chan, (void *)0);
   return(EXIT_SUCCESS);
@@ -765,11 +794,13 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     term_width  = clamp(get_terminal_width(), 40, 160);
     asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
     bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
-    *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
+    req->bar = &(cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg));
     cbar_hide_cursor();
     req->bar->progress = 0.00;
+    pthread_mutex_lock(core_stdout_mutex);
     cbar_display_bar(req->bar);
     fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
   }
 
   struct Vector *providers = get_cap_providers(req->format);
@@ -839,14 +870,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       vector_push(capture_results_v, msg);
     }
   }
-  for (size_t i = 0; i < vector_size(capture_results_v); i++) {
-        chan_send(db_chan,(void*)(vector_get(capture_results_v,i)));
-  }
-  chan_close(db_chan);
-  for (size_t i = 0; i < vector_size(capture_results_v); i++) {
-      chan_recv(db_done_chan,(void*)0);
-  }
-  chan_close(db_done_chan);
   for (size_t i = 0; i < vector_size(providers); i++) {
     enum capture_chan_type_t c = (enum capture_chan_type_t)(size_t)vector_get(providers, i);
     if (chan_is_closed(results_chan) == 0) {
@@ -866,24 +889,21 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     caps[c]->recv_chan = NULL;
     caps[c]->send_chan = NULL;
     caps[c]->done_chan = NULL;
-    for (int x = 0; x < req->concurrency; x++) {
-      if (caps[c]->threads[x]) {
-        //free(caps[c]->threads[x]);
-      }
-    }
   }
   chan_dispose(results_chan);
   results_chan = NULL;
   if (req->progress_bar_mode) {
     req->bar->progress = (float)1.00;
+    pthread_mutex_lock(core_stdout_mutex);
     cbar_display_bar(req->bar);
     cbar_show_cursor();
     printf(
       "\n"
       );
     fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
     if (req->bar) {
-      free(req->bar);
+      //free(req->bar);
     }
   }
 
@@ -893,14 +913,21 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     struct compress_t *compressed_image_msg;
     if (req->progress_bar_mode) {
       req->bar = calloc(1, sizeof(struct cbar_t));
-      asprintf(&bar_msg, BAR_MESSAGE_COMPRESSION_TEMPLATE, vector_size(req->ids), bytes_to_string(captured_images_len));
+      asprintf(&bar_msg, BAR_MESSAGE_COMPRESSION_TEMPLATE, vector_size(req->ids),image_type_name(req->format), 
+          get_capture_type_name(req->format),
+          bytes_to_string(captured_images_len)
+          );
       bar_msg_len = strlen(bar_msg);
       asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
+    term_width  = clamp(get_terminal_width(), 40, 160);
       bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
       *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
+    pthread_mutex_lock(core_stdout_mutex);
       cbar_hide_cursor();
       req->bar->progress = 0.00;
       cbar_display_bar(req->bar);
+      fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
     }
     req->comp = calloc(1, sizeof(struct compress_req_t));
     for (int i = 0; i < req->concurrency; i++) {
@@ -970,18 +997,72 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     debug("compressions done");
     if (req->progress_bar_mode) {
       req->bar->progress = (float)1.00;
+    pthread_mutex_lock(core_stdout_mutex);
       cbar_display_bar(req->bar);
       cbar_show_cursor();
       printf(
         "\n"
         );
       fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
       if (req->bar) {
-        free(req->bar);
+        //free(req->bar);
       }
     }
-    log_info("Sending DB %lu",vector_size(capture_results_v));
   }
+    if(req->db_save_mode){
+      if (req->progress_bar_mode) {
+        size_t total=0;
+      for (size_t i = 0; i < vector_size(capture_results_v); i++) {
+        total += ((struct capture_image_result_t*)(vector_get(capture_results_v,i)))->len;
+      }
+        char *bar_msg;
+    asprintf(&bar_msg,
+             BAR_MESSAGE_DB_SAVE_TEMPLATE,
+             vector_size(capture_results_v), 
+             image_type_name(((struct capture_image_result_t*)(vector_get(capture_results_v,0)))->format),
+             get_capture_type_name(((struct capture_image_result_t*)(vector_get(capture_results_v,0)))->type),
+             bytes_to_string(total)
+             );
+            pthread_mutex_lock(core_stdout_mutex);
+    size_t bar_msg_len = strlen(bar_msg);
+    term_width  = clamp(get_terminal_width(), 40, 160);
+    asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
+//    bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
+    *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
+            cbar_hide_cursor();
+            req->bar->progress = 0.00;
+            cbar_display_bar(req->bar);
+            fflush(stdout);
+            pthread_mutex_unlock(core_stdout_mutex);
+      }
+      for (size_t i = 0; i < vector_size(capture_results_v); i++) {
+        chan_send(db_chan, (void *)(vector_get(capture_results_v, i)));
+      }
+    chan_close(db_chan);
+    for (size_t i = 0; i < vector_size(capture_results_v); i++) {
+      chan_recv(db_done_chan, (void *)0);
+      if (req->progress_bar_mode) {
+            req->bar->progress += (float)((float)1 / (float)(vector_size(capture_results_v)));
+            pthread_mutex_lock(core_stdout_mutex);
+            cbar_display_bar(req->bar);
+            fflush(stdout);
+            pthread_mutex_unlock(core_stdout_mutex);
+     }
+    }
+    chan_close(db_done_chan);
+  }
+    if (req->progress_bar_mode) {
+      req->bar->progress = (float)1.00;
+    pthread_mutex_lock(core_stdout_mutex);
+      cbar_display_bar(req->bar);
+      cbar_show_cursor();
+      printf(
+        "\n"
+        );
+      fflush(stdout);
+    pthread_mutex_unlock(core_stdout_mutex);
+    }
 done:
   caps = NULL;
   return(capture_results_v);
@@ -995,7 +1076,7 @@ struct Vector *db_tables_images(enum capture_type_id_t type, struct Vector *ids)
   req->compress          = false;
   req->quantize_mode     = false;
   req->type              = type;
-  req->progress_bar_mode = false;
+  req->progress_bar_mode = true;
   req->width             = 300;
   req->height            = 0;
   req->time.dur          = 0;

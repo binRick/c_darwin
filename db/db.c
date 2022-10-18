@@ -1,10 +1,10 @@
 #pragma once
 #ifndef DB_C
 #define DB_C
+#include "capture/utils/utils.h"
 #include "core/core.h"
 #include "db/db.h"
 #include "sqldbal/src/sqldbal.h"
-#include "capture/utils/utils.h"
 #define DB_DRIVER           SQLDBAL_DRIVER_SQLITE
 #define DB_PORT             NULL
 #define DB_USERNAME         NULL
@@ -66,119 +66,134 @@ enum db_capture_field_type_t {
   DB_CAPTURE_FIELDS_QTY,
 };
 struct db_capture_field_t {
-  char *field;
+  char                         *field;
   enum db_capture_field_type_t type;
 };
 static struct db_capture_field_t db_cap_fields[] = {
-  { .field="id", .type=DB_CAPTURE_FIELD_INT, },
-  { .field="type", .type=DB_CAPTURE_FIELD_INT, },
-  { .field="format", .type=DB_CAPTURE_FIELD_INT, },
-  { .field="width", .type=DB_CAPTURE_FIELD_INT, },
-  { .field="height", .type=DB_CAPTURE_FIELD_INT, },
-  { .field="len", .type=DB_CAPTURE_FIELD_INT, },
-  { .field="type_name", .type=DB_CAPTURE_FIELD_TEXT, },
-  { .field="format_name", .type=DB_CAPTURE_FIELD_TEXT, },
-  { .field="pixels", .type=DB_CAPTURE_FIELD_BLOB, },
-  { .field="pixels_len", .type=DB_CAPTURE_FIELD_INT, },
+  { .field = "id",          .type = DB_CAPTURE_FIELD_INT,  },
+  { .field = "type",        .type = DB_CAPTURE_FIELD_INT,  },
+  { .field = "format",      .type = DB_CAPTURE_FIELD_INT,  },
+  { .field = "width",       .type = DB_CAPTURE_FIELD_INT,  },
+  { .field = "height",      .type = DB_CAPTURE_FIELD_INT,  },
+  { .field = "len",         .type = DB_CAPTURE_FIELD_INT,  },
+  { .field = "type_name",   .type = DB_CAPTURE_FIELD_TEXT, },
+  { .field = "format_name", .type = DB_CAPTURE_FIELD_TEXT, },
+  { .field = "pixels",      .type = DB_CAPTURE_FIELD_BLOB, },
+  { .field = "pixels_len",  .type = DB_CAPTURE_FIELD_INT,  },
   { 0 },
 };
 
-bool db_capture_save(hash_t *map){
-  struct sqldbal_stmt      *stmt;
-  enum sqldbal_status_code rc;
+int db_capture_save(hash_t *map){
+  struct sqldbal_stmt *stmt;
   struct StringBuffer *sb = stringbuffer_new(), *sb_val = stringbuffer_new();
-  char *sql[3];
+  char                *sql[3];
+
   sql[0] = "INSERT INTO captures ( \n";
   sql[1] = "\n\t) VALUES ( \n";
   sql[2] = "\n);";
-  size_t qty=0;
+  size_t qty = 0;
 
-  stringbuffer_append_string(sb,sql[0]);
+  stringbuffer_append_string(sb, sql[0]);
   char *fl;
-  for(struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++){
-    asprintf(&fl,"%s_len",c->field);
-    if(hash_has((hash_t*)(hash_get(map,"int")),c->field)){
-      if(qty>0)stringbuffer_append_string(sb,", ");
-      stringbuffer_append_string(sb,c->field);
-      if(qty>0)stringbuffer_append_string(sb_val,", ");
-      stringbuffer_append_string(sb_val,"?");
+
+  for (struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++) {
+    asprintf(&fl, "%s_len", c->field);
+    if (hash_has((hash_t *)(hash_get(map, "int")), c->field)) {
+      if (qty > 0) {
+        stringbuffer_append_string(sb, ", ");
+      }
+      stringbuffer_append_string(sb, c->field);
+      if (qty > 0) {
+        stringbuffer_append_string(sb_val, ", ");
+      }
+      stringbuffer_append_string(sb_val, "?");
       qty++;
-    }else if(hash_has((hash_t*)(hash_get(map,"text")),c->field)){
-      if(qty>0)stringbuffer_append_string(sb,", ");
-      stringbuffer_append_string(sb,c->field);
-      if(qty>0)stringbuffer_append_string(sb_val,", ");
-      stringbuffer_append_string(sb_val,"?");
+    }else if (hash_has((hash_t *)(hash_get(map, "text")), c->field)) {
+      if (qty > 0) {
+        stringbuffer_append_string(sb, ", ");
+      }
+      stringbuffer_append_string(sb, c->field);
+      if (qty > 0) {
+        stringbuffer_append_string(sb_val, ", ");
+      }
+      stringbuffer_append_string(sb_val, "?");
       qty++;
-    }else if(
-        hash_has((hash_t*)(hash_get(map,"blob")),c->field)
-        && hash_has((hash_t*)(hash_get(map,"blob")),fl)
-        ){
-      if(qty>0)stringbuffer_append_string(sb,", ");
-      stringbuffer_append_string(sb,c->field);
-      if(qty>0)stringbuffer_append_string(sb_val,", ");
-      stringbuffer_append_string(sb_val,"?");
+    }else if (
+      hash_has((hash_t *)(hash_get(map, "blob")), c->field)
+      && hash_has((hash_t *)(hash_get(map, "blob")), fl)
+      ) {
+      if (qty > 0) {
+        stringbuffer_append_string(sb, ", ");
+      }
+      stringbuffer_append_string(sb, c->field);
+      if (qty > 0) {
+        stringbuffer_append_string(sb_val, ", ");
+      }
+      stringbuffer_append_string(sb_val, "?");
     }
   }
-  stringbuffer_append_string(sb,sql[1]);
-  stringbuffer_append_string(sb,stringbuffer_to_string(sb_val));
-  stringbuffer_append_string(sb,sql[2]);
+  stringbuffer_append_string(sb, sql[1]);
+  stringbuffer_append_string(sb, stringbuffer_to_string(sb_val));
+  stringbuffer_append_string(sb, sql[2]);
   char *SQL = stringbuffer_to_string(sb);
-  errno=0;
-  if(sqldbal_stmt_prepare(db,SQL,-1,&stmt) != SQLDBAL_STATUS_OK){
+
+  errno = 0;
+  if (sqldbal_stmt_prepare(db, SQL, -1, &stmt) != SQLDBAL_STATUS_OK) {
     log_error("SQL BIND FAIL");
     exit(1);
   }
-  qty=0;
-  for(struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++){
-    asprintf(&fl,"%s_len",c->field);
-    if(hash_has((hash_t*)(hash_get(map,"int")),c->field)){
-      int64_t val = (int64_t)(hash_get((hash_t*)(hash_get(map,"int")),c->field));
-      if(sqldbal_stmt_bind_int64(stmt, qty++, val)){
-        log_error("int err: k:%s|val:%lld|qty:%lu",c->field,val,qty);
+  qty = 0;
+  for (struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++) {
+    asprintf(&fl, "%s_len", c->field);
+    if (hash_has((hash_t *)(hash_get(map, "int")), c->field)) {
+      int64_t val = (int64_t)(hash_get((hash_t *)(hash_get(map, "int")), c->field));
+      if (sqldbal_stmt_bind_int64(stmt, qty++, val)) {
+        log_error("int err: k:%s|val:%lld|qty:%lu", c->field, val, qty);
         exit(1);
       }
-    }else if(hash_has((hash_t*)(hash_get(map,"text")),c->field)){
-      char *val = (char*)(hash_get((hash_t*)(hash_get(map,"text")),c->field));
-      if(SQLDBAL_STATUS_OK!=sqldbal_stmt_bind_text(stmt, qty++, val,-1)){
+    }else if (hash_has((hash_t *)(hash_get(map, "text")), c->field)) {
+      char *val = (char *)(hash_get((hash_t *)(hash_get(map, "text")), c->field));
+      if (SQLDBAL_STATUS_OK != sqldbal_stmt_bind_text(stmt, qty++, val, -1)) {
         log_error("text err");
         exit(1);
       }
-    }else if(
-        hash_has((hash_t*)(hash_get(map,"blob")),c->field)
-        && hash_has((hash_t*)(hash_get(map,"blob")),fl)
-        ){
-      size_t len = (size_t)(hash_get((hash_t*)(hash_get(map,"blob")),fl));
-      char *val = b64_encode((void*)(hash_get((hash_t*)(hash_get(map,"blob")),c->field)), len);
+    }else if (
+      hash_has((hash_t *)(hash_get(map, "blob")), c->field)
+      && hash_has((hash_t *)(hash_get(map, "blob")), fl)
+      ) {
+      size_t len  = (size_t)(hash_get((hash_t *)(hash_get(map, "blob")), fl));
+      char   *val = b64_encode((void *)(hash_get((hash_t *)(hash_get(map, "blob")), c->field)), len);
       len = strlen(val);
-      if(SQLDBAL_STATUS_OK!=sqldbal_stmt_bind_blob(stmt, qty++, val,len)){
+      if (SQLDBAL_STATUS_OK != sqldbal_stmt_bind_blob(stmt, qty++, val, len)) {
         log_error("blob err");
         exit(1);
       }
     }
   }
 
-      if(sqldbal_stmt_execute(stmt) != SQLDBAL_STATUS_OK){
-        log_error("Execute error");
+  stringbuffer_release(sb);
+  stringbuffer_release(sb_val);
+  if (sqldbal_stmt_execute(stmt) != SQLDBAL_STATUS_OK) {
+    log_error("Execute error");
+    exit(1);
+  }else{
+    if (sqldbal_stmt_close(stmt) != SQLDBAL_STATUS_OK) {
+      log_error("Close error");
+      exit(1);
+    }else{
+      int row_id = -1;
+      if (sqldbal_last_insert_id(db, "id", &row_id) != SQLDBAL_STATUS_OK) {
+        log_error("last insert id error");
         exit(1);
-      }else{
-        if(sqldbal_stmt_close(stmt) != SQLDBAL_STATUS_OK){
-          log_error("Close error");
-        exit(1);
-
-      }else{
-        //      sqldbal_last_insert_id(db, 
-        return(true);
       }
-    return(false);
+      return(row_id);
+    }
+    return(-1);
   }
-}
+} /* db_capture_save */
 
 bool db_loader_id(enum db_loader_t type){
   if (db_loaders[type](db)) {
-//    struct Vector *ids = vector_new();
-//    vector_push(ids,(void*)14872);
-//struct Vector *captures_v = db_table_images_from_ids(db_loader_capture_types[type],ids);
-//  Dbg(vector_size(captures_v),%lu);
     return(true);
   }
   return(false);
@@ -205,20 +220,20 @@ static bool db_create_tables(void){
   enum sqldbal_status_code rc;
   char                     *sql;
 
-#define CREATE_TABLE(TABLE, FIELDS)    { do{                                                       \
-                                           asprintf(&sql, "CREATE TABLE IF NOT EXISTS %s"          \
-                                                    "("                                            \
-                                                    "  __id INTEGER PRIMARY KEY AUTOINCREMENT"     \
-                                                    ", created DATETIME DEFAULT CURRENT_TIMESTAMP" \
-                                                    ", updated DATETIME DEFAULT CURRENT_TIMESTAMP" \
-                                                    ", ts INTEGER"                                 \
-                                                    ", %s"                                         \
-                                                    ")", TABLE, FIELDS);                           \
-                                           errno = 0;                                              \
-                                           if(SQLDBAL_STATUS_OK != sqldbal_exec(db, sql, NULL, NULL)){\
-                                             log_error("Failed to create table %s", TABLE);        \
-                                             exit(EXIT_FAILURE);\
-                                           }                                                       \
+#define CREATE_TABLE(TABLE, FIELDS)    { do{                                                             \
+                                           asprintf(&sql, "CREATE TABLE IF NOT EXISTS %s"                \
+                                                    "("                                                  \
+                                                    "  __id INTEGER PRIMARY KEY AUTOINCREMENT"           \
+                                                    ", created DATETIME DEFAULT CURRENT_TIMESTAMP"       \
+                                                    ", updated DATETIME DEFAULT CURRENT_TIMESTAMP"       \
+                                                    ", ts INTEGER"                                       \
+                                                    ", %s"                                               \
+                                                    ")", TABLE, FIELDS);                                 \
+                                           errno = 0;                                                    \
+                                           if (SQLDBAL_STATUS_OK != sqldbal_exec(db, sql, NULL, NULL)) { \
+                                             log_error("Failed to create table %s", TABLE);              \
+                                             exit(EXIT_FAILURE);                                         \
+                                           }                                                             \
                                          }while (0); }
 /////////////////////////////////////////////////////////////
   CREATE_TABLE(TABLE_NAME_WINDOWS, TABLE_FIELDS_WINDOWS);

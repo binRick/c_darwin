@@ -1,10 +1,12 @@
 #include "dls/dls.h"
 static void __attribute__((constructor)) __constructor__dls(void);
+static void __attribute__((destructor)) __destructor__dls(void);
 static bool dls_normalize_arguments(int *argc, char *argv[]);
 static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 static bool                   DARWIN_LS_DEBUG_MODE = false;
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
+static void __at_exit(void);
 #define CREATE_SUBCOMMAND(NAME, SUBCOMMANDS)                                     \
   {                                                                              \
     .name        = cmds[COMMAND_ ## NAME].name,                                  \
@@ -119,13 +121,16 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   common_options_b[COMMON_OPTION_SHOW_COLUMNS](args),
 #define COMMON_OPTIONS_CAPTURE \
   COMMON_OPTIONS_BASE
+#define COMMON_OPTIONS_DB_SAVE   \
+  common_options_b[COMMON_OPTION_DB_SAVE](args),
 #define COMMON_OPTIONS_CAPTURE_COMMON   \
   COMMON_OPTIONS_BASE                   \
   COMMON_OPTIONS_UI                     \
   COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS \
   COMMON_OPTIONS_CAPTURE_OPTIONS        \
   COMMON_OPTIONS_ID                     \
-  COMMON_OPTIONS_SIZE
+  COMMON_OPTIONS_SIZE\
+  COMMON_OPTIONS_DB_SAVE
 #define COMMON_OPTIONS_EXTRACT          \
   COMMON_OPTIONS_BASE                   \
   COMMON_OPTIONS_UI                     \
@@ -181,15 +186,15 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 #define COMMON_OPTIONS_HOTKEYS                       \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_HOTKEYS_LIST\
+#define COMMON_OPTIONS_HOTKEYS_LIST \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_HOTKEYS_SERVER
-#define COMMON_OPTIONS_WINDOW_LIST\
+#define COMMON_OPTIONS_WINDOW_LIST \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_WINDOW_NAMES\
+#define COMMON_OPTIONS_WINDOW_NAMES \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_WINDOW_QTY
-#define COMMON_OPTIONS_WINDOW_IDS\
+#define COMMON_OPTIONS_WINDOW_IDS \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_WINDOW_STICKY
 #define COMMON_OPTIONS_WINDOW_UNSTICKY
@@ -238,17 +243,17 @@ const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
   CREATE_SUBCOMMAND(COPY, ),  \
   CREATE_SUBCOMMAND(PASTE, ),
 #define SUBCOMMANDS_LAYOUT            \
-  CREATE_SUBCOMMAND(LAYOUT_NAMES, ),   \
+  CREATE_SUBCOMMAND(LAYOUT_NAMES, ),  \
   CREATE_SUBCOMMAND(LAYOUT_LIST, ),   \
   CREATE_SUBCOMMAND(LAYOUT_APPLY, ),  \
   CREATE_SUBCOMMAND(LAYOUT_SHOW, ),   \
   CREATE_SUBCOMMAND(LAYOUT_RENDER, ), \
   CREATE_SUBCOMMAND(LAYOUT_TEST, ),
 #define SUBCOMMANDS_WINDOW                    \
-  CREATE_SUBCOMMAND(WINDOW_IDS, ),           \
+  CREATE_SUBCOMMAND(WINDOW_IDS, ),            \
   CREATE_SUBCOMMAND(WINDOW_LIST, ),           \
-  CREATE_SUBCOMMAND(WINDOW_QTY, ),           \
-  CREATE_SUBCOMMAND(WINDOW_NAMES, ),           \
+  CREATE_SUBCOMMAND(WINDOW_QTY, ),            \
+  CREATE_SUBCOMMAND(WINDOW_NAMES, ),          \
   CREATE_SUBCOMMAND(WINDOW_MOVE, ),           \
   CREATE_SUBCOMMAND(WINDOW_SPACE, ),          \
   CREATE_SUBCOMMAND(WINDOW_MINIMIZE, ),       \
@@ -290,7 +295,7 @@ struct normalized_argv_t {
   struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
 };
 struct args_t *args = &(struct args_t){
-  .limit = 999,
+  .limit                              = 999,
   .verbose_mode                       = false, .debug_mode = false,
   .space_id                           = -1,
   .display_id                         = -1,
@@ -330,6 +335,12 @@ struct args_t *args = &(struct args_t){
 ////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   VIPS_INIT(argv[0]);
+  /*
+    signal(SIGINT, __at_exit);
+    signal(SIGTERM, __at_exit);
+    signal(SIGQUIT, __at_exit);
+    atexit(__at_exit);
+    */
   args->pid = getpid();
   if (DEBUG_ARGV) {
     dls_print_arg_v("pre", AC_YELLOW, argc, argv);
@@ -812,14 +823,61 @@ static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]){
   }
   return(arg_v);
 }
-
+static bool initialized;
+static bool exited = false, was_icanon = false;
 static bool dls_normalize_arguments(int *argc, char *argv[]){
   struct normalized_argv_t *r = dls_argv_normalized_argv_t(*argc, argv);
 
   log_info("Mode: %s", r->mode);
   *argc = vector_size(r->arg_v);
 }
+/*
+static void __attribute__((destructor)) __destructor__dls(void){
+
+}
+*/
+static bool __exited = false;
+static void __at_exit(void){
+  seticanon(was_icanon, true);  
+  printf(
+      "%s"
+      "%s"
+      "%s",
+       AC_ALT_SCREEN_OFF,
+       AC_RESTORE_PALETTE,
+       AC_SHOW_CURSOR
+      );
+  fflush(stdout);
+}  
 static void __attribute__((constructor)) __constructor__dls(void){
+//^[\^[]4;1;#cc6666^[\^[]4;2;#66cc99^[\^[]4;3;#cc9966^[\^[]4;4;#6699cc^[\^[]4;5;#cc6699^[\^[]4;6;#66cccc^[\^[]4;7;#cccccc^[\^[]4;8;#999999^[\^[]4;9;#cc6666^[\^[]4;10;#66cc99^[\^[]4;11;#cc9966^[\^[]4;12;#6699cc^[\^[]4;13;#cc6699^[\^[]4;14;#66cccc^[\^[]4;15;#cccccc^[\^[[21D"
+char *__ansi = "\033[c";
+/*
+  "\033]11;#000000"\
+  "\033]10;#ffffff"\
+  "\033]12;#ff9999"\
+  "\033]4;13;#cc6699"\
+  "\033]4;14;#66cccc"\
+  "\033]4;15;#cccccc"\
+  "\033[?1049l"\
+  "\033[21D"\
+  "";*/
+  printf(
+      "%s"
+      "%s"
+      "%s"
+      "%s",
+      AC_SAVE_PALETTE,
+      AC_ALT_SCREEN_ON,
+      AC_HIDE_CURSOR,
+      __ansi
+  
+      );
+    initialized = true;
+    was_icanon  = (seticanon(false, false) == true) ? true : false;
+    fprintf(stdout, AC_HIDE_CURSOR);
+    fflush(stdout);
+
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS") != NULL) {
     DARWIN_LS_DEBUG_MODE = true;
   }
