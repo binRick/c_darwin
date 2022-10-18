@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "core/core.h"
 #define DB_CAPTURE_STATEMENT_STRUCT struct sqldbal_stmt
 #define DB_CAPTURE_INSERT_SETUP(DB,STATEMENT){ do {  \
     enum sqldbal_status_code RC;\
@@ -26,14 +27,16 @@
 #define TABLE_NAME_COLORS         "colors"
 #define TABLE_FIELDS_COLORS       "hex TEXT, r INTEGER, g INTEGER, b INTEGER"
 #define TABLE_NAME_CAPTURES         "captures"
-#define TABLE_FIELDS_CAPTURES       "  window_id INTEGER"\
-                                    ", capture_ms INTEGER"\
-                                    ", capture_ts INTEGER"\
-                                    ", capture_format INTEGER"\
-                                    ", capture_type INTEGER"\
-                                    ", capture_size INTEGER"\
+#define TABLE_FIELDS_CAPTURES       "  id INTEGER"\
+                                    ", type INTEGER"\
+                                    ", format INTEGER"\
+                                    ", width INTEGER"\
+                                    ", height INTEGER"\
+                                    ", type_name TEXT"\
+                                    ", format_name TEXT"\
                                     ", qoi_len INTEGER"\
-                                    ", gif_len INTEGER"
+                                    ", pixels BLOB"\
+                                    ", pixels_len INTEGER"
 
 #define DB_CAPTURE_INSERT_BIND(DB,STATEMENT,HASHES){ do { \
     enum sqldbal_status_code RC;\
@@ -65,7 +68,8 @@
     rc = sqldbal_stmt_execute(stmt);\
     rc = sqldbal_stmt_close(stmt);\
 }; while(0); }
-#define DB_CAPTURE_TABLE_FIELDS_INSERT_STATEMENT "INSERT INTO "DB_CAPTURE_TABLE_NAME_CAPTURES"("\
+#define DB_CAPTURE_TABLE_FIELDS_INSERT_STATEMENT\
+  "INSERT INTO " DB_CAPTURE_TABLE_NAME_CAPTURES "("\
                                 "window_id"\
                                 ",capture_ms"\
                                 ",capture_ts"\
@@ -77,9 +81,9 @@
                                 ",gif_len"\
                                 ",gif"\
                                 ") "\
-                          " VALUES"\
+                          " VALUES "\
                               "("\
-                                ", ?"/*window_id*/\
+                                "  ?"/*window_id*/\
                                 ", ?"/*capture_ms*/\
                                 ", ?"/*capture_ts*/\
                                 ", ?"/*capture_type*/\
@@ -128,4 +132,5 @@ bool db_info();
 bool db_loader_name(char *name);
 bool db_loader_id(enum db_loader_t type);
 bool db_tables(void);
+bool db_capture_save(hash_t *map);
 #endif

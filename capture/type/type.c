@@ -1,4 +1,5 @@
 #pragma once
+#include "db/db.h"
 #ifndef CAPTURE_TYPE_C
 #define CAPTURE_TYPE_C
 #define LOCAL_DEBUG_MODE                     CAPTURE_TYPE_DEBUG_MODE
@@ -382,6 +383,7 @@ char *get_capture_type_name(enum capture_type_id_t type){
   default: return("unknown");
   }
 }
+static chan_t *db_chan = NULL;
 static struct Vector *get_cap_providers(enum image_type_id_t format){
   unsigned long            started = timestamp();
   struct Vector            *v      = vector_new();
@@ -436,8 +438,8 @@ static bool init_capture_request_receiver(struct capture_image_request_t *req, s
   if (!cap->recv_chan) {
     cap->recv_chan = chan_init(vector_size(req->ids) * 2);
   }
-  if (!cap->db_chan) {
-    cap->db_chan = chan_init(vector_size(req->ids) * 2);
+  if (!db_chan) {
+    db_chan = chan_init(vector_size(req->ids) * 2);
   }
   if (!cap->send_chan) {
     cap->send_chan = chan_init(vector_size(req->ids) * 2);
@@ -450,7 +452,7 @@ static bool init_capture_request_receiver(struct capture_image_request_t *req, s
   }
   cap->qty       = vector_size(req->ids) / req->concurrency;
   cap->total_qty = vector_size(req->ids);
-  assert(cap->db_chan != NULL);
+  assert(db_chan != NULL);
   assert(db_done_chan != NULL);
   assert(cap->send_chan != NULL);
   assert(cap->recv_chan != NULL);
@@ -466,22 +468,57 @@ static bool init_capture_request_receiver(struct capture_image_request_t *req, s
 
   return(true);
 }
-static int record_db_capture_handler(void *CAP){
-  unsigned long started = timestamp();
-  struct cap_t  *cap    = (struct cap_t *)CAP;
-  void          *msg;
-  size_t        qty = 0;
+static int record_db_capture_handler(void *VOID){
+ void          *msg;
+ size_t        qty = 0;
 
-    log_info("db waiting");
-  while (chan_recv(cap->db_chan, &msg) == 0) {
+    struct capture_image_result_t *r;
+ while (chan_recv(db_chan, &msg) == 0) {
     qty++;
-    log_info("> Received DB Request #%lu.", qty);
-    continue;
-  }
-    log_info("db done sending");
+    r = (struct capture_image_result_t*)msg;
+    debug("> Received DB Request #%lu :: len:%s|dur:%s|fmt:%s|type:%s|size:%lux%lu|id:%lu|", 
+        qty,
+        bytes_to_string(r->len),
+        milliseconds_to_string(r->time.dur),
+        image_type_name(r->format),
+        get_capture_type_name(r->type),
+        r->width,r->height,
+        r->id
+        );
+    hash_t *maps[3];
+    hash_t *db_map = hash_new();
+    maps[0] = hash_new();
+    maps[1] = hash_new();
+    maps[2] = hash_new();
+    hash_set(maps[0],"id",(void*)(r->id));
+    hash_set(maps[0],"width",(void*)(r->width));
+    hash_set(maps[0],"height",(void*)(r->height));
+    hash_set(maps[0],"size",(void*)(r->len));
+    hash_set(maps[2],"pixels",(void*)(r->pixels));
+    hash_set(maps[2],"pixels_len",(void*)(r->len));
+    hash_set(maps[0],"pixels_len",(void*)(r->len));
+    hash_set(maps[0],"dur",(void*)(r->time.dur));
+    hash_set(maps[0],"format",(void*)(r->format));
+    hash_set(maps[0],"type",(void*)(r->type));
+    hash_set(maps[1],"type_name",(void*)(get_capture_type_name(r->type)));
+    hash_set(maps[1],"format_name",(void*)(image_type_name(r->format)));
+    hash_set(db_map,"int",(void*)(maps[0]));
+    hash_set(db_map,"text",(void*)(maps[1]));
+    hash_set(db_map,"blob",(void*)(maps[2]));
+    unsigned long _s = timestamp();
+    if(!db_capture_save(db_map)){
+      log_error("Failed to save db capture");
+    }else{
+      log_info("Saved %s %s %s Capture to DB in %s!",
+          bytes_to_string(r->len),
+          image_type_name(r->format),
+          get_capture_type_name(r->type),
+          milliseconds_to_string(timestamp()-_s)
+          );
+    }
+ }
  chan_send(db_done_chan, (void *)0);
-    log_info("db done sent");
-  return(EXIT_SUCCESS);
+ return(EXIT_SUCCESS);
 }
 static int receive_requests_handler(void *CAP){
   unsigned long started = timestamp();
@@ -781,14 +818,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     if (!wait_cap(req, caps[c])) {
       log_error("Failed to wait capture #%d: %s", c, caps[c]->name);
     }
-      size_t completed=0;
-      chan_close(caps[c]->db_chan);
-      chan_close(db_done_chan);
-      for (int i = 0; i < vector_size(req->ids); i++) {
-        chan_recv(db_done_chan, (void *)0);
-        completed++;
-        log_debug("db done #%lu/%lu",completed,vector_size(req->ids));
-      }
   }
   struct capture_image_result_t *r;
   size_t                        captured_images_len = 0;
@@ -810,6 +839,14 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       vector_push(capture_results_v, msg);
     }
   }
+  for (size_t i = 0; i < vector_size(capture_results_v); i++) {
+        chan_send(db_chan,(void*)(vector_get(capture_results_v,i)));
+  }
+  chan_close(db_chan);
+  for (size_t i = 0; i < vector_size(capture_results_v); i++) {
+      chan_recv(db_done_chan,(void*)0);
+  }
+  chan_close(db_done_chan);
   for (size_t i = 0; i < vector_size(providers); i++) {
     enum capture_chan_type_t c = (enum capture_chan_type_t)(size_t)vector_get(providers, i);
     if (chan_is_closed(results_chan) == 0) {
@@ -817,9 +854,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
     if (chan_is_closed(caps[c]->done_chan) == 0) {
       chan_close(caps[c]->done_chan);
-    }
-    if (chan_is_closed(caps[c]->db_chan) == 0) {
-      chan_close(caps[c]->db_chan);
     }
     if (chan_is_closed(caps[c]->send_chan) == 0) {
       chan_close(caps[c]->send_chan);
@@ -831,7 +865,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     chan_dispose(caps[c]->done_chan);
     caps[c]->recv_chan = NULL;
     caps[c]->send_chan = NULL;
-    caps[c]->db_chan = NULL;
     caps[c]->done_chan = NULL;
     for (int x = 0; x < req->concurrency; x++) {
       if (caps[c]->threads[x]) {
@@ -947,6 +980,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
         free(req->bar);
       }
     }
+    log_info("Sending DB %lu",vector_size(capture_results_v));
   }
 done:
   caps = NULL;

@@ -61,6 +61,22 @@ static const char *ax_error_str[] = {
 };
 static const char *window_levels[] = { "Base", "Minimum", "Desktop", "Backstop", "Normal", "Floating", "TornOffMenu", "Dock", "MainMenu", "Status", "ModalPanel", "PopUpMenu", "Dragging", "ScreenSaver", "Maximum", "Overlay", "Help", "Utility", "DesktopIcon", "Cursor", "AssistiveTechHigh" };
 ///////////////////////////////////////////////////
+struct window_iteration_process_t {
+  struct rusage r_usage;
+  struct kinfo_proc info;
+};
+struct window_iteration_t {
+  char *name, *role, *subrole;
+  CGWindowID id;
+  pid_t pid;
+  bool can_minimize;
+  CFDictionaryRef window;
+  AXUIElementRef app;
+  hash_t *map;
+  ProcessSerialNumber psn;
+  struct window_iteration_process_t process;
+  hash_t *spaces, *displays, *apps, *copied;
+};
 struct sqldbal_db;
 int get_window_id_space_id(size_t window_id);
 bool get_pid_is_minimized(int pid);
@@ -78,6 +94,7 @@ hash_t *get_first_window_id_from_names(hash_t *names);
 hash_t *get_window_ids_v_from_names(hash_t *names);
 char *get_window_display_uuid(struct window_info_t *window);
 struct hash_t *get_window_properties_map();
+struct hash_t *get_window_properties_map_for_window_ids(hash_t *ids);
 struct window_info_t *get_focused_window();
 int get_focused_window_id();
 int get_window_display_id(struct window_info_t *window);

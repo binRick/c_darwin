@@ -1,6 +1,7 @@
 #pragma once
 #ifndef DB_C
 #define DB_C
+#include "core/core.h"
 #include "db/db.h"
 #include "sqldbal/src/sqldbal.h"
 #include "capture/utils/utils.h"
@@ -36,13 +37,13 @@ static struct sqldbal_db            *db                        = NULL;
 static const db_loader_fxn          db_loaders[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = space_db_load,
   [DB_LOADER_WINDOWS] = window_db_load,
-  [DB_LOADER_CAPTURES] = capture_db_load,
+//  [DB_LOADER_CAPTURES] = capture_db_load,
 };
 
 static const char                   *db_loader_names[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = "spaces",
   [DB_LOADER_WINDOWS] = "windows",
-  [DB_LOADER_CAPTURES] = "captures",
+//  [DB_LOADER_CAPTURES] = "captures",
 };
 static const enum capture_type_id_t db_loader_capture_types[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = CAPTURE_TYPE_SPACE,
@@ -58,13 +59,118 @@ enum db_loader_t db_loader_name_id(char *name){
   }
   return(-1);
 }
+enum db_capture_field_type_t {
+  DB_CAPTURE_FIELD_INT,
+  DB_CAPTURE_FIELD_TEXT,
+  DB_CAPTURE_FIELD_BLOB,
+  DB_CAPTURE_FIELDS_QTY,
+};
+struct db_capture_field_t {
+  char *field;
+  enum db_capture_field_type_t type;
+};
+static struct db_capture_field_t db_cap_fields[] = {
+  { .field="id", .type=DB_CAPTURE_FIELD_INT, },
+  { .field="type", .type=DB_CAPTURE_FIELD_INT, },
+  { .field="format", .type=DB_CAPTURE_FIELD_INT, },
+  { .field="width", .type=DB_CAPTURE_FIELD_INT, },
+  { .field="height", .type=DB_CAPTURE_FIELD_INT, },
+  { .field="len", .type=DB_CAPTURE_FIELD_INT, },
+  { .field="type_name", .type=DB_CAPTURE_FIELD_TEXT, },
+  { .field="format_name", .type=DB_CAPTURE_FIELD_TEXT, },
+  { .field="pixels", .type=DB_CAPTURE_FIELD_BLOB, },
+  { .field="pixels_len", .type=DB_CAPTURE_FIELD_INT, },
+  { 0 },
+};
 
-struct Vector *db_table_images_from_ids(enum capture_type_id_t type, struct Vector *ids){
-  struct Vector *captures_v = NULL;
+bool db_capture_save(hash_t *map){
+  struct sqldbal_stmt      *stmt;
+  enum sqldbal_status_code rc;
+  struct StringBuffer *sb = stringbuffer_new(), *sb_val = stringbuffer_new();
+  char *sql[3];
+  sql[0] = "INSERT INTO captures ( \n";
+  sql[1] = "\n\t) VALUES ( \n";
+  sql[2] = "\n);";
+  size_t qty=0;
 
-  captures_v = db_tables_images(type, ids);
-  Dbg(vector_size(captures_v), %u);
-  return(captures_v);
+  stringbuffer_append_string(sb,sql[0]);
+  char *fl;
+  for(struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++){
+    asprintf(&fl,"%s_len",c->field);
+    if(hash_has((hash_t*)(hash_get(map,"int")),c->field)){
+      if(qty>0)stringbuffer_append_string(sb,", ");
+      stringbuffer_append_string(sb,c->field);
+      if(qty>0)stringbuffer_append_string(sb_val,", ");
+      stringbuffer_append_string(sb_val,"?");
+      qty++;
+    }else if(hash_has((hash_t*)(hash_get(map,"text")),c->field)){
+      if(qty>0)stringbuffer_append_string(sb,", ");
+      stringbuffer_append_string(sb,c->field);
+      if(qty>0)stringbuffer_append_string(sb_val,", ");
+      stringbuffer_append_string(sb_val,"?");
+      qty++;
+    }else if(
+        hash_has((hash_t*)(hash_get(map,"blob")),c->field)
+        && hash_has((hash_t*)(hash_get(map,"blob")),fl)
+        ){
+      if(qty>0)stringbuffer_append_string(sb,", ");
+      stringbuffer_append_string(sb,c->field);
+      if(qty>0)stringbuffer_append_string(sb_val,", ");
+      stringbuffer_append_string(sb_val,"?");
+    }
+  }
+  stringbuffer_append_string(sb,sql[1]);
+  stringbuffer_append_string(sb,stringbuffer_to_string(sb_val));
+  stringbuffer_append_string(sb,sql[2]);
+  char *SQL = stringbuffer_to_string(sb);
+  errno=0;
+  if(sqldbal_stmt_prepare(db,SQL,-1,&stmt) != SQLDBAL_STATUS_OK){
+    log_error("SQL BIND FAIL");
+    exit(1);
+  }
+  qty=0;
+  for(struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++){
+    asprintf(&fl,"%s_len",c->field);
+    if(hash_has((hash_t*)(hash_get(map,"int")),c->field)){
+      int64_t val = (int64_t)(hash_get((hash_t*)(hash_get(map,"int")),c->field));
+      if(sqldbal_stmt_bind_int64(stmt, qty++, val)){
+        log_error("int err: k:%s|val:%lld|qty:%lu",c->field,val,qty);
+        exit(1);
+      }
+    }else if(hash_has((hash_t*)(hash_get(map,"text")),c->field)){
+      char *val = (char*)(hash_get((hash_t*)(hash_get(map,"text")),c->field));
+      if(SQLDBAL_STATUS_OK!=sqldbal_stmt_bind_text(stmt, qty++, val,-1)){
+        log_error("text err");
+        exit(1);
+      }
+    }else if(
+        hash_has((hash_t*)(hash_get(map,"blob")),c->field)
+        && hash_has((hash_t*)(hash_get(map,"blob")),fl)
+        ){
+      size_t len = (size_t)(hash_get((hash_t*)(hash_get(map,"blob")),fl));
+      char *val = b64_encode((void*)(hash_get((hash_t*)(hash_get(map,"blob")),c->field)), len);
+      len = strlen(val);
+      if(SQLDBAL_STATUS_OK!=sqldbal_stmt_bind_blob(stmt, qty++, val,len)){
+        log_error("blob err");
+        exit(1);
+      }
+    }
+  }
+
+      if(sqldbal_stmt_execute(stmt) != SQLDBAL_STATUS_OK){
+        log_error("Execute error");
+        exit(1);
+      }else{
+        if(sqldbal_stmt_close(stmt) != SQLDBAL_STATUS_OK){
+          log_error("Close error");
+        exit(1);
+
+      }else{
+        //      sqldbal_last_insert_id(db, 
+        return(true);
+      }
+    return(false);
+  }
 }
 
 bool db_loader_id(enum db_loader_t type){

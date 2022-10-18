@@ -489,7 +489,15 @@ struct hk_render_t {
   struct hk_rendered_app_t *master;
   struct hk_rendered_app_t **items;
 };
+enum hk_fmt_t {
+    HK_FMT_TYPE_MASTER,
+    HK_FMT_TYPE_DISPLAY,
+    HK_FMT_TYPE_CHILD,
+    HK_FMT_TYPE_CHILDREN,
+    HK_FMT_TYPES_QTY,
+};
 
+#define CHILDREN_OFFSET 4
 #define ENSURE_LAYOUT_INDEX(I){ do{\
   if(I<0){\
     log_error("Layout not found");\
@@ -512,128 +520,178 @@ static double    transparent[] = { 0, 0, 0, 0 };
                         VIPS_BLEND_MODE_OVER, NULL)) {
       return(-1);
     }
+
+      r->master->name,r->master->window_id,r->master->width,r->master->height,r->master->x,r->master->y,
+      r->master->image.resized_width,r->master->image.resized_height,milliseconds_to_string(r->master->image.resize.dur),
+      r->master->image.width,r->master->image.height,milliseconds_to_string(r->master->image.capture.dur),
       */
-
 char *create_master_table_report(struct layout_result_t *res){
-  printf(" - Size: %dx%d\n - Master\n\tpos:%dx%d|size:%dx%d\n",
-         res->width, res->height,
-         res->master->x,
-         res->master->y,
-         res->master->width,
-         res->master->height);
-  for (size_t i = 0; i < res->qty; i++) {
-    printf(" - Content #%lu\n\tpos:%dx%d|size:%dx%d\n",
-           i,
-           res->items[i]->x,
-           res->items[i]->y,
-           res->items[i]->width,
-           res->items[i]->height);
-  }
-
+  struct window_iteration_t *p = NULL;
+  hash_t *child_map;
   ft_table_t *table = ft_create_table();
-
   ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
-
-  ft_u8write_ln(table, 
-      "Type", 
-      "Window ID", 
-      "Size", "Position", 
-      "Location", "Application", "Duration",
-      "Image"
-      );
-  ft_add_separator(table);
-  ft_u8printf_ln(table, 
+#define HK_HEADERS_DISPLAY \
+      "Type" \
+      , "ID" \
+      , "Index" \
+      , "Size" \
+      , "" \
+      , ""
+#define HK_HEADERS_CHILDREN \
+      "Child" \
+      , "PID" \
+      , "Window ID" \
+      , "Size" \
+      , "Position" \
+      , "Location" \
+      , "Application"
+#define HK_HEADERS_CHILD \
+      "Child" \
+      , "PID" \
+      , "Window ID" \
+      , "Size" \
+      , "Position" \
+      , "Application"
+#define HK_HEADERS_MASTER \
+      "Type" \
+      , "Size" \
+      , "Position" \
+      , "" \
+      , "" \
+      , ""
+  char *HK_HEADERS[HK_FMT_TYPES_QTY];
+  HK_HEADERS[HK_FMT_TYPE_MASTER] = HK_HEADERS_MASTER;
+  HK_HEADERS[HK_FMT_TYPE_DISPLAY] = HK_HEADERS_DISPLAY;
+  HK_HEADERS[HK_FMT_TYPE_CHILDREN] = HK_HEADERS_CHILDREN;
+  HK_HEADERS[HK_FMT_TYPE_CHILD] = HK_HEADERS_CHILD;
+     char *HK_FMTS[HK_FMT_TYPES_QTY];
+     HK_FMTS[HK_FMT_TYPE_CHILDREN] = \
        "%s"
       "|%s"
-      "|%dx%d"
-      "|%dx%d"
-      "|%dx%d"
       "|%s"
-      "|%s"
-      "|%s",
-      "Content",
-      "",
-      res->width,res->height,
-      res->master->x,res->master->y,
+      "|%dx%d"
+      "|%dx%d"
+      "|%s";
+     HK_FMTS[HK_FMT_TYPE_DISPLAY] = \
+      "%s"
+      "|%lu"
+      "|%lu"
+      "|%dx%d"
+      "%s";
+     HK_FMTS[HK_FMT_TYPE_MASTER] = \
+      "%s"
+      "|%dx%d"
+      "|%dx%d"
+      "";
+     HK_FMTS[HK_FMT_TYPE_CHILD] = \
+        "%lu/%lu"
+        "|%lu"
+        "|%lu"
+        "|%dx%d"
+        "|%dx%d"
+        "|%s";
+  ft_add_separator(table);
+  ft_write_ln(table, HK_HEADERS_DISPLAY);
+  ft_add_separator(table);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+  ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_DISPLAY],
+      "Display",
+      res->render->display->id,
+      res->render->display->index,
+      res->render->display->width,res->render->display->height
+  );
+  ft_add_separator(table);
+  ft_write_ln(table, HK_HEADERS_MASTER);
+  ft_add_separator(table);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+  ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_MASTER],
+      "Master",
       res->master->width,res->master->height,
-      "",
+      res->master->x,res->master->y
+      );
+  ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_MASTER],
+      "Children",
+      res->master->width,res->master->height,
+      res->master->x,res->master->y
+      );
+  ft_add_separator(table);
+  /*
+  ft_write_ln(table, HK_HEADERS_CHILDREN);
+  ft_add_separator(table);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+  ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_CHILDREN],
+      res->width,res->height,
+      res->master->width,res->master->height,
       "",
       ""
       );
+      */
   ft_add_separator(table);
-  ft_u8printf_ln(table, 
-       "%s"
-      "|%s"
-      "|%dx%d"
-      "|%dx%d"
-      "|%dx%d"
-      "|%s"
-      "|%s"
-      "|%s",
-      "Master",
-      "",
-      res->width,res->height,
-      res->master->x,res->master->y,
-      res->master->x,res->master->y,
-      milliseconds_to_string(res->dur),
-      "n/a",
-      "n/a"
+  ft_write_ln(table, HK_HEADERS_CHILD);
+  ft_add_separator(table);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+   ft_set_cell_span(table, ft_row_count(table)-1, ft_col_count(table)-2, 2);
+  for (size_t i = 0; i < res->qty; i++) {
+    char *n;
+    asprintf(&n,"%lu",
+             res->render->items[i]->window_id
+        );
+    if(hash_has(res->props,n)){
+p = (struct window_iteration_t*)(hash_get(res->props,n));
+child_map = (hash_t*)(p->map);
+    ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_CHILD],
+             i+1,res->qty,
+             (size_t)(hash_get(child_map,"pid")),
+             (size_t)(hash_get(child_map,"window_id")),
+             (int)(size_t)(hash_get(child_map,"width")),(int)(size_t)(hash_get(child_map,"height")),
+             (int)(size_t)(hash_get(child_map,"x")),(int)(size_t)(hash_get(child_map,"y")),
+             (char*)(hash_get(child_map,"name"))
+             );
+    }else{
+log_error("hash fail");
+
+    }
+  }
+  ft_add_separator(table);
+  ft_u8printf_ln(table,"%s|%s|%d|%s|%s|%s|%d|%s", 
+      "Children:","",123,"","Mode:","",123,""
+      );
+  ft_u8printf_ln(table,"%s|%s|%lu|%s|%s|%s|%lu|%s", 
+      "Display:","",res->render->display->id,"","Space:","",res->render->space->id,""
+      );
+  ft_u8printf_ln(table,"%s|%s|%d|%s|%s|%s|%d|%s", 
+      "Total:","",123,"","Wow:","",123,""
       );
   ft_add_separator(table);
-  for (size_t i = 0; i < res->qty; i++) {
-    ft_u8printf_ln(table, 
-        "Child #%lu/%lu"
-        "|%s"
-        "|%dx%d"
-        "|%dx%d"
-        "|%dx%d"
-        "|%s"
-        "|%s"
-        "%s",
-             i+1,res->qty,
-             "",
-             res->items[i]->x,res->items[i]->y,
-             res->items[i]->width,res->items[i]->height,
-             res->items[i]->width,res->items[i]->height,
-             "",
-             "",
-             "");
+#define FOOTER_ROWS_QTY 3
+  for(size_t i = 1; i <= FOOTER_ROWS_QTY;i++){
+   ft_set_cell_span(table, ft_row_count(table)-i, 0, 2);
+   ft_set_cell_span(table, ft_row_count(table)-i, 2, 2);
+   ft_set_cell_span(table, ft_row_count(table)-i, 4, 2);
+   ft_set_cell_span(table, ft_row_count(table)-i, 6, ft_col_count(table)-6);
+   ft_set_cell_prop(table, ft_row_count(table)-i, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 2, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 4, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 6, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 4, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+   ft_set_cell_prop(table, ft_row_count(table)-i, 6, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
   }
-  ft_add_separator(table);
-  ft_u8printf_ln(table, "%s","Total result");
-  ft_add_separator(table);
-
-  ft_set_cell_span(table, ft_row_count(table)-1, 0, 2);
-  ft_set_cell_span(table, ft_row_count(table)-1, 2, ft_col_count(table)-2);
-
 
   ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-  ft_set_cell_prop(table, 1, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-  ft_set_cell_prop(table, 2, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
   ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-  ft_set_cell_prop(table, FT_ANY_ROW, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
   ft_set_cell_prop(table, FT_ANY_ROW, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-  for (size_t i = 0; i < res->qty; i++) {
-    ft_set_cell_prop(table, 3+i, 0, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-    ft_set_cell_prop(table, 3+i, 1, FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-    ft_set_cell_prop(table, 3+i, 2, FT_CPROP_CONT_FG_COLOR, FT_COLOR_CYAN);
-    ft_set_cell_prop(table, 3+i, 3, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-  }
 
-  ft_set_cell_prop(table, FT_ANY_ROW, 1, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
-  ft_set_cell_prop(table, FT_ANY_ROW, 2, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
-  ft_set_cell_prop(table, FT_ANY_ROW, 3, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_RIGHT);
-  ft_set_cell_prop(table, FT_ANY_ROW, 4, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
-  ft_set_cell_prop(table, 8, 0, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
-
-  ft_set_cell_prop(table, 1, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-  ft_set_cell_prop(table, 2, 7, FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-  ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
 
   ft_set_tbl_prop(table, FT_TPROP_TOP_MARGIN, 0);
   ft_set_tbl_prop(table, FT_TPROP_LEFT_MARGIN, 0);
+
 
   const char *table_str = ft_to_u8string(table);
 
@@ -742,9 +800,20 @@ bool hk_show_rendered_layout_name(char *name){
 
     len += r->items[i]->image.qoi_len;
   }
+  res->render = r;
+  hash_t *ids = hash_new();
+  for (size_t i = 0; i < res->qty; i++) {
+    char *n;
+    asprintf(&n,"%lu",res->render->items[i]->window_id);
+    if(!hash_has(ids,n))
+      hash_set(ids,n,(void*)(size_t)(res->render->items[i]->window_id));
+  }
+  res->props = get_window_properties_map_for_window_ids(ids);
+  //log_debug("got %d props in %s",hash_size(res->props), milliseconds_to_string(timestamp() -s));
+  printf("%s\n",create_master_table_report(res));
+  exit(0);
   log_info(
       "Total Size: %s"
-      "Master:\n%s"
       "\nRendering Master %s Window ID %lu to %dx%d @ %dx%d"
       "\nResized Master to %dx%d in %s"
       "\n\tMaster Image: %dx%d in %s"
@@ -754,7 +823,6 @@ bool hk_show_rendered_layout_name(char *name){
       "\nDisplay: Index:%lu|ID:%lu|%dx%d|Space: Index:%lu|ID:%lu|"
       "",
       bytes_to_string(len),
-      create_master_table_report(res),
       r->master->name,r->master->window_id,r->master->width,r->master->height,r->master->x,r->master->y,
       r->master->image.resized_width,r->master->image.resized_height,milliseconds_to_string(r->master->image.resize.dur),
       r->master->image.width,r->master->image.height,milliseconds_to_string(r->master->image.capture.dur),
@@ -856,9 +924,6 @@ bool hk_show_layout(char *name){
       }
   })
 
-  s = timestamp();
-  hash_t *window_props = get_window_properties_map();
-  log_debug("got %d props in %s",hash_size(window_props), milliseconds_to_string(timestamp() -s));
   struct StringBuffer *sb = stringbuffer_new(), *children = stringbuffer_new();
   for(size_t i=0;i < cfg->layouts[I].apps_count;i++){
     stringbuffer_append_string(sb,cfg->layouts[I].apps[i].name);

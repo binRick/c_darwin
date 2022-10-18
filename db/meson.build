@@ -11,9 +11,9 @@ db_include_dirs = [
 
 db_deps = [
   core_dep,
-  core_utils_dep,core_dep,vips_dep,capture_type_dep,capture_utils_dep,
+  core_utils_dep,core_dep,vips_dep,
   ansi_codes_dep,whereami_dep,core_utils_dep,space_utils_dep,
-  window_utils_dep,
+  window_utils_dep,hash_dep,
 ]
 
 db_c_args = [

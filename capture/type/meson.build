@@ -16,7 +16,7 @@ capture_type_deps = [
   capture_utils_dep,stb_dep,msf_gif_dep,gifdec_dep,
   leptonica_dep,
   vips_dep,
-  core_debug_dep,core_utils_dep,
+  core_debug_dep,core_utils_dep,db_dep,
 ]
 
 capture_type_c_args = [

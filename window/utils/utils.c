@@ -35,22 +35,6 @@ struct window_writer_t;
 typedef bool(^window_iteration_cb)(struct window_iteration_t *);
 typedef bool(^window_iteration_writer)(struct window_iteration_t *);
 typedef char *(^window_property_formatter)(struct window_writer_t *self, void* prop, hash_t *map);
-struct window_iteration_process_t {
-  struct rusage r_usage;
-  struct kinfo_proc info;
-};
-struct window_iteration_t {
-  char *name, *role, *subrole;
-  CGWindowID id;
-  pid_t pid;
-  bool can_minimize;
-  CFDictionaryRef window;
-  AXUIElementRef app;
-  hash_t *map;
-  ProcessSerialNumber psn;
-  struct window_iteration_process_t process;
-  hash_t *spaces, *displays, *apps, *copied;
-};
 struct window_writer_t {
   window_iteration_writer writer;
   window_property_formatter formatter;
@@ -377,6 +361,54 @@ log_debug("not getting spaces");
     },
   },
 };
+
+struct hash_t *get_window_properties_map_for_window_ids(hash_t *ids){
+  hash_t *ret = hash_new();
+  hash_t *copied = hash_new();
+  hash_t *props = hash_new();
+  iterate_window_ids(props, ^bool(struct window_iteration_t *p){
+    char *n;
+    asprintf(&n,"%d",p->id);
+    if(hash_has(ids,n) && !hash_has(props,n)){
+      p->copied = copied;
+      if(hash_size(p->copied)>0){
+        hash_each(p->copied,{
+          hash_set(p->map,key,val);
+        });
+      }
+      for(size_t i = 0; i<WINDOW_WRITERS_QTY;i++){
+        if(window_writers[i].enabled && !window_writers[i].writer(p) && window_writers[i].required){
+           if(WINDOW_UTILS_DEBUG_MODE)
+             log_warn("<%s> Skipping Window #%d",window_writers[i].key,p->id);
+           break;
+        }else{
+          void *val = NULL;
+          if(hash_has(p->map,window_writers[i].key))
+            val = hash_get(p->map,window_writers[i].key);
+          char *s = NULL;
+          if(window_writers[i].formatter && (s = window_writers[i].formatter(&(window_writers[i]),hash_get(p->map,window_writers[i].key),p->map)) && (s)){
+          }else if(window_writers[i].fmt && window_writers[i].key){
+            asprintf(&s,window_writers[i].fmt,val);
+          }else{
+            asprintf(&s,"%s: %s", window_writers[i].key, (val) ? "Existant" : "Absent");
+          }
+          if(WINDOW_UTILS_DEBUG_MODE)
+            log_info("%lu %s => %s",i,window_writers[i].key,s);
+        }
+      }
+      hash_set(ret,n,(void*)(p));
+    }
+    return(true);
+    });
+  if(hash_size(ret)==hash_size(ids)){
+    if(WINDOW_UTILS_DEBUG_MODE)
+      log_info("Matched all %d!",hash_size(ret));
+  }else{
+    log_error("Failed to match all");
+    exit(1);
+  }
+  return(ret);
+}
 
 
 struct hash_t *get_window_properties_map(){
