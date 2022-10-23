@@ -1,0 +1,14 @@
+#pragma once
+#ifndef GPP_DLS_OPTIONS_H
+#define GPP_DLS_OPTIONS_H
+
+enum dls_option_id_t {
+  {%for l in option_lists-%}
+  {%for i in l-%}
+  DLS_OPTION_ID_{{i.name.replace(' ','_').replace('-','_')|upper}},
+  {%endfor-%}
+  {%endfor-%}  
+  DLS_OPTION_IDS_QTY,
+};
+
+#endif

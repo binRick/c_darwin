@@ -1,0 +1,7 @@
+{%set slug = env.slug|string-%}
+#include "{{slug}}.h"
+{%for f in project_headers-%}
+{%if f != slug+'.h'%}
+#include "{{f}}"
+{%endif-%}
+{%endfor-%}

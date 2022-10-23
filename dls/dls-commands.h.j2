@@ -1,0 +1,26 @@
+#pragma once
+#ifndef GPP_DLS_COMMANDS_H
+#define GPP_DLS_COMMANDS_H
+#include "gpp-dls-options.h"
+
+enum dls_command_id_t {
+  {%for c in commands-%}
+  DLS_COMMAND_ID_{{c.name|upper}},
+  {%endfor-%}
+  DLS_COMMAND_IDS_QTY,
+};
+
+struct dls_command_t {
+  enum dls_command_id_t commands[1024];
+  enum dls_option_id_t options[1024];
+  size_t options_qty, commands_qty;
+  char *name;
+  char *desc;
+  struct optparse_cmd *(^cmds)(void);
+  struct optparse_opt *(^opts)(void);
+};
+
+void get_dls_command(enum dls_command_id_t id);
+void get_cmd(void);
+
+#endif

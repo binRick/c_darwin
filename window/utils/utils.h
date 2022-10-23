@@ -97,7 +97,7 @@ struct hash_t *get_window_properties_map();
 struct hash_t *get_window_properties_map_for_window_ids(hash_t *ids);
 struct window_info_t *get_focused_window();
 int get_focused_window_id();
-int get_window_display_id(struct window_info_t *window);
+int get_window_display_id(size_t window_id);
 struct window_info_t *get_random_window_info(void);
 size_t get_random_window_info_id(void);
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
@@ -116,6 +116,8 @@ bool window_can_minimize(struct window_info_t *w);
 bool window_is_topmost(struct window_info_t *w);
 size_t get_first_window_id_by_name(char *name);
 uint32_t getWindowId(AXUIElementRef window);
+int get_width_offset_from_display_index(int display_index);
+int get_width_offset_from_display_id(int display_id);
 
 char *windowTitle(char *appName, char *windowName);
 CGPoint AXWindowGetPosition(AXUIElementRef window);

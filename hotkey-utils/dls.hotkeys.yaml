@@ -1,0 +1,171 @@
+name: Dev Config5
+todo_width: 2000
+todo_app: richard
+  #apppositions:
+  #- app: richard
+  #  enabled: yes
+  #  width: 50%
+  #  side: right
+  #- app: Alacritty
+  #  enabled: yes
+  #  width: 50%
+  #  side: left
+layouts:
+  - name: Standard
+    app: main
+    mode: horizontal
+    width: 35.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: Pro
+    app: main
+    mode: horizontal
+    width: 55.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+      - name: Terminal
+keys:
+  - name: Toggle Active Layout
+    key: ctrl+shift+o
+    action: CURRENT
+    action_type: ToggleLayout
+    enabled: yes
+  - name: Move Window to Next Display Right 50%
+    key: ctrl+shift+'
+    action: CURRENT
+    action_type: MoveWindowToNextDisplayRight50Percent
+    enabled: yes
+  - name: Move Window to Prev Display
+    key: ctrl+,
+    action: CURRENT
+    action_type: MoveWindowToPrevDisplay
+    enabled: yes
+  - name: Move Window to Next Display
+    key: ctrl+.
+    action: CURRENT
+    action_type: MoveWindowToNextDisplay
+    enabled: yes
+
+  - name: Normalize Standard Layout
+    key: ctrl+;
+    action: Standard
+    action_type: NormalizeLayout
+    enabled: yes
+
+  - name: Activate iTerm2
+    key: ctrl+'
+    action: iTerm2|iTerm
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Kitty
+    key: ctrl+[
+    action: Kitty
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Right
+    key: ctrl+]
+    action: right
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Google Chrome
+    key: ctrl+=
+    action: Google Chrome
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Alacritty
+    key: ctrl+p
+    action: Alacritty
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Main
+    key: ctrl+[del]
+    action: main
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Activate Richard
+    key: ctrl+[return]
+    action: richard
+    action_type: ActivateApplication
+    enabled: yes
+
+  - name: Focused App Width +5%
+    key: alt+ctrl+=
+    action: null
+    action_type: IncreaseFocusedApplicationWidthFivePercent
+    enabled: yes
+  - name: Focused App Width -5%
+    key: alt+ctrl+-
+    action: null
+    action_type: DecreaseFocusedApplicationWidthFivePercent
+    enabled: yes
+  - name: Focused App Height +5%
+    key: alt+ctrl+'
+    action: null
+    action_type: IncreaseFocusedApplicationHeightFivePercent
+    enabled: yes
+  - name: Focused App Height -5%
+    key: alt+ctrl+;
+    action: null
+    action_type: DecreaseFocusedApplicationHeightFivePercent
+    enabled: yes
+
+  - name: Focused App Left 50%
+    key: ctrl+shift+j
+    action: null
+    action_type: LeftFiftyPercentFocusedApplication
+    enabled: yes
+
+  - name: Focused App Right 50%
+    key: ctrl+shift+k
+    action: null
+    action_type: RightFiftyPercentFocusedApplication
+    enabled: yes
+
+  - name: Focused App Left 25%
+    key: alt+ctrl+m
+    action: null
+    action_type: LeftTwentyFivePercentFocusedApplication
+    enabled: yes
+  - name: Focused App Right 25%
+    key: alt+ctrl+,
+    action: null
+    action_type: RightTwentyFivePercentFocusedApplication
+    enabled: yes
+    
+  - name: Focused App Left 75%
+    key: alt+ctrl+k
+    action: null
+    action_type: LeftSeventyFivePercentFocusedApplication
+    enabled: yes
+  - name: Focused App Right 75%
+    key: alt+ctrl+l
+    action: null
+    action_type: RightSeventyFivePercentFocusedApplication
+    enabled: yes
+
+
+  - name: Focused App Top 50%
+    key: alt+shift+n
+    action: null
+    action_type: TopFiftyPercentFocusedApplication
+    enabled: yes
+
+  - name: Focused App Bottom 50%
+    key: alt+shift+b
+    action: null
+    action_type: BottomFiftyPercentFocusedApplication
+    enabled: yes

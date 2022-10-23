@@ -113,6 +113,18 @@ static void parse_display(struct display_t *d, size_t display_id){
     }
   }
 }
+
+struct display_t *get_display_t_id(size_t display_id){
+  struct display_t *d = NULL, *cur = NULL;
+  struct Vector *v = get_displays_v();
+  for(size_t i = 0; d == NULL && i < vector_size(v);i++){
+    cur = (struct display_t*)vector_get(v,i);
+    if(display_id ==  cur->display_id)
+      d = cur;
+  }
+  return(d);
+}
+
 struct Vector *get_displays_v(){
   struct Vector *a              = vector_new();
   struct Vector *_display_ids_v = get_display_ids_v();
@@ -250,6 +262,22 @@ int get_current_display_id(void){
   return(get_space_display_id(SLSGetActiveSpace(g_connection)));
 }
 
+int get_width_offset_from_display_indexes(int idx1, int idx2){
+  struct Vector *v = get_display_ids_v();
+  size_t        id, idx;
+  int           width = 0;
+
+  for (size_t i = 0; i < vector_size(v); i++) {
+    id  = (size_t)(vector_get(v, i));
+    idx = get_display_id_index(id);
+    if ((size_t)idx > (size_t)idx1 && (size_t)idx < (size_t)idx2) {
+      log_info("w:%d|idx1:%d|idx2:%d|id:%lu|idx:%lu|width:%d|", width, idx1, idx2, id, idx, width);
+      width += (int)(get_display_id_width(id));
+    }
+  }
+  return(width);
+}
+
 size_t get_display_index_id(int display_index){
   struct Vector *v = get_display_ids_v();
   size_t        id, display_id = 0;
@@ -362,6 +390,12 @@ int get_display_id_height(int display_id){
 
   w = displayBounds.size.height;
   return(w);
+}
+
+int get_display_index_width(int display_index){
+  int display_id = get_display_index_id(display_index);
+
+  return(get_display_id_width(display_id));
 }
 
 int get_display_id_width(int display_id){

@@ -2,7 +2,10 @@
 #ifndef LS_WIN_COMMANDS_H
 #define LS_WIN_COMMANDS_H
 #include "dls/dls.h"
+#include "dls/gpp-dls-commands.h"
+const char *dls_command_names[];
 ////////////////////////////////////////////
+#define ICON_APP                      "💈"
 #define ICON_LIST                     "💈"
 #define ICON_SHOW                     "🐝"
 #define ICON_TEST                     "🔔"
@@ -83,7 +86,6 @@
 #define COLOR_SHOW                    "\x1b[38;2;25;25;112m"
 #define COLOR_SAVE                    "\x1b[38;2;25;25;112m"
 #define COLOR_PNG                     "\x1b[38;2;25;25;112m"
-#define COLOR_ICNS                    "\x1b[38;2;25;25;112m"
 #define COLOR_APPLY                   "\x1b[38;2;153;0;102m"
 #define COLOR_LAYOUT                  "\x1b[38;2;211;221;228m"
 #define COLOR_RENDER                  "\x1b[38;2;0;130;161m"
@@ -265,6 +267,9 @@ enum common_option_name_t {
   COMMON_OPTION_DURATION_SECONDS,
   COMMON_OPTION_SORT_APP_KEYS,
   COMMON_OPTION_NAMES_QTY,
+  COMMON_OPTION_TERMINALS,
+  COMMON_OPTION_KITTY,
+  COMMON_OPTION_ALACRITTY,
 };
 enum command_type_t {
   COMMAND_WINDOW_MOVE = 1,
@@ -304,6 +309,7 @@ enum command_type_t {
   COMMAND_MENU_BAR,
   COMMAND_DOCK,
   COMMAND_APPS,
+  COMMAND_APPS_LIST,
   COMMAND_PROCESSES,
   COMMAND_USBS,
   COMMAND_MONITORS,
@@ -350,6 +356,7 @@ enum command_type_t {
   COMMAND_DB_SAVE,
   COMMAND_DB_LOAD,
   COMMAND_HOTKEYS_SERVER,
+  COMMAND_HOTKEYS_FORK_SERVER,
   COMMAND_HOTKEYS_LIST,
   COMMAND_UNMINIMIZE_WINDOW,
   COMMAND_PID_IS_MINIMIZED,

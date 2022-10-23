@@ -1,0 +1,1 @@
+#define J2_include(SLUG,__J2_TEMPLATE__,__VARS__) env slug=SLUG command j2 -f yaml -o /dev/stdout -e env __J2_TEMPLATE__ __VARS__

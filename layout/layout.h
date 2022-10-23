@@ -1,0 +1,8 @@
+#pragma once
+#ifndef LAYOUT_H
+#define LAYOUT_H
+#include "core/core.h"
+//////////////////////////////////////
+#include "layout/utils/utils.h"
+//////////////////////////////////////
+#endif

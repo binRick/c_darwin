@@ -26,6 +26,7 @@ core_deps = [
   log_dep,chan_dep,clamp_dep,glib_dep,c_workqueue_dep,
   ms_dep,qoi_dep,
   spng_dep,msf_gif_dep,libforks_dep,
+  chan_utils_dep,chan_dep,
   djbhash_dep,
   subprocess_dep,c_forever_dep,tinydir_dep,tiny_regex_c_dep,smaz_dep,c_timer_dep,uuid4_dep,
   str_replace_dep,module_dep,querystring_c_dep,
@@ -40,6 +41,8 @@ core_deps = [
   wildcardcmp_dep,
   bytes_dep,tempdir_dep,fs_c_dep,b64_dep,fancy_progress_dep,
   url_h_dep,vips_dep,hashmap_h_dep,bitfield_dep,levenshtein_dep,
+  container_of_dep,
+  bestline_dep,
 ]
 
 core_c_args = [

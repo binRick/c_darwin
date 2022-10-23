@@ -15,4 +15,9 @@ option('enable-binary-tests',
   value : false,
   description : 'Enables binary tests.'
 )
+option('gpp_processor',
+  type : 'boolean',
+  value : false,
+  description : 'Enables GPP Processing'
+)
 

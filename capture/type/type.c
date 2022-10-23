@@ -12,9 +12,21 @@
 #define BAR_MIN_WIDTH                        20
 #define BAR_MAX_WIDTH_TERMINAL_PERCENTAGE    .5
 #define BAR_MESSAGE_COMPRESSION_TEMPLATE     "Compress %5lu %s %ss " AC_RESETALL AC_YELLOW AC_UNDERLINE AC_ITALIC "%s" AC_RESETALL "\t\t"
-#define BAR_MESSAGE_CAPTURE_TEMPLATE         "Capturing %4lu %s %5s\t\t"
-#define BAR_MESSAGE_DB_SAVE_TEMPLATE         "Saving %7lu %s %6ss of " AC_RESETALL AC_YELLOW AC_UNDERLINE AC_ITALIC "%s"  AC_RESETALL "\t"
-#define BAR_MESSAGE_TEMPLATE                 "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
+#define CLEAR_UP_CODE0 \
+  ""                   \
+  "\033[1A"
+#define CLEAR_UP_CODE1 \
+  "\033[2K"
+#define CLEAR_UP_CODE2 \
+  "\033[0J"            \
+  ""
+
+#define BAR_MESSAGE_CAPTURE_TEMPLATE \
+  CLEAR_UP_CODE1                     \
+  CLEAR_UP_CODE2                     \
+  "Capturing %4lu %s %5s\t\t"
+#define BAR_MESSAGE_DB_SAVE_TEMPLATE    "Saving %7lu %s %6ss of " AC_RESETALL AC_YELLOW AC_UNDERLINE AC_ITALIC "%s"  AC_RESETALL "\t"
+#define BAR_MESSAGE_TEMPLATE            "$E BOLD; $E%s: $E RGB(8, 104, 252); $E[$E RGB(8, 252, 104);UNDERLINE; $E$F'-'$F$E RGB(252, 8, 104); $E$N'-'$N$E RESET_UNDERLINE;RGB(8, 104, 252); $E] $E FG_RESET; $E$P%% $E RESET; $E"
 ////////////////////////////////////////////
 #include "capture/type/type.h"
 ////////////////////////////////////////////

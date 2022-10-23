@@ -1,0 +1,6 @@
+#define SLUG dls
+#define VARS_FILES "../etc/gpp.yaml"
+#define C_TEMPLATE "dls-options.c.j2"
+#define DLS_COMMANDS_TMP_FILE "/tmp/dls-options.c.tmp"
+#include "../etc/common.gpp"
+#exec J2_include(SLUG,"dls-options.c.j2",".vars.yaml")

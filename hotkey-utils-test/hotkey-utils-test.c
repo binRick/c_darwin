@@ -19,12 +19,7 @@ struct test_cfg_t {
 static struct test_cfg_t *test_cfg;
 
 void ensure_test_cfg(){
-  if (test_cfg->config_path == NULL) {
-    test_cfg->config_path = get_yaml_config_file_path(test_cfg->argv);
-  }
-  if (test_cfg->cfg == NULL) {
-    test_cfg->cfg = load_yaml_config_file_path(test_cfg->config_path);
-  }
+  test_cfg->cfg = load_yaml_config_file_path(get_homedir_yaml_config_file_path());
 }
 
 TEST t_hotkey_utils_execute_hotkey_config_key(void *KEY){
@@ -81,11 +76,11 @@ SUITE(s_hotkey_utils_test) {
   RUN_TEST(t_hotkey_utils_config_path);
   RUN_TEST(t_hotkey_utils_load_config);
 //  RUN_TESTp(t_hotkey_utils_activate_application, (void *)"Alacritty");
-  RUN_TESTp(t_hotkey_utils_get_hotkey_config_key, (void *)"ctrl-5");
-  RUN_TESTp(t_hotkey_utils_get_hotkey_config_key, (void *)"alt-shift-[");
+//  RUN_TESTp(t_hotkey_utils_get_hotkey_config_key, (void *)"ctrl-5");
+//  RUN_TESTp(t_hotkey_utils_get_hotkey_config_key, (void *)"alt-shift-[");
 //  RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void*)"ctrl-5");
   //RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"ctrl-7");
-  RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"alt-shift-]");
+//  RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"alt-shift-]");
   //RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"alt-shift-[");
 }
 

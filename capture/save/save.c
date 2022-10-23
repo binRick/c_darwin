@@ -48,24 +48,6 @@ static int receive_save_request_handler(void *R){
     qty++;
     struct capture_image_result_t *res = (struct capture_image_result_t *)msg;
     save_started = timestamp();
-    /*
-     * switch(res->format){
-     * case IMAGE_TYPE_WEBP:
-     *  log_info("webp");
-     *  break;
-     *  VipsImage *v = { 0 };
-     *  v = vips_image_new_from_buffer(res->pixels,res->len,"",NULL);
-     *  if(!v){
-     *    log_error("Failed to decode webp from %lu pixels",res->len);
-     *  }else{
-     *    int page_height = vips_image_get_page_height( v );
-     *    int n_pages = image->Ysize / page_height;
-     *    Dbg(n_pages,%d);
-     *  }
-     *    if(v)g_object_unref(v);
-     * default: break;
-     * }
-     */
     switch (res->format) {
     case IMAGE_TYPE_QOI:
       if (!fsio_write_binary_file(res->file, res->pixels, res->len)) {
@@ -92,23 +74,23 @@ static int receive_save_request_handler(void *R){
         g_object_unref(image);
       }
 
-      break;
     }
     dur = timestamp() - save_started;
 
-    debug("Thread #%lu>"
-          "\n\tReceived %s %s Save Capture Request #%lu to %s"
-          "%s",
-          r->index + 1,
-          bytes_to_string(res->len),
-          image_type_name(res->format),
-          qty,
-          res->file,
-          ""
-          );
+    log_debug("Thread #%lu>"
+            "\n\tReceived %s %s Save Capture Request #%lu to %s"
+            "%s",
+            r->index + 1,
+            bytes_to_string(res->len),
+            image_type_name(res->format),
+            qty,
+            res->file,
+            ""
+            );
     r->bytes = fsio_file_size(res->file);
     chan_send(r->done_chan, (void *)r);
   }
+  chan_close(r->done_chan);
   debug(
     "%lu> Save Handler complete. Processed %lu items in %s"
     "%s",
@@ -132,7 +114,7 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
   cbar_t    *bar       = NULL;
   pthread_t *threads[concurrency];
   chan_t    *chans[concurrency];
-  chan_t    *done_chan = chan_init(0);
+  chan_t    *done_chans[concurrency];
 
   if (progress_bar_mode) {
     bar = calloc(1, sizeof(struct cbar_t));
@@ -157,8 +139,9 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
         );
   for (size_t i = 0; i < concurrency; i++) {
     chans[i] = chan_init(vector_size(results_v));
+    done_chans[i] = chan_init(vector_size(results_v)/concurrency);
     struct save_result_t *r = calloc(1, sizeof(struct save_result_t));
-    r->done_chan = done_chan;
+    r->done_chan = done_chans[i];
     r->recv_chan = chans[i];
     r->index     = i;
     threads[i]   = calloc(1, sizeof(pthread_t));
@@ -169,19 +152,22 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
     r->format = format;
     chan_send(chans[i % concurrency], r);
   }
+  sleep(1);
   for (size_t i = 0; i < concurrency; i++) {
     chan_close(chans[i % concurrency]);
   }
-  while (res->qty < vector_size(results_v)) {
-    chan_recv(done_chan, &msg);
-    res->qty++;
-    if (progress_bar_mode) {
-      bar->progress += (float)((float)1 / (float)(vector_size(results_v)));
-      cbar_display_bar(bar);
+  size_t done_qty =0;
+  for (size_t i = 0; i < concurrency; i++) {
+    while (chan_recv(done_chans[i], &msg) == 0) {
+      if (progress_bar_mode) {
+        bar->progress += (float)((float)1 / (float)(vector_size(results_v)));
+        cbar_display_bar(bar);
+      }
+      struct save_result_t *r = (struct save_result_t *)msg;
+      res->bytes += r->bytes;
+      log_debug("Received save result #%lu/%lu %s", done_qty+1, vector_size(results_v), bytes_to_string(r->bytes));
+      done_qty++;
     }
-    struct save_result_t *r = (struct save_result_t *)msg;
-    res->bytes += r->bytes;
-    debug("Received save result #%lu/%lu %s", res->qty, vector_size(results_v), bytes_to_string(r->bytes));
   }
   res->dur = timestamp() - res->started;
   if (progress_bar_mode) {

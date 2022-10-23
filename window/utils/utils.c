@@ -504,7 +504,6 @@ hash_t *get_window_ids_v_from_names(hash_t *names){
 
   return(qtys);
 }
-//pid            = CFDictionaryGetInt(window, kCGWindowOwnerPID);
 
 hash_t *get_first_window_id_from_names(hash_t *names){
   CFArrayRef      windowList;
@@ -689,8 +688,8 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
   return(foundAppWindow);
 }
 
-int get_window_display_id(struct window_info_t *window){
-  CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window->window_id);
+int get_window_display_id(size_t window_id){
+  CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), window_id);
   CFUUIDRef   uuid  = CFUUIDCreateFromString(NULL, _uuid);
 
   CFRelease(_uuid);
@@ -1216,7 +1215,7 @@ void focus_window_id(size_t window_id){
   pid_t               pid = get_window_id_pid(window_id);
   ProcessSerialNumber psn = PID2PSN(pid);
 
-  log_debug("%lu|%d|%d|%d", window_id, pid, psn.highLongOfPSN, psn.lowLongOfPSN);
+//  log_debug("FOCUS> wid:%lu|pid:%d|psn:%d", window_id, pid, psn.lowLongOfPSN);
   return(focus_window_id_psn(window_id, psn));
 }
 
@@ -1572,15 +1571,26 @@ void window_id_send_to_space(size_t window_id, uint64_t dsid) {
   SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
 }
 
+int get_width_offset_from_display_id(int display_id){
+  int display_index = get_display_index_id(display_id);
+
+  return(get_width_offset_from_display_index(display_index));
+}
+
+int get_width_offset_from_display_index(int display_index){
+  int index = 0;
+
+  for (int i = 0; i < display_index; i++) {
+    index += get_display_index_width(i);
+  }
+  return(index);
+}
+
 bool set_window_id_to_space(size_t window_id, int space_id) {
   uint32_t wid = (uint32_t)window_id;
   uint64_t sid = (uint64_t)space_id;
-
-  log_info("Window ID: %d| Space ID: %lld", wid, sid);
   CFArrayRef wids = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
-
-  SLSMoveWindowsToManagedSpace(CGSMainConnectionID(), wids, (uint64_t)space_id);
-  log_info("%lu|%d", window_id, space_id);
+  SLSMoveWindowsToManagedSpace(g_connection, wids, sid);
   return(true);
 }
 

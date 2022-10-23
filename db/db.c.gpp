@@ -1,0 +1,6 @@
+#define SLUG db
+#define VARS "../etc/gpp.yaml"
+#define TEMPLATE "core.c.j2"
+#include "../etc/common.gpp"
+
+#exec J2_include(SLUG,TEMPLATE,VARS)

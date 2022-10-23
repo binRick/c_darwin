@@ -11,6 +11,7 @@ struct display_t {
   bool          is_main;
   struct Vector *space_ids_v, *window_ids_v;
 };
+struct display_t *get_display_t_id(size_t display_id);
 int get_display_id_index(size_t display_id);
 size_t get_display_index_id(int display_index);
 struct Vector *get_display_id_window_ids_v(uint32_t display_id);
@@ -42,6 +43,8 @@ CGRect get_display_rect(uint32_t did);
 //////////////////////////////////////
 struct Vector *get_display_id_space_ids_v(uint32_t did);
 int get_current_display_id(void);
+int get_display_index_width(int display_id);
+int get_width_offset_from_display_indexes(int idx1, int idx2);
 int get_display_id_for_space(uint32_t sid);
 uint64_t get_dsid_from_sid(uint32_t sid);
 int get_space_display_id(int sid);

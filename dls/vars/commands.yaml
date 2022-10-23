@@ -1,0 +1,38 @@
+commands:
+  - { name: layout_ls, desc: "List Layouts", commands: [], options: [], }
+  - { name: layout_names, desc: "Layout Names", commands: [], options: [], }
+  - { name: layout_apply, desc: "Apply Layout", commands: [], options: [], }
+  - { name: layout_show, desc: "Show Layout", commands: [], options: [], }
+  - { name: layout_render, desc: "Render Layout", commands: [], options: [], }
+  - { name: layout_test, desc: "Test Layout", commands: [], options: [], }
+  - name: layout
+    desc: "Layout Manager"
+    options:
+      - verbose_mode
+      - debug_mode
+    commands:
+      - layout_ls
+      - layout_names
+      - layout_apply
+      - layout_show
+      - layout_render
+      - layout_test
+  - name: capture_window
+    desc: "Layout Manager"
+    options: []
+    commands: []
+  - name: capture_space
+    desc: "Layout Manager"
+    options: []
+    commands: []
+  - name: capture_display
+    desc: "Layout Manager"
+    options: []
+    commands: []
+  - name: capture
+    desc: "Layout Manager"
+    options: []
+    commands:
+      - capture_window
+      - capture_space
+      - capture_display

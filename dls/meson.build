@@ -3,6 +3,30 @@ darwin_ls_srcs = [
   'dls-commands.c',
   'dls-aliases.c',
 ]
+if get_option('gpp_processor')
+  message('GPP Processor Enabled')
+  run_command('sh','-c','cat '+meson.current_source_dir()+'/vars/*.yaml|yaml2json|json2yaml > '+meson.current_source_dir()+'/.vars.yaml',check:true).stdout().strip()
+  foreach f : run_command('find',meson.current_source_dir(),'-type','f','-name','*.gpp',check:true).stdout().strip().split('\n')
+    fn_hash = ''
+    fn_hash1 = ''
+    temp_file = run_command('mktemp',check:true).stdout().strip()
+    fn = join_paths(meson.current_source_dir(),'gpp-'+fs.stem(f))
+    gpp_out = run_command('gpp','-x','-o',temp_file,f,check:true).stdout().strip()
+    gpp_out_hash = fs.hash(temp_file,'sha256')
+    if fs.exists(fn)
+      fn_hash = fs.hash(fn,'sha256')
+    endif
+    if(not fs.exists(fn) or fn_hash != gpp_out_hash)
+      run_command('cp',temp_file,fn,check:true).stdout().strip()
+      fn_hash1 = fs.hash(fn,'sha256')
+    endif
+    message('GPP> '+f+'|'+fn+'|'+temp_file+'|',gpp_out_hash,'|',fn_hash,'|after copy:',fn_hash1)
+    if not darwin_ls_srcs.contains(fn)
+      darwin_ls_srcs += fn
+    endif
+  endforeach
+endif
+
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
   '.',
@@ -52,24 +76,24 @@ darwin_ls_link_args = [
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
 timeout = 15
 test_args = [
-  { 'name': 'List Up to 10 Spaces', 'command': 'spaces', 'args': ['--limit','10'], 'timeout': 20, },
-  { 'name': 'List Up to 10 Displays', 'command': 'displays', 'args': ['--limit','10'], 'timeout': timeout,  },
-  { 'name': 'List Up to 10 Installed Applications Sorted By Name Ascending', 'command': 'apps', 'args': ['--sort-by','name','--asc','--limit','10'],   'timeout': 30,},
-  { 'name': 'List 10 Largest Fonts', 'command': 'fonts', 'args': ['--sort-by','size','--desc','--limit','10'],   'timeout': 30,},
-  { 'name': 'List 10 Newest Windows', 'command': 'windows', 'args': ['--sort-by','id','--desc','--limit','10'],   'timeout': timeout,},
-  { 'name': 'List Windows Not on Currently Focused Display', 'command': 'windows', 'args': ['--not-current-display'],   'timeout': 10,},
-  { 'name': 'List Windows On Currently Focused Display', 'command': 'windows', 'args': ['--current-display'],   'timeout': 10,},
-  { 'name': 'List Windows Not on Currently Focused Space', 'command': 'windows', 'args': ['--not-current-space'],   'timeout': 10,},
-  { 'name': 'List Windows On Currently Focused Space', 'command': 'windows', 'args': ['--current-space'],   'timeout': 10,},
-  { 'name': 'List Minimized Windows', 'command': 'windows', 'args': ['--minimized'],   'timeout': timeout,},
+  #{ 'name': 'List Up to 10 Spaces', 'command': 'spaces', 'args': ['--limit','10'], 'timeout': 20, },
+  #{ 'name': 'List Up to 10 Displays', 'command': 'displays', 'args': ['--limit','10'], 'timeout': timeout,  },
+  #{ 'name': 'List Up to 10 Installed Applications Sorted By Name Ascending', 'command': 'apps', 'args': ['--sort-by','name','--asc','--limit','10'],   'timeout': 30,},
+  #{ 'name': 'List 10 Largest Fonts', 'command': 'fonts', 'args': ['--sort-by','size','--desc','--limit','10'],   'timeout': 30,},
+  #{ 'name': 'List 10 Newest Windows', 'command': 'windows', 'args': ['--sort-by','id','--desc','--limit','10'],   'timeout': timeout,},
+  #{ 'name': 'List Windows Not on Currently Focused Display', 'command': 'windows', 'args': ['--not-current-display'],   'timeout': 10,},
+  #{ 'name': 'List Windows On Currently Focused Display', 'command': 'windows', 'args': ['--current-display'],   'timeout': 10,},
+  #{ 'name': 'List Windows Not on Currently Focused Space', 'command': 'windows', 'args': ['--not-current-space'],   'timeout': 10,},
+  #{ 'name': 'List Windows On Currently Focused Space', 'command': 'windows', 'args': ['--current-space'],   'timeout': 10,},
+  #{ 'name': 'List Minimized Windows', 'command': 'windows', 'args': ['--minimized'],   'timeout': timeout,},
   #  { 'name': 'List Non Minimized Windows', 'command': 'windows', 'args': ['--non-minimized'],   'timeout': 3,},
-  { 'name': 'List USB Devices', 'command': 'usb', 'args': [],   'timeout': timeout,},
-  { 'name': 'List Monitors', 'command': 'monitors', 'args': [],   'timeout': timeout,},
-  { 'name': 'List Processes', 'command': 'processes', 'args': [],   'timeout': 30,},
+  #{ 'name': 'List USB Devices', 'command': 'usb', 'args': [],   'timeout': timeout,},
+  #  { 'name': 'List Monitors', 'command': 'monitors', 'args': [],   'timeout': timeout,},
+  #{ 'name': 'List Processes', 'command': 'processes', 'args': [],   'timeout': 30,},
   { 'name': 'Copy Contents to Clipboard', 'command': 'clipboard', 'args': ['copy','--content','test123'],   'timeout': timeout,},
   { 'name': 'Paste Clipboard Contents', 'command': 'clipboard', 'args': ['paste'],   'timeout': timeout,},
-  { 'name': 'List Kitty Processes', 'command': 'kittys', 'args': [],   'timeout': 10,},
-  { 'name': 'List Alacritty Processes', 'command': 'alacrittys', 'args': [],   'timeout': 10,},
+  #{ 'name': 'List Kitty Processes', 'command': 'kittys', 'args': [],   'timeout': 10,},
+  #  { 'name': 'List Alacritty Processes', 'command': 'alacrittys', 'args': [],   'timeout': 10,},
   #  { 'name': 'Capture Windows','command':'capture', 'args': ['window','--write','--dir','/tmp/dls-test-windows','--all','--limit','5','--formats','all'], 'timeout': 15, },
   #  { 'name': 'Capture Spaces','command':'capture', 'args': ['space','--write','--dir','/tmp/dls-test-spaces','--all','--limit','5','--formats','all'], 'timeout': 15, },
   # { 'name': 'Capture Displays','command':'capture', 'args': ['display','--write','--dir','/tmp/dls-test-displays','--all','--limit','5','--formats','all'], 'timeout': 15, },

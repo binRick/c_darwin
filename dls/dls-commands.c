@@ -124,6 +124,18 @@
       }                                       \
     } while (0); }
 /////////////////////////////////////////////////////////////////////////////////////
+#define CLIPBOARD_COMMANDS()\
+  COMMAND(ICON_PASTE, PASTE, "paste", COLOR_PASTE, "Paste Clipboard", *_command_paste)\
+  COMMAND(ICON_COPY, COPY, "copy", COLOR_COPY, "Copy Clipboard", *_command_copy)
+#define ICON_COMMANDS()\
+  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)\
+  COMMAND(ICON_LIST, ICON_LIST, "ls", COLOR_LIST, "List Icons", *_command_icon_list)
+#define EXTRACT_COMMANDS()\
+  COMMAND(ICON_EXTRACT, EXTRACT, "extract", COLOR_WINDOW, "Extract Text", 0)\
+  COMMAND(ICON_WINDOW, EXTRACT_WINDOW, "window", COLOR_WINDOW, "Extract Window", *_command_extract)\
+  COMMAND(ICON_SPACE, EXTRACT_SPACE, "space", COLOR_SPACE, "Extract Space", *_command_extract)\
+  COMMAND(ICON_DISPLAY, EXTRACT_DISPLAY, "display", COLOR_DISPLAY, "Extract Display", *_command_extract)\
+/////////////////////////////////////////////////////////////////////////////////////
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void debug_dls_arguments();
 static bool initialize_args(struct args_t *ARGS);
@@ -269,7 +281,6 @@ static bool initialize_args(struct args_t *ARGS){
 }
 static struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
   struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
-
   for (size_t i = 0; i < vector_size(structs) && vector_size(ids) < limit; i++) {
     vector_push(ids, (void *)capture_type_getters[id].get_struct_index_pk(structs, i));
   }
@@ -333,6 +344,7 @@ COMMAND_PROTOTYPE(window_unsticky)
 COMMAND_PROTOTYPE(window_all_spaces)
 COMMAND_PROTOTYPE(window_not_all_spaces)
 COMMAND_PROTOTYPE(hotkeys_server)
+COMMAND_PROTOTYPE(hotkeys_fork_server)
 COMMAND_PROTOTYPE(icon_list)
 COMMAND_PROTOTYPE(capture_window)
 COMMAND_PROTOTYPE(capture_space)
@@ -408,7 +420,6 @@ static void _check_concurrency(int concurrency);
 static void _check_width_less(int width_less);
 static void _check_height_group(uint16_t window_id);
 static void _check_output_mode(char *output_mode);
-static void _check_output_file(char *output_file);
 static void _check_output_png_file(char *output_icns_file);
 static void _check_input_png_file(char *input_png_file);
 static void _check_output_icns_file(char *output_icns_file);
@@ -420,7 +431,14 @@ static void _check_xml_file(char *xml_file_path);
 static void _check_icon_sizes(char *strs);
 static void _check_pid(void);
 static void _set_windowids(char *windowids);
-////////////////////////////////////////////
+#include "dls/dls-commands-static.c"
+static void __attribute__((constructor)) __constructor__dls(void);
+static void __attribute__((destructor)) __destructor__dls(void);
+static bool dls_normalize_arguments(int *argc, char *argv[]);
+static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
+static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
+static void __at_exit(void);
+static void run_main_cmd(int argc, char *argv);
 common_option_b    common_options_b[] = {
 /////////////////////////////////////////////////////
   COMMON_OPTION_CAPTURE_MODE(DISPLAY,                               "display", "Display"),
@@ -768,7 +786,6 @@ common_option_b    common_options_b[] = {
       .description = "Output File",
       .arg_name = "OUTPUT-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_FILE].arg_data_type,
-      .function = check_cmds[CHECK_COMMAND_OUTPUT_FILE].fxn,
       .arg_dest = &(args->output_file),
     });
   },
@@ -999,6 +1016,7 @@ common_option_b    common_options_b[] = {
   },
 };
 ////////////////////////////////////////////
+#include "dls/dls-commands-static.c"
 struct check_cmd_t check_cmds[] = {
   [CHECK_COMMAND_WRITE_DIRECTORY] =      {
     .fxn           = (void (*)(void))(*_check_write_directory),
@@ -1101,7 +1119,6 @@ struct check_cmd_t check_cmds[] = {
     .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_OUTPUT_FILE] =          {
-    .fxn           = (void (*)(void))(*_check_output_file),
     .arg_data_type = DATA_TYPE_STR,
   },
   [CHECK_COMMAND_TYPES_QTY] =            { 0 },
@@ -1159,6 +1176,9 @@ struct cmd_t       cmds[] = {
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
+  CLIPBOARD_COMMANDS()
+  ICON_COMMANDS()
+  EXTRACT_COMMANDS()
   COMMAND(ICON_SECURITY, SECURITY, "security", COLOR_SECURITY, "Security Automation", *_command_open_security)
   COMMAND(ICON_HTTP, HTTPSERVER, "http", COLOR_HTTP, "HTTP Server", *_command_httpserver)
   COMMAND(ICON_MENU, MENU_BAR, "menu-bar", COLOR_MENU, "Menu Bar Info", *_command_menu_bar)
@@ -1171,9 +1191,12 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_INFO, DB_INFO, "info", COLOR_INFO, "Database Info", *_command_db_info)
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
   COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
-  COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkeys Server", *_command_hotkeys_server)
+  COMMAND(ICON_APP, APPS, "app", COLOR_SERVER, "Application", 0)
+  COMMAND(ICON_LIST, APPS_LIST, "ls", COLOR_SERVER, "List Application", *_command_list_app)
+  COMMAND(ICON_SERVER, HOTKEYS, "hotkey", COLOR_SERVER, "Hotkey", 0)
+  COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkey Server", *_command_hotkeys_server)
+  COMMAND(ICON_SERVER, HOTKEYS_FORK_SERVER, "fork-server", COLOR_SERVER, "Hotkey Fork Server", *_command_hotkeys_fork_server)
   COMMAND(ICON_LIST, HOTKEYS_LIST, "ls", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
-  COMMAND(ICON_LIST, ICON_LIST, "ls", COLOR_LIST, "List Icons", *_command_icon_list)
   COMMAND(ICON_LAYOUT, LAYOUT, "layout", COLOR_LAYOUT, "Layout Manager", 0)
   COMMAND(ICON_LIST, LAYOUT_LIST, "ls", COLOR_LIST, "List Layouts", *_command_layout_list)
   COMMAND(ICON_NAME, LAYOUT_NAMES, "names", COLOR_NAME, "List Layout Names", *_command_layout_names)
@@ -1182,7 +1205,6 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_SHOW, LAYOUT_SHOW, "show", COLOR_SHOW, "Show Layout", *_command_layout_show)
   COMMAND(ICON_RENDER, LAYOUT_RENDER, "render", COLOR_RENDER, "Render Layout", *_command_layout_render)
   COMMAND(ICON_LIST, LIST, "ls", COLOR_LIST, "List", 0)
-  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
   COMMAND(ICON_LIST, WINDOW_LIST, "ls", AC_RED, "List Windows", *_command_list_window)
   COMMAND(ICON_ID, WINDOW_IDS, "ids", COLOR_ID, "List Window IDs", *_command_window_ids)
@@ -1207,12 +1229,6 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_WINDOW, ANIMATE_WINDOW, "window", COLOR_WINDOW, "Animate Window", *_command_animate)
   COMMAND(ICON_SPACE, ANIMATE_SPACE, "space", COLOR_SPACE, "Animate Space", *_command_animate)
   COMMAND(ICON_DISPLAY, ANIMATE_DISPLAY, "display", COLOR_DISPLAY, "Animate Display", *_command_animate)
-  COMMAND(ICON_EXTRACT, EXTRACT, "extract", COLOR_WINDOW, "Extract Text", *_command_extract)
-  COMMAND(ICON_WINDOW, EXTRACT_WINDOW, "window", COLOR_WINDOW, "Extract Window", *_command_extract)
-  COMMAND(ICON_SPACE, EXTRACT_SPACE, "space", COLOR_SPACE, "Extract Space", *_command_extract)
-  COMMAND(ICON_DISPLAY, EXTRACT_DISPLAY, "display", COLOR_DISPLAY, "Extract Display", *_command_extract)
-  COMMAND(ICON_PASTE, PASTE, "paste", COLOR_PASTE, "Paste Clipboard", *_command_paste)
-  COMMAND(ICON_COPY, COPY, "copy", COLOR_COPY, "Copy Clipboard", *_command_copy)
   COMMAND(ICON_ANIMATE, ANIMATE, "animate", COLOR_ANIMATE, "Animated Capture", *_command_animate)
   COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)
   COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)
@@ -1228,17 +1244,17 @@ struct cmd_t       cmds[] = {
 #undef COMMAND
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-  LIST_SUBCOMMAND(SPACES, "spaces", "Spaces", _command_list_space),
-  LIST_SUBCOMMAND(DISPLAYS, "displays", "Displays", _command_list_display),
-  LIST_SUBCOMMAND(APPS, "apps", "Applications", _command_list_app),
-  LIST_SUBCOMMAND(FONTS, "fonts", "Fonts", _command_list_font),
-  LIST_SUBCOMMAND(PROCESSES, "processes", "Processes", _command_list_process),
-  LIST_SUBCOMMAND(KITTYS, "kittys", "Kittys", _command_list_kitty),
+  LIST_SUBCOMMAND(SPACES, "space", "Space", _command_list_space),
+  LIST_SUBCOMMAND(DISPLAYS, "display", "Display", _command_list_display),
+//  LIST_SUBCOMMAND(APPS, "app", "Application", _command_list_app),
+  LIST_SUBCOMMAND(FONTS, "font", "Font", _command_list_font),
+  LIST_SUBCOMMAND(PROCESSES, "process", "Process", _command_list_process),
+//  LIST_SUBCOMMAND(KITTYS, "kittys", "Kittys", _command_list_kitty),
   LIST_SUBCOMMAND(USBS, "usbs", "USB Devices", _command_list_usb),
   LIST_SUBCOMMAND(MONITORS, "monitors", "Monitors", _command_list_monitor),
-  LIST_SUBCOMMAND(HOTKEYS, "hotkeys", "Hot Keys", _command_list_hotkey),
-  LIST_SUBCOMMAND(WINDOWS, "windows", "Windows", _command_list_window),
-  LIST_SUBCOMMAND(ALACRITTYS, "alacrittys", "Alacrittys", _command_list_alacritty),
+//  LIST_SUBCOMMAND(HOTKEYS, "hotkey", "Hot Key", _command_list_hotkey),
+  LIST_SUBCOMMAND(WINDOWS, "window", "Window", _command_list_window),
+//  LIST_SUBCOMMAND(ALACRITTYS, "alacrittys", "Alacrittys", _command_list_alacritty),
 #undef LIST_SUBCOMMAND
   [COMMAND_TYPES_QTY] =           { 0},
 };
@@ -1524,14 +1540,6 @@ static void _check_output_icns_file(char *output_icns_file){
   return(EXIT_SUCCESS);
 }
 
-static void _check_output_file(char *output_file){
-  if (!output_file || strlen(output_file) < 5) {
-    log_error("Invalid output File");
-    exit(EXIT_FAILURE);
-  }
-  return(EXIT_SUCCESS);
-}
-
 static void _check_output_mode(char *output_mode){
   for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++) {
     if (strcmp(output_mode, output_modes[i]) == 0) {
@@ -1668,12 +1676,17 @@ static void _command_paste(){
   if (len < 1) {
     exit(EXIT_FAILURE);
   }
-  fprintf(stdout, "%s\n", pasteboard_content);
+  if(args->output_file)
+    fsio_write_binary_file(args->output_file,pasteboard_content,len);
+  else
+    fprintf(stdout, "%s\n", pasteboard_content);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_copy(){
   bool ok = false;
+  if(args->input_file)
+    args->content = fsio_read_binary_file(args->input_file);
 
   if (args->content == NULL) {
     asprintf(&(args->content), "%lld", timestamp());
@@ -2151,6 +2164,12 @@ static void _command_move_window(){
   if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
     log_debug("moving window %lu to %dx%d", w->window_id, args->x, args->y);
   }
+  log_debug("Moving window #%lu to %dx%d on space %d on display %d",
+            w->window_id,
+            args->x, args->y,
+            args->space_id,
+            args->display_id
+            );
   exit((move_window_id(args->id, args->x, args->y) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -2546,6 +2565,14 @@ static void _command_db_info(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_hotkeys_fork_server(){
+  log_info("fork server");
+  pid_t pid = run_hotkeys_server_with_callback(&hotkey_callback);
+  log_info("Forked %d",pid);
+  while(true)
+    sleep(5);
+  //exit((hotkeys_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+}
 static void _command_hotkeys_server(){
   exit((hotkeys_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

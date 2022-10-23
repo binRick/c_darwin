@@ -34,28 +34,11 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-struct TesseractArgs {
-  size_t                 id;
-  char                   *file;
-  unsigned char          *img;
-  CGImageRef             img_ref;
-  size_t                 index, img_len, img_width, img_height;
-  enum image_type_id_t   format;
-  enum capture_type_id_t type;
-  struct Vector          *results_v;
-};
+#include "tesseract/utils/static.c"
+
 ////////////////////////////////////////////
-static bool       TESSERACT_UTILS_DEBUG_MODE = false;
-static const char *tess_lang                 = "eng";
-///////////////////////////////////////////////////////////////////////
-static void __attribute__((destructor)) __destructor__tesseract_utils(void){
-}
-static void __attribute__((constructor)) __constructor__tesseract_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_tesseract_utils") != NULL) {
-    log_debug("Enabling tesseract-utils Debug Mode");
-    TESSERACT_UTILS_DEBUG_MODE = true;
-  }
-}
+#include "tesseract/utils/define.c"
+
 struct Vector *get_security_words_v(){
   struct Vector *words = vector_new();
 
@@ -65,9 +48,6 @@ struct Vector *get_security_words_v(){
   vector_push(words, (void *)"changes");
   return(words);
 }
-
-////////////////////////////////////////////
-#define MINIMIZE_PREFERENCES    false
 
 bool tesseract_security_preferences_logic(int space_id){
   struct tesseract_extract_result_t *r, *words;
@@ -124,15 +104,6 @@ bool tesseract_security_preferences_logic(int space_id){
 
   struct CGPoint *p;
 
-#define DEBUG_MOUSE_LOCATION()    { do {                           \
-                                      p = get_mouse_location();    \
-                                      log_info("Mouse is at %dx%d" \
-                                               "%s",               \
-                                               (int)p->x,          \
-                                               (int)p->y,          \
-                                               ""                  \
-                                               );                  \
-                                    } while (0); }
 
   int mouse_to[20];
   mouse_to[0] = (int)(r->window.rect.origin.x) + (int)(r->determined_area.x_min_offset_pixels) + r->x;

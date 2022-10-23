@@ -1,19 +1,7 @@
 #pragma once
 #ifndef TABLE_UTILS_H
 #define TABLE_UTILS_H
-#include <fnmatch.h>
-#include <libproc.h>
-#include <mach/mach_time.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/proc_info.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
+#include "core/core.h"
 ///////////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "app/utils/utils.h"
@@ -23,6 +11,8 @@
 #include "process/utils/utils.h"
 #include "window/info/info.h"
 #include "window/utils/utils.h"
+#include "layout/layout.h"
+#include "layout/utils/utils.h"
 ///////////////////////////////////////////////////
 #define LIST_TABLE_ITEMS()                                                                  \
   LIST_TABLE(list_window_table, "Windows", WINDOW, window_info_t)                           \
@@ -33,6 +23,7 @@
   LIST_TABLE(list_app_table, "Applications", APP, app_t)                                    \
   LIST_TABLE(list_hotkey_table, "Hotkeys", HOTKEY, key_t)                                   \
   LIST_TABLE(list_monitor_table, "Monitors", MONITOR, monitor_t)                            \
+  LIST_TABLE(list_layout_table, "Layouts", LAYOUT, layout_t)                            \
   LIST_TABLE(list_font_table, "Fonts", FONT, font_t)                                        \
   LIST_TABLE(list_space_table, "Spaces", SPACE, space_t)                                    \
   LIST_TABLE(list_captured_window_table, "CapturedWindows", CAPTURED_WINDOW, window_info_t) \
@@ -140,6 +131,7 @@ int list_usb_table(void *ARGS);
 int list_process_table(void *ARGS);
 int list_kitty_table(void *ARGS);
 int list_monitor_table(void *ARGS);
+int list_layout_table(void *ARGS);
 
 #define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE) \
   int FXN(void *ARGS);

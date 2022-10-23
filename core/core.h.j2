@@ -1,0 +1,10 @@
+#pragma once
+{%set slug = env.slug|string-%}
+#ifndef __{{slug.upper().replace('-','_')}}_GPP_DEF
+#define __{{slug.upper().replace('-','_')}}_GPP_DEF
+{%-for x in base_headers%}
+#include <{{x.strip()}}>
+{%-endfor%}
+
+
+#endif

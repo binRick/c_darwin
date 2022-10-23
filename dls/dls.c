@@ -2,6 +2,7 @@
 static void __attribute__((constructor)) __constructor__dls(void);
 static void __attribute__((destructor)) __destructor__dls(void);
 static bool dls_normalize_arguments(int *argc, char *argv[]);
+static bool __exited = false;
 static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 static bool                   DARWIN_LS_DEBUG_MODE = false;
@@ -101,7 +102,6 @@ static void __at_exit(void);
   COMMON_OPTIONS_SIZE                                \
   COMMON_OPTIONS_LIMIT_OPTIONS                       \
   COMMON_OPTIONS_UI
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #define COMMON_OPTIONS_ANIMATE                            \
   COMMON_OPTIONS_BASE                                     \
   COMMON_OPTIONS_CAPTURE_TYPE                             \
@@ -131,12 +131,6 @@ static void __at_exit(void);
   COMMON_OPTIONS_ID                     \
   COMMON_OPTIONS_SIZE\
   COMMON_OPTIONS_DB_SAVE
-#define COMMON_OPTIONS_EXTRACT          \
-  COMMON_OPTIONS_BASE                   \
-  COMMON_OPTIONS_UI                     \
-  COMMON_OPTIONS_CAPTURE_RESULT_OPTIONS \
-  COMMON_OPTIONS_CAPTURE_OPTIONS        \
-  COMMON_OPTIONS_CAPTURE_TYPE
 #define COMMON_OPTIONS_PROCESSES \
   COMMON_OPTIONS_TABLE
 #define COMMON_OPTIONS_CREATE_SPACE \
@@ -175,13 +169,10 @@ static void __at_exit(void);
 #define COMMON_OPTIONS_DISPLAYS                      \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_COPY \
-  common_options_b[COMMON_OPTION_CONTENT](args),
 #define COMMON_OPTIONS_SPACE
 #define COMMON_OPTIONS_SPACE_LIST
 #define COMMON_OPTIONS_SPACE_CREATE
 #define COMMON_OPTIONS_WINDOW
-#define COMMON_OPTIONS_PASTE
 #define COMMON_OPTIONS_CLIPBOARD
 #define COMMON_OPTIONS_HOTKEYS                       \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
@@ -222,6 +213,14 @@ static void __at_exit(void);
   common_options_b[COMMON_OPTION_WINDOW_Y](args),
 #define COMMON_OPTIONS_ICON
 #define COMMON_OPTIONS_ICON_LIST
+#define COMMON_OPTIONS_APPS
+#define COMMON_OPTIONS_APPS_LIST\
+            common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
+            common_options_b[COMMON_OPTION_APPLICATION_NAME](args),\
+            common_options_b[COMMON_OPTION_SORT_APP_KEYS](args),\
+            common_options_b[COMMON_OPTION_SORT_DIRECTION_ASC](args),\
+            common_options_b[COMMON_OPTION_SORT_DIRECTION_DESC](args),\
+            common_options_b[COMMON_OPTION_LIMIT](args)  
 #define COMMON_OPTIONS_CAPTURE_WINDOW \
   COMMON_OPTIONS_CAPTURE_COMMON
 #define COMMON_OPTIONS_CAPTURE_SPACE \
@@ -231,17 +230,29 @@ static void __at_exit(void);
 #define COMMON_OPTIONS_ANIMATE_WINDOW
 #define COMMON_OPTIONS_ANIMATE_SPACE
 #define COMMON_OPTIONS_ANIMATE_DISPLAY
+#define COMMON_OPTIONS_EXTRACT          \
+  COMMON_OPTIONS_BASE                   \
+  COMMON_OPTIONS_UI                     
 #define COMMON_OPTIONS_EXTRACT_WINDOW
 #define COMMON_OPTIONS_EXTRACT_SPACE
 #define COMMON_OPTIONS_EXTRACT_DISPLAY
 #define COMMON_OPTIONS_DOCK
 //#########################################
-#define SUBCOMMANDS_HOTKEYS          \
-  CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
-  CREATE_SUBCOMMAND(HOTKEYS_SERVER, ),
+#define COMMON_OPTIONS_PASTE\
+  common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
+#define COMMON_OPTIONS_COPY \
+  common_options_b[COMMON_OPTION_INPUT_FILE](args),\
+  common_options_b[COMMON_OPTION_CONTENT](args),
+#define SUBCOMMANDS_EXTRACT             \
+  CREATE_SUBCOMMAND(EXTRACT_WINDOW, ),  \
+  CREATE_SUBCOMMAND(EXTRACT_DISPLAY, ), \
+  CREATE_SUBCOMMAND(EXTRACT_SPACE, ),
 #define SUBCOMMANDS_CLIPBOARD \
   CREATE_SUBCOMMAND(COPY, ),  \
   CREATE_SUBCOMMAND(PASTE, ),
+#define SUBCOMMANDS_ICON_LIST
+#define SUBCOMMANDS_ICON \
+  CREATE_SUBCOMMAND(ICON_LIST, ),
 #define SUBCOMMANDS_LAYOUT            \
   CREATE_SUBCOMMAND(LAYOUT_NAMES, ),  \
   CREATE_SUBCOMMAND(LAYOUT_LIST, ),   \
@@ -266,9 +277,12 @@ static void __at_exit(void);
 #define SUBCOMMANDS_SPACE          \
   CREATE_SUBCOMMAND(SPACE_LIST, ), \
   CREATE_SUBCOMMAND(SPACE_CREATE, ),
-#define SUBCOMMANDS_ICON_LIST
-#define SUBCOMMANDS_ICON \
-  CREATE_SUBCOMMAND(ICON_LIST, ),
+#define SUBCOMMANDS_APPS\
+  CREATE_SUBCOMMAND(APPS_LIST, ), 
+#define SUBCOMMANDS_APPS_LIST
+#define SUBCOMMANDS_HOTKEYS          \
+  CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
+  CREATE_SUBCOMMAND(HOTKEYS_SERVER, ),
 #define SUBCOMMANDS_ANIMATE             \
   CREATE_SUBCOMMAND(ANIMATE_WINDOW, ),  \
   CREATE_SUBCOMMAND(ANIMATE_DISPLAY, ), \
@@ -277,10 +291,6 @@ static void __at_exit(void);
   CREATE_SUBCOMMAND(CAPTURE_WINDOW, ),  \
   CREATE_SUBCOMMAND(CAPTURE_DISPLAY, ), \
   CREATE_SUBCOMMAND(CAPTURE_SPACE, ),
-#define SUBCOMMANDS_EXTRACT             \
-  CREATE_SUBCOMMAND(EXTRACT_WINDOW, ),  \
-  CREATE_SUBCOMMAND(EXTRACT_DISPLAY, ), \
-  CREATE_SUBCOMMAND(EXTRACT_SPACE, ),
 #define SUBCOMMANDS_DB               \
   CREATE_SUBCOMMAND(DB_INIT, ),      \
   CREATE_SUBCOMMAND(DB_TEST, ),      \
@@ -331,11 +341,17 @@ struct args_t *args = &(struct args_t){
   .format_names_qty                   = 0,
   .hide_columns_qty                   = 0,
 };
-
+extern char *__option_names[];
+extern struct optparse_opt __optparse_opt[];
 ////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   VIPS_INIT(argv[0]);
+//  get_dls_command(DLS_COMMAND_ID_LAYOUT);
+//  exit(0);
   /*
+  fprintf(stdout,"........\n");
+  fprintf(stdout,"........%s\n",__option_names[0]);
+  fprintf(stdout,"........%s\n",__optparse_opt[0].long_name);
     signal(SIGINT, __at_exit);
     signal(SIGTERM, __at_exit);
     signal(SIGQUIT, __at_exit);
@@ -352,9 +368,10 @@ int main(int argc, char *argv[]) {
     dls_print_arg_v("post", AC_MAGENTA, argc, argv);
   }
 
+////////////////////////////////////////////
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-  struct optparse_cmd main_cmd = {
+  struct optparse_cmd cmd = {
     .about       = "dls v1.00 - List Darwin Objects",
     .description = "This program lists Darwin Objects",
     .name        = "dls",
@@ -366,7 +383,6 @@ int main(int argc, char *argv[]) {
       common_options_b[COMMON_OPTION_OUTPUT_MODE](args),
       { END_OF_OPTIONS },
     },
-///////////////////////////////////////////////////////////////////////////////////////////////////
     .subcommands     = (struct optparse_cmd[]) {
       {
         .description = "Print a subcommand's help information and quit.",
@@ -375,47 +391,28 @@ int main(int argc, char *argv[]) {
         .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
         .function    = optparse_print_help_subcmd,
       },
-//////////////////////////////////////////
-      CREATE_SUBCOMMAND(WINDOWS, ),
-      CREATE_SUBCOMMAND(PROCESSES, ),
-      CREATE_SUBCOMMAND(FOCUS, ),
-      CREATE_SUBCOMMAND(FOCUSED, ),
-      CREATE_SUBCOMMAND(DISPLAYS, ),
-      CREATE_SUBCOMMAND(DOCK, ),
-      CREATE_SUBCOMMAND(MENU_BAR, ),
-      CREATE_SUBCOMMAND(DB, SUBCOMMANDS_DB),
-      CREATE_SUBCOMMAND(CLIPBOARD, SUBCOMMANDS_CLIPBOARD),
-      CREATE_SUBCOMMAND(LAYOUT, SUBCOMMANDS_LAYOUT),
-      CREATE_SUBCOMMAND(HOTKEYS, SUBCOMMANDS_HOTKEYS),
-      CREATE_SUBCOMMAND(WINDOW, SUBCOMMANDS_WINDOW),
-      CREATE_SUBCOMMAND(SPACE, SUBCOMMANDS_SPACE),
-      CREATE_SUBCOMMAND(ICON, SUBCOMMANDS_ICON),
-      CREATE_SUBCOMMAND(CAPTURE, SUBCOMMANDS_CAPTURE),
-      CREATE_SUBCOMMAND(ANIMATE, SUBCOMMANDS_ANIMATE),
-      CREATE_SUBCOMMAND(EXTRACT, SUBCOMMANDS_EXTRACT),
+        CREATE_SUBCOMMAND(WINDOWS, ),
+        CREATE_SUBCOMMAND(PROCESSES, ),
+        CREATE_SUBCOMMAND(DISPLAYS, ),
+        CREATE_SUBCOMMAND(DOCK, ),
+        CREATE_SUBCOMMAND(MENU_BAR, ),
+        CREATE_SUBCOMMAND(APPS, ),
+        CREATE_SUBCOMMAND(WINDOW, SUBCOMMANDS_WINDOW),
+        CREATE_SUBCOMMAND(LAYOUT, SUBCOMMANDS_LAYOUT),
+        CREATE_SUBCOMMAND(HOTKEYS, SUBCOMMANDS_HOTKEYS),
+        CREATE_SUBCOMMAND(APPS, ),
+        CREATE_SUBCOMMAND(SPACE, SUBCOMMANDS_SPACE),
+        CREATE_SUBCOMMAND(ICON, SUBCOMMANDS_ICON),
+        CREATE_SUBCOMMAND(CLIPBOARD, SUBCOMMANDS_CLIPBOARD),
+        CREATE_SUBCOMMAND(EXTRACT, SUBCOMMANDS_EXTRACT),
+        CREATE_SUBCOMMAND(CAPTURE, SUBCOMMANDS_CAPTURE),
+        CREATE_SUBCOMMAND(ANIMATE, SUBCOMMANDS_ANIMATE),
 #undef CREATE_SUBCOMMAND
-      {
-        .name        = cmds[COMMAND_ALACRITTYS].name,
-        .description = cmds[COMMAND_ALACRITTYS].description,
-        .function    = cmds[COMMAND_ALACRITTYS].fxn,
-        .about       = get_command_about(COMMAND_ALACRITTYS),
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
-          { END_OF_OPTIONS },
-        },
-      },
-      {
-        .name        = cmds[COMMAND_KITTYS].name,
-        .description = cmds[COMMAND_KITTYS].description,
-        .function    = cmds[COMMAND_KITTYS].fxn,
-        .about       = get_command_about(COMMAND_KITTYS),
-        .options     = (struct optparse_opt[]){
-          common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-          common_options_b[COMMON_OPTION_LIMIT](args),
-          { END_OF_OPTIONS },
-        },
-      },
+        /*
+        CREATE_SUBCOMMAND(FOCUS, ),
+        CREATE_SUBCOMMAND(FOCUSED, ),
+        CREATE_SUBCOMMAND(EXTRACT, SUBCOMMANDS_EXTRACT),
+//        CREATE_SUBCOMMAND(DB, SUBCOMMANDS_DB),
       {
         .name        = cmds[COMMAND_SECURITY].name,
         .description = cmds[COMMAND_SECURITY].description,
@@ -596,7 +593,7 @@ int main(int argc, char *argv[]) {
           common_options_b[COMMON_OPTION_SPACE_ID](args),
           { END_OF_OPTIONS },
         },
-      },/*
+      },*//*
          * {
          * .name        = "focused-server",
          * .description = "Start Focused Server",
@@ -630,6 +627,7 @@ int main(int argc, char *argv[]) {
          * { END_OF_OPTIONS },
          * },
          * },*/
+    /*
       {
         .name        = "get-icon-png",
         .description = "Get App Icon as PNG",
@@ -746,14 +744,16 @@ int main(int argc, char *argv[]) {
           { END_OF_OPTIONS },
         },
       },
+      */
       { END_OF_SUBCOMMANDS },
     },
   };
 #pragma GCC diagnostic pop
-  optparse_parse(&main_cmd, &argc, &argv);
+  optparse_parse(&cmd, &argc, &argv);
   optparse_print_help();
   return(EXIT_FAILURE);
-} /* main */
+}
+
 
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]){
   printf(AC_GREEN "%s\n" AC_RESETALL, title);
@@ -764,6 +764,7 @@ static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]){
   printf("\t\t\t%s%s"AC_RESETALL "\n", color, cmd);
   free(cmd);
 }
+
 static struct normalized_argv_t *dls_argv_normalized_argv_t(int argc, char *argv[]){
   struct normalized_argv_t *r = calloc(1, sizeof(struct normalized_argv_t));
 
@@ -825,18 +826,16 @@ static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]){
 }
 static bool initialized;
 static bool exited = false, was_icanon = false;
+
 static bool dls_normalize_arguments(int *argc, char *argv[]){
   struct normalized_argv_t *r = dls_argv_normalized_argv_t(*argc, argv);
 
   log_info("Mode: %s", r->mode);
   *argc = vector_size(r->arg_v);
 }
-/*
 static void __attribute__((destructor)) __destructor__dls(void){
 
 }
-*/
-static bool __exited = false;
 static void __at_exit(void){
   seticanon(was_icanon, true);  
   printf(
@@ -847,9 +846,9 @@ static void __at_exit(void){
        AC_RESTORE_PALETTE,
        AC_SHOW_CURSOR
       );
-  fflush(stdout);
-}  
+}
 static void __attribute__((constructor)) __constructor__dls(void){
+  log_debug("%lu options", sizeof(__optparse_opt)/sizeof(__optparse_opt[0]));
 //^[\^[]4;1;#cc6666^[\^[]4;2;#66cc99^[\^[]4;3;#cc9966^[\^[]4;4;#6699cc^[\^[]4;5;#cc6699^[\^[]4;6;#66cccc^[\^[]4;7;#cccccc^[\^[]4;8;#999999^[\^[]4;9;#cc6666^[\^[]4;10;#66cc99^[\^[]4;11;#cc9966^[\^[]4;12;#6699cc^[\^[]4;13;#cc6699^[\^[]4;14;#66cccc^[\^[]4;15;#cccccc^[\^[[21D"
 char *__ansi = "\033[c";
 /*
@@ -862,7 +861,8 @@ char *__ansi = "\033[c";
   "\033[?1049l"\
   "\033[21D"\
   "";*/
-  printf(
+  if(false)
+   printf(
       "%s"
       "%s"
       "%s"

@@ -67,3 +67,4 @@ tmp
 *.png
 *.gif
 *.jpeg
+*/.vars.yaml

@@ -6,6 +6,7 @@
 #define DEFAULT_APPS_LIMIT         50
 #define CAPTURED_WINDOW_COLUMNS    "ID", "Width", "Height", "Dur", "Size", "Compressed", "Application", "File", "Format"
 #define MONITOR_COLUMNS            "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
+#define LAYOUT_COLUMNS             "Name"
 #define PROCESS_COLUMNS            "PID", "Open Ports", "Open Files", "Open Connections", "PPID", "PPIDs", "# Env", "# PIDs", "Dur"
 #define KITTY_COLUMNS              "PID"
 #define USB_COLUMNS                "Product", "Manufacturer"
@@ -41,11 +42,42 @@
 #include "usbdevs-utils/usbdevs-utils.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
+#include "layout/utils/utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 static size_t term_width = 80, cur_display_id, cur_space_id;
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive);
 static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 #define VECTOR_ITEM(VECTOR,                                                                          TYPE,                                  INDEX)    (struct TYPE)vector_get(VECTOR, INDEX)
+  [TABLE_TYPE_LAYOUT] = &(struct table_logic_t){
+#define type    layout_t
+    .query_items = get_layouts_v,.columns = { LAYOUT_COLUMNS },
+    .row         = ^ void (
+      ft_table_t *table,
+      size_t __attribute__((unused)) index,
+      void *item
+      ){
+      struct type *i = (struct type *)item;
+      ft_printf_ln(table,
+                   "%s",
+                   "x"
+                   );
+    },
+    .row_skip = ^ bool (
+      ft_table_t __attribute__((unused)) *table,
+      size_t __attribute__((unused)) index,
+      void __attribute__((unused)) *item,
+      struct list_table_t __attribute__((unused)) *args
+      ){
+      return(false);
+    },
+    .row_style = ^ void (
+      ft_table_t *table,
+      size_t i,
+      void __attribute__((unused)) *item
+      ){
+    },
+  },
+#undef type
   [TABLE_TYPE_MONITOR] = &(struct table_logic_t){
 #define type    monitor_t
     .query_items = get_monitors_v,                                                                   .columns = { MONITOR_COLUMNS },
@@ -582,7 +614,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
       ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
       ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
       ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
       ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
       ft_set_cell_prop(table,                                                                        i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);

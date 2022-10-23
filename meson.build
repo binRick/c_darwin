@@ -1,4 +1,4 @@
-project('c_darwin', ['c'],default_options: ['warning_level=1','c_std=gnu99',],
+project('c_darwin', ['c'],default_options: ['warning_level=1','c_std=gnu99','gpp_processor=true'],
   subproject_dir: 'submodules/c_deps/subprojects',
   version:'0.0.1')
 fs = import('fs')

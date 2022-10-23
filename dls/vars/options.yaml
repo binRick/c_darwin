@@ -1,0 +1,255 @@
+
+__x_bool_option: &bool_option
+  type: 'bool'
+  flag_type: SET_TRUE 
+
+__x_bool_options: &bool_options
+ - name: debug_mode
+   <<: *bool_option
+   var: debug_mode
+   short: d
+   long: debug
+ - name: verbose_mode
+   <<: *bool_option
+   var: verbose_mode
+   short: v
+   long: verbose
+
+__x_mode_options: &mode_options
+ - name: verbose_mode
+   <<: *bool_option
+   var: verbose_mode
+   short: v
+   long: verbose
+
+__x_int_options: &int_options
+ - name: Space ID
+   var: space_id
+   short: s
+   long: space-id
+   type: 'int'
+   desc: Specify Space ID 
+ - name: IDs
+   var: ids
+   short: i
+   long: ids
+   type: 'int'
+   desc: Specify Space IDs
+   delim: ","
+
+ - name: Window ID
+   var: window_id
+   short: w
+   long: window-id
+   type: 'int'
+   desc: Specify Window ID
+   fxn: null
+
+__x_str_options: &str_options
+ - name: font_name
+   var: font_name
+   long: font-name
+   type: 'str'
+   desc: Specify Font Name
+
+option_lists:      
+  - *bool_options
+  - *str_options
+  - *int_options
+
+options: []
+other_options:
+ - name: alacritty
+   var: alacritty
+ - name: all_mode
+   var: all_mode
+   short: a
+   long: all
+ - name: application_name
+   var: application_name
+ - name: application_path
+   var: application_path
+ - name: capture_display_mode
+   var: capture_display_mode
+ - name: capture_space_mode
+   var: capture_space_mode
+ - name: capture_window_mode
+   var: capture_window_mode
+ - name: case_sensitive
+   var: case_sensitive
+ - name: clear_icons_cache
+   var: clear_icons_cache
+ - name: clear_screen
+   var: clear_screen
+ - name: compress
+   var: compress
+ - name: concurrency
+   var: concurrency
+ - name: content
+   var: content
+ - name: current_display
+   var: current_display
+ - name: current_space
+   var: current_space
+ - name: db_save
+   var: db_save
+ - name: db_tables
+   var: db_tables
+ - name: debug_mode
+   var: debug_mode
+ - name: disable_progress_bar_mode
+   var: disable_progress_bar_mode
+ - name: display_id
+   var: display_id
+ - name: display_output_file
+   var: display_output_file
+ - name: duplicate
+   var: duplicate
+ - name: duration_seconds
+   var: duration_seconds
+ - name: enable_progress_bar_mode
+   var: enable_progress_bar_mode
+ - name: exact_match
+   var: exact_match
+ - name: font_family
+   var: font_family
+ - name: font_style
+   var: font_style
+ - name: font_type
+   var: font_type
+ - name: frame_rate
+   var: frame_rate
+ - name: grayscale_mode
+   var: grayscale_mode
+ - name: groups_qty
+   var: groups_qty
+ - name: group_capture_mode
+   var: group_capture_mode
+ - name: group_display_corner_top_left_or_top_right_or_bottom_right_or_bottom_left
+   var: group_display_corner_top_left_or_top_right_or_bottom_right_or_bottom_left
+ - name: group_display_size_rows_or_cols_or_percent_or_pixels
+   var: group_display_size_rows_or_cols_or_percent_or_pixels
+ - name: group_id
+   var: group_id
+ - name: group_progress_bar_mode
+   var: group_progress_bar_mode
+ - name: group_resize_height_or_width
+   var: group_resize_height_or_width
+ - name: group_resize_rows_or_cols_or_percent_or_pixels
+   var: group_resize_rows_or_cols_or_percent_or_pixels
+ - name: group_title_filename_or_filename_and_size_or_size_group
+   var: group_title_filename_or_filename_and_size_or_size_group
+ - name: group_width_or_height
+   var: group_width_or_height
+ - name: height
+   var: height
+ - name: height_greater
+   var: height_greater
+ - name: height_less
+   var: height_less
+ - name: help
+   var: help
+ - name: help_subcmd
+   var: help_subcmd
+ - name: hide_columns
+   var: hide_columns
+ - name: icon_list
+   var: icon_list
+ - name: icon_sizes
+   var: icon_sizes
+ - name: id
+   var: id
+ - name: image_formats
+   var: image_formats
+ - name: input_file
+   var: input_file
+ - name: input_gif_file
+   var: input_gif_file
+ - name: input_icns_file
+   var: input_icns_file
+ - name: input_png_file
+   var: input_png_file
+ - name: kitty
+   var: kitty
+ - name: layout_name
+   var: layout_name
+ - name: limit
+   var: limit
+ - name: minimized
+   var: minimized
+ - name: names_qty
+   var: names_qty
+ - name: not_current_display
+   var: not_current_display
+ - name: not_current_space
+   var: not_current_space
+ - name: not_duplicate
+   var: not_duplicate
+ - name: not_minimized
+   var: not_minimized
+ - name: output_file
+   var: output_file
+ - name: output_icns_file
+   var: output_icns_file
+ - name: output_mode
+   var: output_mode
+ - name: output_png_file
+   var: output_png_file
+ - name: pid
+   var: pid
+ - name: purge_write_directory_before_write
+   var: purge_write_directory_before_write
+ - name: quantize_mode
+   var: quantize_mode
+ - name: random_id
+   var: random_id
+ - name: resize_factor
+   var: resize_factor
+ - name: retries
+   var: retries
+ - name: run_hotkeys
+   var: run_hotkeys
+ - name: show_columns
+   var: show_columns
+ - name: sort_app_keys
+   var: sort_app_keys
+ - name: sort_direction_asc
+   var: sort_direction_asc
+ - name: sort_direction_desc
+   var: sort_direction_desc
+ - name: sort_font_keys
+   var: sort_font_keys
+ - name: sort_key
+   var: sort_key
+ - name: sort_window
+   var: sort_window
+ - name: sort_window_keys
+   var: sort_window_keys
+ - name: terminals
+   var: terminals
+ - name: width
+   var: width
+ - name: width_greater
+   var: width_greater
+ - name: width_less
+   var: width_less
+ - name: window_height
+   var: window_height
+ - name: window_height_group
+   var: window_height_group
+ - name: window_id
+   var: window_id
+ - name: window_width
+   var: window_width
+ - name: window_width_group
+   var: window_width_group
+ - name: window_x
+   var: window_x
+ - name: window_y
+   var: window_y
+ - name: write_directory
+   var: write_directory
+ - name: write_images_mode
+   var: write_images_mode
+ - name: xml_file
+   var: xml_file

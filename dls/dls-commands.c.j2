@@ -1,0 +1,363 @@
+#pragma once
+#ifndef GPP_DLS_COMMANDS_C
+#define GPP_DLS_COMMANDS_C
+#include <stdbool.h>
+#include <stdint.h>
+#include <unistd.h>
+struct __args_t {
+  char *n, *font_name;
+  int space_id,window_id;
+  int *ids;
+  bool verbose_mode, debug_mode;
+};
+#include "optparse99/optparse99.h"
+struct __option_t {
+  struct optparse_opt (^opt)(void);
+};
+struct __args_t __args;
+
+{%-macro get_option_names()%}
+{%set o = []%}
+{%for items in option_lists%}
+{%for i in items%}
+{%endfor%}
+{%endfor%}
+{%-endmacro%}
+
+{%-macro get_option_ids()-%}
+{%-for items in option_lists-%}
+{%-for o in items%}
+{%endfor-%}
+{%-endfor-%}
+{%-endmacro%}
+
+{%-macro get_option_name(name)-%}
+{%for n in get_option_names()%}
+{%endfor%}
+{%-endmacro%}
+
+{%-macro get_option_id(o)-%}
+{% if(o.get('var'))%} 
+  {{
+   '_'.join(
+   [
+    'DLS_OPTION_ID',
+    o.var.replace('-','_')|upper,
+   ]
+  ).strip()}}
+{%-else-%}
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_long(o)-%}
+{% if(o.get('var'))%} 
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('long')-%}
+{%-set var = o.long-%}
+{%-endif-%}
+"{{var.replace('_','-').strip()|lower}}"
+{%-endmacro%}
+
+{%-macro get_option_name(o)-%}
+{% if(o.get('name'))%} 
+"{{o.name.replace('_',' ').strip()}}"
+{%-endif-%}
+{%-endmacro%}
+
+
+{%-macro get_option_group(o)-%}
+{%-if o.get('group')-%}
+{%-set var = o.group-%}
+"{{var.replace('_','-').strip()}}"
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_short(o)-%}
+{% if(o.get('var'))%} 
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('short')-%}
+{%-set var = o.short-%}
+'{{var.replace('_','-').strip()}}'
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_flag_type(o)-%}
+  {%-if o.get('flag_type')-%}
+     FLAG_TYPE_{{o.flag_type.replace('-','_').replace(' ','_').strip()|upper}}
+  {%-else -%}
+    {%-if o.get('type') and o.get('type') == 'bool' -%}
+      FLAG_TYPE_SET_TRUE
+    {%-else-%}
+      NULL
+    {%-endif-%}
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_flag(o)-%}
+  {%-if o.get('flag')-%}
+     &(__args.{{o.flag.replace('-','_').replace(' ','_').strip()|lower}})
+  {%-else -%}
+    {%-if o.get('flag_type') and o.get('var') and o.get('name')-%}
+        &(__args.{{o.name.replace('-','_').replace(' ','_').strip()|lower}})
+    {%-else-%}
+      NULL
+    {%-endif-%}
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_data_type(o)-%}
+{%-if o.get('var')-%}
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('data_type')-%}
+{%-set var = o.data_type-%}
+DATA_TYPE_{{var.replace('_','-').strip()|upper}}
+{%-else-%}
+{%-if o.get('type') and o.get('type') == 'str' -%}
+DATA_TYPE_STR
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endif-%}
+{%-endmacro%}
+
+
+{%-macro get_option_arg_dest(o)-%}
+  {%-set var = ''-%} 
+  {%-if o.get('name')-%}
+    {%-set var = o.name-%}
+  {%-endif-%}
+  {%-if o.get('arg_dest')-%}
+    {%-set var = o.arg_dest-%}
+  {%-endif-%}
+  {%-if get_option_flag(o) == 'NULL' and var-%}
+    &(__args.{{var.strip().replace(' ','_')|lower}})
+  {%-else-%}
+    NULL
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_arg_dest_size(o)-%}
+  {%-if o.get('arg_size')-%}
+  {%-set var = o.arg_size-%}
+  {{var.strip()}}
+  {%-else-%}
+    0
+  {%-endif-%}
+  {%-endmacro%}
+  {%-macro get_option_arg_name(o)-%}
+  {%-if o.get('arg_name')-%}
+  {%-set var = o.arg_name-%}
+    {{var.strip()}}
+  {%-else-%}
+    0
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_arg_delim(o)-%}
+  {%-if o.get('delim')-%}
+  {%-set var = o.delim-%}
+    "{{var.strip()}}"
+  {%-else-%}
+    NULL
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_type(o)-%}
+{%-if o.get('var')-%}
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('type')-%}
+{%-set var = o.type-%}
+FLAG_TYPE_{{var.replace('_','-').strip()|upper}}
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_fxn(o)-%}
+  {%-if o.get('fxn')-%}
+  {%-set var = o.fxn-%}
+    (&({{o.fxn.replace('-','_').strip()}}))
+  {%-else-%}
+    NULL
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_desc(o)-%}
+{%-if o.get('name')-%}
+{%-set var = o.name-%}
+{%-endif-%}
+{%-if o.get('desc')-%}
+{%-set var = o.desc-%}
+{%-endif-%}
+"{{var.replace('_',' ').strip()}}"
+{%-endmacro%}
+
+{%-macro get_option_name(o)-%}
+{%-if o.get('name')-%}
+{{o.name.replace('_',' ').strip()}}
+{%-endif-%}
+{%-endmacro%}
+{%-macro __get_option_struct(o)%}
+    { 
+          .short_name = {{get_option_short(o).strip()}},
+          .description = {{get_option_desc(o).strip()}},
+          .long_name = {{get_option_long(o).strip()}},
+          .flag = {{get_option_flag(o).strip()}},
+          .flag_type = {{get_option_flag_type(o).strip()}},
+          .arg_data_type = {{get_option_data_type(o).strip()}},
+          .arg_dest = {{get_option_arg_dest(o).strip()}},
+          .arg_dest_size = {{get_option_arg_dest_size(o).strip()}},
+          .arg_delim = {{get_option_arg_delim(o).strip()}},
+          .function = {{get_option_fxn(o).strip()}},
+          .options = (struct optparse_opt []) {
+            { END_OF_OPTIONS },
+          },
+          .subcommands = (struct optparse_cmd[]) {
+            { END_OF_SUBCOMMANDS },
+          },
+      });
+    },
+  }
+{%-endmacro%}
+{%-macro get_option_struct(o)%}
+  (struct optparse_opt){ 
+      .short_name = {{get_option_short(o).strip()}},
+      .description = {{get_option_desc(o).strip()}},
+      .long_name = {{get_option_long(o).strip()}},
+      .flag = {{get_option_flag(o).strip()}},
+      .flag_type = {{get_option_flag_type(o).strip()}},
+      .arg_data_type = {{get_option_data_type(o).strip()}},
+      .arg_dest = {{get_option_arg_dest(o).strip()}},
+      .arg_dest_size = {{get_option_arg_dest_size(o).strip()}},
+      .arg_delim = {{get_option_arg_delim(o).strip()}},
+      .function = {{get_option_fxn(o).strip()}},
+  }
+{%-endmacro%}
+{%-macro enum_string(prefix, str)-%}
+{{prefix|upper}}_{{str.replace(' ','_').replace('-','_')|upper}}
+{%-endmacro%}
+
+
+#include "dls/dls-commands.h"
+#include "dls/dls-options.h"
+#include "dls/gpp-dls-options.h"
+const struct dls_command_t dls_commands[] = {
+  {%for c in commands-%}
+  [DLS_COMMAND_ID_{{c.name|upper}}] = {
+    .name = "{{get_option_name(c)}}", .desc = {{get_option_desc(c)}},
+    .options_qty = {{c.options|length}}, .commands_qty = {{c.commands|length}},
+    .options = {
+      {%for o in c.options-%}
+      {{enum_string('DLS_OPTION_ID',o)}},
+      {%endfor-%}
+      0,
+    },
+    .commands = {
+      {%for o in c.commands-%}
+      {{enum_string('DLS_COMMAND_ID',o)}},
+      {%endfor-%}
+      0,
+    },
+    .opts = ^struct optparse_opt *(void){
+      log_info("Getting %s %lu Options", "{{c.name|lower}}", {{c.options|length}});
+      struct optparse_opt opts[] = {
+       { END_OF_OPTIONS },
+      };
+      return(opts);
+    },
+    .cmds = ^struct optparse_cmd *(void){
+      log_info("Getting %s %lu Commands", "{{c.name|lower}}", {{c.commands|length}});
+      struct optparse_cmd cmds[] = {
+       { END_OF_SUBCOMMANDS },
+      };
+      return(cmds);
+    },
+  },
+  {%endfor-%}  
+  { 0 },
+};
+
+void get_dls_command_commands(enum dls_command_id_t id){
+  log_info("\tGetting %lu Commands for Command #%d", 123, id);
+}
+
+void get_dls_command_options(enum dls_command_id_t id){
+  log_info("\tGetting %lu Options for Command #%d", 123, id);
+}
+
+void get_dls_command(enum dls_command_id_t id){
+  log_info("Getting %lu Commands, %lu Options from Command #%lu: %s",
+    dls_commands[id].commands_qty,
+    dls_commands[id].options_qty, 
+    id,
+    dls_commands[id].name
+  );
+  for(size_t i=0;i<dls_commands[id].options_qty;i++){
+    log_info("%lu|%lu",i,dls_commands[id].options[i]);
+    get_dls_command_options(dls_commands[id].options[i]);
+  }
+  for(size_t i=0;i<dls_commands[id].commands_qty;i++){
+    log_info("%lu|%lu",i,dls_commands[id].commands[i]);
+    get_dls_command_commands(dls_commands[id].commands[i]);
+  }
+  //get_dls_command_options(id);
+}
+
+void get_cmd(){
+    struct optparse_cmd cmd = {
+      .about       = "dls v1.00 - List Darwin Objects",
+      .description = "This program lists Darwin Objects",
+      .name        = "dls",
+      .operands    = "[COMMAND...]",
+      .options     = (struct optparse_opt[]) {
+        { END_OF_OPTIONS },
+      },
+      .subcommands     = (struct optparse_cmd[]) {
+        {
+          .description = "Print a subcommand's help information and quit.",
+          .name        = "help",
+          .operands    = "COMMAND",
+          .about       = "🌍" "\t" COLOR_HELP "Command Help" AC_RESETALL,
+          .function    = optparse_print_help_subcmd,
+        },
+        { END_OF_SUBCOMMANDS },
+      },
+    };
+}
+
+
+/*
+enum __option_id { 
+ {%for items in option_lists-%}
+  {%-for o in items%}{{get_option_id(o).strip()}},{%endfor%}
+{%endfor%}
+  COMMON_OPTION_IDS_QTY,
+};
+*/
+struct optparse_opt __optparse_opt[] = {
+{%for items in option_lists-%}
+  {%-for o in items%}
+  [{{get_option_id(o).strip()}}] = {{get_option_struct(o).strip()}},{%-endfor%}
+{%endfor%}
+};
+/*
+char *__option_names[] = {
+ {%for items in option_lists-%}
+  {%-for o in items%}
+  [{{get_option_id(o).strip()}}] = "{{get_option_name(o).strip()}}",{%-endfor%}
+{%endfor%}
+};
+{%for mode in modes%}
+{%endfor%}
+*/
+
+
+#endif

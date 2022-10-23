@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -eou pipefail
+SOURCES="$(yaml2json < core.yaml|yaml2json |jq -r '.sources|join("\n")')"
+for s in $SOURCES; do
+  ansi --yellow $s
+done

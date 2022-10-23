@@ -30,6 +30,7 @@ typedef struct Vector *(*query_items_f)(void);
 enum table_type_t {
   TABLE_TYPE_KITTY,
   TABLE_TYPE_MONITOR,
+  TABLE_TYPE_LAYOUT,
   TABLE_TYPE_CAPTURED_WINDOW,
   TABLE_TYPE_PROCESS,
   TABLE_TYPE_USB,

@@ -1,0 +1,261 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <unistd.h>
+struct __args_t {
+  char *n, *font_name;
+  int space_id,window_id;
+  int *ids;
+  bool verbose_mode, debug_mode;
+};
+#include "optparse99/optparse99.h"
+struct __option_t {
+  struct optparse_opt (^opt)(void);
+};
+struct __args_t __args;
+
+{%-macro get_option_names()%}
+{%set o = []%}
+{%for items in option_lists%}
+{%for i in items%}
+{%endfor%}
+{%endfor%}
+{%-endmacro%}
+
+{%-macro get_option_ids()-%}
+{%-for items in option_lists-%}
+{%-for o in items%}
+{%endfor-%}
+{%-endfor-%}
+{%-endmacro%}
+
+{%-macro get_option_name(name)-%}
+{%for n in get_option_names()%}
+{%endfor%}
+{%-endmacro%}
+
+{%-macro get_option_id(o)-%}
+{% if(o.get('var'))%} 
+  {{
+   '_'.join(
+   [
+    'COMMON_OPTION',
+    o.var.replace('-','_')|upper,
+   ]
+  ).strip()}}
+{%-else-%}
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_long(o)-%}
+{% if(o.get('var'))%} 
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('long')-%}
+{%-set var = o.long-%}
+{%-endif-%}
+"{{var.replace('_','-').strip()|lower}}"
+{%-endmacro%}
+
+{%-macro get_option_name(o)-%}
+{% if(o.get('name'))%} 
+"{{o.name.replace('_',' ').strip()}}"
+{%-endif-%}
+{%-endmacro%}
+
+
+{%-macro get_option_group(o)-%}
+{%-if o.get('group')-%}
+{%-set var = o.group-%}
+"{{var.replace('_','-').strip()}}"
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_short(o)-%}
+{% if(o.get('var'))%} 
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('short')-%}
+{%-set var = o.short-%}
+'{{var.replace('_','-').strip()}}'
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_flag_type(o)-%}
+  {%-if o.get('flag_type')-%}
+     FLAG_TYPE_{{o.flag_type.replace('-','_').replace(' ','_').strip()|upper}}
+  {%-else -%}
+    {%-if o.get('type') and o.get('type') == 'bool' -%}
+      FLAG_TYPE_SET_TRUE
+    {%-else-%}
+      NULL
+    {%-endif-%}
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_flag(o)-%}
+  {%-if o.get('flag')-%}
+     &(__args.{{o.flag.replace('-','_').replace(' ','_').strip()|lower}})
+  {%-else -%}
+    {%-if o.get('flag_type') and o.get('var') and o.get('name')-%}
+        &(__args.{{o.name.replace('-','_').replace(' ','_').strip()|lower}})
+    {%-else-%}
+      NULL
+    {%-endif-%}
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_data_type(o)-%}
+{%-if o.get('var')-%}
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('data_type')-%}
+{%-set var = o.data_type-%}
+DATA_TYPE_{{var.replace('_','-').strip()|upper}}
+{%-else-%}
+{%-if o.get('type') and o.get('type') == 'str' -%}
+DATA_TYPE_STR
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endif-%}
+{%-endmacro%}
+
+
+{%-macro get_option_arg_dest(o)-%}
+  {%-set var = ''-%} 
+  {%-if o.get('name')-%}
+    {%-set var = o.name-%}
+  {%-endif-%}
+  {%-if o.get('arg_dest')-%}
+    {%-set var = o.arg_dest-%}
+  {%-endif-%}
+  {%-if get_option_flag(o) == 'NULL' and var-%}
+    &(__args.{{var.strip().replace(' ','_')|lower}})
+  {%-else-%}
+    NULL
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_arg_dest_size(o)-%}
+  {%-if o.get('arg_size')-%}
+  {%-set var = o.arg_size-%}
+  {{var.strip()}}
+  {%-else-%}
+    0
+  {%-endif-%}
+  {%-endmacro%}
+  {%-macro get_option_arg_name(o)-%}
+  {%-if o.get('arg_name')-%}
+  {%-set var = o.arg_name-%}
+    {{var.strip()}}
+  {%-else-%}
+    0
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_arg_delim(o)-%}
+  {%-if o.get('delim')-%}
+  {%-set var = o.delim-%}
+    "{{var.strip()}}"
+  {%-else-%}
+    NULL
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_type(o)-%}
+{%-if o.get('var')-%}
+{%-set var = o.var-%}
+{%-endif-%}
+{%-if o.get('type')-%}
+{%-set var = o.type-%}
+FLAG_TYPE_{{var.replace('_','-').strip()|upper}}
+{%-else-%}
+NULL
+{%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_fxn(o)-%}
+  {%-if o.get('fxn')-%}
+  {%-set var = o.fxn-%}
+    (&({{o.fxn.replace('-','_').strip()}}))
+  {%-else-%}
+    NULL
+  {%-endif-%}
+{%-endmacro%}
+
+{%-macro get_option_desc(o)-%}
+{%-if o.get('name')-%}
+{%-set var = o.name-%}
+{%-endif-%}
+{%-if o.get('desc')-%}
+{%-set var = o.desc-%}
+{%-endif-%}
+"{{var.replace('_',' ').strip()}}"
+{%-endmacro%}
+
+{%-macro get_option_name(o)-%}
+{%-if o.get('name')-%}
+{{o.name.replace('_',' ').strip()}}
+{%-endif-%}
+{%-endmacro%}
+{%-macro __get_option_struct(o)%}
+    { 
+          .short_name = {{get_option_short(o).strip()}},
+          .description = {{get_option_desc(o).strip()}},
+          .long_name = {{get_option_long(o).strip()}},
+          .flag = {{get_option_flag(o).strip()}},
+          .flag_type = {{get_option_flag_type(o).strip()}},
+          .arg_data_type = {{get_option_data_type(o).strip()}},
+          .arg_dest = {{get_option_arg_dest(o).strip()}},
+          .arg_dest_size = {{get_option_arg_dest_size(o).strip()}},
+          .arg_delim = {{get_option_arg_delim(o).strip()}},
+          .function = {{get_option_fxn(o).strip()}},
+          .options = (struct optparse_opt []) {
+            { END_OF_OPTIONS },
+          },
+          .subcommands = (struct optparse_cmd[]) {
+            { END_OF_SUBCOMMANDS },
+          },
+      });
+    },
+  }
+{%-endmacro%}
+{%-macro get_option_struct(o)%}
+  (struct optparse_opt){ 
+      .short_name = {{get_option_short(o).strip()}},
+      .description = {{get_option_desc(o).strip()}},
+      .long_name = {{get_option_long(o).strip()}},
+      .flag = {{get_option_flag(o).strip()}},
+      .flag_type = {{get_option_flag_type(o).strip()}},
+      .arg_data_type = {{get_option_data_type(o).strip()}},
+      .arg_dest = {{get_option_arg_dest(o).strip()}},
+      .arg_dest_size = {{get_option_arg_dest_size(o).strip()}},
+      .arg_delim = {{get_option_arg_delim(o).strip()}},
+      .function = {{get_option_fxn(o).strip()}},
+  }
+{%-endmacro%}
+
+enum __option_id { 
+ {%for items in option_lists-%}
+  {%-for o in items%}{{get_option_id(o).strip()}},{%endfor%}
+{%endfor%}
+  COMMON_OPTION_IDS_QTY,
+};
+struct optparse_opt __optparse_opt[] = {
+{%for items in option_lists-%}
+  {%-for o in items%}
+  [{{get_option_id(o).strip()}}] = {{get_option_struct(o).strip()}},{%-endfor%}
+{%endfor%}
+};
+char *__option_names[] = {
+ {%for items in option_lists-%}
+  {%-for o in items%}
+  [{{get_option_id(o).strip()}}] = "{{get_option_name(o).strip()}}",{%-endfor%}
+{%endfor%}
+};
+{%for mode in modes%}
+{%endfor%}

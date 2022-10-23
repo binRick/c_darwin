@@ -1,0 +1,20 @@
+subproject_headers: 
+project_headers: 
+  - core/core.h
+base_headers:
+  - assert.h
+  - ctype.h
+  - errno.h
+  - inttypes.h
+  - libgen.h
+  - limits.h
+  - mach/clock.h
+  - mach/mach.h
+  - pthread.h
+  - stdbool.h
+  - stdio.h
+  - stdlib.h
+  - string.h
+  - sys/time.h
+  - time.h
+  - unistd.h

@@ -65,6 +65,10 @@ enum action_type_t {
   ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY,
   ACTION_TYPE_MOVE_WINDOW_TO_PREV_DISPLAY,
   ////////////////////////////////////////////////////////
+  ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_LEFT_FIFTY_PERCENT,
+  ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_RIGHT_FIFTY_PERCENT,
+  ////////////////////////////////////////////////////////
+  ACTION_TYPE_TOGGLE_LAYOUT,
   ACTION_TYPES_QTY,
 };
 struct action_type_handler_t {
@@ -82,18 +86,26 @@ struct hk_layout_t {
   const struct hk_app_t *apps;
   size_t                apps_count;
 };
+struct hk_appposition_t {
+  const char  *app;
+  const bool  enabled;
+  const float width;
+  const char  *side;
+};
 struct key_t {
   const char         *name, *key, *action;
   const char         **actions;
   bool               enabled;
+  //, reposition;
   enum action_type_t action_type;
 };
 struct hotkeys_config_t {
-  const char         *name, *todo_app;
-  const int          todo_width;
-  struct key_t       *keys;
-  struct hk_layout_t *layouts;
-  size_t             keys_count, layouts_count;
+  const char              *name, *todo_app;
+  const int               todo_width;
+  struct key_t            *keys;
+  struct hk_layout_t      *layouts;
+  struct hk_appposition_t *apppositions;
+  size_t                  keys_count, layouts_count, apppositions_count;
 };
 //////////////////////////////////////
 static const cyaml_strval_t action_type_strings[] = {
@@ -123,6 +135,13 @@ static const cyaml_strval_t action_type_strings[] = {
   { "DecreaseFocusedApplicationWidthFivePercent",  ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_WIDTH_FIVE_PERCENT  },
   { "IncreaseFocusedApplicationHeightFivePercent", ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT },
   { "DecreaseFocusedApplicationHeightFivePercent", ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT },
+  { "MoveWindowToNextDisplay",                     ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY                      },
+  { "MoveWindowToPrevDisplay",                     ACTION_TYPE_MOVE_WINDOW_TO_PREV_DISPLAY                      },
+  { "MoveWindowToNextSpace",                       ACTION_TYPE_MOVE_WINDOW_TO_NEXT_SPACE                        },
+  { "MoveWindowToPrevSpace",                       ACTION_TYPE_MOVE_WINDOW_TO_PREV_SPACE                        },
+  { "MoveWindowToNextDisplayRight50Percent",       ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_RIGHT_FIFTY_PERCENT  },
+  { "MoveWindowToNextDisplayLeft50Percent",        ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_LEFT_FIFTY_PERCENT   },
+  { "ToggleLayout",                     ACTION_TYPE_TOGGLE_LAYOUT},
   { "None",                                        ACTION_TYPES_QTY                                             },
 };
 #define GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(DIRECTION, FACTOR_TEXT, DIRECTION_LABEL, PERCENTAGE) \
@@ -165,6 +184,11 @@ struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path);
 size_t get_config_file_hash(char *CONFIG_FILE_PATH);
 int minimize_application(void *APPLICATION_NAME);
 int normalize_layout(void *LAYOUT);
+int hk_move_window_to_next_display(void *);
+int hk_toggle_layout(void *);
+int hk_move_window_to_next_display_left_fifty_percent(void *);
+int hk_move_window_to_next_display_right_fifty_percent(void *);
+int hk_move_window_to_prev_display(void *);
 int activate_application(void *APPLICATION_NAME);
 int fullscreen_application(void *APPLICATION_NAME);
 int deactivate_application(void *APPLICATION_NAME);
@@ -213,6 +237,7 @@ GENERATE_PERCENT_FOCUSED_APPLICATION_PROTOTYPE(bottom, sixty);
 ////////////////////////////////////////////////////////////
 int handle_action(enum action_type_t action_type, void *action);
 struct key_t *get_hotkey_config_key(struct hotkeys_config_t *cfg, char *key);
+struct hk_appposition_t *get_hotkey_app_position(char *app_name);
 struct hk_layout_t *hk_get_layout(struct hotkeys_config_t *cfg, char *name);
 int execute_hotkey_config_key(struct key_t *key);
 bool disable_hotkey_config_key(struct key_t *key);
@@ -221,38 +246,43 @@ int run_hotkeys_server();
 //////////////////////////////////////
 static struct action_type_handler_t __attribute__((unused)) action_type_handlers[] = {
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_NORMALIZE_LAYOUT] =                                 { .fxn = normalize_layout,                                 },
+  [ACTION_TYPE_TOGGLE_LAYOUT]  =  { .fxn = hk_toggle_layout,  },
+  [ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_LEFT_FIFTY_PERCENT]  =  { .fxn = hk_move_window_to_next_display_left_fifty_percent,  },
+  [ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_RIGHT_FIFTY_PERCENT] =  { .fxn = hk_move_window_to_next_display_right_fifty_percent, },
+  [ACTION_TYPE_MOVE_WINDOW_TO_PREV_DISPLAY]                     =  { .fxn = hk_move_window_to_prev_display,                     },
+  [ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY]                     =  { .fxn = hk_move_window_to_next_display,                     },
+  [ACTION_TYPE_NORMALIZE_LAYOUT]                                =  { .fxn = normalize_layout,                                   },
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_ACTIVATE_APPLICATION]   =                           { .fxn = activate_application,                             },
-  [ACTION_TYPE_DEACTIVATE_APPLICATION] =                           { .fxn = deactivate_application,                           },
+  [ACTION_TYPE_ACTIVATE_APPLICATION]   =                           { .fxn = activate_application,                               },
+  [ACTION_TYPE_DEACTIVATE_APPLICATION] =                           { .fxn = deactivate_application,                             },
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_MINIMIZE_APPLICATION]   =                           { .fxn = minimize_application,                             },
-  [ACTION_TYPE_FULLSCREEN_APPLICATION] =                           { .fxn = fullscreen_application,                           },
+  [ACTION_TYPE_MINIMIZE_APPLICATION]   =                           { .fxn = minimize_application,                               },
+  [ACTION_TYPE_FULLSCREEN_APPLICATION] =                           { .fxn = fullscreen_application,                             },
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_WIDTH_FIVE_PERCENT]  = { .fxn = increase_focused_application_width_five_percent,  },
-  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_WIDTH_FIVE_PERCENT]  = { .fxn = decrease_focused_application_width_five_percent,  },
-  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT] = { .fxn = increase_focused_application_height_five_percent, },
-  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT] = { .fxn = decrease_focused_application_height_five_percent, },
-  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_WIDTH_TEN_PERCENT]   = { .fxn = increase_focused_application_width_ten_percent,   },
-  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_WIDTH_TEN_PERCENT]   = { .fxn = decrease_focused_application_width_ten_percent,   },
-  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT]  = { .fxn = increase_focused_application_height_ten_percent,  },
-  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT]  = { .fxn = decrease_focused_application_height_ten_percent,  },
+  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_WIDTH_FIVE_PERCENT]  = { .fxn = increase_focused_application_width_five_percent,    },
+  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_WIDTH_FIVE_PERCENT]  = { .fxn = decrease_focused_application_width_five_percent,    },
+  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT] = { .fxn = increase_focused_application_height_five_percent,   },
+  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_FIVE_PERCENT] = { .fxn = decrease_focused_application_height_five_percent,   },
+  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_WIDTH_TEN_PERCENT]   = { .fxn = increase_focused_application_width_ten_percent,     },
+  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_WIDTH_TEN_PERCENT]   = { .fxn = decrease_focused_application_width_ten_percent,     },
+  [ACTION_TYPE_INCREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT]  = { .fxn = increase_focused_application_height_ten_percent,    },
+  [ACTION_TYPE_DECREASE_FOCUSED_APPLICATION_HEIGHT_TEN_PERCENT]  = { .fxn = decrease_focused_application_height_ten_percent,    },
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_RIGHT_FOURTY_PERCENT_FOCUSED_APPLICATION]       =   { .fxn = right_fourty_percent_focused_application,         },
-  [ACTION_TYPE_LEFT_FOURTY_PERCENT_FOCUSED_APPLICATION]        =   { .fxn = left_fourty_percent_focused_application,          },
-  [ACTION_TYPE_RIGHT_FIFTY_PERCENT_FOCUSED_APPLICATION]        =   { .fxn = right_fifty_percent_focused_application,          },
-  [ACTION_TYPE_LEFT_FIFTY_PERCENT_FOCUSED_APPLICATION]         =   { .fxn = left_fifty_percent_focused_application,           },
-  [ACTION_TYPE_RIGHT_TWENTY_FIVE_PERCENT_FOCUSED_APPLICATION]  =   { .fxn = right_twenty_five_percent_focused_application,    },
-  [ACTION_TYPE_LEFT_TWENTY_FIVE_PERCENT_FOCUSED_APPLICATION]   =   { .fxn = left_twenty_five_percent_focused_application,     },
-  [ACTION_TYPE_RIGHT_SEVENTY_FIVE_PERCENT_FOCUSED_APPLICATION] =   { .fxn = right_seventy_five_percent_focused_application,   },
-  [ACTION_TYPE_LEFT_SEVENTY_FIVE_PERCENT_FOCUSED_APPLICATION]  =   { .fxn = left_seventy_five_percent_focused_application,    },
+  [ACTION_TYPE_RIGHT_FOURTY_PERCENT_FOCUSED_APPLICATION]       =   { .fxn = right_fourty_percent_focused_application,           },
+  [ACTION_TYPE_LEFT_FOURTY_PERCENT_FOCUSED_APPLICATION]        =   { .fxn = left_fourty_percent_focused_application,            },
+  [ACTION_TYPE_RIGHT_FIFTY_PERCENT_FOCUSED_APPLICATION]        =   { .fxn = right_fifty_percent_focused_application,            },
+  [ACTION_TYPE_LEFT_FIFTY_PERCENT_FOCUSED_APPLICATION]         =   { .fxn = left_fifty_percent_focused_application,             },
+  [ACTION_TYPE_RIGHT_TWENTY_FIVE_PERCENT_FOCUSED_APPLICATION]  =   { .fxn = right_twenty_five_percent_focused_application,      },
+  [ACTION_TYPE_LEFT_TWENTY_FIVE_PERCENT_FOCUSED_APPLICATION]   =   { .fxn = left_twenty_five_percent_focused_application,       },
+  [ACTION_TYPE_RIGHT_SEVENTY_FIVE_PERCENT_FOCUSED_APPLICATION] =   { .fxn = right_seventy_five_percent_focused_application,     },
+  [ACTION_TYPE_LEFT_SEVENTY_FIVE_PERCENT_FOCUSED_APPLICATION]  =   { .fxn = left_seventy_five_percent_focused_application,      },
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_TOP_FOURTY_PERCENT_FOCUSED_APPLICATION]    =        { .fxn = top_fourty_percent_focused_application,           },
-  [ACTION_TYPE_BOTTOM_FOURTY_PERCENT_FOCUSED_APPLICATION] =        { .fxn = bottom_fourty_percent_focused_application,        },
-  [ACTION_TYPE_TOP_FIFTY_PERCENT_FOCUSED_APPLICATION]     =        { .fxn = top_fifty_percent_focused_application,            },
-  [ACTION_TYPE_BOTTOM_FIFTY_PERCENT_FOCUSED_APPLICATION]  =        { .fxn = bottom_fifty_percent_focused_application,         },
-  [ACTION_TYPE_TOP_SIXTY_PERCENT_FOCUSED_APPLICATION]     =        { .fxn = top_sixty_percent_focused_application,            },
-  [ACTION_TYPE_BOTTOM_SIXTY_PERCENT_FOCUSED_APPLICATION]  =        { .fxn = bottom_sixty_percent_focused_application,         },
+  [ACTION_TYPE_TOP_FOURTY_PERCENT_FOCUSED_APPLICATION]    =        { .fxn = top_fourty_percent_focused_application,             },
+  [ACTION_TYPE_BOTTOM_FOURTY_PERCENT_FOCUSED_APPLICATION] =        { .fxn = bottom_fourty_percent_focused_application,          },
+  [ACTION_TYPE_TOP_FIFTY_PERCENT_FOCUSED_APPLICATION]     =        { .fxn = top_fifty_percent_focused_application,              },
+  [ACTION_TYPE_BOTTOM_FIFTY_PERCENT_FOCUSED_APPLICATION]  =        { .fxn = bottom_fifty_percent_focused_application,           },
+  [ACTION_TYPE_TOP_SIXTY_PERCENT_FOCUSED_APPLICATION]     =        { .fxn = top_sixty_percent_focused_application,              },
+  [ACTION_TYPE_BOTTOM_SIXTY_PERCENT_FOCUSED_APPLICATION]  =        { .fxn = bottom_sixty_percent_focused_application,           },
 ////////////////////////////////////////////////////////////
 };
 char *get_hotkey_type_action_name(enum action_type_t action);
@@ -261,4 +291,5 @@ bool hk_list_layouts();
 bool hk_print_layout_names();
 bool hk_show_layout(char *name);
 bool hk_show_rendered_layout_name(char *name);
+pid_t run_hotkeys_server_with_callback(void ( *cb )(char *));
 #endif

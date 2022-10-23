@@ -27,6 +27,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "container_of/container_of.h"
 #include "date.c/date.h"
 #include "hash/hash.h"
 #include "hashmap.h/hashmap.h"
@@ -45,6 +46,7 @@
 #include "tempdir.c/tempdir.h"
 #include "timelib/timelib.h"
 #include "timestamp/timestamp.h"
+#include "chan-utils/chan-utils.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"
