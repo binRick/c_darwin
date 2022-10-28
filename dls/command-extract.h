@@ -15,13 +15,13 @@ void _command_extract_image(void);
   CREATE_SUBCOMMAND(EXTRACT_SPACE, ),   \
   CREATE_SUBCOMMAND(EXTRACT_DEV, ),
 #define COMMON_OPTIONS_EXTRACT_WINDOW
-#define COMMON_OPTIONS_EXTRACT_IMAGE                \
-  common_options_b[COMMON_OPTION_HELP](args),       \
+#define COMMON_OPTIONS_EXTRACT_IMAGE                  \
+  common_options_b[COMMON_OPTION_HELP](args),         \
   common_options_b[COMMON_OPTION_CLEAR_SCREEN](args), \
-  common_options_b[COMMON_OPTION_QUIET_MODE](args), \
-  common_options_b[COMMON_OPTION_INPUT_FILE](args), \
-  common_options_b[COMMON_OPTION_SEARCH_WORDS](args),\
-  common_options_b[COMMON_OPTION_GLOBS](args), \
+  common_options_b[COMMON_OPTION_QUIET_MODE](args),   \
+  common_options_b[COMMON_OPTION_INPUT_FILE](args),   \
+  common_options_b[COMMON_OPTION_SEARCH_WORDS](args), \
+  common_options_b[COMMON_OPTION_GLOBS](args),        \
 ///////////////////////////////////////////////////////
 #define COMMON_OPTIONS_EXTRACT_SPACE
 #define COMMON_OPTIONS_EXTRACT_DEV

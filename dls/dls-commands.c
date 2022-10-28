@@ -467,7 +467,7 @@ common_option_b common_options_b[] = {
   COMMON_OPTION_LIST(DB_TABLES,                                                                 't',       "tables",             "Database Tables",                                                         "TABLE-NAMES",  db_tables, db_tables_qty)
   COMMON_OPTION_LIST(PROMPT_COMMANDS,                                                           'c',       "commands",           "Execute Commands",                                                        "COMMANDS",     prompt_commands, prompt_commands_qty)
   COMMON_OPTION_LIST(SEARCH_WORDS,                                                              'w',       "words",              "Search Words",                                                            "SEARCH-WORDS", search_words, search_words_qty)
-  COMMON_OPTION_LIST(GLOBS,                                                              'G',       "globs",              "Glob Patterns",                                                            "GLOBS", globs, globs_qty)
+  COMMON_OPTION_LIST(GLOBS,                                                                     'G',       "globs",              "Glob Patterns",                                                           "GLOBS",        globs, globs_qty)
 #undef COMMON_OPTION_LIST
   CREATE_INT_COMMAND_OPTION(INDEX,                                                              'I',       "index",              "Index",                                                                   "INDEX",        index)
 #undef CREATE_INT_COMMON_OPTION
@@ -502,9 +502,9 @@ common_option_b common_options_b[] = {
   CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,                                                     'd',       "debug",              AC_GREEN AC_BOLD AC_DOUBLE_UNDERLINE "Enable Debug Mode" AC_RESETALL,      debug_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,                                                   'v',       "verbose",            AC_GREEN AC_DOUBLE_UNDERLINE "Enable Verbose Mode" AC_RESETALL,            verbose_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,                                                       'z',       "compress",           "Enable Compression",                                                      compress)
-  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,                                                 'g',         "grayscale",          "Enable Grayscale Mode",                                                   grayscale_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,                                                 'g',       "grayscale",          "Enable Grayscale Mode",                                                   grayscale_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,                                            'D',       "display",            "Display Result",                                                          display_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(QUIET_MODE,                                            'q',       "quiet",            "Quiet Mode",                                                          quiet_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(QUIET_MODE,                                                     'q',       "quiet",              "Quiet Mode",                                                              quiet_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,                                              0,         "write",              "Write Results",                                                           write_images_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,                                       'p',       "progress",           "Enable Progress Bar",                                                     progress_bar_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(DB_SAVE,                                                        'b',       "db",                 "Save Results to DB",                                                      db_save_mode)
@@ -2120,12 +2120,12 @@ static void _command_capture(){
     if (args->grayscale_mode)
       set_results_grayscale(results_v);
     set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v);
-    if(args->output_file && vector_size(results_v)==1){
-      struct capture_image_result_t *res = (struct capture_image_result_t *)vector_get(results_v,0);
-      if(!fsio_write_binary_file(args->output_file,res->pixels,res->len))
-        log_error("Failed to save file %s",args->output_file);
+    if (args->output_file && vector_size(results_v) == 1) {
+      struct capture_image_result_t *res = (struct capture_image_result_t *)vector_get(results_v, 0);
+      if (!fsio_write_binary_file(args->output_file, res->pixels, res->len))
+        log_error("Failed to save file %s", args->output_file);
       else
-        fprintf(stderr,"Wrote %s output file %s\n",bytes_to_string(fsio_file_size(args->output_file)),args->output_file);
+        fprintf(stderr, "Wrote %s output file %s\n", bytes_to_string(fsio_file_size(args->output_file)), args->output_file);
     }
     if (args->write_images_mode) {
       errno = 0;

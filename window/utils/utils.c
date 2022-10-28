@@ -1,5 +1,6 @@
 #pragma once
 #include "core/core.h"
+#include "dls/command-test.h"
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100
 #define MIN_STREAM_WIDTH           100
@@ -111,7 +112,7 @@ static volatile size_t stream_last_ts = 0;
 void wu_stream_window_id(int window_id){
 }
 
-void wu_stream_active_window(int width, int height){
+int wu_stream_active_window(int width, int height){
   width  = clamp(width, MIN_STREAM_WIDTH, MAX_STREAM_WIDTH);
   height = clamp(height, MIN_STREAM_HEIGHT, MAX_STREAM_HEIGHT);
   int      window_count;
@@ -147,7 +148,6 @@ int mf_mlion_peek_dirty_region(struct rect_t *invalid){
 
   const CGRect *rects = CGDisplayStreamUpdateGetRects(lastUpdate, kCGDisplayStreamUpdateDirtyRects, &num_rects);
 
-  Dbg(num_rects, %u);
   if (num_rects == 0)
     return(0);
 
@@ -176,193 +176,78 @@ const CGFloat tc[] = {
 };
 bool          ready = false;
 
-void wu_stream_active_display_cb(int width, int height, int display_id, wu_stream_cb cb){
+int wu_stream_active_display_cb(int width, int height, int display_id, wu_stream_cb cb){
   width  = clamp(width, MIN_STREAM_WIDTH, MAX_STREAM_WIDTH);
   height = clamp(height, MIN_STREAM_HEIGHT, MAX_STREAM_HEIGHT);
   CGDisplayStreamRef display_stream = CGDisplayStreamCreateWithDispatchQueue(display_id > 0 ? display_id : CGMainDisplayID(), width, height, 'BGRA', NULL, dispatch_get_main_queue(), cb);
   CFShow(display_stream);
   if (CGDisplayStreamStart(display_stream) != kCGErrorSuccess) {
     log_error("error: failed to start streaming");
-    exit(EXIT_FAILURE);
+    return(EXIT_FAILURE);
   }
+  return(EXIT_SUCCESS);
 }
 
-void wu_stream_active_display(int width, int height, int display_id){
-  wu_stream_cb cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+int wu_stream_active_display(void *L){
+  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  size_t width, height, id;
+  width = l->width; height=l->height;id=l->id;
+  wu_stream_cb       cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+    pthread_mutex_lock(l->mutex);
+    bool ended = l->ended;
+  bool debug_mode = l->debug_mode;
+    pthread_mutex_unlock(l->mutex);
+    if (ended)return;
     switch (status) {
     case kCGDisplayStreamFrameStatusFrameComplete:
-      // A new frame was generated.
+      stream_last_ts = timestamp();
+      if (status == kCGDisplayStreamFrameStatusFrameComplete && frame != NULL) {
+          const CGRect  *updatedRects;
+          void* baseAddress;
+          size_t        updatedRectsCount = 0, r = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), seed, offset_beg = 0, copy_len;
+          struct stop_loop_update_t *u;
+          IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
+          seed = IOSurfaceGetSeed(frame);
+          baseAddress = IOSurfaceGetBaseAddress(frame);
+          updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
+          for (size_t i = 0; i < updatedRectsCount; i++) {
+            u = calloc(1,sizeof(struct stop_loop_update_t));
+            u->ts = stream_last_ts;
+            u->rect = updatedRects[i];
+            u->start_x         = u->rect.origin.x;
+            u->start_y         = u->rect.origin.y;
+            u->end_x           = u->start_x + u->rect.size.width;
+            u->end_y           = u->start_y + u->rect.size.height;
+            u->seed = seed;
+            u->id = id;
+            copy_len = u->rect.size.width * 4;
+            u->width = width;
+            u->height = height;
+            u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
+            u->buf = calloc(u->width * u->height * 4, sizeof(unsigned char));
+            for(int I = 0; I < u->rect.size.height; I++){
+               offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
+               memcpy(u->buf + u->buf_len, baseAddress + offset_beg, copy_len);
+               u->buf_len += copy_len;
+            }
+            u->pixels_percent = (float)u->pixels_qty/((float)u->width*(float)u->height)*(float)100;
+            chan_send(l->chan,(void*)u);
+          }
+          IOSurfaceUnlock(frame, kIOSurfaceLockReadOnly, NULL);
+      }
       break;
     case kCGDisplayStreamFrameStatusFrameIdle:
-      fprintf(stderr, "%s: A new frame was not generated because the display did not change.\n", __func__);
-      return;
-
+      fprintf(stderr, "%s: A new frame was not generated because the display did not change.\n", __func__);return;
     case kCGDisplayStreamFrameStatusFrameBlank:
-      fprintf(stderr, "%s: A new frame was not generated because the display has gone blank.\n", __func__);
-      return;
-
+      fprintf(stderr, "%s: A new frame was not generated because the display has gone blank.\n", __func__);return;
     case kCGDisplayStreamFrameStatusStopped:
-      fprintf(stderr, "%s: The display stream has been stopped.\n", __func__);
-      return;
-
+      fprintf(stderr, "%s: The display stream has been stopped.\n", __func__);return;
     default:
-      fprintf(stderr, "%s: Unhandled display stream frame status.\n", __func__);
-      return;
-    }
-
-    unsigned long s      = timestamp();
-    bool          do_log = ((timestamp() - stream_last_ts) > STREAM_LOG_MS);
-    if (!do_log)
-      return;
-
-    stream_last_ts = timestamp();
-    if (status == kCGDisplayStreamFrameStatusFrameComplete && frame != NULL) {
-      log_info(">%s: "
-               AC_CYAN        "\n\tGot frame #%d @ %llu" AC_RESETALL
-               "%s",
-               __FUNCTION__, IOSurfaceGetSeed(frame), time,
-               ""
-               );
-
-      if (DEBUG_STREAM_UPDATES) {
-        printf("Display stream frame size: (%lu, %lu).\n", IOSurfaceGetWidth(frame), IOSurfaceGetHeight(frame));
-        printf("Display stream frame alloc size: %s.\n", bytes_to_string(IOSurfaceGetAllocSize(frame)));
-        printf("Display stream frame bytes per element: %lu.\n", IOSurfaceGetBytesPerElement(frame));
-        printf("Display stream frame bytes per row: %lu.\n", IOSurfaceGetBytesPerRow(frame));
-        printf("Display stream frame is BGRA format: %d.\n", IOSurfaceGetPixelFormat(frame) == 'BGRA' ? true : false);
-        printf("Display stream frame surface seed: %d.\n", IOSurfaceGetSeed(frame));
-      }
-      {
-        const CGRect  *updatedRects;
-        CGRect        dirtyRegion;
-        size_t        updatedRectsCount = 0, r = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame);
-        IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
-        unsigned char *buf = calloc(len, sizeof(unsigned char));
-        memcpy(buf, IOSurfaceGetBaseAddress(frame), IOSurfaceGetWidth(frame) * IOSurfaceGetHeight(frame) * 4);
-        updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
-        unsigned char *bufs[updatedRectsCount];
-        unsigned long stride = 0, offset_beg = 0, cpy_len = 0, start_x, end_x, start_y, end_y;
-        for (size_t i = 0; i < updatedRectsCount; i++) {
-          size_t qty = (int)updatedRects[i].size.width * (int)updatedRects[i].size.height;
-          if (qty > 0) {
-            dirtyRegion     = CGRectUnion(dirtyRegion, updatedRects[i]);
-            updated_pixels += qty;
-            bufs[r]         = calloc(qty, sizeof(unsigned char));
-            start_x         = updatedRects[i].origin.x;
-            start_y         = updatedRects[i].origin.y;
-            end_x           = start_x + updatedRects[i].size.width;
-            end_y           = start_y + updatedRects[i].size.height;
-            /*
-             * for(int h = 0; h < updatedRects[i].size.width; h++){
-             * offset_beg = (stride * (updatedRects[i].origin.y + i) + (updatedRects[i].origin.x * 4));
-             * cpy_len = updatedRects[i].size.width * 4;
-             * log_debug("%d/%d> Copying %lu starting from %lu",
-             *    h,(int)updatedRects[i].size.width,
-             *    cpy_len,
-             *    offset_beg
-             *    );
-             * }
-             */
-            log_info(
-              "#%lu> %lu pixels updated: %dx%d,"
-              "@%dx%d,"
-              "| %lux%lu -> %lux%lu"
-              "",
-              i,
-              qty,
-              (int)updatedRects[r].size.width, (int)updatedRects[r].size.height,
-              (int)updatedRects[r].origin.x, (int)updatedRects[r].origin.y,
-              start_x, start_y, end_x, end_y
-              );
-          }
-        }
-        if (buf) free(buf);
-        if (updated_pixels > 0) {
-          log_info("%lu Pixels to be updated", updated_pixels);
-          log_info(
-            "Dirty x:%d"
-            "\nDirty y:%d"
-            "\nDirty width:%d"
-            "\nDirty height:%d"
-            "",
-            (int)dirtyRegion.origin.x,
-            (int)dirtyRegion.origin.y,
-            (int)dirtyRegion.size.width,
-            (int)dirtyRegion.size.height
-            );
-        }
-        for (size_t i = 0; i < updatedRectsCount; i++) {
-//          if(bufs[i])free(bufs[i]);
-        }
-        IOSurfaceUnlock(frame, kIOSurfaceLockReadOnly, NULL);
-      }
-      if (!lastUpdate) {
-        CFRetain(ref);
-        lastUpdate = ref;
-      }else{
-        CGDisplayStreamUpdateRef tmpRef;
-        tmpRef     = lastUpdate;
-        lastUpdate = CGDisplayStreamUpdateCreateMergedUpdate(tmpRef, ref);
-        CFRelease(tmpRef);
-      }
-    }
-    if (ready) {
-      CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-      CGContextRef    *context   = CGBitmapContextCreate(
-        IOSurfaceGetBaseAddress(frame),
-        IOSurfaceGetWidth(frame),
-        IOSurfaceGetHeight(frame),
-        8,
-        IOSurfaceGetBytesPerRow(frame),
-        colorSpace,
-        kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
-      CGColorSpaceRelease(colorSpace);
-      CGImageRef        newImageRef  = CGBitmapContextCreateImage(context);
-      CGDataProviderRef provider_ref = CGImageGetDataProvider(newImageRef);
-      CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
-      size_t            len          = CFDataGetLength(data_ref);
-      unsigned char     *buf         = calloc(len, sizeof(unsigned char));
-      memcpy(buf, CFDataGetBytePtr(data_ref), len);
-      CFRelease(context);
-      CFRelease(data_ref);
-      char *f;
-      asprintf(&f, "/tmp/io/%lld.png", timestamp());
-
-      log_info("got pixels %s | "
-               "\n\tbpp:%lu"
-               "\n\tw:%lu,h:%lu"
-               "\n\talloc size:%s"
-               "\n\tlen:%s"
-               "\n\tfile:%s"
-               "%s",
-               milliseconds_to_string(timestamp() - s),
-               IOSurfaceGetBytesPerRow(frame),
-               IOSurfaceGetWidth(frame),
-               IOSurfaceGetHeight(frame),
-               bytes_to_string(IOSurfaceGetAllocSize(frame)),
-               bytes_to_string(len),
-               f,
-               ""
-               );
-      s = timestamp();
-      VipsImage *v = vips_image_new_from_memory(buf, len, IOSurfaceGetWidth(frame), IOSurfaceGetHeight(frame), 4, VIPS_FORMAT_UCHAR);
-      log_debug("\nLoaded %s PNG Pixels to %dx%d %s in %s",
-                bytes_to_string(len),
-                vips_image_get_width(v), vips_image_get_height(v),
-                bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(v)),
-                milliseconds_to_string(timestamp() - s)
-                );
-      unsigned char *buf1 = NULL;
-      size_t        vlen  = 0;
-      if (vips_pngsave_buffer(v, &buf1, &vlen, NULL))
-        log_error("Failed to save to buffer");
-      log_debug("Saved %s PNG Pixels to %s",
-                bytes_to_string(vlen), f
-                );
-    }
+      fprintf(stderr, "%s: Unhandled display stream frame status.\n", __func__);return;
+    } /* switch */
   };
 
-  return(wu_stream_active_display_cb(width, height, display_id, cb));
+  return(wu_stream_active_display_cb(l->width, l->height, l->id, cb));
 } /* wu_stream_main_display */
 
 uint32_t *front_process_window_list_for_active_space(int *count){

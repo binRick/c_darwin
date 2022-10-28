@@ -2,9 +2,28 @@
 #ifndef DLS_TEST_COMMANDS_H
 #define DLS_TEST_COMMANDS_H
 #include "dls/commands.h"
+struct stop_loop_update_t {
+  CGRect rect;
+  size_t buf_len;
+  unsigned char *buf;
+  unsigned long ts;
+  size_t          width, height, id, seed;
+  size_t start_x,start_y,end_x,end_y;
+  size_t pixels_qty;
+  float pixels_percent;
+};
+struct stop_loop_t {
+  CFRunLoopRef *loop;
+  size_t          delay_ms, width, height, id, monitor_interval_ms, last_monitor_ts;
+  bool            ended, debug_mode, verbose_mode;
+  pthread_t       threads[5];
+  pthread_mutex_t *mutex;
+  struct Vector *heartbeat, *rectangles;
+  chan_t *chan;
+};
 #define ADD_TEST_COMMAND_PROTOTYPES()       \
   COMMAND_PROTOTYPE(test_test_hash)         \
-  COMMAND_PROTOTYPE(test_test_clipboard)\
+  COMMAND_PROTOTYPE(test_test_clipboard)    \
   COMMAND_PROTOTYPE(test_test_vector)       \
   COMMAND_PROTOTYPE(test_test_windows)      \
   COMMAND_PROTOTYPE(test_pick)              \
@@ -23,19 +42,19 @@
   COMMAND_PROTOTYPE(test_cmd)               \
 //////////////////////////////////////////////////
 #define ADD_TEST_COMMAND_ENUMS() \
-  COMMAND_TEST_WINDOWS,\
+  COMMAND_TEST_WINDOWS,          \
 //////////////////////////////////////////////////
-#define COMMAND_TEST_ADD_TEST_FUNCTIONS()                                                                   \
-  COMMAND_TEST_ADD_TEST_FUNCTION(test, hash, "", "", 2, "Basic Hash Tests")       /*_command_test_hash*/    \
-  COMMAND_TEST_ADD_TEST_FUNCTION(test, clipboard, "", "", 2, "Basic Clipboard Tests")       /*_command_test_clipboard*/    \
-  COMMAND_TEST_ADD_TEST_FUNCTION(test, windows, "", "", 2, "Basic Windows Tests") /*_command_test_windows*/ \
-  COMMAND_TEST_ADD_TEST_FUNCTION(test, vector, "", "", 2, "Basic Vector Tests")   /*_command_test_vector*/\
+#define COMMAND_TEST_ADD_TEST_FUNCTIONS()                                                                         \
+  COMMAND_TEST_ADD_TEST_FUNCTION(test, hash, "", "", 2, "Basic Hash Tests")           /*_command_test_hash*/      \
+  COMMAND_TEST_ADD_TEST_FUNCTION(test, clipboard, "", "", 2, "Basic Clipboard Tests") /*_command_test_clipboard*/ \
+  COMMAND_TEST_ADD_TEST_FUNCTION(test, windows, "", "", 2, "Basic Windows Tests")     /*_command_test_windows*/   \
+  COMMAND_TEST_ADD_TEST_FUNCTION(test, vector, "", "", 2, "Basic Vector Tests")       /*_command_test_vector*/    \
 ///////////////////////////////////////////
-#define COMMAND_TEST_ADD_TEST_PROTOTYPES()       \
-  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, hash)    \
-  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, clipboard)    \
-  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, windows) \
-  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, vector)  \
+#define COMMAND_TEST_ADD_TEST_PROTOTYPES()         \
+  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, hash)      \
+  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, clipboard) \
+  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, windows)   \
+  COMMAND_TEST_ADD_TEST_PROTOTYPE(test, vector)    \
 ///////////////////////////////////////////
 #include "dls/dls.h"
 COMMAND_TEST_ADD_TEST_PROTOTYPES()
@@ -53,9 +72,9 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define COLOR_STREAM         "\x1b[38;2;151;252;252m"
 #define COLOR_VECTOR         "\x1b[38;2;80;100;127m"
 #define COLOR_WINDOWS        "\x1b[38;2;80;100;50m"
-#define COLOR_CLIPBOARD        "\x1b[38;2;80;100;50m"
+#define COLOR_CLIPBOARD      "\x1b[38;2;80;100;50m"
 #define ICON_DROID           "👽"
-#define ICON_CLIPBOARD           "👽"
+#define ICON_CLIPBOARD       "👽"
 #define ICON_VECTOR          "👽"
 #define ICON_WINDOWS         "🍍"
 #define ICON_SHAPE           "💠"
@@ -67,8 +86,8 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define ICON_STREAM          "🌊"
 #define ICON_CAP             "🎩"
 ///////////////
-#define COMMON_OPTIONS_TEST \
-  common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),\
+#define COMMON_OPTIONS_TEST                           \
+  common_options_b[COMMON_OPTION_CLEAR_SCREEN](args), \
 ///////////////
 #define COMMON_OPTIONS_TEST_COMMON                        \
   common_options_b[COMMON_OPTION_VERBOSE_MODE](args),     \
@@ -139,7 +158,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_CMD, ),                           \
   CREATE_SUBCOMMAND(TEST_PICK, ),                          \
   CREATE_SUBCOMMAND(TEST_HASH, ),                          \
-  CREATE_SUBCOMMAND(TEST_CLIPBOARD, ),                          \
+  CREATE_SUBCOMMAND(TEST_CLIPBOARD, ),                     \
   CREATE_SUBCOMMAND(TEST_VECTOR, ),                        \
   CREATE_SUBCOMMAND(TEST_WINDOWS, ),                       \
   CREATE_SUBCOMMAND(TEST_FIND_WINDOW, ),                   \
@@ -169,7 +188,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   COMMAND(ICON_WINDOW, TEST_CAP_WINDOW, "window", COLOR_WINDOW, "Test Window Capture", *_command_test_cap_window)                      \
   COMMAND(ICON_DISPLAY, TEST_CAP_DISPLAY, "display", COLOR_DISPLAY, "Test Display Capture", *_command_test_cap_display)                \
   COMMAND(ICON_HASH, TEST_HASH, "hash", COLOR_HASH, "Test Hash", *_command_test_test_hash)                                             \
-  COMMAND(ICON_CLIPBOARD, TEST_CLIPBOARD, "clipboard", COLOR_CLIPBOARD, "Test Clipboard", *_command_test_test_clipboard)                                             \
+  COMMAND(ICON_CLIPBOARD, TEST_CLIPBOARD, "clipboard", COLOR_CLIPBOARD, "Test Clipboard", *_command_test_test_clipboard)               \
   COMMAND(ICON_PICK, TEST_PICK, "pick", COLOR_PICK, "Test Pick", *_command_test_pick)                                                  \
   COMMAND(ICON_VECTOR, TEST_VECTOR, "vector", COLOR_VECTOR, "Test Vector", *_command_test_test_vector)                                 \
   COMMAND(ICON_WINDOWS, TEST_WINDOWS, "windows", COLOR_WINDOWS, "Test Windows", *_command_test_test_windows)                           \

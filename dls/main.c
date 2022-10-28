@@ -1,6 +1,7 @@
+#include "dls/static.c"
 #include "dls/types.h"
 #include "dls/vars.h"
-#include "dls/static.c"
+
 int main(int argc, char *argv[]) {
   VIPS_INIT(argv[0]);
   /*
@@ -10,15 +11,12 @@ int main(int argc, char *argv[]) {
    * atexit(__at_exit);
    */
   args->pid = getpid();
-  if (DEBUG_ARGV) {
+  if (DEBUG_ARGV)
     dls_print_arg_v("pre", AC_YELLOW, argc, argv);
-  }
-  if (NORMALIZE_ARGV) {
+  if (NORMALIZE_ARGV)
     dls_normalize_arguments(&argc, argv);
-  }
-  if (DEBUG_ARGV) {
+  if (DEBUG_ARGV)
     dls_print_arg_v("post", AC_MAGENTA, argc, argv);
-  }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"

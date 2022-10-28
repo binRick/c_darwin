@@ -3,7 +3,7 @@
 #define DLS_TEST_COMMANDS_C
 #define TEST_VECTOR_QTY    5
 #define MIN_STREAM_MS      1000
-#define MAX_STREAM_MS      60000
+#define MAX_STREAM_MS      600000
 #include "core/core.h"
 #include "dls/command-test.h"
 #include "dls/dls.h"
@@ -12,33 +12,108 @@
 extern int  DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 ///////////////////////////////////////////
-struct stop_loop_t {
-  CFRunLoopRef *loop;
-  size_t       delay_ms;
-};
 
-int stop_loop(void *SL){
-  usleep(1000 * (size_t)((struct stop_loop_t *)SL)->delay_ms);
-  CFRunLoopStop(*(CFRunLoopRef *)((struct stop_loop_t *)SL)->loop);
+int stop_loop(void *L){
+  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  pthread_mutex_lock(l->mutex);
+  size_t delay_ms = l->delay_ms;
+  pthread_mutex_unlock(l->mutex);
+  usleep(1000 * delay_ms);
+  pthread_mutex_lock(l->mutex);
+  l->ended = true;
+  CFRunLoopStop(l->loop);
+  pthread_mutex_unlock(l->mutex);
   return(EXIT_SUCCESS);
 }
 
-void _command_test_stream_display(){
-  pthread_t    th;
-  CFRunLoopRef loop = CFRunLoopGetCurrent();
+int wu_receive_stream(void*L){
+  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  bool ended;
+  pthread_mutex_lock(l->mutex);
+  ended = l->ended;
+  pthread_mutex_unlock(l->mutex);
+  void **msg;
+  CGRect rect;
+  while(!ended && chan_recv(l->chan,&msg) == 0){
+    struct stop_loop_update_t *u = (struct stop_loop_update_t*)msg;
+    if(!u)continue;
+      log_debug(
+          "#%lu> "
+          "@%lu|id:%lu|%lux%lu total|"
+          "\n\t|%s Buffer"
+          "\n\t|@%dx%d|%dx%d"
+          "\n\t|%lux%lu - %lux%lu (%lu Pixels- %.2f%%)"
+         ,
+          u->seed,
+          u->ts,u->id,u->width,u->height,
+          bytes_to_string(u->buf_len),
+          (int)u->rect.origin.x,(int)u->rect.origin.y,
+          (int)u->rect.size.width,(int)u->rect.size.height,
+          u->start_x,u->start_y,
+          u->end_x,u->end_y,u->pixels_qty,
+          u->pixels_percent
+          );
+    if(u->buf)free(u->buf);
+    pthread_mutex_lock(l->mutex);
+    ended = l->ended;
+    pthread_mutex_unlock(l->mutex);
+  }
+  return(EXIT_SUCCESS);
+}
 
-  pthread_create(&th, NULL, stop_loop, (void *)&(struct stop_loop_t){
-    .loop     = &loop,
-    .delay_ms = clamp(args->duration_seconds * 1000, MIN_STREAM_MS, MAX_STREAM_MS),
-  });
-  wu_stream_active_display(
-    args->width,
-    args->height,
-    args->id > 0 ? args->id : get_display_index_id(args->index)
-    );
+int wu_monitor_stream(void*L){
+  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  bool ended;
+  size_t interval,ts;
+  pthread_mutex_lock(l->mutex);
+  interval = l->monitor_interval_ms;
+  ended = l->ended;
+  l->last_monitor_ts = timestamp();
+  pthread_mutex_unlock(l->mutex);
+  while(!ended){
+    usleep(1000*interval);
+    pthread_mutex_lock(l->mutex);
+    log_debug("%lu Updates in %s (%.2f/sec)",
+        vector_size(l->heartbeat),
+        milliseconds_to_string(timestamp()-l->last_monitor_ts),
+      (float)((vector_size(l->heartbeat))/((float)(timestamp()-l->last_monitor_ts)/1000))
+        );
+    for(size_t i=0;i<vector_size(l->heartbeat);i++){
+        ts = (size_t)vector_pop(l->heartbeat);
+      log_debug("Updates: %lu",ts);
+    }
+    l->last_monitor_ts = timestamp();
+    ended = l->ended;
+    pthread_mutex_unlock(l->mutex);
+  }
+  return(EXIT_SUCCESS);
+}
+void _command_test_stream_display(){
+  pthread_mutex_t    mutex;
+CFRunLoopRef loop = CFRunLoopGetCurrent();
+  struct stop_loop_t l = {
+    .loop = &loop,
+    .delay_ms = clamp(args->duration_seconds * 1000,                        MIN_STREAM_MS,  MAX_STREAM_MS),
+    .mutex    = &mutex,
+    .width    = args->width,
+    .height   = args->height,
+    .monitor_interval_ms = 3000,
+    .chan = chan_init(100),
+    .heartbeat = vector_new_with_options(10,true),
+    .id       = args->id > 0 ? args->id : get_display_index_id(args->index),
+    .verbose_mode = args->verbose_mode,
+    .debug_mode = args->debug_mode,
+  };
+
+  pthread_create(&(l.threads[3]), NULL, wu_receive_stream, (void *)&l);
+//  pthread_create(&(l.threads[2]), NULL, wu_monitor_stream, (void *)&l);
+  pthread_create(&(l.threads[0]), NULL, stop_loop, (void *)&l);
+  pthread_create(&(l.threads[1]), NULL, wu_stream_active_display, (void *)&l);
   CFRunLoopRun();
-  pthread_join(&th, NULL);
-  CFRelease(loop);
+  pthread_join(&(l.threads[0]), NULL);
+  pthread_join(&(l.threads[1]), NULL);
+//  pthread_join(&(l.threads[2]), NULL);
+  pthread_join(&(l.threads[3]), NULL);
   exit(EXIT_SUCCESS);
 }
 

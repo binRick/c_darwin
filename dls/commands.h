@@ -22,8 +22,8 @@
   int __command_ ## COMMAND_NAME ## _test_ ## SUBCOMMAND_NAME(int argc, char **argv){                                        \
     GREATEST_MAIN_BEGIN();                                                                                                   \
     char *s[10];                                                                                                             \
-    asprintf(&(s[0]), "s_%s%s", _XS(SUBCOMMAND_NAME), SUITE_FILTER);                                                                                 \
-    asprintf(&(s[1]), "t_%s%s", _XS(SUBCOMMAND_NAME), TEST_FILTER);                                                        \
+    asprintf(&(s[0]), "s_%s%s", _XS(SUBCOMMAND_NAME), SUITE_FILTER);                                                         \
+    asprintf(&(s[1]), "t_%s%s", _XS(SUBCOMMAND_NAME), TEST_FILTER);                                                          \
     greatest_set_suite_filter(s[0]);                                                                                         \
     greatest_set_test_filter(s[1]);                                                                                          \
     greatest_set_verbosity(VERBOSITY);                                                                                       \
@@ -34,8 +34,8 @@
     if (args->list_tests_mode) greatest_list_tests_only();                                                                   \
     RUN_SUITE(s_ ## SUBCOMMAND_NAME);                                                                                        \
     GREATEST_MAIN_END();                                                                                                     \
-    free(s[0]);\
-    free(s[1]);\
+    free(s[0]);                                                                                                              \
+    free(s[1]);                                                                                                              \
   }                                                                                                                          \
 //////////////////////////////////////////////////////
 #define ADD_COMMAND_ENUMS() \
