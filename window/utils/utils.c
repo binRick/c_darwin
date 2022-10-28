@@ -189,13 +189,12 @@ int wu_stream_active_display_cb(int width, int height, int display_id, wu_stream
 }
 
 int wu_stream_active_display(void *L){
-  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  struct stream_setup_t *l = (struct stream_setup_t *)L;
   size_t width, height, id;
   width = l->width; height=l->height;id=l->id;
   wu_stream_cb       cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
     pthread_mutex_lock(l->mutex);
-    bool ended = l->ended;
-  bool debug_mode = l->debug_mode;
+    bool ended = l->ended, debug_mode = l->debug_mode;
     pthread_mutex_unlock(l->mutex);
     if (ended)return;
     switch (status) {
@@ -203,15 +202,14 @@ int wu_stream_active_display(void *L){
       stream_last_ts = timestamp();
       if (status == kCGDisplayStreamFrameStatusFrameComplete && frame != NULL) {
           const CGRect  *updatedRects;
-          void* baseAddress;
-          size_t        updatedRectsCount = 0, r = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), seed, offset_beg = 0, copy_len;
-          struct stop_loop_update_t *u;
+          void* frame_addr = frame_addr = IOSurfaceGetBaseAddress(frame);
+          size_t        updatedRectsCount = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), offset_beg = 0, copy_len = 0, seed = IOSurfaceGetSeed(frame);
+          struct stream_update_t *u;
           IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
-          seed = IOSurfaceGetSeed(frame);
-          baseAddress = IOSurfaceGetBaseAddress(frame);
           updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
+          Dbg(updatedRectsCount,%lu);
           for (size_t i = 0; i < updatedRectsCount; i++) {
-            u = calloc(1,sizeof(struct stop_loop_update_t));
+            u = calloc(1,sizeof(struct stream_update_t));
             u->ts = stream_last_ts;
             u->rect = updatedRects[i];
             u->start_x         = u->rect.origin.x;
@@ -224,10 +222,12 @@ int wu_stream_active_display(void *L){
             u->width = width;
             u->height = height;
             u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
-            u->buf = calloc(u->width * u->height * 4, sizeof(unsigned char));
-            for(int I = 0; I < u->rect.size.height; I++){
+            size_t len = u->rect.size.width * u->rect.size.height * 4 * stride;
+            u->buf = calloc(1, len);
+            u->buf_len = 0;
+            for(size_t I = 0; I < u->rect.size.height; I++){
                offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
-               memcpy(u->buf + u->buf_len, baseAddress + offset_beg, copy_len);
+               memcpy(u->buf + u->buf_len, frame_addr + offset_beg, copy_len);
                u->buf_len += copy_len;
             }
             u->pixels_percent = (float)u->pixels_qty/((float)u->width*(float)u->height)*(float)100;

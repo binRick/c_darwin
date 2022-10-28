@@ -14,7 +14,7 @@ extern char **DLS_EXECUTABLE_ARGV;
 ///////////////////////////////////////////
 
 int stop_loop(void *L){
-  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  struct stream_setup_t *l = (struct stream_setup_t *)L;
   pthread_mutex_lock(l->mutex);
   size_t delay_ms = l->delay_ms;
   pthread_mutex_unlock(l->mutex);
@@ -27,7 +27,7 @@ int stop_loop(void *L){
 }
 
 int wu_receive_stream(void*L){
-  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool ended;
   pthread_mutex_lock(l->mutex);
   ended = l->ended;
@@ -35,7 +35,7 @@ int wu_receive_stream(void*L){
   void **msg;
   CGRect rect;
   while(!ended && chan_recv(l->chan,&msg) == 0){
-    struct stop_loop_update_t *u = (struct stop_loop_update_t*)msg;
+    struct stream_update_t *u = (struct stream_update_t*)msg;
     if(!u)continue;
       log_debug(
           "#%lu> "
@@ -62,7 +62,7 @@ int wu_receive_stream(void*L){
 }
 
 int wu_monitor_stream(void*L){
-  struct stop_loop_t *l = (struct stop_loop_t *)L;
+  struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool ended;
   size_t interval,ts;
   pthread_mutex_lock(l->mutex);
@@ -91,12 +91,12 @@ int wu_monitor_stream(void*L){
 void _command_test_stream_display(){
   pthread_mutex_t    mutex;
 CFRunLoopRef loop = CFRunLoopGetCurrent();
-  struct stop_loop_t l = {
+  struct stream_setup_t l = {
     .loop = &loop,
     .delay_ms = clamp(args->duration_seconds * 1000,                        MIN_STREAM_MS,  MAX_STREAM_MS),
     .mutex    = &mutex,
-    .width    = args->width,
-    .height   = args->height,
+    .width    = get_display_width(),
+    .height   = get_display_height(),
     .monitor_interval_ms = 3000,
     .chan = chan_init(100),
     .heartbeat = vector_new_with_options(10,true),

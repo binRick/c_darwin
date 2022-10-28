@@ -2,17 +2,18 @@
 #ifndef DLS_TEST_COMMANDS_H
 #define DLS_TEST_COMMANDS_H
 #include "dls/commands.h"
-struct stop_loop_update_t {
+struct stream_update_t {
   CGRect rect;
   size_t buf_len;
   unsigned char *buf;
   unsigned long ts;
   size_t          width, height, id, seed;
   size_t start_x,start_y,end_x,end_y;
+  size_t bytes_per_pixel;
   size_t pixels_qty;
   float pixels_percent;
 };
-struct stop_loop_t {
+struct stream_setup_t {
   CFRunLoopRef *loop;
   size_t          delay_ms, width, height, id, monitor_interval_ms, last_monitor_ts;
   bool            ended, debug_mode, verbose_mode;
