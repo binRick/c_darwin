@@ -82,6 +82,7 @@ darwin_ls_deps = [
   capture_save_dep,
   layout_utils_dep,
   window_dep,
+  variation_ui_dep,
 ]
 
 darwin_ls_c_args = [
@@ -89,6 +90,8 @@ darwin_ls_c_args = [
   '-Wno-unused-but-set-variable',
   tesseract_cflags,
   leptonica_cflags,
+  '-DVN_COLOR',
+  '-DVN_WIDGET',
 ]
 darwin_ls_link_args = [
   tesseract_libs,

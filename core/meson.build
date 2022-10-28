@@ -45,10 +45,13 @@ core_deps = [
   bytes_dep,tempdir_dep,fs_c_dep,b64_dep,fancy_progress_dep,
   url_h_dep,vips_dep,hashmap_h_dep,bitfield_dep,levenshtein_dep,
   container_of_dep,
-  bestline_dep,
+  bestline_dep,c_ringbuf_dep,
 ]
 
 core_c_args = [
+  '-DVN_UI_IMPLEMENTATION',
+  '-DVN_COLOR',
+  '-DVN_WIDGET',
 ]
 
 core_link_args = [

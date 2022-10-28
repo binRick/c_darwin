@@ -265,7 +265,7 @@ static const struct capture_mode_t {
 };
 
 bool initialize_args(struct args_t *ARGS){
-  if (args->clear_screen == true)
+  if (args->dls_clear_screen == true)
     fprintf(stdout, "%s", AC_CLS);
   ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS, concurrency, ARG_CLAMP_TYPE_CONCURRENCY);
   ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS, duration_seconds, ARG_CLAMP_TYPE_DURATION);
@@ -484,7 +484,7 @@ common_option_b common_options_b[] = {
                                 list_suites_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,                                                   'C',       "clear",
                                 AC_CYAN AC_CURLY_UNDERLINE "Clear Screen" AC_RESETALL,
-                                clear_screen)
+                                dls_clear_screen)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,                                              0,         "not-current-space",  "Windows not on Currently Focused Space only",                             not_current_display_only)
   CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,                                                  0,         "current-space",      "Windows on Currently Focused Space only",                                 current_display_only)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,                                            0,         "not-current-display","Windows not on Currently Focused Display only",                           not_current_display_only)

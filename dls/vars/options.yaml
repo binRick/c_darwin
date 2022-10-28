@@ -79,8 +79,8 @@ other_options:
    var: case_sensitive
  - name: clear_icons_cache
    var: clear_icons_cache
- - name: clear_screen
-   var: clear_screen
+ - name: dls_clear_screen
+   var: dls_clear_screen
  - name: compress
    var: compress
  - name: concurrency

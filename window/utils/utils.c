@@ -209,7 +209,6 @@ int wu_stream_active_display(void *L){
         struct stream_update_t *u;
         IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
         updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
-        Dbg(updatedRectsCount, %u);
         for (size_t i = 0; i < updatedRectsCount; i++) {
           u             = calloc(1, sizeof(struct stream_update_t));
           u->ts         = stream_last_ts;

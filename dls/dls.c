@@ -201,7 +201,7 @@ struct args_t *args = &(struct args_t){
   .sort_key                           = NULL,
   .sort_direction                     = "asc",
   .current_space_only                 = false,
-  .clear_screen                       = false,
+  .dls_clear_screen                       = false,
   .minimized_only                     = false,
   .application_name                   = NULL,
   .width_greater                      = -1, .width_less = -1,

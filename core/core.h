@@ -49,6 +49,8 @@
 #include "tempdir.c/tempdir.h"
 #include "timelib/timelib.h"
 #include "timestamp/timestamp.h"
+#include "variation-ui/vn_ui.h"
+#include "c_ringbuf/ringbuf.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"

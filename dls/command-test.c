@@ -28,36 +28,97 @@ int stop_loop(void *L){
   return(EXIT_SUCCESS);
 }
 
+#define DO_LOG true
+#define LOG_INTERVAL 50
+#define MAX_HISTORY_SIZE 500
+#define HISTORY_MS 10000
 int wu_receive_stream(void *L){
   struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool                  ended;
+  struct winsize *ws = get_terminal_size();
+  void   **msg;
+  CGRect rect;
+  int width = ws->ws_col,height=ws->ws_row, w, h;
+  size_t qty=0, copied=0;
+  char *s;
+  ringbuf_t rb = ringbuf_new(1024*1024*128);
 
   pthread_mutex_lock(l->mutex);
   ended = l->ended;
   pthread_mutex_unlock(l->mutex);
-  void   **msg;
-  CGRect rect;
-
+  unsigned long started = timestamp(), last_ts = timestamp();
+  struct Vector *history = vector_new_with_options(MAX_HISTORY_SIZE, false);
   while (!ended && chan_recv(l->chan, &msg) == 0) {
     struct stream_update_t *u = (struct stream_update_t *)msg;
     if (!u) continue;
-    log_debug(
-      "#%lu> "
-      "@%lu|id:%lu|%lux%lu total|"
-      "\n\t|%s Buffer"
-      "\n\t|@%dx%d|%dx%d"
-      "\n\t|%lux%lu - %lux%lu (%lu Pixels- %.2f%%)"
-      ,
-      u->seed,
-      u->ts, u->id, u->width, u->height,
-      bytes_to_string(u->buf_len),
-      (int)u->rect.origin.x, (int)u->rect.origin.y,
-      (int)u->rect.size.width, (int)u->rect.size.height,
-      u->start_x, u->start_y,
-      u->end_x, u->end_y, u->pixels_qty,
-      u->pixels_percent
+    qty++;
+    copied += u->buf_len;
+    while(vector_size(history)>0 && (size_t)vector_get(history,vector_size(history)-1) < timestamp()-HISTORY_MS + 1000)
+      vector_pop(history);
+    while(vector_size(history)>=vector_capacity(history))
+      vector_pop(history);
+    vector_prepend(history,(void*)u->ts);
+    if(DO_LOG && (timestamp() - last_ts) > LOG_INTERVAL){
+      last_ts = timestamp();
+      struct StringFNStrings split;
+      if(false)
+        ringbuf_memcpy_into(rb,u->buf,u->buf_len);
+      asprintf(&s,
+       AC_YELLOW  "#%lu> " AC_RESETALL
+        "\n|%lu|ID:%lu"
+        "\n|%lux%lu Frame"
+        "\n|"AC_YELLOW"%s"AC_RESETALL" Buffer"
+        "\n|Update:"
+        "\n|    Size  : %dx%d"
+        "\n|    Range : %lux%lu - %lux%lu"
+        "\n|            ("AC_RED"%s"AC_RESETALL" Pixels- "AC_RESETALL AC_BLUE"%.2f%%"AC_RESETALL")"
+        "\n|"AC_RESETALL "Copied   : " AC_BLUE "%s" AC_RESETALL 
+        "\n|"AC_RESETALL "Runtime  : "AC_MAGENTA"%s"AC_RESETALL
+        "\n|"AC_RESETALL "Rate     : "AC_GREEN"%s"AC_RESETALL"/s" 
+        "\n|"AC_RESETALL "RingBuf  : "AC_GREEN"%s/%s Used (%f)"AC_RESETALL 
+        "\n|"AC_RESETALL "History  : "AC_GREEN"%lu" AC_RESETALL "/%lu"
+        "\n|"AC_RESETALL "Newest   : "AC_GREEN"%s" AC_RESETALL
+        "\n|"AC_RESETALL "Oldest   : "AC_GREEN"%s/%s" AC_RESETALL
+        "%s\n"
+        ,
+        u->seed,
+        u->ts, u->id, u->width, u->height,
+        bytes_to_string(u->buf_len),
+        (int)u->rect.size.width, (int)u->rect.size.height,
+        u->start_x, u->start_y,
+        u->end_x, u->end_y, 
+        bytes_to_string(u->pixels_qty),
+        u->pixels_percent,
+        bytes_to_string(copied),
+        milliseconds_to_string(timestamp() -started),
+        bytes_to_string(copied / (timestamp()-started)),
+        bytes_to_string(ringbuf_bytes_used(rb)),
+        bytes_to_string(ringbuf_capacity(rb)),
+        (float)ringbuf_bytes_used(rb)/(float)ringbuf_capacity(rb),
+        vector_size(history),
+        vector_capacity(history),
+        milliseconds_to_string(timestamp() - (size_t)(vector_get(history,0))),
+        milliseconds_to_string(timestamp() - (size_t)(vector_get(history,vector_size(history)-1))),
+        milliseconds_to_string(HISTORY_MS),
+        ""
+        );
+      split = stringfn_split_lines(s);
+      w = 0; h = ws->ws_row - (int)split.count;
+      fprintf(stdout,
+           AC_CLS
+           "\0337"
+           "\033[s\033[%d;%dH"
+           "%s"
+           "\0338",
+           h,
+           w,
+           s
       );
+      if(s)free(s);
+      stringfn_release_strings_struct(split);
+    }
     if (u->buf) free(u->buf);
+    if (u) free(u);
     pthread_mutex_lock(l->mutex);
     ended = l->ended;
     pthread_mutex_unlock(l->mutex);
@@ -136,6 +197,24 @@ void _command_test_cap_window(){
 }
 
 TEST t_clipboard(){
+   struct vn_init vn; /* FIRST OF ALL DEFINE WINDOW NAME */
+   vn.width = 20; 
+   vn.height = 2; 
+   vn.pos_x = 2; 
+   vn.pos_y = 2;
+
+   struct vnc_color white;
+   white.is_fore = 0;
+   white.color = vn_hex_color("ffffff", white.is_fore);
+
+   struct vnc_color black;
+   black.is_fore = 1; /* FOR BACKGROUND */
+   black.color = vn_rgb_color(0, 0, 0, black.is_fore);
+
+//   vn_clear(); /* CLEAR THE TERMINAL SCREEN */
+   vn_gotoxy(vn.pos_x, vn.pos_y); /* GO TO CERTAIN POSITION */
+   vn_print("Hey is this text with color?", white.color, black.color, text_bold);
+   vn_end(vn);  
   PASSm("Clipboard Tests OK");
 }
 
