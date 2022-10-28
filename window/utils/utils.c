@@ -190,60 +190,65 @@ int wu_stream_active_display_cb(int width, int height, int display_id, wu_stream
 
 int wu_stream_active_display(void *L){
   struct stream_setup_t *l = (struct stream_setup_t *)L;
-  size_t width, height, id;
-  width = l->width; height=l->height;id=l->id;
-  wu_stream_cb       cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+  size_t                width, height, id;
+
+  width = l->width; height = l->height; id = l->id;
+  wu_stream_cb cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
     pthread_mutex_lock(l->mutex);
     bool ended = l->ended, debug_mode = l->debug_mode;
     pthread_mutex_unlock(l->mutex);
-    if (ended)return;
+    if (ended) return;
+
     switch (status) {
     case kCGDisplayStreamFrameStatusFrameComplete:
       stream_last_ts = timestamp();
       if (status == kCGDisplayStreamFrameStatusFrameComplete && frame != NULL) {
-          const CGRect  *updatedRects;
-          void* frame_addr = frame_addr = IOSurfaceGetBaseAddress(frame);
-          size_t        updatedRectsCount = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), offset_beg = 0, copy_len = 0, seed = IOSurfaceGetSeed(frame);
-          struct stream_update_t *u;
-          IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
-          updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
-          Dbg(updatedRectsCount,%lu);
-          for (size_t i = 0; i < updatedRectsCount; i++) {
-            u = calloc(1,sizeof(struct stream_update_t));
-            u->ts = stream_last_ts;
-            u->rect = updatedRects[i];
-            u->start_x         = u->rect.origin.x;
-            u->start_y         = u->rect.origin.y;
-            u->end_x           = u->start_x + u->rect.size.width;
-            u->end_y           = u->start_y + u->rect.size.height;
-            u->seed = seed;
-            u->id = id;
-            copy_len = u->rect.size.width * 4;
-            u->width = width;
-            u->height = height;
-            u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
-            size_t len = u->rect.size.width * u->rect.size.height * 4 * stride;
-            u->buf = calloc(1, len);
-            u->buf_len = 0;
-            for(size_t I = 0; I < u->rect.size.height; I++){
-               offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
-               memcpy(u->buf + u->buf_len, frame_addr + offset_beg, copy_len);
-               u->buf_len += copy_len;
-            }
-            u->pixels_percent = (float)u->pixels_qty/((float)u->width*(float)u->height)*(float)100;
-            chan_send(l->chan,(void*)u);
+        const CGRect           *updatedRects;
+        void                   *frame_addr = frame_addr = IOSurfaceGetBaseAddress(frame);
+        size_t                 updatedRectsCount = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), offset_beg = 0, copy_len = 0, seed = IOSurfaceGetSeed(frame);
+        struct stream_update_t *u;
+        IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
+        updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
+        Dbg(updatedRectsCount, %u);
+        for (size_t i = 0; i < updatedRectsCount; i++) {
+          u             = calloc(1, sizeof(struct stream_update_t));
+          u->ts         = stream_last_ts;
+          u->rect       = updatedRects[i];
+          u->start_x    = u->rect.origin.x;
+          u->start_y    = u->rect.origin.y;
+          u->end_x      = u->start_x + u->rect.size.width;
+          u->end_y      = u->start_y + u->rect.size.height;
+          u->seed       = seed;
+          u->id         = id;
+          copy_len      = u->rect.size.width * 4;
+          u->width      = width;
+          u->height     = height;
+          u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
+          size_t len = u->rect.size.width * u->rect.size.height * 4 * stride;
+          u->buf     = calloc(1, len);
+          u->buf_len = 0;
+          for (size_t I = 0; I < u->rect.size.height; I++) {
+            offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
+            memcpy(u->buf + u->buf_len, frame_addr + offset_beg, copy_len);
+            u->buf_len += copy_len;
           }
-          IOSurfaceUnlock(frame, kIOSurfaceLockReadOnly, NULL);
+          u->pixels_percent = (float)u->pixels_qty / ((float)u->width * (float)u->height) * (float)100;
+          chan_send(l->chan, (void *)u);
+        }
+        IOSurfaceUnlock(frame, kIOSurfaceLockReadOnly, NULL);
       }
       break;
     case kCGDisplayStreamFrameStatusFrameIdle:
-      fprintf(stderr, "%s: A new frame was not generated because the display did not change.\n", __func__);return;
+      fprintf(stderr, "%s: A new frame was not generated because the display did not change.\n", __func__); return;
+
     case kCGDisplayStreamFrameStatusFrameBlank:
-      fprintf(stderr, "%s: A new frame was not generated because the display has gone blank.\n", __func__);return;
+      fprintf(stderr, "%s: A new frame was not generated because the display has gone blank.\n", __func__); return;
+
     case kCGDisplayStreamFrameStatusStopped:
-      fprintf(stderr, "%s: The display stream has been stopped.\n", __func__);return;
+      fprintf(stderr, "%s: The display stream has been stopped.\n", __func__); return;
+
     default:
-      fprintf(stderr, "%s: Unhandled display stream frame status.\n", __func__);return;
+      fprintf(stderr, "%s: Unhandled display stream frame status.\n", __func__); return;
     } /* switch */
   };
 

@@ -3,24 +3,24 @@
 #define DLS_TEST_COMMANDS_H
 #include "dls/commands.h"
 struct stream_update_t {
-  CGRect rect;
-  size_t buf_len;
+  CGRect        rect;
+  size_t        buf_len;
   unsigned char *buf;
   unsigned long ts;
-  size_t          width, height, id, seed;
-  size_t start_x,start_y,end_x,end_y;
-  size_t bytes_per_pixel;
-  size_t pixels_qty;
-  float pixels_percent;
+  size_t        width, height, id, seed;
+  size_t        start_x, start_y, end_x, end_y;
+  size_t        bytes_per_pixel;
+  size_t        pixels_qty;
+  float         pixels_percent;
 };
 struct stream_setup_t {
-  CFRunLoopRef *loop;
+  CFRunLoopRef    *loop;
   size_t          delay_ms, width, height, id, monitor_interval_ms, last_monitor_ts;
   bool            ended, debug_mode, verbose_mode;
   pthread_t       threads[5];
   pthread_mutex_t *mutex;
-  struct Vector *heartbeat, *rectangles;
-  chan_t *chan;
+  struct Vector   *heartbeat, *rectangles;
+  chan_t          *chan;
 };
 #define ADD_TEST_COMMAND_PROTOTYPES()       \
   COMMAND_PROTOTYPE(test_test_hash)         \

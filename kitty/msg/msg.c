@@ -79,10 +79,10 @@ bool kitty_write_terminal_corner(int corner, char *msg){
   unsigned long  ts  = timestamp();
   struct winsize *ws = get_terminal_size();
 
-  Dbg(ws->ws_ypixel, %d);
-  Dbg(ws->ws_xpixel, %d);
-  Dbg(ws->ws_col, %d);
-  Dbg(ws->ws_row, %d);
+  Dbg(ws->ws_ypixel, % d);
+  Dbg(ws->ws_xpixel, % d);
+  Dbg(ws->ws_col, % d);
+  Dbg(ws->ws_row, % d);
   Dbg(milliseconds_to_string(timestamp() - ts), %s);
 }
 
@@ -307,7 +307,7 @@ static VipsImage *image_path_to_vips_image(char *image_path){
       log_error("QOI Decoder failed");
       return(NULL);
     }
-    Dbg(len, %d);
+    Dbg(len, % d);
     asprintf(&qoi_file, "%s.png", stringfn_substring(image_path, 0, strlen(image_path) - 4));
     QOIDecoder_Delete(qoi);
 
