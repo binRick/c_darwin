@@ -1,4 +1,6 @@
 #pragma once
+#ifndef PROCESS_UTILS_C
+#define PROCESS_UTILS_C
 #include "log/log.h"
 #include "process/process.h"
 #include <CoreFoundation/CoreFoundation.h>
@@ -145,9 +147,9 @@ static bool get_application_has_accessibility_access_0(){
 void get_cputime(){
   struct rusage r_usage;
 
-  if (getrusage(RUSAGE_SELF, &r_usage)) {
+  if (getrusage(RUSAGE_SELF, &r_usage))
     log_error("Failed to get rusage");
-  }else{
+  else{
     struct kinfo_proc info;
     int               mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)getpid() };
     size_t            len   = sizeof info;
@@ -178,12 +180,12 @@ void get_cputime(){
 }
 
 static bool get_application_has_accessibility_access_1(){
-  if (AXAPIEnabled() != 0) {
+  if (AXAPIEnabled() != 0)
     return(true);
-  }
-  if (AXIsProcessTrusted() != 0) {
+
+  if (AXIsProcessTrusted() != 0)
     return(true);
-  }
+
   return(false);
 }
 
@@ -224,9 +226,8 @@ int get_focused_pid(){
   GetFrontProcess(&psn);
   pid_t pid = PSN2PID(psn);
 
-  if (pid > 1) {
+  if (pid > 1)
     return((int)pid);
-  }
 
   CFArrayRef window_list = CGWindowListCopyWindowInfo(
     kCGWindowListExcludeDesktopElements | kCGWindowListOptionAll,
@@ -256,18 +257,15 @@ int get_focused_pid(){
 
 void process_info_release(struct process_info_t *I){
   if (I) {
-    if (I->open_ports_v) {
+    if (I->open_ports_v)
       vector_release(I->open_ports_v);
-    }
-    if (I->open_files_v) {
+    if (I->open_files_v)
       vector_release(I->open_files_v);
-    }
     if (I->open_connections_v) {
       for (size_t i = 0; i < vector_size(I->open_connections_v); i++) {
         struct open_connection_t *oc = (struct open_connection_t *)vector_get(I->open_connections_v, i);
-        if (oc) {
+        if (oc)
           free(oc);
-        }
       }
       vector_release(I->open_connections_v);
     }
@@ -280,9 +278,8 @@ struct Vector *get_all_process_infos_v(){
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     struct process_info_t *I = get_process_info((int)(size_t)vector_get(pids_v, i));
-    if (I) {
+    if (I)
       vector_push(PI, (void *)I);
-    }
   }
   return(PI);
 }
@@ -326,26 +323,24 @@ struct process_info_t *get_process_info(int pid){
     if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_VNODE) {
       struct vnode_fdinfowithpath vnodeInfo;
       int                         bytesUsed = proc_pidfdinfo(I->pid, procFDInfo[i].proc_fd, PROC_PIDFDVNODEPATHINFO, &vnodeInfo, PROC_PIDFDVNODEPATHINFO_SIZE);
-      if (bytesUsed == PROC_PIDFDVNODEPATHINFO_SIZE) {
+      if (bytesUsed == PROC_PIDFDVNODEPATHINFO_SIZE)
         vector_push(I->open_files_v, (void *)(char *)vnodeInfo.pvip.vip_path);
-      }
     } else if (procFDInfo[i].proc_fdtype == PROX_FDTYPE_SOCKET) {
       struct socket_fdinfo socketInfo;
       int                  bytesUsed = proc_pidfdinfo(I->pid, procFDInfo[i].proc_fd, PROC_PIDFDSOCKETINFO, &socketInfo, PROC_PIDFDSOCKETINFO_SIZE);
-      if (bytesUsed == PROC_PIDFDSOCKETINFO_SIZE) {
+      if (bytesUsed == PROC_PIDFDSOCKETINFO_SIZE)
         if (socketInfo.psi.soi_family == AF_INET && socketInfo.psi.soi_kind == SOCKINFO_TCP) {
           int localPort  = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_lport);
           int remotePort = (int)ntohs(socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_fport);
-          if (remotePort == 0) {
+          if (remotePort == 0)
             vector_push(I->open_ports_v, (void *)(size_t)localPort);
-          } else {
+          else {
             struct open_connection_t *open_connection = calloc(1, sizeof(struct open_connection_t));
             open_connection->local_port  = localPort;
             open_connection->remote_port = remotePort;
             vector_push(I->open_connections_v, (void *)open_connection);
           }
         }
-      }
     }
   }
   I->success = true;
@@ -504,12 +499,28 @@ int get_focused_window_id(){
     r = ((size_t)window_id == (size_t)ID); \
   }                                        \
   if (r != 0) { free(i);  continue; }
-#define WINDOW_DICTIONARY_VALIDATE_NAME(NAME) \
-  {                                           \
-    char *n = cfstring_copy(name_ref);        \
-    r = strcmp(n, NAME);                      \
-    free(n);                                  \
-  }                                           \
+#define WINDOW_DICTIONARY_VALIDATE_NAME(NAME)             \
+  {                                                       \
+    char *n = cfstring_copy(name_ref);                    \
+    if (stringfn_ends_with(NAME, ".app"))                 \
+    NAME = stringfn_substring(NAME, 0, strlen(NAME) - 4); \
+    if (stringfn_ends_with(n, ".app"))                    \
+    n = stringfn_substring(n, 0, strlen(n) - 4);          \
+/*   if(!stringfn_ends_with(n,'|'))\
+ * //      asprintf(&n,"%s|",n);\
+ * //    if(!stringfn_ends_with(NAME,'|'))\
+ * //      asprintf(&NAME,"%s|",NAME);*/                               \
+    r = strcmp(stringfn_to_lowercase(n), stringfn_to_lowercase(NAME)); \
+/*    struct StringFNStrings sp[2]; \
+ *  sp[0] = stringfn_split(n,'|');\
+ *  sp[1] = stringfn_split(NAME,'|');\
+ *  for(int i = 0; r != 0 && i <sp[0].count;i++){\
+ *    for(int q = 0; r != 0 && q <sp[1].count;q++){\
+ *      r = strcmp(stringfn_to_lowercase(sp[0].strings[i]), stringfn_to_lowercase(sp[1].strings[q])); \
+ *    }\
+ *  }*/             \
+    if (n) free(n); \
+  }                 \
   if (r != 0) { free(i);  continue; }
 
 #define WINDOW_DICTIONARY_VALIDATE_INFO_ITEMS()           \
@@ -660,11 +671,10 @@ struct Vector *get_window_pid_infos(pid_t pid){
 
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {
     struct window_info_t *wi = (struct window_info_t *)vector_get(window_infos_v, i);
-    if ((size_t)(wi->pid) == (size_t)pid) {
+    if ((size_t)(wi->pid) == (size_t)pid)
       vector_push(pid_window_infos_v, (void *)wi);
-    }else{
+    else
       free(wi);
-    }
   }
   return(pid_window_infos_v);
 }
@@ -676,9 +686,8 @@ struct Vector *get_display_id_window_ids_v(uint32_t display_id){
 
   for (size_t i = 0; i < vector_size(windows); i++) {
     w = (struct window_info_t *)vector_get(windows, i);
-    if ((size_t)(w->display_id) == (size_t)display_id) {
+    if ((size_t)(w->display_id) == (size_t)display_id)
       vector_push(v, (void *)w->display_id);
-    }
   }
   return(v);
 }
@@ -689,9 +698,8 @@ struct Vector *get_window_infos_brief_by_id(size_t ID){
   WINDOW_DICTIONARY_INIT_WINDOW_LIST()
   for (size_t i = 0; i < windows_count; ++i) {
     CFDictionaryRef window_info = CFArrayGetValueAtIndex(windows_list, i);
-    if (!window_info) {
+    if (!window_info)
       continue;
-    }
     WINDOW_DICTIONARY_INIT_ITEMS()
     WINDOW_DICTIONARY_INFO_REFS(window_info)
     WINDOW_DICTIONARY_VALIDATE_ID(ID)
@@ -703,13 +711,12 @@ struct Vector *get_window_infos_brief_by_id(size_t ID){
     WINDOW_DICTIONARY_FREE_ITEMS()
   }
   CFRelease(windows_list);
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_debug("Collected %lu Brief Window Infos in %s for ID %lu",
               vector_size(window_infos_v),
               milliseconds_to_string(timestamp() - started),
               ID
               );
-  }
   return(window_infos_v);
 }
 struct Vector *get_window_infos_brief_named_v(char *NAMED){
@@ -718,9 +725,8 @@ struct Vector *get_window_infos_brief_named_v(char *NAMED){
   WINDOW_DICTIONARY_INIT_WINDOW_LIST()
   for (size_t i = 0; i < windows_count; ++i) {
     CFDictionaryRef window_info = CFArrayGetValueAtIndex(windows_list, i);
-    if (!window_info) {
+    if (!window_info)
       continue;
-    }
     WINDOW_DICTIONARY_INIT_ITEMS()
     WINDOW_DICTIONARY_INFO_REFS(window_info)
     WINDOW_DICTIONARY_VALIDATE_NAME(NAMED)
@@ -732,13 +738,12 @@ struct Vector *get_window_infos_brief_named_v(char *NAMED){
     WINDOW_DICTIONARY_FREE_ITEMS()
   }
   CFRelease(windows_list);
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_debug("Collected %lu Brief Window Infos in %s for name %s",
               vector_size(window_infos_v),
               milliseconds_to_string(timestamp() - started),
               NAMED
               );
-  }
   return(window_infos_v);
 }
 struct Vector *get_window_infos_brief_v(){
@@ -747,9 +752,8 @@ struct Vector *get_window_infos_brief_v(){
   WINDOW_DICTIONARY_INIT_WINDOW_LIST()
   for (size_t i = 0; i < windows_count; ++i) {
     CFDictionaryRef window_info = CFArrayGetValueAtIndex(windows_list, i);
-    if (!window_info) {
+    if (!window_info)
       continue;
-    }
     WINDOW_DICTIONARY_INIT_ITEMS()
     WINDOW_DICTIONARY_INFO_REFS(window_info)
     WINDOW_DICTIONARY_VALIDATE_INFO_REFS()
@@ -760,12 +764,11 @@ struct Vector *get_window_infos_brief_v(){
     WINDOW_DICTIONARY_FREE_ITEMS()
   }
   CFRelease(windows_list);
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_debug("Collected %lu Brief Window Infos in %s",
               vector_size(window_infos_v),
               milliseconds_to_string(timestamp() - started)
               );
-  }
   return(window_infos_v);
 }
 
@@ -775,9 +778,8 @@ struct Vector *get_window_infos_v(){
   WINDOW_DICTIONARY_INIT_WINDOW_LIST()
   for (size_t i = 0; i < windows_count; ++i) {
     CFDictionaryRef window_info = CFArrayGetValueAtIndex(windows_list, i);
-    if (!window_info) {
+    if (!window_info)
       continue;
-    }
     WINDOW_DICTIONARY_INIT_ITEMS()
     WINDOW_DICTIONARY_INFO_REFS(window_info)
     WINDOW_DICTIONARY_VALIDATE_INFO_REFS()
@@ -788,12 +790,11 @@ struct Vector *get_window_infos_v(){
     WINDOW_DICTIONARY_FREE_ITEMS()
   }
   CFRelease(windows_list);
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_debug("Collected %lu Window Infos in %s",
               vector_size(window_infos_v),
               milliseconds_to_string(timestamp() - started)
               );
-  }
   return(window_infos_v);
 }
 
@@ -808,9 +809,8 @@ int open_system_preferences_get_window_id(){
       return(-1);
     }
     pre_window_infos_v = get_window_infos_brief_named_v(SYSTEM_PREFERENCES_SECURITY_APP_NAME);
-    if (PROCESS_UTILS_DEBUG_MODE) {
+    if (PROCESS_UTILS_DEBUG_MODE)
       log_debug("\n%s\n", OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD);
-    }
     if (!run_osascript(OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD)) {
       log_error("Failed to open system preferences");
       return(-1);
@@ -822,40 +822,33 @@ int open_system_preferences_get_window_id(){
       retried++;
       usleep(1000 * retry_interval);
     }
-    if (PROCESS_UTILS_DEBUG_MODE) {
+    if (PROCESS_UTILS_DEBUG_MODE)
       log_info("%lu pre windows|%lu post windows", vector_size(pre_window_infos_v), vector_size(post_window_infos_v));
-    }
     if (vector_size(post_window_infos_v) <= vector_size(pre_window_infos_v)) {
       log_error("Failed to find any new windows");
       return(-1);
     }
   }
   {
-    for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
-      for (size_t ii = 0; ii < vector_size(pre_window_infos_v); ii++) {
-        if (found == false && ((struct window_info_t *)vector_get(pre_window_infos_v, ii))->window_id == ((struct window_info_t *)vector_get(post_window_infos_v, i))->window_id) {
+    for (size_t i = 0; i < vector_size(post_window_infos_v); i++)
+      for (size_t ii = 0; ii < vector_size(pre_window_infos_v); ii++)
+        if (found == false && ((struct window_info_t *)vector_get(pre_window_infos_v, ii))->window_id == ((struct window_info_t *)vector_get(post_window_infos_v, i))->window_id)
           vector_remove(post_window_infos_v, i);
-        }
-      }
-    }
   }
   unsigned long ts                = timestamp();
   pid_t         focused_pid       = get_focused_pid();
   size_t        focused_window_id = (size_t)get_focused_window_id();
 
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_info("got focused in %s", milliseconds_to_string(timestamp() - ts));
-  }
   {
     for (size_t i = 0; i < vector_size(post_window_infos_v); i++) {
       w = (struct window_info_t *)vector_get(post_window_infos_v, i);
       if (focused_pid == w->pid && focused_window_id == (size_t)w->window_id) {
-        if (PROCESS_UTILS_DEBUG_MODE) {
+        if (PROCESS_UTILS_DEBUG_MODE)
           log_info("New Window #%lu> %s|pid:%d|pos:%dx%d|size:%dx%d|displayid:%lu|space_id:%lu|", w->window_id, w->name, w->pid, (int)w->rect.origin.x, (int)w->rect.origin.y, (int)w->rect.size.width, (int)w->rect.size.height, w->display_id, w->space_id);
-        }
-        if (strcmp(w->name, SYSTEM_PREFERENCES_SECURITY_APP_NAME) != 0 || strcmp(w->title, SYSTEM_PREFERENCES_SECURITY_WINDOW_NAME) != 0) {
+        if (strcmp(w->name, SYSTEM_PREFERENCES_SECURITY_APP_NAME) != 0 || strcmp(w->title, SYSTEM_PREFERENCES_SECURITY_WINDOW_NAME) != 0)
           continue;
-        }
         wid = (w->window_id > wid) ? w->window_id : wid;
       }
     }
@@ -895,20 +888,17 @@ bool process_utils_move_directory_contents(const char *SOURCE_DIRECTORY, const c
   r = reproc_close(process, REPROC_STREAM_IN);
   assert(r == 0);
   r = reproc_wait(process, REPROC_INFINITE);
-  if (r < 0) {
+  if (r < 0)
     goto finish;
-  }
   ok = true;
 
 finish:
   reproc_destroy(process);
 
-  if (r < 0) {
+  if (r < 0)
     fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
-  }
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_info("ran move command with result %d in %s", r, milliseconds_to_string(timestamp() - ts));
-  }
   return(ok);
 } /* process_utils_move_directory_contents */
 
@@ -940,27 +930,23 @@ bool run_osascript(char *OSASCRIPT_CONTENTS){
     log_error("reproc start failed with code %d", r);
     goto finish;
   }
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_info("%s", OSASCRIPT_CONTENTS);
-  }
   r = reproc_write(process, (uint8_t *)OSASCRIPT_CONTENTS, strlen(OSASCRIPT_CONTENTS));
   r = reproc_close(process, REPROC_STREAM_IN);
   assert(r == 0);
   r = reproc_wait(process, REPROC_INFINITE);
-  if (r < 0) {
+  if (r < 0)
     goto finish;
-  }
   ok = true;
 
 finish:
   reproc_destroy(process);
 
-  if (r < 0) {
+  if (r < 0)
     fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
-  }
-  if (PROCESS_UTILS_DEBUG_MODE) {
+  if (PROCESS_UTILS_DEBUG_MODE)
     log_info("ran osascript with result %d in %s", r, milliseconds_to_string(timestamp() - ts));
-  }
   return(ok);
 } /* run_osascript */
 static void __attribute__((constructor)) __constructor__process_utils(void){
@@ -991,9 +977,8 @@ char *get_pid_cwd(pid_t pid){
   struct proc_vnodepathinfo vpi;
 
   proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
-  if (strlen(vpi.pvi_cdir.vip_path) > 0) {
+  if (strlen(vpi.pvi_cdir.vip_path) > 0)
     cwd = strdup(vpi.pvi_cdir.vip_path);
-  }
   return(cwd);
 }
 
@@ -1011,9 +996,8 @@ struct Vector *get_process_ppids(int pid){
   while (true) {
     int _ppid = get_process_ppid(_pid);
     vector_push(v, (void *)(size_t)_ppid);
-    if (_ppid <= 1) {
+    if (_ppid <= 1)
       break;
-    }
     _pid = _ppid;
   }
 
@@ -1030,22 +1014,21 @@ int get_kinfo_proc(pid_t pid, struct kinfo_proc *kp) {
   mib[3] = pid;
 
   len = sizeof(struct kinfo_proc);
-  if (sysctl(mib, 4, kp, &len, NULL, 0) == -1) {
+  if (sysctl(mib, 4, kp, &len, NULL, 0) == -1)
     return(-1);
-  }
 
-  if (len == 0) {
+  if (len == 0)
     return(-1);
-  }
+
   return(0);
 }
 
 int get_process_ppid(int pid) {
   struct kinfo_proc kp;
 
-  if (get_kinfo_proc((long)pid, &kp) == -1) {
+  if (get_kinfo_proc((long)pid, &kp) == -1)
     return(-1);
-  }
+
   return((int)(long)kp.kp_eproc.e_ppid);
 }
 
@@ -1060,9 +1043,8 @@ struct kinfo_proc *proc_info_for_pid(pid_t pid) {
   return(list);
 
 ERROR:
-  if (list) {
+  if (list)
     free(list);
-  }
   return(NULL);
 }
 
@@ -1070,9 +1052,9 @@ static int get_argmax() {
   int    argmax, mib[] = { CTL_KERN, KERN_ARGMAX };
   size_t size = sizeof(argmax);
 
-  if (sysctl(mib, 2, &argmax, &size, NULL, 0) == 0) {
+  if (sysctl(mib, 2, &argmax, &size, NULL, 0) == 0)
     return(argmax);
-  }
+
   return(0);
 }
 
@@ -1082,18 +1064,16 @@ struct Vector *get_process_cmdline(int process){
   char          *procargs = NULL, *arg_ptr, *arg_end, *curr_arg;
   size_t        len, argmax;
 
-  if (process < 1) {
+  if (process < 1)
     return(NULL);
-  }
 
   argmax = get_argmax();
-  if (!argmax) {
+  if (!argmax)
     return(NULL);
-  }
+
   procargs = (char *)malloc(argmax);
-  if (procargs == NULL) {
+  if (procargs == NULL)
     return(NULL);
-  }
 
   mib[0] = CTL_KERN;
   mib[1] = KERN_PROCARGS2;
@@ -1113,23 +1093,19 @@ struct Vector *get_process_cmdline(int process){
     return(NULL);
   }
 
-  for ( ; arg_ptr < arg_end; arg_ptr++) {
-    if (*arg_ptr != '\0') {
+  for ( ; arg_ptr < arg_end; arg_ptr++)
+    if (*arg_ptr != '\0')
       break;
-    }
-  }
 
   curr_arg = arg_ptr;
-  while (arg_ptr < arg_end && nargs > 0) {
+  while (arg_ptr < arg_end && nargs > 0)
     if (*arg_ptr++ == '\0') {
       vector_push(cmdline_v, curr_arg);
       curr_arg = arg_ptr;
       nargs--;
     }
-  }
-  if (procargs) {
+  if (procargs)
     free(procargs);
-  }
   return(cmdline_v);
 } /* get_process_cmdline */
 
@@ -1140,11 +1116,9 @@ struct Vector *get_all_processes(){
   pid_t         *processes_buffer = malloc(processes_len);
   size_t        processes_qty     = proc_listallpids(processes_buffer, processes_len);
 
-  for (size_t i = 0; i < processes_qty; i++) {
-    if ((long long)processes_buffer[i] > 0) {
+  for (size_t i = 0; i < processes_qty; i++)
+    if ((long long)processes_buffer[i] > 0)
       vector_push(processes_v, (void *)(long long)processes_buffer[i]);
-    }
-  }
   free(processes_buffer);
   return(processes_v);
 }
@@ -1152,9 +1126,9 @@ struct Vector *get_all_processes(){
 struct Vector *get_process_env(int process){
   struct Vector *process_env_v = vector_new();
 
-  if (process == 1) {
+  if (process == 1)
     return(process_env_v);
-  }
+
   struct Vector          *vector = vector_new();
   struct StringFNStrings EnvSplit;
   int                    env_res = -1, nargs;
@@ -1168,33 +1142,26 @@ struct Vector *get_process_env(int process){
   arg_ptr = procargs + sizeof(nargs);
   arg_ptr = memchr(arg_ptr, '\0', arg_end - arg_ptr);
 
-  for ( ; arg_ptr < arg_end; arg_ptr++) {
-    if (*arg_ptr != '\0') {
+  for ( ; arg_ptr < arg_end; arg_ptr++)
+    if (*arg_ptr != '\0')
       break;
-    }
-  }
-  while (arg_ptr < arg_end && nargs > 0) {
-    if (*arg_ptr++ == '\0') {
+  while (arg_ptr < arg_end && nargs > 0)
+    if (*arg_ptr++ == '\0')
       nargs--;
-    }
-  }
   env_start = arg_ptr;
   procenv   = calloc(1, arg_end - arg_ptr);
 
   while (*arg_ptr != '\0' && arg_ptr < arg_end) {
     s = memchr(arg_ptr + 1, '\0', arg_end - arg_ptr);
-    if (s == NULL) {
+    if (s == NULL)
       break;
-    }
     memcpy(procenv + (arg_ptr - env_start), arg_ptr, s - arg_ptr);
     arg_ptr = s + 1;
-    if (strlen(arg_ptr) < 3) {
+    if (strlen(arg_ptr) < 3)
       continue;
-    }
     EnvSplit = stringfn_split(arg_ptr, '=');
-    if (EnvSplit.count > 1) {
+    if (EnvSplit.count > 1)
       vector_push(vector, arg_ptr);
-    }
   }
 
   for (size_t i = 0; i < vector_size(vector); i++) {
@@ -1202,13 +1169,12 @@ struct Vector *get_process_env(int process){
     process_env_t *pe = malloc(sizeof(process_env_t));
     pe->key = strdup(EnvSplit.strings[0]);
     pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
-    if (false) {
+    if (false)
       fprintf(stderr,
               AC_RESETALL AC_BLUE "%s=>%s\n" AC_RESETALL, pe->key, pe->val);
-    }
     vector_push(process_env_v, pe);
   }
-  if (true == DEBUG_PID_ENV) {
+  if (true == DEBUG_PID_ENV)
     fprintf(stderr,
             "process:%d\n"
             "argmax:%lu\n"
@@ -1229,16 +1195,12 @@ struct Vector *get_process_env(int process){
             vector_size(vector),
             vector_size(process_env_v)
             );
-  }
-  if (procargs != NULL) {
+  if (procargs != NULL)
     free(procargs);
-  }
-  if (procenv != NULL) {
+  if (procenv != NULL)
     free(procenv);
-  }
-  if (vector_size(vector) > 0) {
+  if (vector_size(vector) > 0)
     stringfn_release_strings_struct(EnvSplit);
-  }
   vector_release(vector);
   return(process_env_v);
 } /* get_process_env */
@@ -1253,15 +1215,13 @@ struct Vector *get_child_pids(int PID){
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     int pid = (int)(long long)vector_get(pids_v, i);
-    if (pid < 2) {
+    if (pid < 2)
       continue;
-    }
     int ppid   = (int)(long)get_process_ppid(pid);
     int pppid  = (int)(long)get_process_ppid(ppid);
     int ppppid = (int)(long)get_process_ppid(pppid);
-    if (ppid == PID || pppid == PID || ppppid == PID) {
+    if (ppid == PID || pppid == PID || ppppid == PID)
       vector_push(v, (void *)(long)pid);
-    }
   }
   return(v);
 }
@@ -1305,15 +1265,13 @@ static bool launch_services_init(launch_services_t *it) {
                                            "ApplicationServices.framework/"
                                            "Versions/Current/ApplicationServices",
                                            RTLD_LAZY | RTLD_LOCAL);
-  if (!it->application_services_handle) {
+  if (!it->application_services_handle)
     goto done;
-  }
   ++state;
 
   it->launch_services_bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.LaunchServices"));
-  if (!it->launch_services_bundle) {
+  if (!it->launch_services_bundle)
     goto done;
-  }
 
 #define LOAD_METHOD(name)                                                            \
   *(void **)(&it->p ## name) =                                                       \
@@ -1329,17 +1287,15 @@ static bool launch_services_init(launch_services_t *it) {
 
   it->display_name_key_ptr =
     CFBundleGetDataPointerForName(it->launch_services_bundle, CFSTR("_kLSDisplayNameKey"));
-  if (!it->display_name_key_ptr || !*it->display_name_key_ptr) {
+  if (!it->display_name_key_ptr || !*it->display_name_key_ptr)
     goto done;
-  }
 
   ret = true;
 
 done:
   switch (state) {
-  case has_application_services_handle: if (!ret) {
+  case has_application_services_handle: if (!ret)
       dlclose(it->application_services_handle);
-  }
   case has_nothing:;
   }
   return(ret);
@@ -1368,22 +1324,19 @@ static bool launch_services_set_process_title(const launch_services_t *it, const
   }
 
   asn = it->pLSGetCurrentApplicationASN();
-  if (!asn) {
+  if (!asn)
     goto done;
-  }
 
   cf_title = CFStringCreateWithCString(NULL, title, kCFStringEncodingUTF8);
-  if (!cf_title) {
+  if (!cf_title)
     goto done;
-  }
   ++state;
   if (it->pLSSetApplicationInformationItem(kLSDefaultSessionID,
                                            asn,
                                            *it->display_name_key_ptr,
                                            cf_title,
-                                           NULL) != noErr) {
+                                           NULL) != noErr)
     goto done;
-  }
   ret = true;
 done:
   switch (state) {
@@ -1401,13 +1354,11 @@ bool darwin_set_process_title(const char *title) {
   }                 state = has_nothing;
   bool              ret   = false;
   launch_services_t launch_services;
-  if (!launch_services_init(&launch_services)) {
+  if (!launch_services_init(&launch_services))
     goto done;
-  }
   ++state;
-  if (!launch_services_set_process_title(&launch_services, title)) {
+  if (!launch_services_set_process_title(&launch_services, title))
     goto done;
-  }
   (void)darwin_pthread_setname_np(title);
   ret = true;
 done:
@@ -1417,3 +1368,36 @@ done:
   }
   return(ret);
 }
+
+bool run_cmd_in_parent(char **cmd_a){
+  bool     ok       = false;
+  reproc_t *process = NULL;
+  int      r        = REPROC_ENOMEM;
+
+  process = reproc_new();
+  if (process == NULL)
+    goto finish;
+
+  r = reproc_start(process, cmd_a,
+                   (reproc_options){
+    .redirect.parent = true,
+    .deadline        = 15000,
+  });
+  if (r < 0)
+    goto finish;
+
+  r = reproc_wait(process, REPROC_INFINITE);
+  if (r < 0)
+    goto finish;
+  ok = true;
+
+finish:
+  reproc_destroy(process);
+
+  if (r < 0)
+    fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
+
+  return(ok);
+}
+
+#endif

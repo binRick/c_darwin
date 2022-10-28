@@ -7,7 +7,7 @@ float ma_moving_average_float(float *ptrArrNumbers, float *ptrSum, int pos, size
   *ptrSum            = *ptrSum - ptrArrNumbers[pos] + nextNum;
   ptrArrNumbers[pos] = nextNum;
   float avg = *ptrSum / len;
-  if (args->debug_mode) {
+  if (args->debug_mode)
     log_info("     Averaged Values using value %f in position %d using %lu values and sum of %f to: %f",
              nextNum,
              pos,
@@ -15,7 +15,6 @@ float ma_moving_average_float(float *ptrArrNumbers, float *ptrSum, int pos, size
              *ptrSum,
              avg
              );
-  }
   return(avg);
 }
 

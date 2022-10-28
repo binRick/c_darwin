@@ -87,11 +87,10 @@ bool cache_utils_exists(char *ITEM_KEY){
 
   INIT_CACHE_UTILS_ITEM()
   rc = iwkv_get(mydb, &key, &val);
-  if (!rc) {
+  if (!rc)
     res = true;
-  }else if (rc && rc != IWKV_ERROR_NOTFOUND) {
+  else if (rc && rc != IWKV_ERROR_NOTFOUND)
     iwlog_ecode_error3(rc);
-  }
 
 fail:
   CLEANUP_CACHE_UTILS_ITEM()
@@ -110,9 +109,8 @@ size_t cache_utils_get_size(char *ITEM_KEY){
   val.size = 0;
   rc       = iwkv_get(mydb, &key, &val);
   log_debug("key:%s", (char *)key.data);
-  if (!rc) {
+  if (!rc)
     res = (size_t)val.size;
-  }
 
   CLEANUP_CACHE_UTILS_ITEM()
   return(res);
@@ -131,9 +129,8 @@ int cache_utils_get_age(char *ITEM_KEY){
   tsval.size = 0;
   rc         = iwkv_get(mydb, &tskey, &tsval);
   log_debug("tskey:%s", (char *)tskey.data);
-  if (!rc) {
+  if (!rc)
     res = (int)((size_t)((size_t)timestamp() - string_size_to_size_t((char *)tsval.data)) / 1000);
-  }
 
   CLEANUP_CACHE_UTILS_ITEM()
   return(res);
@@ -170,9 +167,8 @@ int cache_utils_set_item(char *ITEM_KEY, char *ITEM_CONTENT){
   if (rc) {
     iwlog_ecode_error3(rc);
     goto fail;
-  }else{
+  }else
     res = EXIT_SUCCESS;
-  }
   CLEANUP_CACHE_UTILS_ITEM()
   return(res);
 
@@ -190,33 +186,30 @@ char *cache_utils_get_item(char *ITEM_KEY, size_t CACHE_TTL){
   rc         = iwkv_get(mydb, &key, &val);
   if (rc) {
     if (cache_utils_DEBUG_MODE == true) {
-      if (rc == IWKV_ERROR_NOTFOUND) {
+      if (rc == IWKV_ERROR_NOTFOUND)
         log_error("Failed to get %s/%s from %s", cache_item_key, cache_item_ts_key, cache_item_file);
-      }else{
+      else
         iwlog_ecode_error3(rc);
-      }
     }
     goto fail;
   }
   rc = iwkv_get(mydb, &tskey, &tsval);
   if (rc) {
-    if (rc == IWKV_ERROR_NOTFOUND) {
+    if (rc == IWKV_ERROR_NOTFOUND)
       log_error("Items %s/%s not found in %s", cache_item_key, cache_item_ts_key, cache_item_file);
-    }else{
+    else
       iwlog_ecode_error3(rc);
-    }
     goto fail;
   }
   char   **ep;
   size_t ts      = (size_t)strtoimax(tsval.data, &ep, 10);
   char   *s      = strdup(val.data);
   bool   expired = ((((size_t)timestamp() - ts) / 1000) > CACHE_TTL) ? true : false;
-  if (cache_utils_DEBUG_MODE == true) {
+  if (cache_utils_DEBUG_MODE == true)
     log_debug("%s> %s cache with ts %lu|age: %s|expired:%d|", ITEM_KEY, bytes_to_string(strlen(s)), ts, milliseconds_to_string(((size_t)timestamp()) - ts), expired);
-  }
-  if (expired == true || strlen(s) < 1024) {
+  if (expired == true || strlen(s) < 1024)
     return(NULL);
-  }
+
   CLEANUP_CACHE_UTILS_ITEM()
   return(s);
 

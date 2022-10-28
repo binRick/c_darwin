@@ -71,15 +71,13 @@ bool end_animation(struct capture_animation_result_t *acap){
   if (acap->file) {
     if (acap->result.data) {
       errno = 0;
-      if (!fsio_write_binary_file(acap->file, acap->result.data, acap->result.dataSize)) {
+      if (!fsio_write_binary_file(acap->file, acap->result.data, acap->result.dataSize))
         log_error("Failed to write %s to %s", bytes_to_string(acap->result.dataSize), acap->file);
-      }
-      if (CAPTURE_ANIMATE_DEBUG_MODE) {
+      if (CAPTURE_ANIMATE_DEBUG_MODE)
         log_info("Wrote %lu Frames to %s Animated GIF %s to %s",
                  vector_size(acap->frames_v),
                  milliseconds_to_string(timestamp() - acap->started), bytes_to_string(acap->result.dataSize), acap->file
                  );
-      }
     }else{
       log_error("Invalid gif data");
       return(false);
@@ -127,9 +125,9 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
       }
     }
     QOIDecoder_Delete(qoi);
-  }else if (r->type == IMAGE_TYPE_BMP) {
+  }else if (r->type == IMAGE_TYPE_BMP)
     rgb_pixels = r->pixels;
-  }else{
+  else{
     s          = timestamp();
     stbi_fp    = fmemopen(r->pixels, r->len, "rb");
     rgb_pixels = stbi_load_from_file(stbi_fp, &w, &h, &f, STBI_rgb_alpha);
@@ -145,18 +143,16 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
     acap->started = n->ts;
     msf_gif_begin(acap->gif, w, h);
   }
-  if (vector_size(acap->frames_v) > 0) {
+  if (vector_size(acap->frames_v) > 0)
     frame_cs = (int)(r->delta_ms / 10);
-  }else{
+  else
     frame_cs = (int)((acap->ms_per_frame) / 10);
-  }
-  if (PREVIEW_ANIMATION_IN_TERMINAL) {
+  if (PREVIEW_ANIMATION_IN_TERMINAL)
     kitty_display_image_buffer_resized_width_at_row_col(r->pixels, r->len,
                                                         PREVIEW_ANIMATION_TERMINAL_WIDTH,
                                                         (size_t)((float)acap->term_width * (float)(PREVIEW_ANIMATION_IN_TERMINAL_ROW_OFFSET)),
                                                         (size_t)((float)acap->term_width * (float)(PREVIEW_ANIMATION_IN_TERMINAL_COLUMN_OFFSET))
                                                         );
-  }
   msf_gif_frame(acap->gif, rgb_pixels,
                 frame_cs,
                 acap->max_bit_depth,
@@ -164,18 +160,16 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
                 );
   vector_push(acap->frames_v, (void *)n);
   acap->total_size = animated_frames_len(acap);
-  if (rgb_pixels) {
+  if (rgb_pixels)
     free(rgb_pixels);
-  }
   return(true);
 } /* new_animated_frame */
 
 size_t animated_frames_len(struct capture_animation_result_t *acap){
   size_t len = 0;
 
-  for (size_t i = 0; i < vector_size(acap->frames_v); i++) {
+  for (size_t i = 0; i < vector_size(acap->frames_v); i++)
     len += ((struct animated_frame_t *)vector_get(acap->frames_v, i))->len;
-  }
   return(len);
 }
 
@@ -195,9 +189,8 @@ bool inspect_frames(struct capture_animation_result_t *acap){
             milliseconds_to_string(timestamp() - ts)
             );
     }
-    if (looped == gif->loop_count) {
+    if (looped == gif->loop_count)
       break;
-    }
     gd_rewind(gif);
   }
   free(buffer);
@@ -220,9 +213,8 @@ int poll_new_animated_frame(void *VOID){
              (size_t)((float)((float)1 / (float)acap->ms_per_frame) * (float)(100 * 10)),
              ""
              );
-    if (vector_size(acap->frames_v) == 0) {
+    if (vector_size(acap->frames_v) == 0)
       acap->bar = &(cbar(clamp((int)((float)acap->term_width * (float)(.4)), 20, 60), bar_msg));
-    }
     cbar_hide_cursor();
   }
 

@@ -39,19 +39,17 @@ struct screen_t *init_display(size_t DISPLAY_ID){
     D->save->rect    = CGDisplayBounds(D->id);
   }
 
-  if (D->debug_mode == true) {
+  if (D->debug_mode == true)
     asprintf(&D->save_file_name, "display-%lu.%s", D->id, SAVE_IMAGE_EXTENSION);
-  }else{
+  else
     asprintf(&D->save_file_name, "display-%lu-%lld.%s", D->id, timestamp(), SAVE_IMAGE_EXTENSION);
-  }
 
-  if (SCREEN_UTILS_DEBUG_MODE == true) {
+  if (SCREEN_UTILS_DEBUG_MODE == true)
     log_debug("   [Init Display #%lu]    %fx%f|%fx%f",
               D->id,
               D->capture->rect.size.width, D->capture->rect.size.height,
               D->capture->rect.origin.x, D->capture->rect.origin.y
               );
-  }
   return(D);
 }
 
@@ -70,9 +68,8 @@ CGImageRef capture_display_id_height(size_t display_id, size_t height){
   h[1] = height;
   float factor = 1;
 
-  if (h[0] > 100) {
+  if (h[0] > 100)
     factor = (float)(h[0]) / (float)(h[1]);
-  }
 
   w[1] = (int)((float)w[0] / factor);
   return(resize_cgimage(img_ref, w[1], h[1]));
@@ -127,7 +124,7 @@ static bool capture_display(struct screen_t *D){
 
   D->capture->dur_ms = timestamp() - D->capture->started_ms;
 
-  if (SCREEN_UTILS_DEBUG_MODE == true) {
+  if (SCREEN_UTILS_DEBUG_MODE == true)
     log_debug("   [Capture Display #%lu] %fx%f | with %s buffer|success:%s|%s|%s|",
               D->id,
               D->capture->rect.size.width, D->capture->rect.size.height,
@@ -136,7 +133,6 @@ static bool capture_display(struct screen_t *D){
               milliseconds_to_string(D->capture->dur_ms),
               bytes_to_string(D->capture->buffer_size)
               );
-  }
   return(D->capture->success);
 }
 
@@ -147,19 +143,17 @@ struct screen_capture_t *screen_capture(){
   C->started_ms = timestamp();
   for (size_t i = 0; i < vector_size(C->displays_v); i++) {
     bool success = capture_display((struct screen_t *)vector_get(C->displays_v, i));
-    if (i == 0) {
+    if (i == 0)
       C->success = success;
-    }else{
+    else
       C->success = (success == true && C->success == true);
-    }
   }
   C->dur_ms = timestamp() - C->started_ms;
-  if (SCREEN_UTILS_DEBUG_MODE == true) {
+  if (SCREEN_UTILS_DEBUG_MODE == true)
     log_debug("   [Screen Capture] captured %lu displays in %s",
               vector_size(C->displays_v),
               milliseconds_to_string(C->dur_ms)
               );
-  }
   return(C);
 }
 
@@ -171,18 +165,16 @@ struct screen_capture_t *init_screen_capture(){
   C->displays_v  = vector_new();
   CGError get_displays_result = CGGetActiveDisplayList(UCHAR_MAX, C->display_ids, &(C->displays_qty));
 
-  if (get_displays_result == kCGErrorSuccess) {
+  if (get_displays_result == kCGErrorSuccess)
     for (size_t i = 0; i < C->displays_qty && i < MAX_DISPLAYS; i++) {
       struct display_image_t *D = init_display(i);
       vector_push(C->displays_v, (void *)D);
     }
-  }
   C->dur_ms = timestamp() - C->started_ms;
-  if (SCREEN_UTILS_DEBUG_MODE == true) {
+  if (SCREEN_UTILS_DEBUG_MODE == true)
     log_debug("   [Init Screen Capture] with %lu displays in %s",
               vector_size(C->displays_v),
               milliseconds_to_string(C->dur_ms)
               );
-  }
   return(C);
 }

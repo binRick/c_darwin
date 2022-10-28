@@ -20,12 +20,12 @@ enum dls_command_id_t {
 
 struct dls_command_t {
   enum dls_command_id_t commands[1024];
-  enum dls_option_id_t options[1024];
-  size_t options_qty, commands_qty;
-  char *name;
-  char *desc;
-  struct optparse_cmd *(^cmds)(void);
-  struct optparse_opt *(^opts)(void);
+  enum dls_option_id_t  options[1024];
+  size_t                options_qty, commands_qty;
+  char                  *name;
+  char                  *desc;
+  struct optparse_cmd   *(^cmds)(void);
+  struct optparse_opt   *(^opts)(void);
 };
 
 void get_dls_command(enum dls_command_id_t id);

@@ -39,30 +39,29 @@ struct usbdev_parser_t {
 };
 
 static struct usbdev_parser_t usbdev_parsers[USB_DEVICE_PARSER_TYPES_QTY + 1] = {
-  [USB_DEVICE_PARSER_TYPE_PATH] =                                        { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ d->path = i->path; }, },
-  [USB_DEVICE_PARSER_TYPE_SERIAL_NUMBER] =                               { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->serial_number, "%ls", i->serial_number); }, },
-  [USB_DEVICE_PARSER_TYPE_VENDOR_ID] =                                   { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ d->vendor_id = i->vendor_id; }, },
-  [USB_DEVICE_PARSER_TYPE_PRODUCT_ID] =                                  { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ d->product_id = i->product_id; }, },
-  [USB_DEVICE_PARSER_TYPE_PRODUCT_STRING] =                              { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->product_string, "%ls", i->product_string); }, },
-  [USB_DEVICE_PARSER_TYPE_USAGE] =                                       { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->usage, "0x%hx", i->usage); }, },
-  [USB_DEVICE_PARSER_TYPE_USAGE_PAGE] =                                  { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->usage_page, "0x%hx", i->usage_page); }, },
-  [USB_DEVICE_PARSER_TYPE_RELEASE_NUMBER] =                              { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){
-                                                                             asprintf(&d->release_number_s, "%hx", i->release_number);
-                                                                             if (d->release_number_s) {
-                                                                               d->release_number                      = atoi(d->release_number_s);
-                                                                             }
-                                                                           }, },
-  [USB_DEVICE_PARSER_TYPE_MANUFACTURER_STRING] =                         { .enabled = true,
-                                                                           .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->manufacturer_string, "%ls", i->manufacturer_string); }, },
-  [USB_DEVICE_PARSER_TYPES_QTY] =                                        { 0 },
+  [USB_DEVICE_PARSER_TYPE_PATH] =                { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ d->path = i->path; }, },
+  [USB_DEVICE_PARSER_TYPE_SERIAL_NUMBER] =       { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->serial_number, "%ls", i->serial_number); }, },
+  [USB_DEVICE_PARSER_TYPE_VENDOR_ID] =           { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ d->vendor_id = i->vendor_id; }, },
+  [USB_DEVICE_PARSER_TYPE_PRODUCT_ID] =          { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ d->product_id = i->product_id; }, },
+  [USB_DEVICE_PARSER_TYPE_PRODUCT_STRING] =      { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->product_string, "%ls", i->product_string); }, },
+  [USB_DEVICE_PARSER_TYPE_USAGE] =               { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->usage, "0x%hx", i->usage); }, },
+  [USB_DEVICE_PARSER_TYPE_USAGE_PAGE] =          { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->usage_page, "0x%hx", i->usage_page); }, },
+  [USB_DEVICE_PARSER_TYPE_RELEASE_NUMBER] =      { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){
+                                                     asprintf(&d->release_number_s, "%hx", i->release_number);
+                                                     if (d->release_number_s)
+                                                       d->release_number = atoi(d->release_number_s);
+                                                   }, },
+  [USB_DEVICE_PARSER_TYPE_MANUFACTURER_STRING] = { .enabled = true,
+                                                   .parser  = ^ void (struct usbdev_t *d, struct hid_device_info *i){ asprintf(&d->manufacturer_string, "%ls", i->manufacturer_string); }, },
+  [USB_DEVICE_PARSER_TYPES_QTY] =                { 0 },
 };
 
 static void __attribute__((unused)) debug_usbdev(struct usbdev_t *usbdev){
@@ -91,11 +90,9 @@ static void __attribute__((unused)) debug_usbdev(struct usbdev_t *usbdev){
 }
 
 static void parse_usbdev(struct usbdev_t *usbdev, struct hid_device_info *device_info){
-  for (size_t i = 0; i < USB_DEVICE_PARSER_TYPES_QTY; i++) {
-    if (usbdev_parsers[i].enabled == true) {
+  for (size_t i = 0; i < USB_DEVICE_PARSER_TYPES_QTY; i++)
+    if (usbdev_parsers[i].enabled == true)
       usbdev_parsers[i].parser(usbdev, device_info);
-    }
-  }
 }
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__usbdevs_utils(void){

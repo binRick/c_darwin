@@ -28,9 +28,8 @@ char *output_field_names(){
   while (tmp != NULL && tmp->name != NULL) {
     stringbuffer_append_string(sb, tmp->name);
     tmp++;
-    if (tmp->name != NULL) {
+    if (tmp->name != NULL)
       stringbuffer_append_string(sb, ", ");
-    }
   }
 
   char *s = stringbuffer_to_string(sb);
@@ -46,9 +45,8 @@ char *output_mode_type_names(){
   while (tmp != NULL && tmp->name != NULL) {
     stringbuffer_append_string(sb, tmp->name);
     tmp++;
-    if (tmp->name != NULL) {
+    if (tmp->name != NULL)
       stringbuffer_append_string(sb, ", ");
-    }
   }
 
   char *s = stringbuffer_to_string(sb);
@@ -62,9 +60,9 @@ int get_output_name_mode_id(char *OUTPUT_MODE_NAME){
   int                            i    = 0;
 
   while (tmp != NULL && tmp->name != NULL) {
-    if (strcmp(OUTPUT_MODE_NAME, tmp->name) == 0) {
+    if (strcmp(OUTPUT_MODE_NAME, tmp->name) == 0)
       return(i);
-    }
+
     tmp++; i++;
   }
   return(0);
@@ -222,8 +220,8 @@ int parse_args(int argc, char *argv[]){
       exit(EXIT_SUCCESS);
     }
   }
-  if (ctx.mode) {
+  if (ctx.mode)
     return(ctx.mode());
-  }
+
   return(EXIT_SUCCESS);
 } /* parse_args */

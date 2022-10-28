@@ -50,30 +50,27 @@ bool copy_clipboard(char *text){
 }
 
 char *read_clipboard(void) {
-  if (CLIPBOARD_DEBUG_MODE) {
+  if (CLIPBOARD_DEBUG_MODE)
     fprintf(stderr, "clipread>\n");
-  }
   CFDataRef cfdata;
   OSStatus  err = noErr;
   ItemCount nitems;
   size_t    i;
   char      *s;
 
-  if (pasteboard_reference == NULL) {
+  if (pasteboard_reference == NULL)
     if (PasteboardCreate(kPasteboardClipboard, &pasteboard_reference) != noErr) {
       fprintf(stderr, "pasteboard pasteboard_reference create failed\n");
       return(NULL);
     }
-  }
 
   PasteboardSynchronize(pasteboard_reference);
   if ((err = PasteboardGetItemCount(pasteboard_reference, &nitems)) != noErr) {
     fprintf(stderr, "pasteboard_reference GetItemCount failed - Error %d\n", err);
     return(NULL);
   }
-  if (CLIPBOARD_DEBUG_MODE) {
+  if (CLIPBOARD_DEBUG_MODE)
     fprintf(stderr, "clipread> %lu pasteboard items\n", nitems);
-  }
   for (i = 1; i <= nitems; i++) {
     PasteboardItemID itemID;
     CFArrayRef       flavorTypeArray;
@@ -106,21 +103,18 @@ char *read_clipboard(void) {
           return(NULL);
         }
         char tmp_pasteboard_content[length + 1];
-        if (CLIPBOARD_DEBUG_MODE) {
+        if (CLIPBOARD_DEBUG_MODE)
           fprintf(stderr, "clipread> pasteboard item #%lu> %lub\n", flavorIndex, (size_t)length);
-        }
         CFDataGetBytes(cfdata, CFRangeMake(0, length), &tmp_pasteboard_content);
 
-        if (CLIPBOARD_DEBUG_MODE) {
+        if (CLIPBOARD_DEBUG_MODE)
           fprintf(stderr, "clipread> got bytes.....\n");
-        }
         char   *dat = calloc(length + 1, sizeof(char));
         s = tmp_pasteboard_content;
         size_t copied_len = 0;
         for (int i = 0; ((i < length) && (copied_len < MAX_PASTEBOARD_CONTENT_LENGTH)); (i++, s += 1)) {
-          if (*s == '\0') {
+          if (*s == '\0')
             continue;
-          }
           switch (*s) {
           case '\r':
             *s = '\n';
@@ -130,9 +124,8 @@ char *read_clipboard(void) {
           copied_len++;
         }
         dat[copied_len] = '\0';
-        if (CLIPBOARD_DEBUG_MODE) {
+        if (CLIPBOARD_DEBUG_MODE)
           fprintf(stderr, "clipread> clipboard item #%lu> %lub|copied_len:%lu|%.50s...\n", flavorIndex, strlen(dat), copied_len, dat);
-        }
         CFRelease(cfdata);
         return(dat);
       }

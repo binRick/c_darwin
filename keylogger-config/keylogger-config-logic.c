@@ -309,9 +309,8 @@ static bool keylogger_execution_read_config(void){
 }
 
 static bool keylogger_execution_parse_config(){
-  if (require(keylogger_config)->config_s == NULL) {
+  if (require(keylogger_config)->config_s == NULL)
     keylogger_execution_read_config();
-  }
   struct Vector *keybinds_v = vector_new();
 
   char          *cfg = require(keylogger_config)->config_s;
@@ -446,9 +445,8 @@ struct Vector *keylogger_config_get_keybind_actions_v(){
 
   for (size_t i = 0; i < vector_size(cur); i++) {
     struct keylogger_config_keybind_t *kb = vector_get(cur, i);
-    for (size_t ii = 0; ii < vector_size(kb->actions_v); ii++) {
+    for (size_t ii = 0; ii < vector_size(kb->actions_v); ii++)
       vector_push(v, (struct keylogger_config_keybind_action_t *)vector_get(kb->actions_v, ii));
-    }
   }
   return(v);
 }
@@ -459,9 +457,8 @@ struct Vector *keylogger_config_get_active_keybinds_v(void){
 
   for (size_t i = 0; i < vector_size(cur); i++) {
     struct keylogger_config_keybind_t *kb = vector_get(cur, i);
-    if (kb->active == true) {
+    if (kb->active == true)
       vector_push(v, vector_get(cur, i));
-    }
   }
   return(v);
 }
@@ -471,9 +468,8 @@ struct Vector *keylogger_config_get_inactive_keybinds_v(void){
 
   for (size_t i = 0; i < vector_size(cur); i++) {
     struct keylogger_config_keybind_t *kb = vector_get(cur, i);
-    if (kb->active == false) {
+    if (kb->active == false)
       vector_push(v, vector_get(cur, i));
-    }
   }
   return(v);
 }

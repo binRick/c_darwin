@@ -28,18 +28,16 @@ static void screen_internal_fxn1(void);
 ////////////////////////////////////////////
 static void screen_internal_fxn1(void){
   log_info("Called function screen_internal_fxn1");
-  if (SCREEN_DEBUG_MODE == true) {
+  if (SCREEN_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void screen_fxn1(void){
   screen_internal_fxn1();
   log_info("Called function screen_fxn1");
-  if (SCREEN_DEBUG_MODE == true) {
+  if (SCREEN_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

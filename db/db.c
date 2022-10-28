@@ -51,12 +51,11 @@ static const enum capture_type_id_t db_loader_capture_types[DB_LOADERS_QTY] = {
 };
 
 enum db_loader_t db_loader_name_id(char *name){
-  for (size_t i = 0; i < DB_LOADERS_QTY; i++) {
+  for (size_t i = 0; i < DB_LOADERS_QTY; i++)
     if (strcmp(db_loader_names[i],
-               name) == 0) {
+               name) == 0)
       return(i);
-    }
-  }
+
   return(-1);
 }
 enum db_capture_field_type_t {
@@ -99,36 +98,30 @@ int db_capture_save(hash_t *map){
   for (struct db_capture_field_t *c = &(db_cap_fields[0]); c->field; c++) {
     asprintf(&fl, "%s_len", c->field);
     if (hash_has((hash_t *)(hash_get(map, "int")), c->field)) {
-      if (qty > 0) {
+      if (qty > 0)
         stringbuffer_append_string(sb, ", ");
-      }
       stringbuffer_append_string(sb, c->field);
-      if (qty > 0) {
+      if (qty > 0)
         stringbuffer_append_string(sb_val, ", ");
-      }
       stringbuffer_append_string(sb_val, "?");
       qty++;
     }else if (hash_has((hash_t *)(hash_get(map, "text")), c->field)) {
-      if (qty > 0) {
+      if (qty > 0)
         stringbuffer_append_string(sb, ", ");
-      }
       stringbuffer_append_string(sb, c->field);
-      if (qty > 0) {
+      if (qty > 0)
         stringbuffer_append_string(sb_val, ", ");
-      }
       stringbuffer_append_string(sb_val, "?");
       qty++;
     }else if (
       hash_has((hash_t *)(hash_get(map, "blob")), c->field)
       && hash_has((hash_t *)(hash_get(map, "blob")), fl)
       ) {
-      if (qty > 0) {
+      if (qty > 0)
         stringbuffer_append_string(sb, ", ");
-      }
       stringbuffer_append_string(sb, c->field);
-      if (qty > 0) {
+      if (qty > 0)
         stringbuffer_append_string(sb_val, ", ");
-      }
       stringbuffer_append_string(sb_val, "?");
     }
   }
@@ -193,9 +186,9 @@ int db_capture_save(hash_t *map){
 } /* db_capture_save */
 
 bool db_loader_id(enum db_loader_t type){
-  if (db_loaders[type](db)) {
+  if (db_loaders[type](db))
     return(true);
-  }
+
   return(false);
 }
 
@@ -207,9 +200,8 @@ bool db_loader_name(char *name){
 struct sqldbal_db *db_init(void){
   static struct sqldbal_db *_db = 0;
 
-  if (_db) {
+  if (_db)
     goto ready;
-  }
   sqldbal_open(DB_DRIVER, db_file, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE, DB_FLAGS, NULL, 0, &_db);
   assert(_db);
 ready:
@@ -400,9 +392,8 @@ static void __attribute__((constructor)) __constructor__db(void){
     log_debug("Enabling db Debug Mode");
     DB_DEBUG_MODE = true;
   }
-  if (LOCAL_DEBUG_MODE) {
+  if (LOCAL_DEBUG_MODE)
     DB_FLAGS |= SQLDBAL_FLAG_DEBUG;
-  }
   assert((db = db_init()));
   assert(db_create_tables() == true);
 }

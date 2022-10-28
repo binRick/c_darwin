@@ -89,11 +89,9 @@ struct Vector *get_space_non_minimized_window_ids_v(size_t space_id){
 
   uint32_t      *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, false);
 
-  if (windows_list) {
-    for (int i = 0; i < window_qty; i++) {
+  if (windows_list)
+    for (int i = 0; i < window_qty; i++)
       vector_push(ids, (void *)(size_t)windows_list[i]);
-    }
-  }
   return(ids);
 }
 struct Vector *get_space_minimized_window_ids_v(size_t space_id){
@@ -102,9 +100,8 @@ struct Vector *get_space_minimized_window_ids_v(size_t space_id){
   uint64_t      sid           = (uint64_t)space_id;
   uint32_t      *windows_list = get_space_minimized_window_list(sid, &window_qty);
 
-  for (int i = 0; i < window_qty; i++) {
+  for (int i = 0; i < window_qty; i++)
     vector_push(ids, (void *)(size_t)windows_list[i]);
-  }
   return(ids);
 }
 struct Vector *get_space_window_ids_v(size_t space_id){
@@ -113,11 +110,9 @@ struct Vector *get_space_window_ids_v(size_t space_id){
   uint64_t      sid           = (uint64_t)space_id;
   uint32_t      *windows_list = get_space_window_list_for_connection(&sid, 1, 0, &window_qty, true);
 
-  if (window_qty > 0) {
-    for (int i = 0; i < window_qty; i++) {
+  if (window_qty > 0)
+    for (int i = 0; i < window_qty; i++)
       vector_push(ids, (void *)(size_t)windows_list[i]);
-    }
-  }
   return(ids);
 }
 
@@ -164,22 +159,17 @@ uint32_t *get_space_minimized_window_list(uint64_t sid, int *count){
   uint32_t *minimized_window_list = calloc((*count) + 1, sizeof(uint32_t));
   int      on                     = 0;
 
-  if (windows_list != 0) {
+  if (windows_list != 0)
     for (int i = 0; i < window_count; i++) {
-      if (windows_list[i] == 0) {
+      if (windows_list[i] == 0)
         continue;
-      }
       bool is_minimized = true;
-      for (int ii = 0; ii < non_min_window_count && is_minimized == true; ii++) {
-        if (non_min_windows_list[ii] == windows_list[i]) {
+      for (int ii = 0; ii < non_min_window_count && is_minimized == true; ii++)
+        if (non_min_windows_list[ii] == windows_list[i])
           is_minimized = false;
-        }
-      }
-      if (is_minimized == true) {
+      if (is_minimized == true)
         minimized_window_list[on++] = windows_list[i];
-      }
     }
-  }
 
   return(minimized_window_list);
 }
@@ -199,9 +189,8 @@ CGImageRef capture_space_id_height(size_t space_id, size_t height){
   h[1] = height;
   float factor = 1;
 
-  if (h[0] > 100) {
+  if (h[0] > 100)
     factor = (float)(h[0]) / (float)(h[1]);
-  }
 
   w[1] = (int)((float)w[0] / factor);
   return(resize_cgimage(img_ref, w[1], h[1]));
@@ -233,9 +222,8 @@ CGImageRef capture_space_id(uint32_t sid) {
   CFArrayRef result = SLSHWCaptureSpace(g_connection, sid, 0);
   uint32_t   count  = CFArrayGetCount(result);
 
-  if (count > 0) {
+  if (count > 0)
     image = (CGImageRef)CFArrayGetValueAtIndex(result, 0);
-  }
   return(image);
 }
 
@@ -253,9 +241,8 @@ char *get_space_uuid(uint64_t sid){
   CFStringRef uuid_ref = SLSSpaceCopyName(g_connection, sid);
   char        *uuid    = cstring_from_CFString(uuid_ref);
 
-  if (!uuid_ref) {
+  if (!uuid_ref)
     log_error("uuid ref err");
-  }
   CFRelease(uuid_ref);
   return(uuid);
 }
@@ -276,39 +263,34 @@ uint32_t *get_space_window_list_for_connection(uint64_t *space_list, int space_c
 
   CFArrayRef space_list_ref = cfarray_of_cfnumbers(space_list, sizeof(uint64_t), 1, kCFNumberSInt64Type);
 
-  if (SPACE_UTILS_DEBUG_MODE == true) {
+  if (SPACE_UTILS_DEBUG_MODE == true)
     log_info("space window list> %d||min?%d|cid:%d|space_count:%d|display id:%d|",
              space_count, include_minimized, cid, space_count,
              get_space_display_id(space_list[0])
              );
-  }
   errno = 0;
   CFArrayRef window_list_ref = SLSCopyWindowsWithOptionsAndTags(g_connection, cid, space_list_ref, options, &set_tags, &clear_tags);
 
   if (!window_list_ref) {
-    if (SPACE_UTILS_DEBUG_MODE == true) {
+    if (SPACE_UTILS_DEBUG_MODE == true)
       log_error("connection %d Failed", cid);
-    }
     goto err;
   }
 
   *count = CFArrayGetCount(window_list_ref);
   if ((*count) < 1) {
-    if (SPACE_UTILS_DEBUG_MODE == true) {
+    if (SPACE_UTILS_DEBUG_MODE == true)
       log_error("Space #%llu window count less then one:%d", *space_list, *count);
-    }
     goto err;
   }else{
     CFTypeRef query    = SLSWindowQueryWindows(g_connection, window_list_ref, *count);
     CFTypeRef iterator = SLSWindowQueryResultCopyWindows(query);
 
-    if (window_list) {
+    if (window_list)
       free(window_list);
-    }
     window_list = calloc((*count) * 10, sizeof(uint32_t));
-    while (SLSWindowIteratorAdvance(iterator)) {
+    while (SLSWindowIteratorAdvance(iterator))
       window_list[window_count++] = SLSWindowIteratorGetWindowID(iterator);
-    }
     CFRelease(query);
     CFRelease(iterator);
   }
@@ -316,20 +298,18 @@ uint32_t *get_space_window_list_for_connection(uint64_t *space_list, int space_c
   return(window_list);
 
 err:
-  if (SPACE_UTILS_DEBUG_MODE == true) {
+  if (SPACE_UTILS_DEBUG_MODE == true)
     log_error("returning null window list");
-  }
   return(NULL);
 } /* space_window_list_for_connection */
 
 uint32_t *get_space_window_list(uint64_t sid, int *count, bool include_minimized){
   void *d = get_space_window_list_for_connection(&sid, 1, 0, count, include_minimized);
 
-  if (d == NULL) {
+  if (d == NULL)
     return(NULL);
-  }else{
+  else
     return((uint32_t *)d);
-  }
 }
 
 int get_total_spaces(void){
@@ -354,9 +334,9 @@ bool get_space_is_visible(uint64_t sid){
 uint64_t get_display_space_id(uint32_t did){
   CFStringRef uuid = get_display_uuid_ref(did);
 
-  if (!uuid) {
+  if (!uuid)
     return(0);
-  }
+
   uint64_t sid = SLSManagedDisplayGetCurrentSpace(g_connection, uuid);
 
   CFRelease(uuid);

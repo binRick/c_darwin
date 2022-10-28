@@ -5,18 +5,26 @@
 #include "submodules/layout/layout.h"
 struct layout_t;
 enum layout_mode_t {
-  LAYOUT_MODE_VERTICAL   = 0x002,
-  LAYOUT_MODE_HORIZONTAL = 0x003,
-  LAYOUT_MODES_QTY       = 2,
+  LAYOUT_MODE_HORIZONTAL,
+  LAYOUT_MODE_VERTICAL,
+  LAYOUT_MODES_QTY,
+};
+enum layout_gravity_type_id_t {
+  LAYOUT_GRAVITY_TYPE_TOP,
+  LAYOUT_GRAVITY_TYPE_BOTTOM,
+  LAYOUT_GRAVITY_TYPE_LEFT,
+  LAYOUT_GRAVITY_TYPE_RIGHT,
+  LAYOUT_GRAVITY_TYPES_QTY,
 };
 //////////////////////////////////////
 struct layout_request_t {
-  size_t             max_width, max_height;
-  size_t             master_width, master_height;
-  size_t             qty;
-  size_t             master_margins[4], content_margins[4];
-  enum layout_mode_t mode;
-  bool               debug;
+  size_t                        max_width, max_height;
+  size_t                        master_width, master_height;
+  size_t                        qty;
+  size_t                        master_margins[4], content_margins[4];
+  enum layout_mode_t            mode;
+  enum layout_gravity_type_id_t gravity;
+  bool                          debug;
 };
 
 struct layout_content_result_t {

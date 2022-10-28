@@ -27,9 +27,8 @@ TEST t_pid_cwd(void){
   ASSERT_NEQ(cwd, NULL);
   ASSERT_GTE(strlen(cwd), 0);
   //dbg(cwd, %s);
-  if (cwd) {
+  if (cwd)
     free(cwd);
-  }
   CT_STOP_AND_DEBUG(AC_BLUE);
   PASS();
 }
@@ -186,9 +185,8 @@ TEST t_kitty_listen_ons(void){
               "cwd:", (char *)kw->cwd,
               "foreground_processes_qty:", (int)kw->foreground_processes_qty
               );
-            for (size_t c = 0; c < vector_size(kw->foreground_processes); c++) {
+            for (size_t c = 0; c < vector_size(kw->foreground_processes); c++)
               PRINT("          >", vector_get(kw->foreground_processes, c));
-            }
             free(kw);
           }
           free(kt);
@@ -214,9 +212,8 @@ TEST t_kitty_pids(void){
   ASSERT_GTE(vector_size(kitty_pids_v), 0);
   for (size_t i = 0; i < vector_size(kitty_pids_v); i++) {
     kitty_process_t *KP = get_kitty_process_t((size_t)vector_get(kitty_pids_v, i));
-    if (KP->listen_on == NULL) {
+    if (KP->listen_on == NULL)
       continue;
-    }
     fprintf(stdout,
             "\t"
             AC_RESETALL AC_BLUE "Kitty PID #%lu/%lu: " AC_RESETALL AC_GREEN AC_REVERSED "%lu" AC_RESETALL
@@ -243,18 +240,15 @@ TEST t_pids_iterate(void){
     if (DEBUG_MODE) {
       //dbg(pid, %d);
     }
-    if (pid <= 1) {
+    if (pid <= 1)
       continue;
-    }
     char *cwd = get_pid_cwd(pid);
-    if (cwd == NULL) {
+    if (cwd == NULL)
       continue;
-    }
     struct Vector *cmdline_v = get_process_cmdline(pid);
     if (cmdline_v == NULL) {
-      if (cwd) {
+      if (cwd)
         free(cwd);
-      }
       continue;
     }
     struct Vector *PE = get_process_env(pid);
@@ -264,9 +258,8 @@ TEST t_pids_iterate(void){
       printf("%d|%s=\"%s\"\n", pid, E->key, E->val);
     }
     if (PE == NULL) {
-      if (cwd) {
+      if (cwd)
         free(cwd);
-      }
       continue;
     }
     size_t CMDS_QTY = vector_size(cmdline_v);
@@ -283,17 +276,14 @@ TEST t_pids_iterate(void){
         //dbg(ENV_KEY, %s);
         //dbg(ENV_VAL, %s);
       }
-      if (ENV_KEY) {
+      if (ENV_KEY)
         free(ENV_KEY);
-      }
-      if (ENV_VAL) {
+      if (ENV_VAL)
         free(ENV_VAL);
-      }
       //  free(((process_env_t *)vector_get(PE, i)));
     }
-    if (cwd) {
+    if (cwd)
       free(cwd);
-    }
     vector_release(PE);
     continue;
     vector_release(cmdline_v);
@@ -342,12 +332,10 @@ TEST t_process_env(void){
       //dbg(ENV_KEY, %s);
       //dbg(ENV_VAL, %s);
     }
-    if (ENV_KEY) {
+    if (ENV_KEY)
       free(ENV_KEY);
-    }
-    if (ENV_VAL) {
+    if (ENV_VAL)
       free(ENV_VAL);
-    }
     free(((process_env_t *)vector_get(PE, i)));
   }
   //dbg(ENV_QTY, %lu);

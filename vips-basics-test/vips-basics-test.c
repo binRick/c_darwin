@@ -38,28 +38,26 @@ static int annotate_image(VipsObject *context, VipsImage *image, VipsImage **out
 
   int       i;
 
-  for ( i = 0; i < n_pages; i++ ) {
-    if (vips_crop(image, &page[i], 0, page_height * i, image->Xsize, page_height, NULL)) {
+  for ( i = 0; i < n_pages; i++ )
+    if (vips_crop(image, &page[i], 0, page_height * i, image->Xsize, page_height, NULL))
       return(-1);
-    }
-  }
+
   if (!(overlay[0] = vips_image_new_from_image(page[0], red, VIPS_NUMBER(red)))
       || vips_draw_rect(
         overlay[0], transparent, VIPS_NUMBER(transparent),
         10, 10, overlay[0]->Xsize - 20, overlay[0]->Ysize - 20, "fill", TRUE, NULL
         )
-      ) {
+      )
     return(-1);
-  }
-  for ( i = 0; i < n_pages; i++ ) {
+
+  for ( i = 0; i < n_pages; i++ )
     if (vips_composite2(page[i], overlay[0], &annotated[i],
-                        VIPS_BLEND_MODE_OVER, NULL)) {
+                        VIPS_BLEND_MODE_OVER, NULL))
       return(-1);
-    }
-  }
-  if (vips_arrayjoin(annotated, out, n_pages, "across", 1, NULL)) {
+
+  if (vips_arrayjoin(annotated, out, n_pages, "across", 1, NULL))
     return(-1);
-  }
+
   return(0);
 } /* annotate_image */
 
@@ -78,26 +76,23 @@ void posteval_callback(VipsImage UNUSED *image, VipsProgress *progress, void UNU
 TEST t_vips_basics_test3(){
   size_t TEST_INDEX = 3;
 
-  for (size_t i = 0; i < files_qty; i++) {
+  for (size_t i = 0; i < files_qty; i++)
     for (size_t o = 0; o < exts_qty; o++) {
       VipsImage *image;
       char      *outfile;
       asprintf(&outfile, "/tmp/output-%lu-%lu-%lu.%s", i, o, TEST_INDEX, exts[o]);
 
-      if (VIPS_INIT(files[i])) {
+      if (VIPS_INIT(files[i]))
         FAIL();
-      }
 
-      if (!(image = vips_image_new_from_file(files[i], "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+      if (!(image = vips_image_new_from_file(files[i], "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
         FAIL();
-      }
 
       VipsImage *out;
       float     resize = (float)1 / ((float)1 / (float)(o + (float)1) * 10);
 
-      if (vips_resize(image, &out, resize, NULL)) {
+      if (vips_resize(image, &out, resize, NULL))
         FAIL();
-      }
       log_debug(AC_BLUE "Resizing by %f %s %s [%dx%d] (%d)" AC_RESETALL,
                 resize,
                 bytes_to_string(fsio_file_size(files[i])),
@@ -112,9 +107,8 @@ TEST t_vips_basics_test3(){
       g_signal_connect(out, "eval", G_CALLBACK(eval_callback), NULL);
       g_signal_connect(out, "posteval", G_CALLBACK(posteval_callback), NULL);
 
-      if (vips_image_write_to_file(out, outfile, NULL)) {
+      if (vips_image_write_to_file(out, outfile, NULL))
         FAIL();
-      }
       timg_utils_image(outfile);
       log_debug(AC_MAGENTA "%s %s [%dx%d] (%d)" AC_RESETALL,
                 bytes_to_string(fsio_file_size(outfile)),
@@ -127,14 +121,13 @@ TEST t_vips_basics_test3(){
 
       g_object_unref(image);
     }
-  }
   PASS();
 } /* t_vips_basics_test3 */
 
 TEST t_vips_basics_test2(){
   size_t TEST_INDEX = 2;
 
-  for (size_t i = 0; i < files_qty; i++) {
+  for (size_t i = 0; i < files_qty; i++)
     for (size_t o = 0; o < exts_qty; o++) {
       char *outfile, *infile;
       asprintf(&outfile, "/tmp/output-%lu-%lu-%lu.%s", i, o, TEST_INDEX, exts[o]);
@@ -144,13 +137,11 @@ TEST t_vips_basics_test2(){
       VipsObject *context;
       VipsImage  *x;
 
-      if (VIPS_INIT(infile)) {
+      if (VIPS_INIT(infile))
         FAIL();
-      }
 
-      if (!(image = vips_image_new_from_file(infile, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+      if (!(image = vips_image_new_from_file(infile, "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
         FAIL();
-      }
 
       vips_object_print_summary(VIPS_OBJECT(image));
 
@@ -177,7 +168,6 @@ TEST t_vips_basics_test2(){
                 vips_image_get_format(image)
                 );
     }
-  }
 
   PASS();
 } /* t_vips_basics_test2 */
@@ -193,16 +183,13 @@ TEST t_vips_basics_test1(){
     gchar     *buf;
     gsize     len;
 
-    if (!g_file_get_contents(infile, &buf, &len, NULL)) {
+    if (!g_file_get_contents(infile, &buf, &len, NULL))
       FAIL();
-    }
-    if (!(image = vips_image_new_from_buffer(buf, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+    if (!(image = vips_image_new_from_buffer(buf, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
       FAIL();
-    }
 
-    if (vips_image_write_to_buffer(image, ".jpg", &new_buf, &new_len, "Q", 95, NULL)) {
+    if (vips_image_write_to_buffer(image, ".jpg", &new_buf, &new_len, "Q", 95, NULL))
       FAIL();
-    }
     log_debug(AC_YELLOW "%s [%dx%d] (%d) : %s -> %s" AC_RESETALL,
               infile,
               vips_image_get_width(image),

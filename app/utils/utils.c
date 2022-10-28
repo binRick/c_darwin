@@ -20,57 +20,56 @@ static authorized_tests_t  authorized_tests = {
   },
 };
 static struct app_parser_t app_parsers[APP_PARSER_TYPES_QTY] = {
-  [APP_PARSER_TYPE_NAME] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->name                                                  = (json_object_has_value_of_type(app_object, "_name", JSONString))
+  [APP_PARSER_TYPE_NAME] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->name                 = (json_object_has_value_of_type(app_object, "_name", JSONString))
                     ? json_object_get_string(app_object, "_name")
                     : NULL;
-                                                                                 }, },
-  [APP_PARSER_TYPE_VERSION] =                                                  { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->version                                            = (json_object_has_value_of_type(app_object, "version", JSONString))
+                                                }, },
+  [APP_PARSER_TYPE_VERSION] =                 { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->version           = (json_object_has_value_of_type(app_object, "version", JSONString))
                     ? json_object_get_string(app_object, "version")
                     : NULL;
-                                                                                 }, },
-  [APP_PARSER_TYPE_LAST_MODIFIED] =                                            { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->last_modified_s                              = (json_object_has_value_of_type(app_object, "lastModified", JSONString))
+                                                }, },
+  [APP_PARSER_TYPE_LAST_MODIFIED] =           { .enabled     = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->last_modified_s = (json_object_has_value_of_type(app_object, "lastModified", JSONString))
                     ? json_object_get_string(app_object, "lastModified")
                     : NULL;
-                                                                                 }, },
-  [APP_PARSER_TYPE_LAST_MODIFIED_TIME] =                                       { .enabled = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->last_modified_time                      = (app->last_modified_s)
+                                                }, },
+  [APP_PARSER_TYPE_LAST_MODIFIED_TIME] =      { .enabled             = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->last_modified_time = (app->last_modified_s)
                     ? timelib_strtotime(app->last_modified_s, strlen(app->last_modified_s), NULL, timelib_builtin_db(), timelib_parse_tzfile)
                     : NULL;
-                                                                                 }, },
-  [APP_PARSER_TYPE_LAST_MODIFIED_TIMESTAMP] =                                  { .enabled = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   if (app->last_modified_time) {
-                                                                                     timelib_update_ts(app->last_modified_time, NULL);
-                                                                                   }
-                                                                                   app->last_modified_timestamp            = (app->last_modified_time)
+                                                }, },
+  [APP_PARSER_TYPE_LAST_MODIFIED_TIMESTAMP] = { .enabled                       = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  if (app->last_modified_time)
+                                                    timelib_update_ts(app->last_modified_time, NULL);
+                                                  app->last_modified_timestamp = (app->last_modified_time)
                     ? app->last_modified_time->sse
                     : 0;
-                                                                                 }, },
-  [APP_PARSER_TYPE_PATH] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->path                                                  = (json_object_has_value_of_type(app_object, "path", JSONString))
+                                                }, },
+  [APP_PARSER_TYPE_PATH] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->path                 = (json_object_has_value_of_type(app_object, "path", JSONString))
                     ? json_object_get_string(app_object, "path")
                     : NULL;
-                                                                                   app->path_exists                                           = (app->path)
+                                                  app->path_exists          = (app->path)
                     ? fsio_path_exists(app->path)
                     : false;
-                                                                                 }, },
-  [APP_PARSER_TYPE_OBTAINED_FROM] =                                            { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->obtained_from                                = (json_object_has_value_of_type(app_object, "obtained_from", JSONString))
+                                                }, },
+  [APP_PARSER_TYPE_OBTAINED_FROM] =           { .enabled   = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->obtained_from = (json_object_has_value_of_type(app_object, "obtained_from", JSONString))
                     ? json_object_get_string(app_object, "obtained_from")
                     : NULL;
-                                                                                 }, },
-  [APP_PARSER_TYPE_INFO] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->info                                                  = (json_object_has_value_of_type(app_object, "info", JSONString))
+                                                }, },
+  [APP_PARSER_TYPE_INFO] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->info                 = (json_object_has_value_of_type(app_object, "info", JSONString))
                     ? json_object_get_string(app_object, "info")
                     : NULL;
-                                                                                 }, },
-  [APP_PARSER_TYPE_ARCH] =                                                     { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                                                   app->arch                                                  = (json_object_has_value_of_type(app_object, "arch_kind", JSONString))
+                                                }, },
+  [APP_PARSER_TYPE_ARCH] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                  app->arch                 = (json_object_has_value_of_type(app_object, "arch_kind", JSONString))
                     ? json_object_get_string(app_object, "arch_kind")
                     : NULL;
-                                                                                 }, },
+                                                }, },
 };
 ///////////////////////////////////////////////////////////////////////
 static void parse_app(struct app_t *app, JSON_Object *app_object);
@@ -124,11 +123,9 @@ bool request_accessibility_permissions() {
 
 ///////////////////////////////////////////////////////////////////////
 static void parse_app(struct app_t *app, JSON_Object *app_object){
-  for (size_t i = 0; i < APP_PARSER_TYPES_QTY; i++) {
-    if (app_parsers[i].enabled == true) {
+  for (size_t i = 0; i < APP_PARSER_TYPES_QTY; i++)
+    if (app_parsers[i].enabled == true)
       app_parsers[i].parser(app, app_object);
-    }
-  }
 }
 struct Vector *get_installed_apps_v(){
   struct Vector *a          = vector_new();
@@ -142,9 +139,8 @@ struct Vector *get_installed_apps_v(){
       for (size_t i = 0; i < apps_qty; i++) {
         struct app_t *app = calloc(1, sizeof(struct app_t));
         parse_app(app, json_array_get_object(apps_array, i));
-        if (app) {
+        if (app)
           vector_push(a, (void *)app);
-        }
       }
     }
   }
@@ -203,9 +199,9 @@ bool request_screen_recording_permissions() {
   stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, kCVPixelFormatType_32BGRA, nil,
                                  ^ (CGDisplayStreamFrameStatus status, uint64_t displayTime, IOSurfaceRef frameSurface,
                                     CGDisplayStreamUpdateRef updateRef){});
-  if (stream == NULL) {
+  if (stream == NULL)
     return(false);
-  }
+
   CFRelease(stream);
   return(true);
 }
@@ -214,9 +210,9 @@ bool is_authorized_for_screen_recording() {
   CGDisplayStreamFrameAvailableHandler handler = ^ (CGDisplayStreamFrameStatus status, uint64_t display_time, IOSurfaceRef frame_surface, CGDisplayStreamUpdateRef updateRef){ return; };
   CGDisplayStreamRef                   stream = CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, 'BGRA', NULL, handler);
 
-  if (stream == NULL) {
+  if (stream == NULL)
     return(false);
-  }
+
   CFRelease(stream);
   return(true);
 }
@@ -224,9 +220,8 @@ bool is_authorized_for_screen_recording() {
 void list_apps(){
   CFArrayRef applications = _LSCopyApplicationArrayInFrontToBackOrder(0xFFFFFFFE, 1);
 
-  if (!applications) {
+  if (!applications)
     return(false);
-  }
 
   bool                found_front_psn = false;
   ProcessSerialNumber front_psn;
@@ -246,9 +241,9 @@ size_t app_main_window_id(AXUIElementRef app){
   CFTypeRef window_ref = NULL;
 
   AXUIElementCopyAttributeValue(app, kAXMainWindowAttribute, &window_ref);
-  if (!window_ref) {
+  if (!window_ref)
     return(0);
-  }
+
   size_t window_id = (size_t)ax_window_id(window_ref);
 
   CFRelease(window_ref);
@@ -281,7 +276,29 @@ const char       *app_type_names[APP_TYPES_QTY + 1] = {
   [APP_TYPE_VERSIONED]      = "Versioned",
   [APP_TYPES_QTY]           = NULL,
 };
+
 static const int app_event_types[] = {
   kEventAppActivated,
   kEventAppDeactivated,
 };
+
+hash_t *app_utils_get_closes_app_name_matches(char *name, size_t qty){
+  struct Vector *apps_v = get_installed_apps_v();
+  hash_t        *h      = hash_new();
+
+  for (size_t i = 0; i < vector_size(apps_v); i++) {
+    hash_t       *hm   = hash_new();
+    struct app_t *app  = vector_get(apps_v, i);
+    size_t       score = (size_t)(levenshtein(
+                                    stringfn_to_lowercase(name),
+                                    stringfn_to_lowercase(app->name))
+                                  );
+    log_info("%s Score : %zu, %s", app->name, score, app->path);
+    hash_set(hm, "path", (void *)(app->path));
+    hash_set(hm, "name", (void *)(app->name));
+    hash_set(hm, "version", (void *)(app->version));
+    hash_set(hm, "score", (void *)score);
+    hash_set(h, app->name, (void *)(hm));
+  }
+  return(h);
+}

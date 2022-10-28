@@ -52,7 +52,7 @@ TEST t_hotkey_utils_load_config(){
   ASSERT_NEQm("Config is NULL", test_cfg->cfg, NULL);
   log_info("Config Name: %s", test_cfg->cfg->name);
   log_info("# Hotkeys: %lu", test_cfg->cfg->keys_count);
-  for (size_t i = 0; i < test_cfg->cfg->keys_count; i++) {
+  for (size_t i = 0; i < test_cfg->cfg->keys_count; i++)
     log_info("Hotkey #%lu %s %s -> %s [Enabled: %s] [Action Type: %s (%d)]",
              i,
              test_cfg->cfg->keys[i].name,
@@ -62,7 +62,6 @@ TEST t_hotkey_utils_load_config(){
              action_type_strings[test_cfg->cfg->keys[i].action_type].str,
              test_cfg->cfg->keys[i].action_type
              );
-  }
   PASS();
 }
 
@@ -79,9 +78,9 @@ SUITE(s_hotkey_utils_test) {
 //  RUN_TESTp(t_hotkey_utils_get_hotkey_config_key, (void *)"ctrl-5");
 //  RUN_TESTp(t_hotkey_utils_get_hotkey_config_key, (void *)"alt-shift-[");
 //  RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void*)"ctrl-5");
-  //RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"ctrl-7");
+//RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"ctrl-7");
 //  RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"alt-shift-]");
-  //RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"alt-shift-[");
+//RUN_TESTp(t_hotkey_utils_execute_hotkey_config_key, (void *)"alt-shift-[");
 }
 
 GREATEST_MAIN_DEFS();

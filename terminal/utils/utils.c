@@ -30,18 +30,16 @@ static void terminal_utils_internal_fxn1(void);
 ////////////////////////////////////////////
 static void terminal_utils_internal_fxn1(void){
   log_info("Called function terminal_utils_internal_fxn1");
-  if (terminal_utils_DEBUG_MODE == true) {
+  if (terminal_utils_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void terminal_utils_fxn1(void){
   terminal_utils_internal_fxn1();
   log_info("Called function terminal_utils_fxn1");
-  if (terminal_utils_DEBUG_MODE == true) {
+  if (terminal_utils_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

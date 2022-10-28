@@ -12,9 +12,34 @@
 #include <unistd.h>
 //////////////////////////////////////
 #include <Carbon/Carbon.h>
+#include <CoreFoundation/CFArray.h>
+#include <CoreFoundation/CFAvailability.h>
+#include <CoreFoundation/CFDictionary.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreGraphics/CGBase.h>
+#include <CoreGraphics/CGDirectDisplay.h>
+#include <CoreGraphics/CGDirectDisplayMetal.h>
+#include <CoreGraphics/CGDirectPalette.h>
+#include <CoreGraphics/CGDisplayConfiguration.h>
+#include <CoreGraphics/CGDisplayFade.h>
+#include <CoreGraphics/CGDisplayStream.h>
+#include <CoreGraphics/CGEvent.h>
+#include <CoreGraphics/CGEventSource.h>
+#include <CoreGraphics/CGEventTypes.h>
+#include <CoreGraphics/CGImage.h>
+#include <CoreGraphics/CGPSConverter.h>
+#include <CoreGraphics/CGRemoteOperation.h>
+#include <CoreGraphics/CGSession.h>
+#include <CoreGraphics/CGWindow.h>
+#include <CoreGraphics/CGWindowLevel.h>
+#include <CoreGraphics/CoreGraphics.h>
 #include <CoreServices/CoreServices.h>
+#include <CoreVideo/CoreVideo.h>
+#include <IOKit/IOKitLib.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
+#include <IOSurface/IOSurface.h>
+#include <IOSurface/IOSurfaceBase.h>
 //////////////////////////////////////
 #define g_connection                              CGSMainConnectionID()
 #define ASCII_ENCODING                            kCFStringEncodingASCII
@@ -986,4 +1011,79 @@ extern void CGSWindowBackdropDeactivate(CGSWindowBackdropRef backdrop) AVAILABLE
 extern void CGSWindowBackdropRelease(CGSWindowBackdropRef backdrop) AVAILABLE_MAC_OS_X_VERSION_10_10_AND_LATER;
 extern void CGSWindowBackdropSetSaturation(CGSWindowBackdropRef backdrop, CGFloat saturation) AVAILABLE_MAC_OS_X_VERSION_10_10_AND_LATER;
 AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window);
+
+#define kCPSAllWindows       0x100
+#define kCPSUserGenerated    0x200
+#define kCPSNoWindows        0x400
+
+typedef enum {
+  kCGSWindowCaptureNominalResolution = (1 << 9),
+  kCGSCaptureIgnoreGlobalClipShape   = (1 << 11),
+} CGSWindowCaptureOptions;
+
+CGSConnectionID CGSMainConnectionID(void);
+
+CGError SLPSPostEventRecordTo(ProcessSerialNumber *psn, uint8_t *bytes);
+CGError CGSGetConnectionPSN(CGSConnectionID cid, ProcessSerialNumber *psn);
+CGError CGSGetWindowOwner(CGSConnectionID cid, CGWindowID wid, CGSConnectionID *ownerCid);
+CGError CGSConnectionGetPID(CGSConnectionID cid, pid_t *pid, CGSConnectionID ownerCid);
+CGError SLPSSetFrontProcessWithOptions(ProcessSerialNumber *psn, CGWindowID wid, uint32_t mode);
+CFArrayRef CGSCopySpacesForWindows(CGSConnectionID cid, CGSSpaceMask mask, CFArrayRef windowIDs);
+CFArrayRef CGSHWCaptureWindowList(CGSConnectionID, CGWindowID * windowList, int count, CGSWindowCaptureOptions);
+
+CG_EXTERN const CGRect * CGDisplayStreamUpdateGetRects(CGDisplayStreamUpdateRef updateRef, CGDisplayStreamUpdateRectType rectType, size_t *rectCount);
+CG_EXTERN CFRunLoopSourceRef
+CGDisplayStreamGetRunLoopSource(CGDisplayStreamRef displayStream);
+CG_EXTERN CGError CGDisplayStreamStop(CGDisplayStreamRef displayStream);
+CG_EXTERN CGError CGDisplayStreamStart(CGDisplayStreamRef displayStream);
+CG_EXTERN CGDisplayStreamRef
+CGDisplayStreamCreate(CGDirectDisplayID display, size_t outputWidth, size_t outputHeight, int32_t pixelFormat, CFDictionaryRef properties, CGDisplayStreamFrameAvailableHandler handler);
+
+extern int SLSMainConnectionID(void);
+extern CGDisplayStreamRef SLSHWCaptureStreamCreateWithWindow(int cid, uint32_t wid, CFDictionaryRef options, dispatch_queue_t queue, CGDisplayStreamFrameAvailableHandler handler);
+extern CGError SLDisplayStreamStart(CGDisplayStreamRef stream);
+
+extern CFArrayRef SLSCopyWindowsWithOptionsAndTags(int cid, uint32_t owner, CFArrayRef spaces, uint32_t options, uint64_t *set_tags, uint64_t *clear_tags);
+extern CGError SLPSGetFrontProcess(ProcessSerialNumber *psn);
+extern CGError SLSGetConnectionIDForPSN(int cid, ProcessSerialNumber *psn, int *process_cid);
+
+typedef struct __IOSurface *IOSurfaceRef;
+typedef uint32_t           IOSurfaceID;
+
+extern CGSConnectionID _CGSDefaultConnection(void);
+#define CGSDefaultConnection    _CGSDefaultConnection()
+extern CFArrayRef CGSCopySpaces(const CGSConnectionID cid, CGSSpaceSelector type);
+extern CFArrayRef CGSSpaceCopyOwners(const CGSConnectionID cid, CGSSpace space);
+extern int CGSSpaceGetAbsoluteLevel(const CGSConnectionID cid, CGSSpace space);
+extern void CGSSpaceSetAbsoluteLevel(const CGSConnectionID cid, CGSSpace space, int level);
+extern int CGSSpaceGetCompatID(const CGSConnectionID cid, CGSSpace space);
+extern void CGSSpaceSetCompatID(const CGSConnectionID cid, CGSSpace space, int compatID);
+extern CGSSpaceType CGSSpaceGetType(const CGSConnectionID cid, CGSSpace space);
+extern void CGSSpaceSetType(const CGSConnectionID cid, CGSSpace space, CGSSpaceType type);
+extern CFStringRef CGSSpaceCopyName(const CGSConnectionID cid, CGSSpace space);
+typedef uint64_t CGSManagedDisplay;
+extern CFArrayRef CGSCopyManagedDisplaySpaces(const CGSConnectionID cid);
+extern bool CGSManagedDisplayIsAnimating(const CGSConnectionID cid, CGSManagedDisplay display);
+extern void CGSManagedDisplaySetIsAnimating(const CGSConnectionID cid, CGSManagedDisplay display, bool isAnimating);
+extern void CGSHideSpaces(const CGSConnectionID cid, CFArrayRef spaces);
+extern void CGSShowSpaces(const CGSConnectionID cid, CFArrayRef spaces);
+
+extern CGSConnectionID _CGSDefaultConnection(void);
+#define CGSDefaultConnection    _CGSDefaultConnection()
+
+extern CFArrayRef CGSCopySpaces(const CGSConnectionID cid, CGSSpaceSelector type);
+extern CFArrayRef CGSSpaceCopyOwners(const CGSConnectionID cid, CGSSpace space);
+extern int CGSSpaceGetAbsoluteLevel(const CGSConnectionID cid, CGSSpace space);
+extern void CGSSpaceSetAbsoluteLevel(const CGSConnectionID cid, CGSSpace space, int level);
+extern int CGSSpaceGetCompatID(const CGSConnectionID cid, CGSSpace space);
+extern void CGSSpaceSetCompatID(const CGSConnectionID cid, CGSSpace space, int compatID);
+extern CGSSpaceType CGSSpaceGetType(const CGSConnectionID cid, CGSSpace space);
+extern void CGSSpaceSetType(const CGSConnectionID cid, CGSSpace space, CGSSpaceType type);
+extern CFStringRef CGSSpaceCopyName(const CGSConnectionID cid, CGSSpace space);
+extern CGSManagedDisplay CGSCopyBestManagedDisplayForRect(const CGSConnectionID cid, CGRect rect);
+extern CFArrayRef CGSCopyManagedDisplaySpaces(const CGSConnectionID cid);
+extern bool CGSManagedDisplayIsAnimating(const CGSConnectionID cid, CGSManagedDisplay display);
+extern void CGSManagedDisplaySetIsAnimating(const CGSConnectionID cid, CGSManagedDisplay display, bool isAnimating);
+extern AXError _AXUIElementGetWindow(AXUIElementRef element, CGWindowID *idOut);
+
 #endif

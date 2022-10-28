@@ -98,11 +98,9 @@ static void print_monitor(struct monitor_t *m){
 }
 
 static void parse_monitor(struct monitor_t *m, struct libmonitors_monitor *i){
-  for (size_t x = 0; x < MONITOR_PARSER_TYPES_QTY; x++) {
-    if (monitor_parsers[x].enabled == true) {
+  for (size_t x = 0; x < MONITOR_PARSER_TYPES_QTY; x++)
+    if (monitor_parsers[x].enabled == true)
       monitor_parsers[x].parser(m, i);
-    }
-  }
 }
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__monitor_utils(void){
@@ -125,9 +123,8 @@ void print_monitors(){
           vector_size(_monitors_v),
           ""
           );
-  for (size_t i = 0; i < vector_size(_monitors_v); i++) {
+  for (size_t i = 0; i < vector_size(_monitors_v); i++)
     print_monitor((struct monitor_t *)vector_get(_monitors_v, i));
-  }
   vector_release(_monitors_v);
 }
 static struct Vector *monitor_utils_iterate_monitors(void){

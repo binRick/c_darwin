@@ -60,9 +60,8 @@ int new_market_period(char **items, size_t items_qty){
   p->timestamp = p->time->sse;
   p->age_ms    = timestamp() - p->timestamp * 1000;
   if ((args->csv->end && p->time->sse > args->csv->end->sse) || (args->csv->start && p->time->sse < args->csv->start->sse)) {
-    if (args->debug_mode) {
+    if (args->debug_mode)
       log_debug("Excluding CSV Item (%s not within start/end range)", p->ymdhm);
-    }
     return(EXIT_SUCCESS);
   }
   market_stats->max_volume = (p->volume > market_stats->max_volume) ? p->volume : market_stats->max_volume;
@@ -72,13 +71,11 @@ int new_market_period(char **items, size_t items_qty){
 } /* new_market_period */
 
 int release_market_moving_average(struct market_period_t *p, enum ema_period_duration_type_t dur){
-  if (p->stats->averages[dur]->buffer) {
+  if (p->stats->averages[dur]->buffer)
     free(p->stats->averages[dur]->buffer);
-  }
   p->stats->averages[dur]->buffer = NULL;
-  if (p->stats->averages[dur]) {
+  if (p->stats->averages[dur])
     free(p->stats->averages[dur]);
-  }
   return(EXIT_SUCCESS);
 }
 
@@ -88,9 +85,8 @@ char *market_period_durations_csv(){
   for (size_t i = 0; i < MARKET_PERIOD_DURATION_TYPES_QTY; i++) {
     stringbuffer_append_string(sb, "\t\t\t - ");
     stringbuffer_append_string(sb, market_period_duration_type_names[i]);
-    if (i < MARKET_PERIOD_DURATION_TYPES_QTY - 1) {
+    if (i < MARKET_PERIOD_DURATION_TYPES_QTY - 1)
       stringbuffer_append_string(sb, "\n");
-    }
   }
   return(stringbuffer_to_string(sb));
 }
@@ -113,7 +109,7 @@ struct ma_t *get_ma_type_from_current_and_previous_market_period(enum ema_moving
   moving_average->qty     = prev_p->moving_averages[q]->qty;
   moving_average->values  = prev_p->moving_averages[q]->values;
   moving_average->sum     = prev_p->moving_averages[q]->sum;
-  if (args->debug_mode) {
+  if (args->debug_mode)
     log_debug(
       "Current Market Period  : |Close values:%lu|latest:%f|MA Sum:%f|pos:%lu|qty:%lu|cur val:%f|"
       "%s",
@@ -125,14 +121,12 @@ struct ma_t *get_ma_type_from_current_and_previous_market_period(enum ema_moving
       moving_average->values[moving_average->qty - 1],
       ""
       );
-  }
   moving_average->average = ma_moving_average_float(moving_average->values, &(moving_average->sum), (moving_average->qty) - 1, moving_average->qty, cur);
-  if (args->debug_mode) {
+  if (args->debug_mode)
     log_debug("              -> avg:%f|sum:%f",
               moving_average->average,
               moving_average->sum
               );
-  }
   return(moving_average);
 }
 
@@ -145,9 +139,8 @@ struct Vector *get_past_market_period_closes_v(size_t period_index, size_t past_
     index = period_index - i;
     if (index < vector_size(market_stats->periods_v) - 1 && index >= 0) {
       pp = (struct market_period_t *)(vector_get(market_stats->periods_v, index));
-      if (pp) {
+      if (pp)
         vector_push(v, (void *)&(pp->close));
-      }
     }
   }
   return(v);

@@ -8,11 +8,11 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "core/utils/utils.h"
+#include "layout/layout.h"
+#include "layout/utils/utils.h"
 #include "process/utils/utils.h"
 #include "window/info/info.h"
 #include "window/utils/utils.h"
-#include "layout/layout.h"
-#include "layout/utils/utils.h"
 ///////////////////////////////////////////////////
 #define LIST_TABLE_ITEMS()                                                                  \
   LIST_TABLE(list_window_table, "Windows", WINDOW, window_info_t)                           \
@@ -23,7 +23,7 @@
   LIST_TABLE(list_app_table, "Applications", APP, app_t)                                    \
   LIST_TABLE(list_hotkey_table, "Hotkeys", HOTKEY, key_t)                                   \
   LIST_TABLE(list_monitor_table, "Monitors", MONITOR, monitor_t)                            \
-  LIST_TABLE(list_layout_table, "Layouts", LAYOUT, layout_t)                            \
+  LIST_TABLE(list_layout_table, "Layouts", LAYOUT, layout_t)                                \
   LIST_TABLE(list_font_table, "Fonts", FONT, font_t)                                        \
   LIST_TABLE(list_space_table, "Spaces", SPACE, space_t)                                    \
   LIST_TABLE(list_captured_window_table, "CapturedWindows", CAPTURED_WINDOW, window_info_t) \

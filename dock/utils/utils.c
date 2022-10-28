@@ -42,9 +42,9 @@ CGRect dock_rect(void){
 }
 
 CGSize dock_offset(void){
-  if (dock_is_visible() == false) {
+  if (dock_is_visible() == false)
     return(CGSizeMake(0, 0));
-  }
+
   CGRect rect = dock_rect();
   CGSize size = CGSizeMake(
     rect.size.width,

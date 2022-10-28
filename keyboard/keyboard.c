@@ -28,18 +28,16 @@ static void keyboard_internal_fxn1(void);
 ////////////////////////////////////////////
 static void keyboard_internal_fxn1(void){
   log_info("Called function keyboard_internal_fxn1");
-  if (KEYBOARD_DEBUG_MODE == true) {
+  if (KEYBOARD_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void keyboard_fxn1(void){
   keyboard_internal_fxn1();
   log_info("Called function keyboard_fxn1");
-  if (KEYBOARD_DEBUG_MODE == true) {
+  if (KEYBOARD_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

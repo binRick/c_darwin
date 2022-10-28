@@ -28,18 +28,16 @@ static void mouse_internal_fxn1(void);
 ////////////////////////////////////////////
 static void mouse_internal_fxn1(void){
   log_info("Called function mouse_internal_fxn1");
-  if (MOUSE_DEBUG_MODE == true) {
+  if (MOUSE_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void mouse_fxn1(void){
   mouse_internal_fxn1();
   log_info("Called function mouse_fxn1");
-  if (MOUSE_DEBUG_MODE == true) {
+  if (MOUSE_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

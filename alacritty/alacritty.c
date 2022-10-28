@@ -28,11 +28,10 @@ static void __attribute__((constructor)) __constructor__alacritty(void){
 }
 
 static bool vector_contains_pid(struct Vector *pids_v, int pid){
-  for (size_t i = 0; i < vector_size(pids_v); i++) {
-    if ((size_t)pid == (size_t)vector_get(pids_v, i)) {
+  for (size_t i = 0; i < vector_size(pids_v); i++)
+    if ((size_t)pid == (size_t)vector_get(pids_v, i))
       return(true);
-    }
-  }
+
   return(false);
 }
 
@@ -72,14 +71,12 @@ struct Vector *get_alacritty_pids(){
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     int pid = (int)(long long)vector_get(pids_v, i);
-    if (vector_contains_pid(alacritty_pids_v, pid) == true) {
+    if (vector_contains_pid(alacritty_pids_v, pid) == true)
       continue;
-    }
     get_process_cmdline(pid);
     int kp = get_pid_alacritty(pid);
-    if (kp > 1 && (vector_contains_pid(alacritty_pids_v, kp) == false)) {
+    if (kp > 1 && (vector_contains_pid(alacritty_pids_v, kp) == false))
       vector_push(alacritty_pids_v, (void *)(size_t)kp);
-    }
   }
   return(alacritty_pids_v);
 }

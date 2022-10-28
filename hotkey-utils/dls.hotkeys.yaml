@@ -11,50 +11,130 @@ todo_app: richard
   #  width: 50%
   #  side: left
 layouts:
+  - name: 30V
+    app: richard
+    mode: vertical
+    gravity: top
+    size: 30.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: 35V
+    app: richard
+    mode: vertical
+    gravity: top
+    size: 35.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: 35H
+    app: richard
+    mode: horizontal
+    gravity: right
+    size: 35.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: 70H
+    app: right
+    mode: horizontal
+    gravity: right
+    size: 70.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: 30HL
+    app: right
+    mode: horizontal
+    gravity: left
+    size: 30.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: 30HR
+    app: right
+    mode: horizontal
+    gravity: right
+    size: 30.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+  - name: Vertical
+    app: richard
+    mode: vertical
+    gravity: bottom
+    size: 35.0
+    display: 0
+    display_space: 0
+    debug: yes
+    apps:
+      - name: Alacritty
+      - name: iTerm2
+
   - name: Standard
-    app: main
+    app: richard
     mode: horizontal
-    width: 35.0
+    gravity: right
+    size: 35.0
     display: 0
     display_space: 0
     debug: yes
     apps:
       - name: Alacritty
-      - name: iTerm2
+      - name: iTerm
+
   - name: Pro
-    app: main
+    app: richard
     mode: horizontal
-    width: 55.0
+    gravity: right
+    size: 55.0
     display: 0
     display_space: 0
     debug: yes
     apps:
       - name: Alacritty
-      - name: iTerm2
-      - name: Terminal
+      - name: iTerm
 keys:
-  - name: Toggle Active Layout
+  - name: Toggle Layout
     key: ctrl+shift+o
     action: CURRENT
     action_type: ToggleLayout
     enabled: yes
-  - name: Move Window to Next Display Right 50%
+  - name: Display Right 50%
     key: ctrl+shift+'
     action: CURRENT
     action_type: MoveWindowToNextDisplayRight50Percent
     enabled: yes
-  - name: Move Window to Prev Display
+  - name: Prev Display
     key: ctrl+,
     action: CURRENT
     action_type: MoveWindowToPrevDisplay
     enabled: yes
-  - name: Move Window to Next Display
+  - name: Next Display
     key: ctrl+.
     action: CURRENT
     action_type: MoveWindowToNextDisplay
     enabled: yes
 
-  - name: Normalize Standard Layout
+  - name: Normalize Layout
     key: ctrl+;
     action: Standard
     action_type: NormalizeLayout
@@ -68,7 +148,7 @@ keys:
 
   - name: Activate Kitty
     key: ctrl+[
-    action: Kitty
+    action: kitty
     action_type: ActivateApplication
     enabled: yes
 

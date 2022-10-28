@@ -40,9 +40,8 @@ CGPoint *get_mouse_location(){
 
   loc->x = L.x;
   loc->y = L.y;
-  if (mouse_utils_DEBUG_MODE) {
+  if (mouse_utils_DEBUG_MODE)
     log_info("%dx%d", (int)loc->x, (int)loc->y);
-  }
   CFRelease(Event);
   return(loc);
 }

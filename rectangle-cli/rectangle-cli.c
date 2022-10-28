@@ -69,9 +69,8 @@ int resize_non_todo_windows(){
 
   for (size_t i = 0; i < vector_size(windows); i++) {
     struct window_info_t *w = vector_get(windows, i);
-    if (strcmp(w->app, todo_app) == 0) {
+    if (strcmp(w->app, todo_app) == 0)
       continue;
-    }
     char *todo_app_app;
     asprintf(&todo_app_app, "%s.app", todo_app);
     usleep(1000 * 10);
@@ -104,12 +103,10 @@ int info_todo(){
 int configure_todo(){
   int orig_focused_pid = get_focused_pid();
 
-  if (ctx.app) {
+  if (ctx.app)
     assert(rectangle_set_todo_app(ctx.app) == true);
-  }
-  if (ctx.width > 0) {
+  if (ctx.width > 0)
     assert(rectangle_set_todo_width(ctx.width) == true);
-  }
   if ((ctx.width > 0) || ctx.app) {
     assert(rectangle_kill() == true);
     usleep(1000 * 50);
@@ -119,9 +116,8 @@ int configure_todo(){
     int    cur_focused_pid = get_focused_pid();
     if (ctx.todo_switch == false) {
       size_t dur_ms = ((size_t)timestamp()) - started_ms;
-      if (dur_ms < sleep_recheck_pid_ms) {
+      if (dur_ms < sleep_recheck_pid_ms)
         usleep(1000 * (sleep_recheck_pid_ms - dur_ms));
-      }
       set_focused_pid(orig_focused_pid);
       usleep(1000 * 50);
       cur_focused_pid = get_focused_pid();
@@ -132,9 +128,8 @@ int configure_todo(){
       }
     }
   }
-  if (ctx.resize_non_todo_windows == true) {
+  if (ctx.resize_non_todo_windows == true)
     resize_non_todo_windows();
-  }
   return(EXIT_SUCCESS);
 }
 
@@ -143,13 +138,13 @@ int main(const int argc, const char **argv) {
   usleep(1000 * 100);
   is_authorized_for_accessibility();
   usleep(1000 * 100);
-  if (strcmp(ctx.mode, "configure") == 0) {
+  if (strcmp(ctx.mode, "configure") == 0)
     return(configure_todo());
-  }else if (strcmp(ctx.mode, "info") == 0) {
+  else if (strcmp(ctx.mode, "info") == 0)
     return(info_todo());
-  }else if (strcmp(ctx.mode, "resize") == 0) {
+  else if (strcmp(ctx.mode, "resize") == 0)
     return(resize_non_todo_windows());
-  }
+
   return(1);
 }
 

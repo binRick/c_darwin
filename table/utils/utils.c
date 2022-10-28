@@ -26,6 +26,7 @@
 #include "frameworks/frameworks.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "kitty/kitty.h"
+#include "layout/utils/utils.h"
 #include "libfort/lib/fort.h"
 #include "monitor/utils/utils.h"
 #include "ms/ms.h"
@@ -42,7 +43,6 @@
 #include "usbdevs-utils/usbdevs-utils.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/info/info.h"
-#include "layout/utils/utils.h"
 ///////////////////////////////////////////////////////////////////////////////
 static size_t term_width = 80, cur_display_id, cur_space_id;
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive);
@@ -50,7 +50,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 #define VECTOR_ITEM(VECTOR,                                                                          TYPE,                                  INDEX)    (struct TYPE)vector_get(VECTOR, INDEX)
   [TABLE_TYPE_LAYOUT] = &(struct table_logic_t){
 #define type    layout_t
-    .query_items = get_layouts_v,.columns = { LAYOUT_COLUMNS },
+    .query_items = get_layouts_v,                                                                    .columns = { LAYOUT_COLUMNS },
     .row         = ^ void (
       ft_table_t *table,
       size_t __attribute__((unused)) index,
@@ -387,59 +387,51 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       ft_set_cell_prop(table,                                                                        row,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
       ft_set_cell_prop(table,                                                                        row,                                   2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
       ft_set_cell_prop(table,                                                                        row,                                   2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      if (w->rect.size.width < 2 || w->rect.size.height < 2) {
+      if (w->rect.size.width < 2 || w->rect.size.height < 2)
         ft_set_cell_prop(table,                                                                      row,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
-      }else if (w->rect.size.width == 0 && w->rect.size.height == 0) {
+      else if (w->rect.size.width == 0 && w->rect.size.height == 0)
         ft_set_cell_prop(table,                                                                      row,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
-      }else{
+      else
         ft_set_cell_prop(table,                                                                      row,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      }
       if ((int)w->rect.origin.x < 0 || (int)w->rect.origin.y < 0) {
         ft_set_cell_prop(table,                                                                      row,                                   4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
         ft_set_cell_prop(table,                                                                      row,                                   4,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      row,                                   4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
-      }
       if (w->space_id == cur_space_id) {
         ft_set_cell_prop(table,                                                                      row,                                   5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
         ft_set_cell_prop(table,                                                                      row,                                   5,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      row,                                   5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_RED);
-      }
       if (w->display_id == cur_display_id) {
         ft_set_cell_prop(table,                                                                      row,                                   6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
         ft_set_cell_prop(table,                                                                      row,                                   6,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      row,                                   6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
-      }
       if (w->is_minimized == true) {
         ft_set_cell_prop(table,                                                                      row,                                   7,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
         ft_set_cell_prop(table,                                                                      row,                                   7,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      row,                                   7,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      }
       if (w->can_minimize == true) {
         ft_set_cell_prop(table,                                                                      row,                                   8,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
         ft_set_cell_prop(table,                                                                      row,                                   8,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      row,                                   8,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      }
       if (w->is_fullscreen == true) {
         ft_set_cell_prop(table,                                                                      row,                                   9,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
         ft_set_cell_prop(table,                                                                      row,                                   9,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      row,                                   9,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      }
-      if (w->dur == 0) {
+      if (w->dur == 0)
         ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-      }else if (w->dur > 20) {
+      else if (w->dur > 20) {
         ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
         ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      }else if (w->dur > 10) {
+      }else if (w->dur > 10)
         ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      }else {
+      else
         ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_MAGENTA);
-      }
     },
     .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
@@ -448,70 +440,51 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 
       cur_display_id = get_current_display_id();
       cur_space_id   = get_current_space_id();
-      if (args->application_name && string_compare_skip_row(args->application_name,                  w->name,                               args->exact_match,                        args->case_sensitive)) {
+      if (args->application_name && string_compare_skip_row(args->application_name,                  w->name,                               args->exact_match,                        args->case_sensitive))
         skip_row = true;
-      }
       if (args->application_name) {
         char *name;
         asprintf(&name,                                                                              "%s.app",                              args->application_name);
         if (
           (strcmp(stringfn_to_lowercase(args->application_name),                                     stringfn_to_lowercase(w->name)) != 0)
           && (strcmp(stringfn_to_lowercase(name),                                                    stringfn_to_lowercase(w->name)) != 0)
-          ) {
+          )
           skip_row = true;
-        }
-        if (name) {
+        if (name)
           free(name);
-        }
       }
-      if (args->width >= 0 && (int)w->rect.size.width != args->width) {
+      if (args->width >= 0 && (int)w->rect.size.width != args->width)
         skip_row = true;
-      }
-      if (args->height >= 0 && (int)w->rect.size.height != args->height) {
+      if (args->height >= 0 && (int)w->rect.size.height != args->height)
         skip_row = true;
-      }
-      if (args->height_greater >= 0 && (int)w->rect.size.height <= args->height_greater) {
+      if (args->height_greater >= 0 && (int)w->rect.size.height <= args->height_greater)
         skip_row = true;
-      }
-      if (args->height_less >= 0 && (int)w->rect.size.height >= args->height_less) {
+      if (args->height_less >= 0 && (int)w->rect.size.height >= args->height_less)
         skip_row = true;
-      }
-      if (args->width_greater >= 0 && (int)w->rect.size.width <= args->width_greater) {
+      if (args->width_greater >= 0 && (int)w->rect.size.width <= args->width_greater)
         skip_row = true;
-      }
-      if (args->width_less >= 0 && (int)w->rect.size.width >= args->width_less) {
+      if (args->width_less >= 0 && (int)w->rect.size.width >= args->width_less)
         skip_row = true;
-      }
-      if (args->pid > 0 && w->pid != args->pid) {
+      if (args->pid > 0 && w->pid != args->pid)
         skip_row = true;
-      }
-      if (args->window_id > 0 && w->window_id != (size_t)args->window_id) {
+      if (args->window_id > 0 && w->window_id != (size_t)args->window_id)
         skip_row = true;
-      }
-      if ((args->display_id > -1) && (int32_t)(args->display_id) != (int32_t)get_display_id_index(w->display_id)) {
+      if ((args->display_id > -1) && (int32_t)(args->display_id) != (int32_t)get_display_id_index(w->display_id))
         skip_row = true;
-      }
-      if ((args->space_id > -1) && (w->space_id != (size_t)args->space_id)) {
+      if ((args->space_id > -1) && (w->space_id != (size_t)args->space_id))
         skip_row = true;
-      }
-      if (args->not_minimized_only == true && w->is_minimized == true) {
+      if (args->not_minimized_only == true && w->is_minimized == true)
         skip_row = true;
-      }
-      if (args->minimized_only == true && w->is_minimized == false) {
+      if (args->minimized_only == true && w->is_minimized == false)
         skip_row = true;
-      }
-      if (args->not_current_space_only == true && w->space_id == cur_space_id) {
+      if (args->not_current_space_only == true && w->space_id == cur_space_id)
         skip_row = true;
-      }
-      if (args->not_current_display_only == true && w->display_id == cur_display_id) {
+      if (args->not_current_display_only == true && w->display_id == cur_display_id)
         skip_row = true;
-      }
-      if (args->current_display_only == true && (size_t)(w->display_id) != (size_t)(cur_display_id)) {
+      if (args->current_display_only == true && (size_t)(w->display_id) != (size_t)(cur_display_id))
         skip_row = true;
-      }
-      if (args->current_space_only == true && w->space_id != cur_space_id) {
+      if (args->current_space_only == true && w->space_id != cur_space_id)
         skip_row = true;
-      }
       return(skip_row);
     }
   },
@@ -542,14 +515,12 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       if (space->is_current == true) {
         ft_set_cell_prop(table,                                                                      i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
         ft_set_cell_prop(table,                                                                      i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-      }else{
+      }else
         ft_set_cell_prop(table,                                                                      i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GRAY);
-      }
-      if (vector_size(space->window_ids_v) > 0) {
+      if (vector_size(space->window_ids_v) > 0)
         ft_set_cell_prop(table,                                                                      i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
-      }else{
+      else
         ft_set_cell_prop(table,                                                                      i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
-      }
     },
   },
   [TABLE_TYPE_DISPLAY] = &(struct table_logic_t){
@@ -662,9 +633,9 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
 static bool TABLE_UTILS_DEBUG_MODE = false;
 
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive){
-  if (!s0 || strlen(s0) < 1) {
+  if (!s0 || strlen(s0) < 1)
     return(false);
-  }
+
   bool skip_row = false;
   char *s[2];
   asprintf(&s[0], "%s%s%s", exact_match ? "" : "*", stringfn_trim(s0), exact_match ? "" : "*");
@@ -672,12 +643,10 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
   s[0]     = case_sensitive ? s[0] : stringfn_to_lowercase(s[0]);
   s[1]     = case_sensitive ? s[1] : stringfn_to_lowercase(s[1]);
   skip_row = (!wildcardcmp(s[0], s[1]));
-  if (s[0]) {
+  if (s[0])
     free(s[0]);
-  }
-  if (s[1]) {
+  if (s[1])
     free(s[1]);
-  }
   return(skip_row);
 }
 

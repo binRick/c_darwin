@@ -15,9 +15,8 @@ static void __attribute__((constructor)) __constructor__active_app_utils(void){
 void resize_current_window(int p1, int p2, int p3, int p4){
   int pid = get_focused_pid();
 
-  if (pid == -1) {
+  if (pid == -1)
     return;
-  }
 
   AXUIElementRef app = AXUIElementCreateApplication(pid);
   AXUIElementRef win;
@@ -37,9 +36,8 @@ void resize_current_window(int p1, int p2, int p3, int p4){
 struct screen_size get_window_size(){
   int pid = get_focused_pid();
 
-  if (pid == -1) {
+  if (pid == -1)
     return((struct screen_size){ 0, 0, 0, 0 });
-  }
 
   AXUIElementRef win;
 

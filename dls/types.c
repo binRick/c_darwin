@@ -1,18 +1,18 @@
-#include "dls/types.h"
 #include "dls/defines.c"
+#include "dls/types.h"
 struct normalized_argv_t {
   char          *mode, *executable;
   struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
 };
 struct args_t *args = &(struct args_t){
-  .limit                              = 10, .concurrency = 1,
-  .verbose_mode                       = false, .debug_mode = false, 
+  .limit        = 10, .concurrency = 1,
+  .verbose_mode = false, .debug_mode = false,
   //.progress_bar_mode = DEFAULT_PROGRESS_BAR_ENABLED,
-  .display_mode                       = false, .all_mode = false, .write_images_mode = false,
-  //.capture_mode[DEFAULT_CAPTURE_TYPE] = true, 
+  .display_mode = false, .all_mode = false, .write_images_mode = false,
+  //.capture_mode[DEFAULT_CAPTURE_TYPE] = true,
   //.output_mode = DEFAULT_OUTPUT_MODE,
-  .clear_screen                       = false,
-  .space_id                           = -1, .display_id = -1, .id = -1,
+  .clear_screen = false,
+  .space_id     = -1, .display_id = -1, .id = -1,
   //.capture_type                       = DEFAULT_CAPTURE_TYPE,
   .sort_key                           = NULL, .sort_direction = "asc",
   .current_space_only                 = false, .minimized_only = false,

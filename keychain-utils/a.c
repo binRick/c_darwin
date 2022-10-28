@@ -72,9 +72,8 @@ OSStatus CreateAccessWithUid(uid_t uid, SecAccessRef *ret_access) {
 OSStatus OpenKeychain(SecKeychainRef keychain) {
   OSStatus status = SecKeychainSetPreferenceDomain(kSecPreferencesDomainSystem);
 
-  if (status == noErr) {
+  if (status == noErr)
     status = SecKeychainCopyDomainDefault(kSecPreferencesDomainSystem, &keychain);
-  }
   return(status);
 }
 
@@ -89,11 +88,9 @@ OSStatus UpdateKeychainItem(SecKeychainRef keychain, const char *name, const cha
                                                              &pwd_len, &pwd,
                                                              &item);
 
-  if (status == noErr) {    // item is found, update the value
-    if ((len != pwd_len) || (bcmp(data, pwd, pwd_len) != 0)) {
+  if (status == noErr)      // item is found, update the value
+    if ((len != pwd_len) || (bcmp(data, pwd, pwd_len) != 0))
       status = SecKeychainItemModifyAttributesAndData(item, NULL, len, data);
-    }
-  }
 
   if (pwd != NULL) {
     SecKeychainItemFreeContent(NULL, pwd);
@@ -129,14 +126,12 @@ OSStatus SetKeychainItem(SecKeychainRef keychain, const char *name, const char *
         keychain,
         access,
         &item);
-      if (status == errSecDuplicateItem) {
+      if (status == errSecDuplicateItem)
         status = UpdateKeychainItem(keychain, name, key, data, len);
-      }
     }
 
-    if (access != NULL) {
+    if (access != NULL)
       CFRelease(access);
-    }
   }
 
   if (item != NULL) {
@@ -203,9 +198,8 @@ OSStatus RemoveKeychainItem(SecKeychainRef keychain, const char *name, const cha
                                                              NULL, NULL,
                                                              &item);
 
-  if (status == noErr) {
+  if (status == noErr)
     status = SecKeychainItemDelete(item);
-  }
 
   if (item != NULL) {
     CFRelease(item);

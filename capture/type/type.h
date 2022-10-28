@@ -45,7 +45,7 @@ struct capture_image_request_t {
   struct Vector          *ids;
   int                    concurrency;
   int                    width, height;
-  bool                   compress, progress_bar_mode, quantize_mode, db_save_mode;
+  bool                   compress, progress_bar_mode, quantize_mode, db_save_mode, grayscale_mode;
   enum capture_type_id_t type;
   enum image_type_id_t   format;
   struct capture_time_t  time;
@@ -66,7 +66,7 @@ struct capture_image_result_t {
   char                   *file, *thumbnail_file;
   unsigned char          *pixels;
   size_t                 width, height, len, id;
-  bool                   has_alpha, linear_colorspace, analyze;
+  bool                   has_alpha, linear_colorspace, analyze, grayscale_mode;
   struct capture_time_t  time;
   unsigned long          ts, delta_ms;
 };
@@ -105,7 +105,7 @@ struct compress_t {
   size_t                        id;
   struct capture_image_result_t *capture_result;
   unsigned long                 started, dur;
-  bool                          quantize_mode;
+  bool                          quantize_mode, grayscale_mode, compress_mode;
   cbar_t                        *bar;
 };
 struct cap_t {

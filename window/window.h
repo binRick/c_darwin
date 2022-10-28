@@ -2,10 +2,13 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 //////////////////////////////////////
-#define MODULE_FUNCTIONS(FXN)                       \
-  FXN(window, ids, get_window_ids, struct Vector *) \
-  FXN(window, qty, get_windows_qty, size_t)         \
-  FXN(window, names, get_window_names, struct Vector *)
+#define MODULE_FUNCTIONS(FXN)                           \
+  FXN(window, ids, get_window_ids, struct Vector *)     \
+  FXN(window, qty, get_windows_qty, size_t)             \
+  FXN(window, names, get_window_names, struct Vector *) \
+  FXN(window, props, get_window_props, struct Vector *) \
+//////////////////////////////////////
+
 #define MODULE_DEFINE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)       RETURN_TYPE (*SUFFIX)(void);
 #define MODULE_PROTOTYPE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)    RETURN_TYPE MODULE_NAME ## _module_ ## SUFFIX(module(MODULE_NAME) * exports);
 #define MODULE_EXPORT_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)       .SUFFIX = MODULE_NAME ## _module_ ## SUFFIX,

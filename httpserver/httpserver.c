@@ -71,9 +71,8 @@ static void __attribute__((constructor)) __constructor__httpserver(void){
     pid_t fork_server_pid = libforks_get_server_pid(conn);
 
     assert(fork_server_pid > 0);
-    if (HTTPSERVER_DEBUG_MODE) {
+    if (HTTPSERVER_DEBUG_MODE)
       log_info(AC_YELLOW "Webserver> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
-    }
   }
 }
 
@@ -161,9 +160,8 @@ static int _httpserver_main(libforks_ServerConn conn, int socket_fd) {
 static void handle_sigterm(int signum) {
   (void)signum;
   log_info("Webserver sigterm");
-  if (server) {
+  if (server)
     free(server);
-  }
   exit(EXIT_SUCCESS);
 }
 
@@ -196,9 +194,8 @@ int httpserver_main() {
 
   while (true) {
     int read_res = read(socket_fd, msg, 1024);
-    if (read_res == 0) {
+    if (read_res == 0)
       break;
-    }
     log_debug(AC_RED "<PID %d>"AC_RESETALL " " AC_GREEN "%s" AC_RESETALL,
               pid,
               (char *)msg

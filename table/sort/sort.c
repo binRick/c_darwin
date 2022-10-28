@@ -20,12 +20,11 @@
 static bool TABLE_SORT_DEBUG_MODE = false;
 static struct Vector *get_sort_type_by_names_v(enum sort_type_t type);
 enum sort_direction_t get_sort_key_direction(char *name){
-  for (size_t i = 0; i < SORT_DIRECTIONS_QTY; i++) {
+  for (size_t i = 0; i < SORT_DIRECTIONS_QTY; i++)
     if (strcmp(sort_direction_keys[i],
-               name) == 0) {
+               name) == 0)
       return(i);
-    }
-  }
+
   return(-1);
 }
 
@@ -44,9 +43,8 @@ char *get_sort_type_by_description(enum sort_type_t type){
     stringbuffer_append_string(sb, (char *)sort_by_type_colors[(i % QTY(sort_by_type_colors))]);
     stringbuffer_append_string(sb, (char *)vector_get(v, i));
     stringbuffer_append_string(sb, (char *)AC_RESETALL);
-    if (i < vector_size(v) - 1) {
+    if (i < vector_size(v) - 1)
       stringbuffer_append_string(sb, ", ");
-    }
   }
   s = stringbuffer_to_string(sb);
   stringbuffer_release(sb);
@@ -56,20 +54,17 @@ char *get_sort_type_by_description(enum sort_type_t type){
 static struct Vector *get_sort_type_by_names_v(enum sort_type_t type){
   struct Vector *v = vector_new();
 
-  for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++) {
-    if (sort_types[type]->handlers[i]) {
+  for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++)
+    if (sort_types[type]->handlers[i])
       vector_push(v, (void *)sort_by_type_names[i]);
-    }
-  }
   return(v);
 }
 
 bool is_valid_sort_type_name(enum sort_type_t type, const char *name){
-  for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++) {
-    if (sort_types[type]->enabled && sort_by_type_names[i] && strcmp(name, sort_by_type_names[i]) == 0) {
+  for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++)
+    if (sort_types[type]->enabled && sort_by_type_names[i] && strcmp(name, sort_by_type_names[i]) == 0)
       return(true);
-    }
-  }
+
   return(false);
 }
 
@@ -77,19 +72,15 @@ sort_function get_sort_type_function_from_key(enum sort_type_t type, const char 
   enum sort_direction_t direction_id = get_sort_key_direction(direction);
   bool                  valid        = is_valid_sort_type_name(type, name);
 
-  if (TABLE_SORT_DEBUG_MODE) {
+  if (TABLE_SORT_DEBUG_MODE)
     log_info("type id:%d, name:%s, direction id: %d, direction: %s, valid: %s", type, name, direction_id, direction, valid?"Yes":"No");
-  }
-  if ((int)direction_id >= 0 && valid) {
-    for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++) {
+  if ((int)direction_id >= 0 && valid)
+    for (size_t i = 0; i < SORT_BY_TYPES_QTY; i++)
       if (strcmp(name, sort_by_type_names[i]) == 0) {
-        if (TABLE_SORT_DEBUG_MODE) {
+        if (TABLE_SORT_DEBUG_MODE)
           log_info(" Sort Handler Match for %s", sort_by_type_names[i]);
-        }
         return(sort_types[type]->handlers[i]->functions[direction_id]);
       }
-    }
-  }
   log_error("SORT FUNCTION NOT FOUND> type id:%d, name:%s, direction id: %d, direction: %s", type, name, direction_id, direction);
   return(0);
 }

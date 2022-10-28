@@ -17,9 +17,8 @@ void _command_ema_test_float(void){
     newAvg = ma_moving_average_float(arrNumbers, &sum, pos, len, sample[i]);
     printf("The new average is %f\n", newAvg);
     pos++;
-    if (pos >= len) {
+    if (pos >= len)
       pos = 0;
-    }
   }
 
   exit(EXIT_SUCCESS);
@@ -40,9 +39,8 @@ void _command_ema_test_int(void){
     newAvg = ma_moving_average(arrNumbers, &sum, pos, len, sample[i]);
     printf("The new average is %d\n", newAvg);
     pos++;
-    if (pos >= len) {
+    if (pos >= len)
       pos = 0;
-    }
   }
 }
 
@@ -62,9 +60,8 @@ void _command_set_csv_end_date(){
     exit(EXIT_FAILURE);
   }
   timelib_update_ts(args->csv->end, NULL);
-  if (args->debug_mode) {
+  if (args->debug_mode)
     log_debug("end ts:%lld", args->csv->end->sse);
-  }
   return;
 }
 
@@ -76,25 +73,21 @@ void _command_set_csv_start_date(){
     exit(EXIT_FAILURE);
   }
   timelib_update_ts(args->csv->start, NULL);
-  if (args->debug_mode) {
+  if (args->debug_mode)
     log_debug("start ts:%lld", args->csv->start->sse);
-  }
   return;
 }
 
 void _command_load_csv_name_data(void){
-  if (args->debug_mode) {
+  if (args->debug_mode)
     log_debug("Loading CSV %s", args->csv->name);
-  }
   stringfn_release_strings_struct(args->csv->lines);
-  if (fsio_file_exists(args->csv->name)) {
+  if (fsio_file_exists(args->csv->name))
     args->csv->data = fsio_read_text_file(args->csv->name);
-  }else{
+  else
     args->csv->data = get_embedded_csv_name_data(args->csv->name);
-  }
-  if (args->csv->data) {
+  if (args->csv->data)
     args->csv->lines = stringfn_split_lines_and_trim(args->csv->data);
-  }
   if (args->csv->lines.count < 1) {
     log_error("CSV %s not valid", args->csv->name);
     exit(EXIT_FAILURE);
@@ -144,23 +137,20 @@ void _command_list(){
 void _command_parse_csv(){
   unsigned long time_spent_started = timestamp();
 
-  if (args->verbose_mode) {
+  if (args->verbose_mode)
     log_info("CSV %s> |Lines: %d|Size:%s|", args->csv->name, args->csv->lines.count, bytes_to_string(strlen(args->csv->data)));
-  }
   size_t        items_qty = 0;
   char          **items = NULL, **buf;
   unsigned long started = timestamp();
 
   for (int i = 1; i < args->csv->lines.count; i++) {
-    if (strlen(args->csv->lines.strings[i]) < MIN_CSV_LINE_LENGTH || strlen(args->csv->lines.strings[i]) > MAX_CSV_LINE_LENGTH) {
+    if (strlen(args->csv->lines.strings[i]) < MIN_CSV_LINE_LENGTH || strlen(args->csv->lines.strings[i]) > MAX_CSV_LINE_LENGTH)
       continue;
-    }
     items     = parse_csv(args->csv->lines.strings[i]);
     items_qty = 0;
     buf       = items;
-    while (*buf++) {
+    while (*buf++)
       items_qty++;
-    }
     assert(new_market_period(items, items_qty) == EXIT_SUCCESS);
   }
 
@@ -204,9 +194,8 @@ void _command_parse_csv(){
         prev_p->moving_averages[q]->qty     = market_period_duration_type_hours[q] / MARKET_PERIOD_LENGTH_HOURS;
         prev_p->moving_averages[q]->values  = calloc(prev_p->moving_averages[q]->qty, sizeof(float));
       }
-    }else{
+    }else
       prev_p = (struct market_period_t *)vector_get(market_stats->periods_v, i - 1);
-    }
     for (int q = 0; q < MARKET_PERIOD_DURATION_TYPES_QTY; q++) {
       hours                                   = market_period_duration_type_hours[q];
       periods                                 = (size_t)(hours / MARKET_PERIOD_LENGTH_HOURS);
@@ -233,8 +222,8 @@ void _command_parse_csv(){
     }else{
     }
     next_p = (i < vector_size(market_stats->periods_v) - 1) ? (struct market_period_t *)vector_get(market_stats->periods_v, i + 1) : NULL;
-    if (args->verbose_mode) {
-      for (int q = 0; q < MARKET_PERIOD_DURATION_TYPES_QTY; q++) {
+    if (args->verbose_mode)
+      for (int q = 0; q < MARKET_PERIOD_DURATION_TYPES_QTY; q++)
         fprintf(stderr,
                 "Market Period                      :      #%lu/%lu"
                 "\n\tPeriod type                    :      %s"
@@ -255,8 +244,6 @@ void _command_parse_csv(){
                 p->moving_averages[q]->average,
                 "\n"
                 );
-      }
-    }
   }
   fprintf(stderr,
           "Performed " AC_RED "%lu" AC_RESETALL " EMA Calculations for Average Close Price"
@@ -285,12 +272,11 @@ void _command_parse_csv(){
           milliseconds_to_string(market_stats->time_spent.total),
           ""
           );
-  if (args->debug_mode) {
+  if (args->debug_mode)
     for (size_t i = 0; i < vector_size(market_stats->periods_v); i++) {
       p = (struct market_period_t *)vector_get(market_stats->periods_v, i);
       print_market_period(p);
     }
-  }
   exit(EXIT_SUCCESS);
 } /* _command_parse_csv */
 

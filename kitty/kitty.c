@@ -250,12 +250,10 @@ struct kitty_process_communication_result_t *kitty_process_communication(struct 
   struct Vector *v = vector_new();
 
   vector_push(v, r->kitty_exec_path);
-  for (size_t i = 0; i < vector_size(CMD_VECTOR); i++) {
+  for (size_t i = 0; i < vector_size(CMD_VECTOR); i++)
     vector_push(v, (char *)vector_get(CMD_VECTOR, i));
-  }
-  for (size_t i = 0; i < vector_size(v); i++) {
+  for (size_t i = 0; i < vector_size(v); i++)
     fprintf(stderr, "cmd #%lu: %s\n", i, (char *)vector_get(v, i));
-  }
   char **cmd_arr = vector_to_array(v);
 
   r->subprocess_result = -1;
@@ -318,17 +316,14 @@ struct Vector *kitty_get_color_types(const char *HOST, const int PORT){
 
   for (size_t i = 0; i < (size_t)Lines.count; i++) {
     LineWords = stringfn_split_words(Lines.strings[i]);
-    if (LineWords.count != 2 || strlen(LineWords.strings[0]) < 1) {
+    if (LineWords.count != 2 || strlen(LineWords.strings[0]) < 1)
       continue;
-    }
     vector_push(color_types, strdup(LineWords.strings[0]));
   }
-  if (LineWords.count > 0) {
+  if (LineWords.count > 0)
     stringfn_release_strings_struct(LineWords);
-  }
-  if (Lines.count > 0) {
+  if (Lines.count > 0)
     stringfn_release_strings_struct(Lines);
-  }
   return(color_types);
 }
 
@@ -340,20 +335,17 @@ char *kitty_get_color(const char *COLOR_TYPE, const char *HOST, const int PORT){
 
   for (size_t i = 0; i < (size_t)Lines.count; i++) {
     LineWords = stringfn_split_words(Lines.strings[i]);
-    if (LineWords.count != 2) {
+    if (LineWords.count != 2)
       continue;
-    }
     if (strcmp(COLOR_TYPE, LineWords.strings[0]) == 0) {
       COLOR = strdup(LineWords.strings[1]);
       break;
     }
   }
-  if (LineWords.count > 0) {
+  if (LineWords.count > 0)
     stringfn_release_strings_struct(LineWords);
-  }
-  if (Lines.count > 0) {
+  if (Lines.count > 0)
     stringfn_release_strings_struct(Lines);
-  }
   return(COLOR);
 }
 
@@ -385,19 +377,17 @@ char *kitty_tcp_cmd(const char *HOST, const int PORT, const char *KITTY_MSG){
     char *buf = calloc(KITTY_TCP_BUFFER_SIZE + 1, 1);
     recvd = 0;
     recvd = recv(res.fd, buf, KITTY_TCP_BUFFER_SIZE, 0);
-    if (recvd < 1) {
+    if (recvd < 1)
       break;
-    }
     buf[recvd] = '\0';
     stringbuffer_append_string(SB, buf);
     free(buf);
-    if ((int)(buf[strlen(buf) - 1]) == 92) {
+    if ((int)(buf[strlen(buf) - 1]) == 92)
       if ((int)(buf[strlen(buf) - 2]) == 27) {
         recvd = -1;
         close(res.fd);
         break;
       }
-    }
   }while (recvd > 0);
   close(res.fd);
   char *KITTY_RESPONSE = calloc(stringbuffer_get_content_size(SB) + 1, 1);
@@ -425,19 +415,17 @@ void kitty_command(const char *HOST, const int PORT, const char *KITTY_MSG){
     char *buf = calloc(KITTY_TCP_BUFFER_SIZE + 1, 1);
     recvd = 0;
     recvd = recv(res.fd, buf, KITTY_TCP_BUFFER_SIZE, 0);
-    if (recvd < 1) {
+    if (recvd < 1)
       break;
-    }
     buf[recvd] = '\0';
     stringbuffer_append_string(SB, buf);
     free(buf);
-    if ((int)(buf[strlen(buf) - 1]) == 92) {
+    if ((int)(buf[strlen(buf) - 1]) == 92)
       if ((int)(buf[strlen(buf) - 2]) == 27) {
         recvd = -1;
         close(res.fd);
         break;
       }
-    }
   }while (recvd > 0);
   close(res.fd);
   char *Nb = calloc(stringbuffer_get_content_size(SB) + 1, 1);
@@ -510,15 +498,13 @@ struct Vector *get_kitty_listen_ons(){
 
   for (size_t i = 0; i < vector_size(kitty_pids_v); i++) {
     kitty_process_t *KP = get_kitty_process_t((size_t)vector_get(kitty_pids_v, i));
-    if (KP->listen_on == NULL || strcmp(KP->listen_on, " ") == 0 || strcmp(KP->listen_on, "") == 0) {
+    if (KP->listen_on == NULL || strcmp(KP->listen_on, " ") == 0 || strcmp(KP->listen_on, "") == 0)
       continue;
-    }
-    if (strlen(KP->listen_on) > 2) {
+    if (strlen(KP->listen_on) > 2)
       if (djbhash_find(&kitty_listen_ons_h, KP->listen_on) == NULL) {
         djbhash_set(&kitty_listen_ons_h, KP->listen_on, &KP->listen_on, DJBHASH_STRING);
         vector_push(kitty_listen_ons, KP->listen_on);
       }
-    }
   }
   djbhash_destroy(&kitty_listen_ons_h);
   return(kitty_listen_ons);
@@ -533,20 +519,18 @@ int get_kitty_pid_windowid(int PID){
     for (size_t ii = 0; ii < vector_size(PE); ii++) {
       process_env_t *E = (process_env_t *)(vector_get(PE, ii));
       //printf("pid:%d, %s=>%s\n",pid,E->key,E->val);
-      if (strcmp(E->key, "WINDOWID") == 0 && atoi(E->val) > 0) {
+      if (strcmp(E->key, "WINDOWID") == 0 && atoi(E->val) > 0)
         return(atoi(E->val));
-      }
     }
   }
   return(-1);
 }
 
 static bool vector_contains_pid(struct Vector *pids_v, int pid){
-  for (size_t i = 0; i < vector_size(pids_v); i++) {
-    if ((size_t)pid == (size_t)vector_get(pids_v, i)) {
+  for (size_t i = 0; i < vector_size(pids_v); i++)
+    if ((size_t)pid == (size_t)vector_get(pids_v, i))
       return(true);
-    }
-  }
+
   return(false);
 }
 
@@ -555,9 +539,8 @@ int get_pid_kitty_pid(int pid){
 
   for (size_t ii = 0; ii < vector_size(PE); ii++) {
     process_env_t *E = (process_env_t *)(vector_get(PE, ii));
-    if (strcmp(E->key, "KITTY_PID") == 0) {
+    if (strcmp(E->key, "KITTY_PID") == 0)
       return(atoi(E->val));
-    }
   }
   return(-1);
 }
@@ -578,14 +561,12 @@ struct Vector *get_kitty_pids(){
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     int pid = (int)(long long)vector_get(pids_v, i);
-    if (vector_contains_pid(kitty_pids_v, pid) == true) {
+    if (vector_contains_pid(kitty_pids_v, pid) == true)
       continue;
-    }
     get_process_cmdline(pid);
     int kp = get_pid_kitty_pid(pid);
-    if (kp > 1 && (vector_contains_pid(kitty_pids_v, kp) == false)) {
+    if (kp > 1 && (vector_contains_pid(kitty_pids_v, kp) == false))
       vector_push(kitty_pids_v, (void *)(size_t)kp);
-    }
   }
   return(kitty_pids_v);
 }
@@ -596,18 +577,17 @@ static bool kitty_pid_is_kitty_process(int pid){
   struct Vector *e;
 
   e = get_process_env(pid);
-  if (!e) {
+  if (!e)
     return(false);
-  }
+
   for (size_t ii = 0; ii < vector_size(e); ii++) {
     process_env_t *E = (process_env_t *)(vector_get(e, ii));
     if (strcmp(E->key, "KITTY_INSTALLATION_DIR") == 0
         || (strcmp(E->key, "KITTY_LISTEN_ON") == 0)
         || (strcmp(E->key, "KITTY_PID") == 0)
         || (strcmp(E->key, "KITTY_WINDOW_ID") == 0)
-        ) {
+        )
       return(true);
-    }
   }
   return(false);
 }
@@ -624,23 +604,18 @@ kitty_process_t *get_kitty_process_t(const size_t PID){
   KP->install_dir = NULL;
   for (size_t ii = 0; ii < vector_size(PE); ii++) {
     process_env_t *E = (process_env_t *)(vector_get(PE, ii));
-    if (DEBUG_GET_KITTY_PROCESS_T) {
+    if (DEBUG_GET_KITTY_PROCESS_T)
       fprintf(stderr,
               AC_YELLOW "#%lu> %s->%s\n" AC_RESETALL,
               ii, E->key, E->val);
-    }
-    if (strcmp(E->key, "KITTY_INSTALLATION_DIR") == 0) {
+    if (strcmp(E->key, "KITTY_INSTALLATION_DIR") == 0)
       KP->install_dir = strdup(E->val);
-    }
-    if (strcmp(E->key, "KITTY_LISTEN_ON") == 0) {
+    if (strcmp(E->key, "KITTY_LISTEN_ON") == 0)
       KP->listen_on = strdup(E->val);
-    }
-    if (strcmp(E->key, "KITTY_PID") == 0) {
+    if (strcmp(E->key, "KITTY_PID") == 0)
       KP->pid = atoi(E->val);
-    }
-    if (strcmp(E->key, "KITTY_WINDOW_ID") == 0) {
+    if (strcmp(E->key, "KITTY_WINDOW_ID") == 0)
       KP->window_id = atoi(E->val);
-    }
     free(E->key);
     free(E->val);
   }

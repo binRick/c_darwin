@@ -13,7 +13,6 @@
 #include "dls/dls-aliases.h"
 #include "dls/dls-commands.h"
 #include "image/utils/utils.h"
-#include "bestline/bestline.h"
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -37,7 +36,6 @@
 #include "monitor/utils/utils.h"
 #include "optparse99/optparse99.h"
 
-
 #include "output-utils/output-utils.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
@@ -45,6 +43,5 @@
 #include "table/utils/utils.h"
 #include "usbdevs-utils/usbdevs-utils.h"
 #include "window/utils/utils.h"
-
 
 #endif

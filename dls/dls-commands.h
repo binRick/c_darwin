@@ -1,23 +1,27 @@
 #pragma once
 #ifndef LS_WIN_COMMANDS_H
 #define LS_WIN_COMMANDS_H
+#include "dls/commands.h"
 #include "dls/dls.h"
 #include "dls/gpp-dls-commands.h"
 const char *dls_command_names[];
 ////////////////////////////////////////////
-#define ICON_APP                      "💈"
+#define ICON_APP                      "🍍"
+#define ICON_FILE                     "👽"
+#define ICON_FILE_READER              "💽"
 #define ICON_LIST                     "💈"
+#define ICON_HASH                     "🐝"
 #define ICON_SHOW                     "🐝"
-#define ICON_TEST                     "🔔"
 #define ICON_RENDER                   "🍺"
 #define ICON_APPLY                    "🧢"
 #define ICON_LAYOUT                   "💥"
+#define ICON_PROMPT                   "💥"
 #define ICON_NAME                     "🏁"
 #define ICON_INIT                     "🎭"
 #define ICON_LOAD                     "🎯"
 #define ICON_TABLE                    "🎢"
 #define ICON_ICON                     "🍿"
-#define ICON_WINDOW                   "🎈"
+#define ICON_WINDOW                   "🏠"
 #define ICON_MOVE                     "🍭"
 #define ICON_STICKY                   "🍔"
 #define ICON_UNSTICKY                 "🍕"
@@ -29,7 +33,7 @@ const char *dls_command_names[];
 #define ICON_DB                       "🌵"
 #define ICON_CAPTURE                  "🌮"
 #define ICON_SPACE                    "🌙"
-#define ICON_DISPLAY                  "🌟"
+#define ICON_DISPLAY                  "🖥"
 #define ICON_EXTRACT                  "🌞"
 #define ICON_QTY                      "🔋"
 #define ICON_COPY                     "📝"
@@ -40,7 +44,6 @@ const char *dls_command_names[];
 #define ICON_NOT_ALL                  "🐧"
 #define ICON_MINIMIZE                 "🐧"
 #define ICON_UNMINIMIZE               "🐧"
-#define ICON_ANIMATE                  "🐧"
 #define ICON_WRITE                    "🐧"
 #define ICON_XXXXXXX                  "🐧"
 #define ICON_SECURITY                 "🐧"
@@ -61,6 +64,7 @@ const char *dls_command_names[];
 #define COLOR_XXXXXXX                 "\x1b[38;2;151;252;50m"
 #define COLOR_SECURITY                "\x1b[38;2;151;252;50m"
 #define COLOR_HTTP                    "\x1b[38;2;151;252;50m"
+#define COLOR_FILE                    "\x1b[38;2;151;252;252m"
 #define COLOR_MENU                    "\x1b[38;2;151;252;50m"
 #define COLOR_DOCK                    "\x1b[38;2;151;252;50m"
 #define COLOR_IMAGE                   "\x1b[38;2;151;252;50m"
@@ -68,8 +72,8 @@ const char *dls_command_names[];
 #define COLOR_XML                     "\x1b[38;2;151;252;50m"
 #define COLOR_CLEAR                   "\x1b[38;2;151;252;50m"
 #define COLOR_PATH                    "\x1b[38;2;151;252;50m"
-#define COLOR_ANIMATE                 "\x1b[38;2;151;252;50m"
 #define COLOR_FOCUS                   "\x1b[38;2;151;252;50m"
+#define COLOR_EXTRACT                 "\x1b[38;2;151;252;50m"
 #define COLOR_COPY                    "\x1b[38;2;151;252;50m"
 #define COLOR_PASTE                   "\x1b[38;2;162;194;208m"
 #define COLOR_ID                      "\x1b[38;2;162;194;208m"
@@ -77,17 +81,18 @@ const char *dls_command_names[];
 #define COLOR_CAPTURE                 "\x1b[38;2;162;194;208m"
 #define COLOR_INIT                    "\x1b[38;2;162;194;208m"
 #define COLOR_NAME                    "\x1b[38;2;162;194;208m"
+#define COLOR_PROP                    "\x1b[38;2;162;194;208m"
 #define COLOR_LOAD                    "\x1b[38;2;0;255;34m"
 #define COLOR_TABLE                   "\x1b[38;2;126;94;82m"
 #define COLOR_ROW                     "\x1b[38;2;80;100;127m"
 #define COLOR_SERVER                  "\x1b[38;2;12;255;12m"
 #define COLOR_LIST                    "\x1b[38;2;50;175;252m"
-#define COLOR_TEST                    "\x1b[38;2;243;233;217m"
 #define COLOR_SHOW                    "\x1b[38;2;25;25;112m"
 #define COLOR_SAVE                    "\x1b[38;2;25;25;112m"
 #define COLOR_PNG                     "\x1b[38;2;25;25;112m"
 #define COLOR_APPLY                   "\x1b[38;2;153;0;102m"
 #define COLOR_LAYOUT                  "\x1b[38;2;211;221;228m"
+#define COLOR_PROMPT                  "\x1b[38;2;211;221;228m"
 #define COLOR_RENDER                  "\x1b[38;2;0;130;161m"
 #define COLOR_ICON                    "\x1b[38;2;0;251;255m"
 #define COLOR_DISPLAY                 "\x1b[38;2;0;251;255m"
@@ -101,6 +106,7 @@ const char *dls_command_names[];
 #define COLOR_SET                     "\x1b[38;2;252;163;252m"
 #define COLOR_HELP                    "\x1b[38;2;50;50;252m"
 #define COLOR_ICNS                    "\x1b[38;2;252;252;252m"
+#define COLOR_PROGRESS                "\x1b[38;2;252;252;252m"
 typedef struct optparse_opt (^common_option_b)(struct args_t *args);
 typedef char (^common_option_description)(void *sorts);
 enum common_option_group_t {
@@ -186,13 +192,20 @@ enum common_option_name_t {
   COMMON_OPTION_WINDOW_IDS,
   COMMON_OPTION_CAPTURE_WINDOW_MODE,
   COMMON_OPTION_CAPTURE_SPACE_MODE,
+  COMMON_OPTION_PROMPT_COMMANDS,
+  COMMON_OPTION_DISPLAY_SIZE_PERCENTAGE,
+  COMMON_OPTION_FULLSCREEN_MODE,
   COMMON_OPTION_CAPTURE_DISPLAY_MODE,
   COMMON_OPTION_PURGE_WRITE_DIRECTORY_BEFORE_WRITE,
   COMMON_OPTION_HELP_SUBCMD,
   COMMON_OPTION_ID,
+  COMMON_OPTION_LAYOUT_SIZE,
+  COMMON_OPTION_LAYOUT_QTY,
   COMMON_OPTION_DB_SAVE,
   COMMON_OPTION_IMAGE_FORMATS,
   COMMON_OPTION_CLEAR_SCREEN,
+  COMMON_OPTION_QUIET_MODE,
+  COMMON_OPTION_GLOBS,
   COMMON_OPTION_HIDE_COLUMNS,
   COMMON_OPTION_SHOW_COLUMNS,
   COMMON_OPTION_COMPRESS,
@@ -205,6 +218,9 @@ enum common_option_name_t {
   COMMON_OPTION_CONCURRENCY,
   COMMON_OPTION_LIMIT,
   COMMON_OPTION_ICON_LIST,
+  COMMON_OPTION_LIST_TESTS_MODE,
+  COMMON_OPTION_ABORT_TESTS_MODE,
+  COMMON_OPTION_LIST_SUITES_MODE,
   COMMON_OPTION_ALL_MODE,
   COMMON_OPTION_WINDOW_HEIGHT,
   COMMON_OPTION_WINDOW_WIDTH_GROUP,
@@ -234,6 +250,8 @@ enum common_option_name_t {
   COMMON_OPTION_NOT_DUPLICATE,
   COMMON_OPTION_RETRIES,
   COMMON_OPTION_INPUT_FILE,
+  COMMON_OPTION_INDEX,
+  COMMON_OPTION_SEARCH_WORDS,
   COMMON_OPTION_OUTPUT_ICNS_FILE,
   COMMON_OPTION_INPUT_ICNS_FILE,
   COMMON_OPTION_OUTPUT_PNG_FILE,
@@ -284,6 +302,7 @@ enum command_type_t {
   COMMAND_WINDOW_NOT_ALL_SPACES,
   COMMAND_WINDOW,
   COMMAND_CAPTURE_WINDOW,
+  COMMAND_CAPTURE_DEV,
   COMMAND_CAPTURE_SPACE,
   COMMAND_CAPTURE_DISPLAY,
   COMMAND_LIST,
@@ -301,7 +320,7 @@ enum command_type_t {
   COMMAND_SET_SPACE_INDEX,
   COMMAND_WINDOWS,
   COMMAND_SPACES,
-  COMMAND_DISPLAYS,
+  COMMAND_DISPLAY,
   COMMAND_FOCUSED_SERVER,
   COMMAND_FOCUSED_CLIENT,
   COMMAND_HTTPSERVER,
@@ -316,6 +335,7 @@ enum command_type_t {
   COMMAND_FONTS,
   COMMAND_ICON_LIST,
   COMMAND_CLIPBOARD,
+  COMMAND_DISPLAY_LIST,
   COMMAND_KITTYS,
   COMMAND_ALACRITTYS,
   COMMAND_CAPTURE,
@@ -326,8 +346,10 @@ enum command_type_t {
   COMMAND_ANIMATE_DISPLAY,
   COMMAND_EXTRACT,
   COMMAND_EXTRACT_WINDOW,
+  COMMAND_EXTRACT_IMAGE,
   COMMAND_EXTRACT_SPACE,
   COMMAND_EXTRACT_DISPLAY,
+  COMMAND_EXTRACT_DEV,
   COMMAND_SAVE_APP_ICON_PNG,
   COMMAND_SET_APP_ICON_PNG,
   COMMAND_SAVE_APP_ICON_ICNS,
@@ -339,8 +361,31 @@ enum command_type_t {
   COMMAND_APP_ICNS_PATH,
   COMMAND_CLEAR_ICONS_CACHE,
   COMMAND_MINIMIZE_WINDOW,
+  COMMAND_PROMPT,
+  COMMAND_PROMPT_BESTLINE,
   COMMAND_LAYOUT,
   COMMAND_LAYOUT_LIST,
+  COMMAND_TEST,
+  COMMAND_TEST_HASH,
+  COMMAND_TEST_CLIPBOARD,
+  COMMAND_TEST_CAP,
+  COMMAND_TEST_CAP_DISPLAY,
+  COMMAND_TEST_CAP_WINDOW,
+  COMMAND_TEST_STREAM,
+  COMMAND_TEST_STREAM_WINDOW,
+  COMMAND_TEST_STREAM_DISPLAY,
+  COMMAND_TEST_VECTOR,
+  COMMAND_TEST_SHAPE,
+  COMMAND_TEST_DROID,
+  COMMAND_TEST_FILE_READER,
+  COMMAND_TEST_FROG,
+  COMMAND_TEST_LAYOUT,
+  COMMAND_TEST_WINDOWS,
+  COMMAND_TEST_READER,
+  COMMAND_TEST_FIND_WINDOW,
+  COMMAND_TEST_LAYOUTS,
+  COMMAND_TEST_LAYOUT_VERTICAL,
+  COMMAND_TEST_LAYOUT_HORIZONTAL,
   COMMAND_LAYOUT_NAMES,
   COMMAND_LAYOUT_TEST,
   COMMAND_LAYOUT_APPLY,
@@ -348,6 +393,7 @@ enum command_type_t {
   COMMAND_LAYOUT_RENDER,
   COMMAND_DB,
   COMMAND_DB_INIT,
+  COMMAND_TEST_PICK,
   COMMAND_DB_INFO,
   COMMAND_DB_ROWS,
   COMMAND_DB_TABLES,
@@ -366,12 +412,15 @@ enum command_type_t {
   COMMAND_WINDOW_IDS,
   COMMAND_WINDOW_QTY,
   COMMAND_WINDOW_NAMES,
+  COMMAND_WINDOW_PROPS,
   COMMAND_IMAGE_CONVERSIONS,
   COMMAND_SECURITY,
   COMMAND_PASTE,
   COMMAND_COPY,
   COMMAND_WINDOW_PID_INFOS,
   COMMAND_WINDOW_ID_INFO,
+  COMMAND_TEST_CMD,
+  COMMAND_TEST_RUN,
   COMMAND_TYPES_QTY,
 };
 enum color_types_t {
@@ -398,10 +447,14 @@ struct check_cmd_t {
   void (*fxn)(void);
   int  arg_data_type;
 };
-struct cmd_t        cmds[COMMAND_TYPES_QTY + 1];
+struct cmd_t        cmds[MAX_SUBCOMMANDS];
 struct check_cmd_t  check_cmds[CHECK_COMMAND_TYPES_QTY + 1];
 struct item_color_t item_colors[COLOR_TYPES_QTY + 1];
 common_option_b     common_options_b[COMMON_OPTION_NAMES_QTY + 1];
 char *get_command_about(enum command_type_t COMMAND_ID);
 char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height);
+bool initialize_args(struct args_t *ARGS);
+void debug_dls_arguments();
+struct Vector *get_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id);
+struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit);
 #endif

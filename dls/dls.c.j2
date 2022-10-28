@@ -1,1 +1,8 @@
+// {{cmd_fxns|length}} Command Functions
+
+// - grep command: find ../. -maxdepth 2 -type f -name "*.h"
+{%for fxn in cmd_fxns-%}
+// - {{fxn}}
+// grep "{{fxn}}" ../*/*.h ../*/*/*.h
+{%endfor%}
 //  COOL

@@ -41,11 +41,11 @@ TEST t_pasteboard(void){
 
   char *pasteboard_content = read_clipboard();
 
-  if (pasteboard_content == NULL) {
+  if (pasteboard_content == NULL)
     fprintf(stdout,
             AC_RESETALL AC_RED "pasteboard read failed." AC_RESETALL "\n"
             );
-  }else{
+  else{
     size_t len = (pasteboard_content != NULL) ? strlen(pasteboard_content) : 0;
     fprintf(stdout,
             AC_RESETALL "pasteboard_content:" AC_RESETALL "\n"

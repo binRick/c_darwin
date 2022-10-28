@@ -2,6 +2,11 @@
 #include "core/core.h"
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100
+#define MIN_STREAM_WIDTH           100
+#define MAX_STREAM_WIDTH           3000
+#define MIN_STREAM_HEIGHT          100
+#define MAX_STREAM_HEIGHT          3000
+static bool DEBUG_STREAM_UPDATES = false;
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static char *get_axerror_name(AXError err);
 enum window_writer_id_t {
@@ -45,6 +50,437 @@ static bool iterate_window_ids(hash_t *map, window_iteration_cb cb);
 #include "capture/type/type.h"
 #include "capture/utils/utils.h"
 
+void bringWindoToForeground(CGWindowID wid){
+  AXUIElementRef window_ref = GetUIElement(wid);
+
+  if (!window_ref)
+    return;
+
+  ProcessSerialNumber psn;
+  CGSConnectionID     cid = CGSMainConnectionID(), ownerCid;
+
+  CGSGetWindowOwner(cid, wid, &ownerCid);
+  CGSGetConnectionPSN(ownerCid, &psn);
+  SLPSSetFrontProcessWithOptions(&psn, wid, kCPSUserGenerated);
+
+  uint8_t bytes1[0xf8] = {
+    [0x04] = 0xF8,
+    [0x08] = 0x01,
+    [0x3a] = 0x10
+  };
+
+  uint8_t bytes2[0xf8] = {
+    [0x04] = 0xF8,
+    [0x08] = 0x02,
+    [0x3a] = 0x10
+  };
+
+  memcpy(bytes1 + 0x3c, &wid, sizeof(uint32_t));
+  memset(bytes1 + 0x20, 0xFF, 0x10);
+  memcpy(bytes2 + 0x3c, &wid, sizeof(uint32_t));
+  memset(bytes2 + 0x20, 0xFF, 0x10);
+  SLPSPostEventRecordTo(&psn, bytes1);
+  SLPSPostEventRecordTo(&psn, bytes2);
+
+  AXUIElementPerformAction(window_ref, kAXRaiseAction);
+  CFRelease(window_ref);
+}
+
+bool isInside(int rad, CGPoint cirlce, CGPoint point){
+  if ((point.x - cirlce.x) * (point.x - cirlce.x) + (point.y - cirlce.y) * (point.y - cirlce.y) <= rad * rad)
+    return(true);
+  else
+    return(false);
+}
+
+CGImageRef __CaptureWindow(CGWindowID wid){
+  CGImageRef window_image     = NULL;
+  CFArrayRef window_image_arr = NULL;
+
+  window_image_arr = CGSHWCaptureWindowList(CGSMainConnectionID(), &wid, 1, kCGSCaptureIgnoreGlobalClipShape | kCGSWindowCaptureNominalResolution);
+  if (window_image_arr)
+    window_image = (CGImageRef)CFArrayGetValueAtIndex(window_image_arr, 0);
+  if (!window_image)
+    window_image = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, wid, kCGWindowImageNominalResolution | kCGWindowImageBoundsIgnoreFraming);
+  return(window_image);
+}
+
+#define STREAM_LOG_MS    100
+static volatile size_t stream_last_ts = 0;
+
+void wu_stream_window_id(int window_id){
+}
+
+void wu_stream_active_window(int width, int height){
+  width  = clamp(width, MIN_STREAM_WIDTH, MAX_STREAM_WIDTH);
+  height = clamp(height, MIN_STREAM_HEIGHT, MAX_STREAM_HEIGHT);
+  int      window_count;
+  uint32_t *window_list = front_process_window_list_for_active_space(&window_count);
+  if (!window_list) {
+    log_error("stream> %s: could not get windows of front process! abort..\n", __FUNCTION__);
+    return;
+  }
+  log_debug("windows: %d", window_count);
+  log_debug("window 0: %d", window_list[0]);
+
+  CGDisplayStreamRef sl_stream = SLSHWCaptureStreamCreateWithWindow(SLSMainConnectionID(), window_list[0], NULL, dispatch_get_main_queue(),
+                                                                    ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+    printf("capture stream> %s: Got frame: %llu\n", __FUNCTION__, time);
+  });
+
+  CFShow(sl_stream);
+
+  if (SLDisplayStreamStart(sl_stream) != kCGErrorSuccess) {
+    printf("error: failed to start SLSHW..stream\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
+struct rect_t {
+  uint16_t x, y, width, height;
+};
+CGDisplayStreamUpdateRef lastUpdate = NULL;
+
+int mf_mlion_peek_dirty_region(struct rect_t *invalid){
+  size_t       num_rects, i;
+  CGRect       dirtyRegion;
+
+  const CGRect *rects = CGDisplayStreamUpdateGetRects(lastUpdate, kCGDisplayStreamUpdateDirtyRects, &num_rects);
+
+  Dbg(num_rects, %u);
+  if (num_rects == 0)
+    return(0);
+
+  dirtyRegion = *rects;
+  for (i = 0; i < num_rects; i++)
+    dirtyRegion = CGRectUnion(dirtyRegion, *(rects + i));
+
+  invalid->x      = dirtyRegion.origin.x;
+  invalid->y      = dirtyRegion.origin.y;
+  invalid->height = dirtyRegion.size.height;
+  invalid->width  = dirtyRegion.size.width;
+
+  return(0);
+}
+
+const CGFloat bgc[] = {
+  0,
+  0,
+  0
+};
+
+const CGFloat tc[] = {
+  1,
+  1,
+  1
+};
+bool          ready = false;
+
+void wu_stream_active_display_cb(int width, int height, int display_id, wu_stream_cb cb){
+  width  = clamp(width, MIN_STREAM_WIDTH, MAX_STREAM_WIDTH);
+  height = clamp(height, MIN_STREAM_HEIGHT, MAX_STREAM_HEIGHT);
+  CGDisplayStreamRef display_stream = CGDisplayStreamCreateWithDispatchQueue(display_id > 0 ? display_id : CGMainDisplayID(), width, height, 'BGRA', NULL, dispatch_get_main_queue(), cb);
+  CFShow(display_stream);
+  if (CGDisplayStreamStart(display_stream) != kCGErrorSuccess) {
+    log_error("error: failed to start streaming");
+    exit(EXIT_FAILURE);
+  }
+}
+
+void wu_stream_active_display(int width, int height, int display_id){
+  wu_stream_cb cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+    switch (status) {
+    case kCGDisplayStreamFrameStatusFrameComplete:
+      // A new frame was generated.
+      break;
+    case kCGDisplayStreamFrameStatusFrameIdle:
+      fprintf(stderr, "%s: A new frame was not generated because the display did not change.\n", __func__);
+      return;
+
+    case kCGDisplayStreamFrameStatusFrameBlank:
+      fprintf(stderr, "%s: A new frame was not generated because the display has gone blank.\n", __func__);
+      return;
+
+    case kCGDisplayStreamFrameStatusStopped:
+      fprintf(stderr, "%s: The display stream has been stopped.\n", __func__);
+      return;
+
+    default:
+      fprintf(stderr, "%s: Unhandled display stream frame status.\n", __func__);
+      return;
+    }
+
+    unsigned long s      = timestamp();
+    bool          do_log = ((timestamp() - stream_last_ts) > STREAM_LOG_MS);
+    if (!do_log)
+      return;
+
+    stream_last_ts = timestamp();
+    if (status == kCGDisplayStreamFrameStatusFrameComplete && frame != NULL) {
+      log_info(">%s: "
+               AC_CYAN        "\n\tGot frame #%d @ %llu" AC_RESETALL
+               "%s",
+               __FUNCTION__, IOSurfaceGetSeed(frame), time,
+               ""
+               );
+
+      if (DEBUG_STREAM_UPDATES) {
+        printf("Display stream frame size: (%lu, %lu).\n", IOSurfaceGetWidth(frame), IOSurfaceGetHeight(frame));
+        printf("Display stream frame alloc size: %s.\n", bytes_to_string(IOSurfaceGetAllocSize(frame)));
+        printf("Display stream frame bytes per element: %lu.\n", IOSurfaceGetBytesPerElement(frame));
+        printf("Display stream frame bytes per row: %lu.\n", IOSurfaceGetBytesPerRow(frame));
+        printf("Display stream frame is BGRA format: %d.\n", IOSurfaceGetPixelFormat(frame) == 'BGRA' ? true : false);
+        printf("Display stream frame surface seed: %d.\n", IOSurfaceGetSeed(frame));
+      }
+      {
+        const CGRect  *updatedRects;
+        CGRect        dirtyRegion;
+        size_t        updatedRectsCount = 0, r = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame);
+        IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
+        unsigned char *buf = calloc(len, sizeof(unsigned char));
+        memcpy(buf, IOSurfaceGetBaseAddress(frame), IOSurfaceGetWidth(frame) * IOSurfaceGetHeight(frame) * 4);
+        updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
+        unsigned char *bufs[updatedRectsCount];
+        unsigned long stride = 0, offset_beg = 0, cpy_len = 0, start_x, end_x, start_y, end_y;
+        for (size_t i = 0; i < updatedRectsCount; i++) {
+          size_t qty = (int)updatedRects[i].size.width * (int)updatedRects[i].size.height;
+          if (qty > 0) {
+            dirtyRegion     = CGRectUnion(dirtyRegion, updatedRects[i]);
+            updated_pixels += qty;
+            bufs[r]         = calloc(qty, sizeof(unsigned char));
+            start_x         = updatedRects[i].origin.x;
+            start_y         = updatedRects[i].origin.y;
+            end_x           = start_x + updatedRects[i].size.width;
+            end_y           = start_y + updatedRects[i].size.height;
+            /*
+             * for(int h = 0; h < updatedRects[i].size.width; h++){
+             * offset_beg = (stride * (updatedRects[i].origin.y + i) + (updatedRects[i].origin.x * 4));
+             * cpy_len = updatedRects[i].size.width * 4;
+             * log_debug("%d/%d> Copying %lu starting from %lu",
+             *    h,(int)updatedRects[i].size.width,
+             *    cpy_len,
+             *    offset_beg
+             *    );
+             * }
+             */
+            log_info(
+              "#%lu> %lu pixels updated: %dx%d,"
+              "@%dx%d,"
+              "| %lux%lu -> %lux%lu"
+              "",
+              i,
+              qty,
+              (int)updatedRects[r].size.width, (int)updatedRects[r].size.height,
+              (int)updatedRects[r].origin.x, (int)updatedRects[r].origin.y,
+              start_x, start_y, end_x, end_y
+              );
+          }
+        }
+        if (buf) free(buf);
+        if (updated_pixels > 0) {
+          log_info("%lu Pixels to be updated", updated_pixels);
+          log_info(
+            "Dirty x:%d"
+            "\nDirty y:%d"
+            "\nDirty width:%d"
+            "\nDirty height:%d"
+            "",
+            (int)dirtyRegion.origin.x,
+            (int)dirtyRegion.origin.y,
+            (int)dirtyRegion.size.width,
+            (int)dirtyRegion.size.height
+            );
+        }
+        for (size_t i = 0; i < updatedRectsCount; i++) {
+//          if(bufs[i])free(bufs[i]);
+        }
+        IOSurfaceUnlock(frame, kIOSurfaceLockReadOnly, NULL);
+      }
+      if (!lastUpdate) {
+        CFRetain(ref);
+        lastUpdate = ref;
+      }else{
+        CGDisplayStreamUpdateRef tmpRef;
+        tmpRef     = lastUpdate;
+        lastUpdate = CGDisplayStreamUpdateCreateMergedUpdate(tmpRef, ref);
+        CFRelease(tmpRef);
+      }
+    }
+    if (ready) {
+      CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+      CGContextRef    *context   = CGBitmapContextCreate(
+        IOSurfaceGetBaseAddress(frame),
+        IOSurfaceGetWidth(frame),
+        IOSurfaceGetHeight(frame),
+        8,
+        IOSurfaceGetBytesPerRow(frame),
+        colorSpace,
+        kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+      CGColorSpaceRelease(colorSpace);
+      CGImageRef        newImageRef  = CGBitmapContextCreateImage(context);
+      CGDataProviderRef provider_ref = CGImageGetDataProvider(newImageRef);
+      CFDataRef         data_ref     = CGDataProviderCopyData(provider_ref);
+      size_t            len          = CFDataGetLength(data_ref);
+      unsigned char     *buf         = calloc(len, sizeof(unsigned char));
+      memcpy(buf, CFDataGetBytePtr(data_ref), len);
+      CFRelease(context);
+      CFRelease(data_ref);
+      char *f;
+      asprintf(&f, "/tmp/io/%lld.png", timestamp());
+
+      log_info("got pixels %s | "
+               "\n\tbpp:%lu"
+               "\n\tw:%lu,h:%lu"
+               "\n\talloc size:%s"
+               "\n\tlen:%s"
+               "\n\tfile:%s"
+               "%s",
+               milliseconds_to_string(timestamp() - s),
+               IOSurfaceGetBytesPerRow(frame),
+               IOSurfaceGetWidth(frame),
+               IOSurfaceGetHeight(frame),
+               bytes_to_string(IOSurfaceGetAllocSize(frame)),
+               bytes_to_string(len),
+               f,
+               ""
+               );
+      s = timestamp();
+      VipsImage *v = vips_image_new_from_memory(buf, len, IOSurfaceGetWidth(frame), IOSurfaceGetHeight(frame), 4, VIPS_FORMAT_UCHAR);
+      log_debug("\nLoaded %s PNG Pixels to %dx%d %s in %s",
+                bytes_to_string(len),
+                vips_image_get_width(v), vips_image_get_height(v),
+                bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(v)),
+                milliseconds_to_string(timestamp() - s)
+                );
+      unsigned char *buf1 = NULL;
+      size_t        vlen  = 0;
+      if (vips_pngsave_buffer(v, &buf1, &vlen, NULL))
+        log_error("Failed to save to buffer");
+      log_debug("Saved %s PNG Pixels to %s",
+                bytes_to_string(vlen), f
+                );
+    }
+  };
+
+  return(wu_stream_active_display_cb(width, height, display_id, cb));
+} /* wu_stream_main_display */
+
+uint32_t *front_process_window_list_for_active_space(int *count){
+  ProcessSerialNumber front_psn;
+  int                 front_cid;
+  int                 cid = SLSMainConnectionID();
+  uint64_t            sid = SLSGetActiveSpace(cid);
+
+  SLPSGetFrontProcess(&front_psn);
+  SLSGetConnectionIDForPSN(cid, &front_psn, &front_cid);
+  uint32_t    *window_list    = NULL;
+  uint64_t    set_tags        = 0;
+  uint64_t    clear_tags      = 0;
+  CFNumberRef space_id_ref    = CFNumberCreate(NULL, kCFNumberSInt32Type, &sid);
+  CFArrayRef  space_list_ref  = CFArrayCreate(NULL, (void *)&space_id_ref, 1, NULL);
+  CFArrayRef  window_list_ref = SLSCopyWindowsWithOptionsAndTags(cid, front_cid, space_list_ref, 0x2, &set_tags, &clear_tags);
+
+  if (!window_list_ref)
+    goto err;
+  *count = CFArrayGetCount(window_list_ref);
+  if (!*count)
+    goto out;
+  window_list = malloc(*count * sizeof(uint32_t));
+  for (int i = 0; i < *count; ++i) {
+    CFNumberRef id_ref = CFArrayGetValueAtIndex(window_list_ref, i);
+    CFNumberGetValue(id_ref, CFNumberGetType(id_ref), window_list + i);
+  }
+out:
+  CFRelease(window_list_ref);
+err:
+  CFRelease(space_list_ref);
+  CFRelease(space_id_ref);
+  return(window_list);
+} /* front_process_window_list_for_active_space */
+
+AXUIElementRef GetUIElement(CGWindowID win) {
+  pid_t      pid = 0;
+
+  CFArrayRef wlist = CFArrayCreate(NULL, (const void ** )&win, 1, NULL);
+  CFArrayRef info  = CGWindowListCreateDescriptionFromArray(wlist);
+
+  CFRelease(wlist);
+  if (info != NULL && CFArrayGetCount(info) > 0) {
+    CFDictionaryRef desc = (CFDictionaryRef)
+                           CFArrayGetValueAtIndex(info, 0);
+    CFNumberRef     data = (CFNumberRef)
+                           CFDictionaryGetValue(desc, kCGWindowOwnerPID);
+    if (data != NULL)
+      CFNumberGetValue(data, kCFNumberIntType, &pid);
+    CFRelease(info);
+  }
+  if (pid <= 0)
+    return(NULL);
+
+  AXUIElementRef application = AXUIElementCreateApplication(pid);
+
+  if (application == NULL)
+    return(NULL);
+
+  CFArrayRef windows = NULL;
+
+  AXUIElementCopyAttributeValues(application, kAXWindowsAttribute, 0, 1024, &windows);
+  AXUIElementRef result = NULL;
+
+  if (windows != NULL) {
+    CFIndex count = CFArrayGetCount(windows);
+    for (CFIndex i = 0; i < count; ++i) {
+      AXUIElementRef element = (AXUIElementRef)
+                               CFArrayGetValueAtIndex(windows, i);
+      CGWindowID     temp = 0;
+      _AXUIElementGetWindow(element, &temp);
+      if (temp == win) {
+        CFRetain(element);
+        result = element;
+        break;
+      }
+    }
+    CFRelease(windows);
+  }
+  CFRelease(application);
+  return(result);
+} /* GetUIElement */
+
+bool IsWindowValid(CGWindowID id) {
+  int        i = (int)id;
+  CFArrayRef window_id_array;
+  //= CFArrayCreate(NULL, (void*)i, 1, &kCFNumberIntType);
+//      CFArrayCreate(nullptr, reinterpret_cast<const void**>(&id), 1, nullptr);
+  CFArrayRef window_array = CGWindowListCreateDescriptionFromArray(window_id_array);
+  bool       valid        = window_array && CFArrayGetCount(window_array);
+
+  CFRelease(window_id_array);
+  CFRelease(window_array);
+  return(valid);
+}
+
+bool window_name_compare(char *s0, char *s1){
+  char                   *s[2];
+  struct StringFNStrings sp[2];
+
+  asprintf(&s[0], "%s", stringfn_to_lowercase(stringfn_trim(s0)));
+  asprintf(&s[1], "%s", stringfn_to_lowercase(stringfn_trim(s1)));
+  if (stringfn_split(s[0], '|').count == 0)
+    asprintf(&s[0], "%s|", s0);
+  if (stringfn_split(s[1], '|').count == 0)
+    asprintf(&s[1], "%s|", s1);
+  sp[0] = stringfn_split(s[0], '|');
+  sp[1] = stringfn_split(s[1], '|');
+  for (int i = 0; i < sp[0].count; i++)
+    for (int q = 0; q < sp[1].count; q++)
+      log_info("%s|%s",
+               sp[0].strings[i],
+               sp[1].strings[q]
+               );
+  //asprintf(&s[0],"%s.app",s[0]);
+  return(false);
+}
+
 static char *window_boolean_formatter(void *b){
   return(((bool)b) ? "Yes" : "No");
 }
@@ -67,281 +503,273 @@ static char *window_boolean_formatter(void *b){
 #define WINDOW_WRITER_BOOLEAN_FORMATTER \
   .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){ return(window_boolean_formatter(prop)); }
 static const struct window_writer_t window_writers[] = {
-  [WINDOW_WRITER_PID] =                { .enabled   = true,                         .required  = true, .fmt = "%lu", .key         = "pid",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           pid_t pid                       = 0;
-                                           pid    = CFDictionaryGetInt(i->window, kCGWindowOwnerPID);
-                                           i->pid = pid;
-                                           hash_set(i->map, "pid", (void *)(size_t)pid);
-                                           return(VALIDATE_WRITER_KEY(PID, pid_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_APPS] =               { .enabled = true, .required  = true, .fmt = "%lu", .key         = "apps",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           if (!hash_has(i->map, "apps")) {
-                                             int qty                      = -1;
-                                             CFArrayRef ref;
-                                             ref = SLSCopyManagedDisplaySpaces(g_connection);
-                                             qty = CFArrayGetCount(ref);
-                                             CFRelease(ref);
-                                             hash_set(i->map, "apps", (void *)qty);
-                                           }
-                                           return(VALIDATE_WRITER_KEY(APPS, size_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_SPACES] =             { .enabled = false,                                              .required = true, .fmt = "%lu", .key         = "spaces",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           if (!hash_has(i->map, "spaces")) {
-                                             hash_t *spaces             = hash_new();
-                                             for (int x                 = 0; x < (size_t)hash_get(i->map,                     "displays_qty"); ++x) {
-                                               CFDictionaryRef d     = CFArrayGetValueAtIndex((CFArrayRef)hash_get(i->map, "displays"), x);
-                                               CFArrayRef spaces_ref = CFDictionaryGetValue(d,                             CFSTR("Spaces"));
-                                               int spaces_qty        = CFArrayGetCount(spaces_ref); \
-                                               char *n;
-                                               asprintf(&(n), "%d", x);
-                                               hash_set(spaces, n, (void *)spaces_ref);
-                                             }
+  [WINDOW_WRITER_PID] =          { .enabled   = true,                         .required  = true, .fmt = "%lu", .key         = "pid",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     pid_t pid                 = 0;
+                                     pid    = CFDictionaryGetInt(i->window, kCGWindowOwnerPID);
+                                     i->pid = pid;
+                                     hash_set(i->map, "pid", (void *)(size_t)pid);
+                                     return(VALIDATE_WRITER_KEY(PID, pid_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_APPS] =         { .enabled = true, .required  = true, .fmt = "%lu", .key         = "apps",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     if (!hash_has(i->map, "apps")) {
+                                       int qty                = -1;
+                                       CFArrayRef ref;
+                                       ref = SLSCopyManagedDisplaySpaces(g_connection);
+                                       qty = CFArrayGetCount(ref);
+                                       CFRelease(ref);
+                                       hash_set(i->map, "apps", (void *)qty);
+                                     }
+                                     return(VALIDATE_WRITER_KEY(APPS, size_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_SPACES] =       { .enabled = false,                                              .required = true, .fmt = "%lu", .key         = "spaces",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     if (!hash_has(i->map, "spaces")) {
+                                       hash_t *spaces          = hash_new();
+                                       for (int x              = 0; x < (size_t)hash_get(i->map,                     "displays_qty"); ++x) {
+                                         CFDictionaryRef d     = CFArrayGetValueAtIndex((CFArrayRef)hash_get(i->map, "displays"), x);
+                                         CFArrayRef spaces_ref = CFDictionaryGetValue(d,                             CFSTR("Spaces"));
+                                         int spaces_qty        = CFArrayGetCount(spaces_ref); \
+                                         char *n;
+                                         asprintf(&(n), "%d", x);
+                                         hash_set(spaces, n, (void *)spaces_ref);
+                                       }
 
-                                             hash_set(i->map, "spaces", (void *)spaces);
-                                             hash_set(i->map, "spaces_qty", (void *)hash_size(spaces));
-                                             hash_set(i->copied, "spaces", (void *)spaces);
-                                             hash_set(i->copied, "spaces_qty", (void *)hash_size(spaces));
-                                           }else   {
-                                             log_debug("not getting spaces");
-                                           }
-                                           return(VALIDATE_WRITER_KEY(SPACES, size_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_DISPLAYS] =           { .enabled = true, .required  = true, .fmt = "%d", .key          = "displays_qty",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           if (!hash_has(i->map, "displays")) {
-                                             CFArrayRef ref = SLSCopyManagedDisplaySpaces(g_connection);
-                                             int qty        = CFArrayGetCount(ref);
-                                             hash_set(i->map, "displays", (void *)qty);
-                                             hash_set(i->copied, "displays_qty", (void *)qty);
-                                             hash_set(i->map, "displays_qty", (void *)qty);
-                                             hash_set(i->copied, "displays", (void *)ref);
-                                           }
-                                           return(VALIDATE_WRITER_KEY(DISPLAYS, size_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_WINDOW_ID] =          { .enabled   = true,                              .required  = true, .fmt = "%d", .key          = "window_id",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           int id                    = (int)CFDictionaryGetInt(i->window, kCGWindowNumber);
-                                           hash_set(i->map, "window_id", (void *)id);
-                                           return(VALIDATE_WRITER_KEY(WINDOW_ID, int, > 0));
-                                         }, },
-  [WINDOW_WRITER_PSN] =                { .enabled   = true, .required  = true, .fmt = "%lu", .key         = "psn",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           GetProcessForPID(i->pid, &(i->psn));
-                                           hash_set(i->map, "psn", (void *)&(i->psn.lowLongOfPSN));
-                                           return(VALIDATE_WRITER_KEY(PSN, size_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_CONNECTION] =         { .enabled = true, .required  = true, .fmt = "%lu", .key         = "connection",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           int conn                 = 0;
-                                           SLSGetConnectionIDForPSN(g_connection, &(i->psn), &conn);
-                                           hash_set(i->map, "connection", (void *)conn);
-                                           return(VALIDATE_WRITER_KEY(CONNECTION, int, > 0));
-                                         }, },
-  [WINDOW_WRITER_DISPLAY_ID] =         { .enabled = true,                                                 .required  = true, .fmt = "%d", .key          = "display_id",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           int id            = 0;
-                                           CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), i->id);
-                                           CFUUIDRef uuid    = CFUUIDCreateFromString(NULL,                          _uuid);
-                                           CFRelease(_uuid);
-                                           id                       = CGDisplayGetDisplayIDFromUUID(uuid);
-                                           CFRelease(uuid);
-                                           hash_set(i->map, "display_id", (void *)id);
-                                           return(VALIDATE_WRITER_KEY(CONNECTION, int, > 0));
-                                         }, },
-  [WINDOW_WRITER_APP] =                { .enabled   = true, .required  = true, .fmt = NULL, .key          = "app",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           i->app                          = AXUIElementCreateApplication(i->pid);
-                                           hash_set(i->map, "app", (void *)(&(i->app)));
-                                           return(VALIDATE_WRITER_KEY_EXISTS(APP));
-                                         }, },
-  [WINDOW_WRITER_HIDDEN] =             { .enabled           = true, .required  = true, .fmt = 0, .key             = "hidden",
-                                         WINDOW_WRITER_BOOLEAN_FORMATTER,
-                                         .writer                        = ^ bool (struct window_iteration_t *i){
-                                           CFBooleanRef ref;
-                                           bool hidden        = false;
-                                           AXUIElementRef app = AXWindowFromCGWindow(i->window);
-                                           if (AXUIElementCopyAttributeValue(app, kAXHiddenAttribute, &ref) == kAXErrorSuccess) {
-                                             hidden                     = CFBooleanGetValue(ref);
-                                             CFRelease(ref);
-                                           }
-                                           hash_set(i->map, "hidden", (void *)hidden);
-                                           return(VALIDATE_WRITER_KEY_EXISTS(HIDDEN));
-                                         }, },
-  [WINDOW_WRITER_PROCESS] =            { .enabled   = true, .required  = true, .fmt = "%s", .key          = "process",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           ProcessInfoRec info         = { .processInfoLength = sizeof(ProcessInfoRec) };
-                                           if (GetProcessInformation(&(i->psn), &info) == noErr) {
-                                             CFStringRef ref;
-                                             CopyProcessName(&(i->psn), &ref);
-                                             hash_set(i->map, "process", cfstring_copy(ref));
-                                             hash_set(i->map, "mode", (void *)info.processMode);
-                                             hash_set(i->map, "type", (void *)info.processType);
-                                             hash_set(i->map, "started", (void *)info.processLaunchDate);
-                                             CFRelease(ref);
-                                           }
-                                           return(VALIDATE_WRITER_KEY(PROCESS, char *, != NULL));
-                                         }, },
+                                       hash_set(i->map, "spaces", (void *)spaces);
+                                       hash_set(i->map, "spaces_qty", (void *)hash_size(spaces));
+                                       hash_set(i->copied, "spaces", (void *)spaces);
+                                       hash_set(i->copied, "spaces_qty", (void *)hash_size(spaces));
+                                     }else
+                                       log_debug("not getting spaces");
+                                     return(VALIDATE_WRITER_KEY(SPACES, size_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_DISPLAYS] =     { .enabled = true, .required  = true, .fmt = "%d", .key          = "displays_qty",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     if (!hash_has(i->map, "displays")) {
+                                       CFArrayRef ref = SLSCopyManagedDisplaySpaces(g_connection);
+                                       int qty        = CFArrayGetCount(ref);
+                                       hash_set(i->map, "displays", (void *)qty);
+                                       hash_set(i->copied, "displays_qty", (void *)qty);
+                                       hash_set(i->map, "displays_qty", (void *)qty);
+                                       hash_set(i->copied, "displays", (void *)ref);
+                                     }
+                                     return(VALIDATE_WRITER_KEY(DISPLAYS, size_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_WINDOW_ID] =    { .enabled   = true,                              .required  = true, .fmt = "%d", .key          = "window_id",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     int id              = (int)CFDictionaryGetInt(i->window, kCGWindowNumber);
+                                     hash_set(i->map, "window_id", (void *)id);
+                                     return(VALIDATE_WRITER_KEY(WINDOW_ID, int, > 0));
+                                   }, },
+  [WINDOW_WRITER_PSN] =          { .enabled   = true, .required  = true, .fmt = "%lu", .key         = "psn",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     GetProcessForPID(i->pid, &(i->psn));
+                                     hash_set(i->map, "psn", (void *)&(i->psn.lowLongOfPSN));
+                                     return(VALIDATE_WRITER_KEY(PSN, size_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_CONNECTION] =   { .enabled = true, .required  = true, .fmt = "%lu", .key         = "connection",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     int conn           = 0;
+                                     SLSGetConnectionIDForPSN(g_connection, &(i->psn), &conn);
+                                     hash_set(i->map, "connection", (void *)conn);
+                                     return(VALIDATE_WRITER_KEY(CONNECTION, int, > 0));
+                                   }, },
+  [WINDOW_WRITER_DISPLAY_ID] =   { .enabled = true,                                                 .required  = true, .fmt = "%d", .key          = "display_id",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     int id            = 0;
+                                     CFStringRef _uuid = SLSCopyManagedDisplayForWindow(CGSMainConnectionID(), i->id);
+                                     CFUUIDRef uuid    = CFUUIDCreateFromString(NULL,                          _uuid);
+                                     CFRelease(_uuid);
+                                     id                 = CGDisplayGetDisplayIDFromUUID(uuid);
+                                     CFRelease(uuid);
+                                     hash_set(i->map, "display_id", (void *)id);
+                                     return(VALIDATE_WRITER_KEY(CONNECTION, int, > 0));
+                                   }, },
+  [WINDOW_WRITER_APP] =          { .enabled   = true, .required  = true, .fmt = NULL, .key          = "app",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     i->app                    = AXUIElementCreateApplication(i->pid);
+                                     hash_set(i->map, "app", (void *)(&(i->app)));
+                                     return(VALIDATE_WRITER_KEY_EXISTS(APP));
+                                   }, },
+  [WINDOW_WRITER_HIDDEN] =       { .enabled           = true, .required  = true, .fmt = 0, .key             = "hidden",
+                                   WINDOW_WRITER_BOOLEAN_FORMATTER,
+                                   .writer                  = ^ bool (struct window_iteration_t *i){
+                                     CFBooleanRef ref;
+                                     bool hidden        = false;
+                                     AXUIElementRef app = AXWindowFromCGWindow(i->window);
+                                     if (AXUIElementCopyAttributeValue(app, kAXHiddenAttribute, &ref) == kAXErrorSuccess) {
+                                       hidden               = CFBooleanGetValue(ref);
+                                       CFRelease(ref);
+                                     }
+                                     hash_set(i->map, "hidden", (void *)hidden);
+                                     return(VALIDATE_WRITER_KEY_EXISTS(HIDDEN));
+                                   }, },
+  [WINDOW_WRITER_PROCESS] =      { .enabled   = true, .required  = true, .fmt = "%s", .key          = "process",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     ProcessInfoRec info   = { .processInfoLength = sizeof(ProcessInfoRec) };
+                                     if (GetProcessInformation(&(i->psn), &info) == noErr) {
+                                       CFStringRef ref;
+                                       CopyProcessName(&(i->psn), &ref);
+                                       hash_set(i->map, "process", cfstring_copy(ref));
+                                       hash_set(i->map, "mode", (void *)info.processMode);
+                                       hash_set(i->map, "type", (void *)info.processType);
+                                       hash_set(i->map, "started", (void *)info.processLaunchDate);
+                                       CFRelease(ref);
+                                     }
+                                     return(VALIDATE_WRITER_KEY(PROCESS, char *, != NULL));
+                                   }, },
 
-  [WINDOW_WRITER_SUBROLE] =            { .enabled   = true, .required  = true, .fmt = "%s", .key          = "subrole",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           const void *role            = NULL; char *r = NULL;
-                                           AXUIElementRef app          = AXWindowFromCGWindow(i->window);
-                                           if (app && AXUIElementCopyAttributeValue(app, kAXSubroleAttribute, &role) == kAXErrorSuccess) {
-                                             r                         = cfstring_copy(role);
-                                           }
-                                           if (r) {
-                                             hash_set(i->map, "subrole", (void *)r);
-                                           }else  {
-                                             hash_set(i->map, "subrole", (void *)"unknown");
-                                           }
-                                           return(VALIDATE_WRITER_KEY(SUBROLE, char *, != NULL));
-                                         }, },
-  [WINDOW_WRITER_ROLE] =               { .enabled   = true, .required  = true, .fmt = "%s", .key          = "role",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           AXUIElementRef app             = AXWindowFromCGWindow(i->window);
-                                           const void *role               = NULL; char *r = NULL;
-                                           if (app && AXUIElementCopyAttributeValue(app, kAXRoleAttribute, &role) == kAXErrorSuccess) {
-                                             r                            = cfstring_copy(role);
-                                           }
-                                           if (r)    {
-                                             hash_set(i->map, "role", (void *)r);
-                                           }else     {
-                                             hash_set(i->map, "role", (void *)"unknown");
-                                           }
-                                           return(VALIDATE_WRITER_KEY(ROLE, char *, != NULL));
-                                         }, },
-  [WINDOW_WRITER_LEVEL] =              { .enabled = false, .required = true, .fmt = "%d", .key          = "level",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           int level                     = 0;
-                                           SLSGetWindowLevel(g_connection, i->id, &level);
-                                           return(true);
-                                         }, },
-  [WINDOW_WRITER_LAYER] =              { .enabled = false,                       .required = true, .fmt = "%d", .key          = "layer",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           int layer       = 0;
-                                           CFNumberRef ref = CFDictionaryGetValue(i->map, kCGWindowLayer);
-                                           CFNumberGetValue(ref, kCFNumberIntType, &layer);
-                                           CFRelease(ref);
-                                           hash_set(i->map, "layer", (void *)layer);
-                                           return(VALIDATE_WRITER_KEY(LAYER, int, > 0));
-                                         }, },
+  [WINDOW_WRITER_SUBROLE] =      { .enabled   = true, .required  = true, .fmt = "%s", .key          = "subrole",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     const void *role      = NULL; char *r = NULL;
+                                     AXUIElementRef app    = AXWindowFromCGWindow(i->window);
+                                     if (app && AXUIElementCopyAttributeValue(app, kAXSubroleAttribute, &role) == kAXErrorSuccess)
+                                       r                   = cfstring_copy(role);
+                                     if (r)
+                                       hash_set(i->map, "subrole", (void *)r);
+                                     else
+                                       hash_set(i->map, "subrole", (void *)"unknown");
+                                     return(VALIDATE_WRITER_KEY(SUBROLE, char *, != NULL));
+                                   }, },
+  [WINDOW_WRITER_ROLE] =         { .enabled   = true, .required  = true, .fmt = "%s", .key          = "role",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     AXUIElementRef app       = AXWindowFromCGWindow(i->window);
+                                     const void *role         = NULL; char *r = NULL;
+                                     if (app && AXUIElementCopyAttributeValue(app, kAXRoleAttribute, &role) == kAXErrorSuccess)
+                                       r                      = cfstring_copy(role);
+                                     if (r)
+                                       hash_set(i->map, "role", (void *)r);
+                                     else
+                                       hash_set(i->map, "role", (void *)"unknown");
+                                     return(VALIDATE_WRITER_KEY(ROLE, char *, != NULL));
+                                   }, },
+  [WINDOW_WRITER_LEVEL] =        { .enabled = false, .required = true, .fmt = "%d", .key          = "level",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     int level               = 0;
+                                     SLSGetWindowLevel(g_connection, i->id, &level);
+                                     return(true);
+                                   }, },
+  [WINDOW_WRITER_LAYER] =        { .enabled = false,                       .required = true, .fmt = "%d", .key          = "layer",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     int layer       = 0;
+                                     CFNumberRef ref = CFDictionaryGetValue(i->map, kCGWindowLayer);
+                                     CFNumberGetValue(ref, kCFNumberIntType, &layer);
+                                     CFRelease(ref);
+                                     hash_set(i->map, "layer", (void *)layer);
+                                     return(VALIDATE_WRITER_KEY(LAYER, int, > 0));
+                                   }, },
 
-  [WINDOW_WRITER_CPUTIME] =            { .enabled   = true,                                  .required  = true,
-                                         .fmt       = "Started @%lu, running for %s",        .key       = "started",
-                                         .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
-                                           char *s;
-                                           asprintf(&s, self->fmt,
-                                                    (size_t)hash_get(map, "started"),
-                                                    milliseconds_to_string((size_t)(hash_get(map, "runtime")))
-                                                    );
-                                           return(s);
-                                         },
-                                         .writer                       = ^ bool (struct window_iteration_t *i){
-                                           int mib[]  = { CTL_KERN,                            KERN_PROC, KERN_PROC_PID, i->pid };
-                                           size_t len = sizeof i->process.info;
-                                           memset(&(i->process.info), 0, len);
-                                           sysctl(mib, (sizeof(mib) / sizeof(int)), &(i->process.info), &len, NULL, 0);
-                                           struct timeval wall_start = i->process.info.kp_proc.p_starttime;
-                                           unsigned long start       = (unsigned long)((wall_start.tv_sec + (wall_start.tv_usec / (float)1000000)) * 1000);
-                                           hash_set(i->map, "started", (void *)(size_t)start);
-                                           hash_set(i->map, "runtime", (void *)(size_t)(timestamp() - start));
-                                           return(VALIDATE_WRITER_KEY(CPUTIME, size_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_BOUNDS] =             { .enabled   = true,                                  .required  = true, .fmt = "%dx%d@%dx%d", .key = "bounds",
-                                         .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
-                                           char *s;
-                                           asprintf(&s, self->fmt,
-                                                    (size_t)hash_get(map, "width"),
-                                                    (size_t)hash_get(map, "height"),
-                                                    (size_t)hash_get(map, "x"),
-                                                    (size_t)hash_get(map, "y")
-                                                    );
-                                           return(s);
-                                         },
-                                         .writer                         = ^ bool (struct window_iteration_t *i){
-                                           CFDictionaryRef window_bounds = CFDictionaryGetValue(i->window,        kCGWindowBounds);
-                                           CGRect bounds;
-                                           CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);
-                                           hash_set(i->map, "height", (void *)(size_t)bounds.size.height);
-                                           hash_set(i->map, "width", (void *)(size_t)bounds.size.width);
-                                           hash_set(i->map, "x", (void *)(size_t)bounds.origin.x);
-                                           hash_set(i->map, "y", (void *)(size_t)bounds.origin.y);
-                                           return(true);
-                                         }, },
-  [WINDOW_WRITER_PIXELS] =             { .enabled = true,                      .required  = true, .fmt = "%lu", .key         = "pixels",
-                                         .writer  = ^ bool (struct window_iteration_t *i){
-                                           errno                        = 0;
-                                           return(true);
+  [WINDOW_WRITER_CPUTIME] =      { .enabled   = true,                                  .required  = true,
+                                   .fmt       = "Started @%lu, running for %s",        .key       = "started",
+                                   .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
+                                     char *s;
+                                     asprintf(&s, self->fmt,
+                                              (size_t)hash_get(map, "started"),
+                                              milliseconds_to_string((size_t)(hash_get(map, "runtime")))
+                                              );
+                                     return(s);
+                                   },
+                                   .writer                     = ^ bool (struct window_iteration_t *i){
+                                     int mib[]  = { CTL_KERN,                            KERN_PROC, KERN_PROC_PID, i->pid };
+                                     size_t len = sizeof i->process.info;
+                                     memset(&(i->process.info), 0, len);
+                                     sysctl(mib, (sizeof(mib) / sizeof(int)), &(i->process.info), &len, NULL, 0);
+                                     struct timeval wall_start = i->process.info.kp_proc.p_starttime;
+                                     unsigned long start       = (unsigned long)((wall_start.tv_sec + (wall_start.tv_usec / (float)1000000)) * 1000);
+                                     hash_set(i->map, "started", (void *)(size_t)start);
+                                     hash_set(i->map, "runtime", (void *)(size_t)(timestamp() - start));
+                                     return(VALIDATE_WRITER_KEY(CPUTIME, size_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_BOUNDS] =       { .enabled   = true,                                  .required  = true, .fmt = "%dx%d@%dx%d", .key = "bounds",
+                                   .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
+                                     char *s;
+                                     asprintf(&s, self->fmt,
+                                              (size_t)hash_get(map, "width"),
+                                              (size_t)hash_get(map, "height"),
+                                              (size_t)hash_get(map, "x"),
+                                              (size_t)hash_get(map, "y")
+                                              );
+                                     return(s);
+                                   },
+                                   .writer                         = ^ bool (struct window_iteration_t *i){
+                                     CFDictionaryRef window_bounds = CFDictionaryGetValue(i->window,        kCGWindowBounds);
+                                     CGRect bounds;
+                                     CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);
+                                     hash_set(i->map, "height", (void *)(size_t)bounds.size.height);
+                                     hash_set(i->map, "width", (void *)(size_t)bounds.size.width);
+                                     hash_set(i->map, "x", (void *)(size_t)bounds.origin.x);
+                                     hash_set(i->map, "y", (void *)(size_t)bounds.origin.y);
+                                     return(true);
+                                   }, },
+  [WINDOW_WRITER_PIXELS] =       { .enabled = true,                      .required  = true, .fmt = "%lu", .key         = "pixels",
+                                   .writer  = ^ bool (struct window_iteration_t *i){
+                                     errno                  = 0;
+                                     return(true);
 
-                                           size_t pixels                = ((size_t)(hash_get(i->map, "width")) * ((size_t)(hash_get(i->map, "height"))));
-                                           hash_set(i->map, "pixels", (void *)pixels);
-                                           return(VALIDATE_WRITER_KEY(PIXELS, size_t, > 0));
-                                         }, },
-  [WINDOW_WRITER_MEMORY_USAGE] =       { .enabled   = true,                                  .required  = true, .fmt = "%lu", .key         = "memory_usage",
-                                         .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
-                                           return(bytes_to_string((size_t)prop));
-                                         },
-                                         .writer                  = ^ bool (struct window_iteration_t *i){
-                                           CFNumberRef ref = CFDictionaryGetValue(i->window,        kCGWindowMemoryUsage);
-                                           size_t val      = 0;
-                                           CFNumberGetValue(ref, CFNumberGetType(ref), &val);
-                                           hash_set(i->map, "memory_usage", (void *)val);
-                                           return((size_t)(hash_get(i->map, "memory_usage")) > 0);
-                                         }, },
-  [WINDOW_WRITER_ONSCREEN] =           { .enabled   = true,                                  .required  = true, .fmt = "%d", .key          = "on_screen",
-                                         .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
-                                           return(window_boolean_formatter(prop));
-                                         },
-                                         .writer                      = ^ bool (struct window_iteration_t *i){
-                                           bool res                   = false;
-                                           CFBooleanRef ref;
-                                           AXUIElementRef app         = AXWindowFromCGWindow(i->window);
-                                           if (app && AXUIElementCopyAttributeValue(app, kCGWindowIsOnscreen, &ref) == kAXErrorSuccess) {
-                                             res                      = (bool)CFBooleanGetValue(ref);
-                                           }
-                                           hash_set(i->map, "on_screen", (void *)res);
-                                           return(hash_has(i->map, "on_screen"));
-                                         }, },
-  [WINDOW_WRITER_NAME] =               { .enabled   = true, .required  = true, .fmt = "%s", .key          = "name",
-                                         .formatter = 0,
-                                         .writer    = ^ bool (struct window_iteration_t *i){
-                                           hash_set(i->map, "name", (char *)CFDictionaryCopyCString(i->window, kCGWindowOwnerName));
-                                           return(hash_has(i->map, "name"));
-                                         }, },
-  [WINDOW_WRITER_MINIMIZED] =          { .enabled            = true, .required  = true, .fmt = "%d", .key          = "minimized",
-                                         WINDOW_WRITER_BOOLEAN_FORMATTER,
-                                         .writer                      = ^ bool (struct window_iteration_t *i){
-                                           CFBooleanRef ref; bool res = false;
-                                           AXUIElementRef app         = AXWindowFromCGWindow(i->window);
-                                           if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &ref) == kAXErrorSuccess) {
-                                             res                      = CFBooleanGetValue(ref);
-                                           }
-                                           hash_set(i->map, "minimized", (void *)res);
-                                           return(true);
-                                         }, },
-  [WINDOW_WRITER_CAN_MINIMIZE] =       { .enabled           = false, .required = true, .fmt = "%d", .key          = "can_minimize",
-                                         WINDOW_WRITER_BOOLEAN_FORMATTER,
-                                         .writer                  = ^ bool (struct window_iteration_t *i){
-                                           CFBooleanRef ref;
-                                           bool res           = false;
-                                           AXUIElementRef app = AXWindowFromCGWindow(i->window);
-                                           if (AXUIElementIsAttributeSettable(app, kAXMinimizedAttribute, &ref) == kAXErrorSuccess) {
-                                             res                  = CFBooleanGetValue(ref);
-                                           }
-                                           hash_set(i->map, "can_minimize", (void *)res);
-                                           CFRelease(ref);
-                                           return(true);
-                                         }, },
+                                     size_t pixels          = ((size_t)(hash_get(i->map, "width")) * ((size_t)(hash_get(i->map, "height"))));
+                                     hash_set(i->map, "pixels", (void *)pixels);
+                                     return(VALIDATE_WRITER_KEY(PIXELS, size_t, > 0));
+                                   }, },
+  [WINDOW_WRITER_MEMORY_USAGE] = { .enabled   = true,                                  .required  = true, .fmt = "%lu", .key         = "memory_usage",
+                                   .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
+                                     return(bytes_to_string((size_t)prop));
+                                   },
+                                   .writer            = ^ bool (struct window_iteration_t *i){
+                                     CFNumberRef ref = CFDictionaryGetValue(i->window,        kCGWindowMemoryUsage);
+                                     size_t val      = 0;
+                                     CFNumberGetValue(ref, CFNumberGetType(ref), &val);
+                                     hash_set(i->map, "memory_usage", (void *)val);
+                                     return((size_t)(hash_get(i->map, "memory_usage")) > 0);
+                                   }, },
+  [WINDOW_WRITER_ONSCREEN] =     { .enabled   = true,                                  .required  = true, .fmt = "%d", .key          = "on_screen",
+                                   .formatter = ^ char *(struct window_writer_t *self, void *prop, hash_t *map){
+                                     return(window_boolean_formatter(prop));
+                                   },
+                                   .writer                = ^ bool (struct window_iteration_t *i){
+                                     bool res             = false;
+                                     CFBooleanRef ref;
+                                     AXUIElementRef app   = AXWindowFromCGWindow(i->window);
+                                     if (app && AXUIElementCopyAttributeValue(app, kCGWindowIsOnscreen, &ref) == kAXErrorSuccess)
+                                       res                = (bool)CFBooleanGetValue(ref);
+                                     hash_set(i->map, "on_screen", (void *)res);
+                                     return(hash_has(i->map, "on_screen"));
+                                   }, },
+  [WINDOW_WRITER_NAME] =         { .enabled   = true, .required  = true, .fmt = "%s", .key          = "name",
+                                   .formatter = 0,
+                                   .writer    = ^ bool (struct window_iteration_t *i){
+                                     hash_set(i->map, "name", (char *)CFDictionaryCopyCString(i->window, kCGWindowOwnerName));
+                                     return(hash_has(i->map, "name"));
+                                   }, },
+  [WINDOW_WRITER_MINIMIZED] =    { .enabled                  = true, .required  = true, .fmt = "%d", .key          = "minimized",
+                                   WINDOW_WRITER_BOOLEAN_FORMATTER,
+                                   .writer                      = ^ bool (struct window_iteration_t *i){
+                                     CFBooleanRef ref; bool res = false;
+                                     AXUIElementRef app         = AXWindowFromCGWindow(i->window);
+                                     if (AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &ref) == kAXErrorSuccess)
+                                       res                      = CFBooleanGetValue(ref);
+                                     hash_set(i->map, "minimized", (void *)res);
+                                     return(true);
+                                   }, },
+  [WINDOW_WRITER_CAN_MINIMIZE] = { .enabled             = false, .required = true, .fmt = "%d", .key          = "can_minimize",
+                                   WINDOW_WRITER_BOOLEAN_FORMATTER,
+                                   .writer              = ^ bool (struct window_iteration_t *i){
+                                     CFBooleanRef ref;
+                                     bool res           = false;
+                                     AXUIElementRef app = AXWindowFromCGWindow(i->window);
+                                     if (AXUIElementIsAttributeSettable(app, kAXMinimizedAttribute, &ref) == kAXErrorSuccess)
+                                       res              = CFBooleanGetValue(ref);
+                                     hash_set(i->map, "can_minimize", (void *)res);
+                                     CFRelease(ref);
+                                     return(true);
+                                   }, },
 };
 
 struct hash_t *get_window_properties_map_for_window_ids(hash_t *ids){
@@ -354,32 +782,27 @@ struct hash_t *get_window_properties_map_for_window_ids(hash_t *ids){
     asprintf(&n, "%d", p->id);
     if (hash_has(ids, n) && !hash_has(props, n)) {
       p->copied = copied;
-      if (hash_size(p->copied) > 0) {
+      if (hash_size(p->copied) > 0)
         hash_each(p->copied, {
           hash_set(p->map, key, val);
         });
-      }
       for (size_t i = 0; i < WINDOW_WRITERS_QTY; i++) {
         if (window_writers[i].enabled && !window_writers[i].writer(p) && window_writers[i].required) {
-          if (WINDOW_UTILS_DEBUG_MODE) {
+          if (WINDOW_UTILS_DEBUG_MODE)
             log_warn("<%s> Skipping Window #%d", window_writers[i].key, p->id);
-          }
           break;
         }else{
           void *val = NULL;
-          if (hash_has(p->map, window_writers[i].key)) {
+          if (hash_has(p->map, window_writers[i].key))
             val = hash_get(p->map, window_writers[i].key);
-          }
           char *s = NULL;
           if (window_writers[i].formatter && (s = window_writers[i].formatter(&(window_writers[i]), hash_get(p->map, window_writers[i].key), p->map)) && (s)) {
-          }else if (window_writers[i].fmt && window_writers[i].key) {
+          }else if (window_writers[i].fmt && window_writers[i].key)
             asprintf(&s, window_writers[i].fmt, val);
-          }else{
+          else
             asprintf(&s, "%s: %s", window_writers[i].key, (val) ? "Existant" : "Absent");
-          }
-          if (WINDOW_UTILS_DEBUG_MODE) {
+          if (WINDOW_UTILS_DEBUG_MODE)
             log_info("%lu %s => %s", i, window_writers[i].key, s);
-          }
         }
       }
       hash_set(ret, n, (void *)(p));
@@ -387,9 +810,8 @@ struct hash_t *get_window_properties_map_for_window_ids(hash_t *ids){
     return(true);
   });
   if (hash_size(ret) == hash_size(ids)) {
-    if (WINDOW_UTILS_DEBUG_MODE) {
+    if (WINDOW_UTILS_DEBUG_MODE)
       log_info("Matched all %d!", hash_size(ret));
-    }
   }else{
     log_error("Failed to match all");
     exit(1);
@@ -404,37 +826,32 @@ struct hash_t *get_window_properties_map(){
 
   iterate_window_ids(props, ^ bool (struct window_iteration_t *p){
     p->copied = copied;
-    if (hash_size(p->copied) > 0) {
+    if (hash_size(p->copied) > 0)
       hash_each(p->copied, {
         hash_set(p->map, key, val);
       });
-    }
     for (size_t i = 0; i < WINDOW_WRITERS_QTY; i++) {
       if (window_writers[i].enabled && !window_writers[i].writer(p) && window_writers[i].required) {
-        if (WINDOW_UTILS_DEBUG_MODE) {
+        if (WINDOW_UTILS_DEBUG_MODE)
           log_warn("<%s> Skipping Window #%d", window_writers[i].key, p->id);
-        }
         break;
       }else{
         void *val = NULL;
-        if (hash_has(p->map, window_writers[i].key)) {
+        if (hash_has(p->map, window_writers[i].key))
           val = hash_get(p->map, window_writers[i].key);
-        }
         char *s = NULL;
         if (window_writers[i].formatter && (s = window_writers[i].formatter(&(window_writers[i]), hash_get(p->map, window_writers[i].key), p->map)) && (s)) {
-        }else if (window_writers[i].fmt && window_writers[i].key) {
+        }else if (window_writers[i].fmt && window_writers[i].key)
           asprintf(&s, window_writers[i].fmt, val);
-        }else{
+        else
           asprintf(&s, "%s: %s", window_writers[i].key, (val) ? "Existant" : "Absent");
-        }
-        if (WINDOW_UTILS_DEBUG_MODE) {
+        if (WINDOW_UTILS_DEBUG_MODE)
           log_info("%lu %s => %s", i, window_writers[i].key, s);
-        }
       }
     }
     return(true);
   });
-  if (WINDOW_UTILS_DEBUG_MODE) {
+  if (WINDOW_UTILS_DEBUG_MODE)
     hash_each(props, {
       p = (struct window_iteration_t *)val;
       log_info(
@@ -455,7 +872,6 @@ struct hash_t *get_window_properties_map(){
         ""
         );
     });
-  }
   return(props);
 } /* get_window_properties_map */
 
@@ -484,7 +900,7 @@ static bool iterate_window_ids(hash_t *props, window_iteration_cb cb){
   return(true);
 }
 
-hash_t *get_window_ids_v_from_names(hash_t *names){
+hash_t *get_window_ids_from_names(hash_t *names){
   CFArrayRef      windowList;
   CFDictionaryRef window;
   hash_t          *qtys = hash_new();
@@ -494,9 +910,8 @@ hash_t *get_window_ids_v_from_names(hash_t *names){
     window = CFArrayGetValueAtIndex(windowList, i);
     char *name = CFDictionaryCopyCString(window, kCGWindowOwnerName);
     if (name && hash_has(names, name)) {
-      if (!hash_has(qtys, name)) {
+      if (!hash_has(qtys, name))
         hash_set(qtys, name, (void *)vector_new());
-      }
       vector_push((struct Vector *)hash_get(qtys, name), (void *)(size_t)(CFDictionaryGetInt(window, kCGWindowNumber)));
     }
   }
@@ -514,9 +929,8 @@ hash_t *get_first_window_id_from_names(hash_t *names){
   for (int i = 0; i < CFArrayGetCount(windowList) && hash_size(ids) < hash_size(names); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     char *name = CFDictionaryCopyCString(window, kCGWindowOwnerName);
-    if (name && hash_has(names, name) && !hash_has(ids, name)) {
+    if (name && hash_has(names, name) && !hash_has(ids, name))
       hash_set(ids, name, (void *)(size_t)(CFDictionaryGetInt(window, kCGWindowNumber)));
-    }
   }
   CFRelease(windowList);
 
@@ -586,14 +1000,13 @@ bool unminimize_window_id(size_t window_id){
     return(false);
   }
   bool is_min = CFBooleanGetValue(is_min_ref);
-  if (is_min == false) {
+  if (is_min == false)
     return(true);
-  }
+
   errno = 0;
   if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanFalse) == kAXErrorSuccess) {
-    if (WINDOW_UTILS_DEBUG_MODE) {
+    if (WINDOW_UTILS_DEBUG_MODE)
       log_info("Set unminimized property on window id");
-    }
   }else{
     log_error("Failed to set unminimized property");
     errno = 0;
@@ -618,14 +1031,13 @@ bool minimize_window_id(size_t window_id){
     return(false);
   }
   bool is_min = CFBooleanGetValue(is_min_ref);
-  if (is_min == true) {
+  if (is_min == true)
     return(true);
-  }
+
   errno = 0;
   if (AXUIElementSetAttributeValue(app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
-    if (WINDOW_UTILS_DEBUG_MODE) {
+    if (WINDOW_UTILS_DEBUG_MODE)
       log_info("Set minimized property on window id");
-    }
   }else{
     log_error("Failed to set minimized property");
     errno = 0;
@@ -637,9 +1049,9 @@ bool minimize_window_id(size_t window_id){
 void set_window_id_flags(size_t window_id, enum window_info_flag_t flags){
   struct window_info_t *w = get_window_id_info(window_id);
 
-  if (!w) {
+  if (!w)
     return;
-  }
+
   return(set_window_flags(w, flags));
 }
 
@@ -678,9 +1090,8 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
     if (actualWindowId == targetWindowId) {
       foundAppWindow = appWindow;
       break;
-    } else {
+    } else
       continue;
-    }
   }
   CFRelease(app);
   free(pid_s);
@@ -703,18 +1114,19 @@ int get_window_display_id(size_t window_id){
 struct window_info_t *get_focused_window(){
   int pid = get_focused_pid();
 
-  if (pid < 1) {
+  if (pid < 1)
     return(NULL);
-  }
+
   size_t window_id = get_pid_window_id(pid);
 
-  if (window_id < 1) {
+  if (window_id < 1)
     return(NULL);
-  }
+
   return(get_window_id_info(window_id));
 }
 
 struct Vector *get_window_names(void){
+  unsigned long    started  = timestamp();
   struct Vector    *names_v = vector_new();
   struct hashmap_s map;
   CFArrayRef       windowList;
@@ -728,17 +1140,68 @@ struct Vector *get_window_names(void){
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     char *name = CFDictionaryCopyCString(window, kCGWindowOwnerName);
-    if (name && !hashmap_get(&map, name, strlen(name)) && hashmap_put(&map, name, strlen(name), name) == 0) {
+    if (name && !hashmap_get(&map, name, strlen(name)) && hashmap_put(&map, name, strlen(name), name) == 0)
       vector_push(names_v, (char *)name);
-    }
   }
   CFRelease(windowList);
   hashmap_destroy(&map);
+  if (WINDOW_UTILS_VERBOSE_DEBUG_MODE)
+    log_debug("Acquired %lu Window Names in %s", vector_size(names_v), milliseconds_to_string(timestamp() - started));
   return(names_v);
 }
 
+struct Vector *get_window_props(){
+  char
+    *l;
+  unsigned long
+    started = timestamp();
+  struct window_iteration_t
+    *i;
+  struct Vector
+    *lines        = vector_new(),
+  *window_infos_v = get_window_infos_v();
+  hash_t
+  *ids   = hash_new(),
+  *props = NULL;
+
+  struct window_info_t *w = NULL;
+
+  for (size_t i = 0; i < vector_size(window_infos_v); i++) {
+    w = (struct window_info_t *)(vector_get(window_infos_v, i));
+    hash_set(ids, size_to_string(w->window_id), (void *)(w->window_id));
+  }
+  props = get_window_properties_map_for_window_ids(ids);
+  hash_each(props, {
+    i = (struct window_iteration_t *)val;
+    asprintf(&l,
+             "%s"
+             ",%s"
+             ",%d"
+             ",%d"
+             "%s",
+             key,
+             i->name,
+             hash_size(i->map),
+             i->pid,
+             ""
+             );
+    vector_push(lines, (void *)strdup(l));
+  });
+  if (WINDOW_UTILS_VERBOSE_DEBUG_MODE)
+    log_debug("Acquired %lu Window Properties from %lu Window IDs in %s",
+              vector_size(lines),
+              vector_size(window_infos_v),
+              milliseconds_to_string(timestamp() - started)
+              );
+  hash_free(ids);
+  vector_release(window_infos_v);
+  hash_free(props);
+  return(lines);
+} /* get_window_props */
+
 struct Vector *get_window_ids(void){
-  struct Vector   *ids_v = vector_new();
+  unsigned long   started = timestamp();
+  struct Vector   *ids_v  = vector_new();
   CFArrayRef      windowList;
   CFDictionaryRef window;
 
@@ -746,11 +1209,12 @@ struct Vector *get_window_ids(void){
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     int id = CFDictionaryGetInt(window, kCGWindowNumber);
-    if (id > 0) {
+    if (id > 0)
       vector_push(ids_v, (void *)(size_t)id);
-    }
   }
   CFRelease(windowList);
+  if (WINDOW_UTILS_DEBUG_MODE)
+    log_debug("Acquired %lu Window IDs in %s", vector_size(ids_v), milliseconds_to_string(timestamp() - started));
   return(ids_v);
 }
 
@@ -778,15 +1242,13 @@ pid_t get_window_id_pid(size_t window_id){
     CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowNumber),
                      kCGWindowIDCFNumberType,
                      &wid);
-    if ((size_t)wid != (size_t)window_id) {
+    if ((size_t)wid != (size_t)window_id)
       continue;
-    }
     CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowOwnerPID),
                      kCGWindowIDCFNumberType,
                      &pid);
-    if (pid) {
+    if (pid)
       return(pid);
-    }
   }
   return(0);
 }
@@ -806,12 +1268,10 @@ size_t get_pid_window_id(int PID){
     if (CFDictionaryGetInt(window, kCGWindowOwnerPID) == PID) {
       tmp_WINDOW_ID = (size_t)CFDictionaryGetInt(window, kCGWindowNumber);
       w             = get_window_id_info(tmp_WINDOW_ID);
-      if (w != NULL && w->pid == PID && w->window != NULL) {
+      if (w != NULL && w->pid == PID && w->window != NULL)
         WINDOW_ID = tmp_WINDOW_ID;
-      }
-      if (w) {
+      if (w)
         free(w);
-      }
     }
   }
   CFRelease(windowList);
@@ -863,11 +1323,10 @@ struct window_info_t *get_pid_window(const int PID){
   for (size_t i = 0; i < vector_size(windows); i++) {
     struct window_info_t *w = vector_get(windows, i);
     _w = (struct window_info_t *)vector_get(windows, i);
-    if (w->pid == PID) {
+    if (w->pid == PID)
       w = _w;
-    }else{
+    else
       free(w);
-    }
   }
   return(w);
 }
@@ -881,9 +1340,8 @@ CFDictionaryRef window_id_to_window(const int WINDOW_ID){
   for (int i = 0; i < CFArrayGetCount(windowList); i++) {
     window = CFArrayGetValueAtIndex(windowList, i);
     int windowId = CFDictionaryGetInt(window, kCGWindowNumber);
-    if (windowId != WINDOW_ID) {
+    if (windowId != WINDOW_ID)
       continue;
-    }
     return(window);
   }
   printf("window %d not found\n", WINDOW_ID);
@@ -927,13 +1385,11 @@ struct window_info_t *get_random_window_info(){
 
   for (size_t i = 0; i < vector_size(windows_v); i++) {
     w = (struct window_info_t *)vector_get(windows_v, i);
-    if (w && w->window_id > 0 && (int)w->rect.size.width > MIN_VALID_WINDOW_WIDTH && (int)w->rect.size.height > MIN_VALID_WINDOW_HEIGHT) {
+    if (w && w->window_id > 0 && (int)w->rect.size.width > MIN_VALID_WINDOW_WIDTH && (int)w->rect.size.height > MIN_VALID_WINDOW_HEIGHT)
       vector_remove(windows_v, i);
-    }
   }
-  if (WINDOW_UTILS_DEBUG_MODE) {
+  if (WINDOW_UTILS_DEBUG_MODE)
     log_debug("%lu windows to choose from", vector_size(windows_v));
-  }
   struct timespec ts;
 
   get_current_utc_time(&ts);
@@ -941,23 +1397,18 @@ struct window_info_t *get_random_window_info(){
 
   while (ok == false && qty < 100) {
     id = (rand()) % (vector_size(windows_v) - 1);
-    if (WINDOW_UTILS_DEBUG_MODE) {
+    if (WINDOW_UTILS_DEBUG_MODE)
       log_debug("random : %lu", id);
-    }
     qty++;
     w = (struct window_info_t *)vector_get(windows_v, id);
-    if (w && w->window_id > 0 && (int)w->rect.size.width > MIN_VALID_WINDOW_WIDTH && (int)w->rect.size.height > MIN_VALID_WINDOW_HEIGHT) {
+    if (w && w->window_id > 0 && (int)w->rect.size.width > MIN_VALID_WINDOW_WIDTH && (int)w->rect.size.height > MIN_VALID_WINDOW_HEIGHT)
       ok = true;
-    }
   }
-  for (size_t i = 0; i < vector_size(windows_v); i++) {
-    if (i != id) {
+  for (size_t i = 0; i < vector_size(windows_v); i++)
+    if (i != id)
       vector_remove(windows_v, i);
-    }
-  }
-  if (WINDOW_UTILS_DEBUG_MODE) {
+  if (WINDOW_UTILS_DEBUG_MODE)
     log_debug("random win id: %lu", w->window_id);
-  }
   return(w);
 } /* get_random_window_info */
 
@@ -970,39 +1421,30 @@ size_t get_first_window_id_by_name(char *name){
   struct window_info_t *w;
   struct Vector        *windows_v;
 
-//  windows_v = get_window_infos_v();
   windows_v = get_window_infos_brief_named_v(name);
 
   for (size_t i = 0; i < vector_size(windows_v) && window_id == 0; i++) {
     w = (struct window_info_t *)vector_get(windows_v, i);
-    if (!w || !w->name || w->window_id < 1) {
+    if (!w || !w->name || w->window_id < 1)
       continue;
-    }
-    if (WINDOW_UTILS_DEBUG_MODE) {
+    if (WINDOW_UTILS_DEBUG_MODE)
       log_debug("Checking app %s", w->name);
-    }
-    if (WINDOW_UTILS_DEBUG_MODE) {
+    if (WINDOW_UTILS_DEBUG_MODE)
       log_debug("Comparing %s|%s", w->name, name);
-    }
-    if (strcmp(stringfn_to_lowercase(w->name), stringfn_to_lowercase(name)) == 0) {
+    if (strcmp(stringfn_to_lowercase(w->name), stringfn_to_lowercase(name)) == 0)
       window_id = (size_t)w->window_id;
-    }
     if (window_id == 0) {
       char *s;
       asprintf(&s, "%s.app", name);
-      if (WINDOW_UTILS_DEBUG_MODE) {
+      if (WINDOW_UTILS_DEBUG_MODE)
         log_debug("Comparing %s|%s", w->name, s);
-      }
-      if (strcmp(stringfn_to_lowercase(s), stringfn_to_lowercase(w->name)) == 0) {
+      if (strcmp(stringfn_to_lowercase(s), stringfn_to_lowercase(w->name)) == 0)
         window_id = (size_t)w->window_id;
-      }
-      if (s) {
+      if (s)
         free(s);
-      }
     }
-    if (w) {
+    if (w)
       free(w);
-    }
   }
   vector_release(windows_v);
   return(window_id);
@@ -1016,9 +1458,8 @@ char *get_window_title(struct window_info_t *w){
   if (value) {
     title = cstring_from_CFString(value);
     CFRelease(value);
-  } else {
+  } else
     title = "";
-  }
 
   return(title);
 }
@@ -1038,9 +1479,8 @@ void set_window_tags(struct window_info_t *w){
 
   tags[0] = CGSTagSticky;
   CGSSetWindowTags(cid, w->window_id, tags1, 32);
-  if (WINDOW_UTILS_DEBUG_MODE == true) {
+  if (WINDOW_UTILS_DEBUG_MODE == true)
     log_info("set window %lu tags: %d/%d", w->window_id, tags1[0], tags1[1]);
-  }
 }
 
 void fade_window(struct window_info_t *w){
@@ -1060,27 +1500,24 @@ void fade_window(struct window_info_t *w){
 bool window_can_move(struct window_info_t *w){
   bool result;
 
-  if (AXUIElementIsAttributeSettable(w->window, kAXPositionAttribute, &result) != kAXErrorSuccess) {
+  if (AXUIElementIsAttributeSettable(w->window, kAXPositionAttribute, &result) != kAXErrorSuccess)
     result = 0;
-  }
   return(result);
 }
 
 bool window_can_resize(struct window_info_t *w){
   bool result;
 
-  if (AXUIElementIsAttributeSettable(w->window, kAXSizeAttribute, &result) != kAXErrorSuccess) {
+  if (AXUIElementIsAttributeSettable(w->window, kAXSizeAttribute, &result) != kAXErrorSuccess)
     result = 0;
-  }
   return(result);
 }
 
 bool window_can_minimize(struct window_info_t *w){
   bool result;
 
-  if (AXUIElementIsAttributeSettable(w->window, kAXMinimizedAttribute, &result) != kAXErrorSuccess) {
+  if (AXUIElementIsAttributeSettable(w->window, kAXMinimizedAttribute, &result) != kAXErrorSuccess)
     result = 0;
-  }
   return(result);
 }
 
@@ -1093,9 +1530,8 @@ bool window_is_topmost(struct window_info_t *w){
 uint32_t getWindowId(AXUIElementRef window) {
   CGWindowID _windowId;
 
-  if (_AXUIElementGetWindow(window, &_windowId) == kAXErrorSuccess) {
+  if (_AXUIElementGetWindow(window, &_windowId) == kAXErrorSuccess)
     return(_windowId);
-  }
 
   return(-1);
 }
@@ -1108,16 +1544,14 @@ void get_window_tags(struct window_info_t *w){
 
   tags[0] = tags[1] = 0;
   CGSGetWindowTags(cid, w->window_id, tags, 32);
-  if (WINDOW_UTILS_DEBUG_MODE == true) {
+  if (WINDOW_UTILS_DEBUG_MODE == true)
     log_info("window %lu tags: %d/%d", w->window_id, tags[0], tags[1]);
-  }
 
   uint32_t mask = 0;
 
   CGSGetWindowEventMask(cid, w->window_id, &mask);
-  if (WINDOW_UTILS_DEBUG_MODE == true) {
+  if (WINDOW_UTILS_DEBUG_MODE == true)
     log_info("window %lu event mask: %lu", w->window_id, (size_t)mask);
-  }
 }
 
 bool get_pid_is_minimized(int pid){
@@ -1135,22 +1569,20 @@ bool get_pid_is_minimized(int pid){
   CFTypeRef isMinimizedBoolRef;
 
   err = AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &isMinimizedBoolRef);
-  if (err == kAXErrorSuccess) {
+  if (err == kAXErrorSuccess)
     log_info("Got is min for pid %d", pid);
-  }else{
+  else
     log_error("Failed to get pid %d is minimized attribute: %s", pid, get_axerror_name(err));
-  }
 
   CFBooleanRef boolRef;
 
   err = AXUIElementCopyAttributeValue(app, kAXHiddenAttribute, &boolRef);
   bool is_hidden = CFBooleanGetValue(boolRef);
 
-  if (err == kAXErrorSuccess) {
+  if (err == kAXErrorSuccess)
     log_info("Got is hidden for pid %d: %s", pid, is_hidden?"Yes":"No");
-  }else{
+  else
     log_error("Failed to get pid %d is hidden attribute: %s", pid, get_axerror_name(err));
-  }
 
   Boolean   result = 0;
   CFTypeRef value;
@@ -1159,25 +1591,22 @@ bool get_pid_is_minimized(int pid){
   if (err == kAXErrorSuccess) {
     result = CFBooleanGetValue(value);
     CFRelease(value);
-  }else{
+  }else
     log_error("Failed to get pid %d is minimized attribute: %s", pid, get_axerror_name(err));
-  }
   return(result);
 } /* get_pid_is_minimized */
 
 void minimize_window(struct window_info_t *w){
   CFTypeRef value = NULL;
 
-  if (AXUIElementCopyAttributeValue(w->app, kAXMinimizedAttribute, &value) == kAXErrorSuccess) {
+  if (AXUIElementCopyAttributeValue(w->app, kAXMinimizedAttribute, &value) == kAXErrorSuccess)
     CFRelease(value);
-  }else{
+  else
     log_error("Failed to copy minimized attribute");
-  }
-  if (AXUIElementSetAttributeValue(w->app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
+  if (AXUIElementSetAttributeValue(w->app, kAXMinimizedAttribute, kCFBooleanTrue) == kAXErrorSuccess)
     log_info("Set minimized property on window");
-  }else{
+  else
     log_error("Failed to set minimized property");
-  }
 }
 
 void focus_window_id_psn(size_t window_id, ProcessSerialNumber psn){
@@ -1185,15 +1614,13 @@ void focus_window_id_psn(size_t window_id, ProcessSerialNumber psn){
   AXError err;
   errno = 0;
   err   = SetFrontProcessWithOptions(&psn, kSetFrontProcessFrontWindowOnly);
-  if (err != kAXErrorSuccess) {
+  if (err != kAXErrorSuccess)
     log_error("failed to set psn");
-  }
 
   CFArrayRef window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionIncludingWindow, window_id);
   int        qty         = CFArrayGetCount(window_list);
-  if (WINDOW_UTILS_DEBUG_MODE) {
+  if (WINDOW_UTILS_DEBUG_MODE)
     log_debug("%d windows", qty);
-  }
   if (qty > 0) {
     CFDictionaryRef window = CFArrayGetValueAtIndex(window_list, 0);
     AXUIElementRef  app    = AXWindowFromCGWindow(window);
@@ -1227,9 +1654,9 @@ char *windowTitle(char *appName, char *windowName) {
   size_t titleSize;
   char   *windowTitle;
 
-  if (!appName || !*appName) {
+  if (!appName || !*appName)
     windowTitle = NULL;
-  } else if (!windowName || !*windowName) {
+  else if (!windowName || !*windowName) {
     titleSize   = strlen(appName) + 1;
     windowTitle = (char *)malloc(titleSize);
     strncpy(windowTitle, appName, titleSize);
@@ -1238,9 +1665,8 @@ char *windowTitle(char *appName, char *windowName) {
     windowTitle = (char *)malloc(titleSize);
     snprintf(windowTitle, titleSize, "%s - %s", appName, windowName);
   }
-  if (WINDOW_UTILS_DEBUG_MODE == true) {
+  if (WINDOW_UTILS_DEBUG_MODE == true)
     log_info("     |appName:%s|windowName:%s|windowTitle:%s|", appName, windowName, windowTitle);
-  }
 
   return(windowTitle);
 }
@@ -1311,15 +1737,12 @@ CGSize AXWindowGetSize(AXUIElementRef window) {
 bool get_window_is_visible(struct window_info_t *w){
   bool result = true;
 
-  if ((size_t)w->space_id != (size_t)get_current_space_id()) {
+  if ((size_t)w->space_id != (size_t)get_current_space_id())
     result = false;
-  }
 
-  if (result == true) {
-    if (get_window_id_is_minimized(w->window_id) == true) {
+  if (result == true)
+    if (get_window_id_is_minimized(w->window_id) == true)
       result = false;
-    }
-  }
   if (result == true) {
   }
 
@@ -1333,9 +1756,9 @@ AXUIElementRef _get_matching_window_AXUIElementRef(AXUIElementRef app, CFStringR
   CFArrayRef ax_windows = NULL;
 
   AXUIElementCopyAttributeValue(app, kAXWindowsAttribute, (CFTypeRef *)&ax_windows);
-  if (ax_windows == NULL) {
+  if (ax_windows == NULL)
     return(NULL);
-  }
+
   CFIndex count = CFArrayGetCount(ax_windows);
 
   if (count == 0) {
@@ -1373,9 +1796,8 @@ AXUIElementRef _get_matching_window_AXUIElementRef(AXUIElementRef app, CFStringR
     }
     if ((title == NULL && window_title != NULL)
         || CFStringCompare(title, window_title, 0) != kCFCompareEqualTo
-        || CGRectEqualToRect(frame, window_frame) == false) {
+        || CGRectEqualToRect(frame, window_frame) == false)
       continue;
-    }
 
     CFRetain(ax_window);
     match_found = true;
@@ -1384,9 +1806,8 @@ AXUIElementRef _get_matching_window_AXUIElementRef(AXUIElementRef app, CFStringR
   CFRelease(ax_windows);
 
   if (match_found == false) {
-    if (title != NULL) {
+    if (title != NULL)
       CFRelease(title);
-    }
     return(NULL);
   }
 
@@ -1410,18 +1831,16 @@ struct cf_window *get_cf_window(CFDictionaryRef window_dict){
   CFNumberGetValue(cf_pid, kCFNumberIntType, &pid);
   CFStringRef title = CFDictionaryGetValue(window_dict, kCGWindowName);
 
-  if (title != NULL) {
+  if (title != NULL)
     title = CFStringCreateCopy(kCFAllocatorDefault, title);
-  }
 
   CFDictionaryRef cf_frame = CFDictionaryGetValue(window_dict, kCGWindowBounds);
   CGRect          frame;
 
   CGRectMakeWithDictionaryRepresentation(cf_frame, &frame);
   if (CGSizeEqualToSize(frame.size, (CGSize){ 0, 0 })) {
-    if (title != NULL) {
+    if (title != NULL)
       CFRelease(title);
-    }
     log_error("no window");
     return(NULL);
   }
@@ -1447,9 +1866,8 @@ struct cf_window *get_cf_window(CFDictionaryRef window_dict){
   CFNumberGetValue(cf_id, kCGWindowIDCFNumberType, &id);
 
   if (w->ax_window == NULL) {
-    if (title != NULL) {
+    if (title != NULL)
       CFRelease(title);
-    }
     log_error("no window");
     return(NULL);
   }
@@ -1470,9 +1888,8 @@ struct cf_window *get_cf_window_list(struct cf_window_list_options options, stru
 
   CGWindowID relative_window = kCGNullWindowID;
 
-  if (w != NULL) {
+  if (w != NULL)
     relative_window = w->id;
-  }
 
   CFArrayRef            cf_window_dicts = CGWindowListCopyWindowInfo(cf_options, relative_window);
   CFIndex               window_count    = CFArrayGetCount(cf_window_dicts);
@@ -1515,17 +1932,15 @@ AXError AXUIElementCopyWindowAtPosition(CGPoint position, AXUIElementRef *window
                                                    position.y,
                                                    &element);
 
-  if (error != kAXErrorSuccess) {
+  if (error != kAXErrorSuccess)
     goto end;
-  }
 
   // If this element is a window, return it.
   error = AXUIElementCopyAttributeValue(element,
                                         kAXRoleAttribute,
                                         (CFTypeRef *)&role);
-  if (error != kAXErrorSuccess) {
+  if (error != kAXErrorSuccess)
     goto end;
-  }
 
   if (CFStringCompare(role, kAXWindowRole, 0) == kCFCompareEqualTo) {
     *window = element;
@@ -1540,12 +1955,10 @@ AXError AXUIElementCopyWindowAtPosition(CGPoint position, AXUIElementRef *window
 
 end:
   CFRelease(systemWideElement);
-  if (element != NULL) {
+  if (element != NULL)
     CFRelease(element);
-  }
-  if (role != NULL) {
+  if (role != NULL)
     CFRelease(role);
-  }
   return(error);
 } /* AXUIElementCopyWindowAtPosition */
 
@@ -1580,16 +1993,16 @@ int get_width_offset_from_display_id(int display_id){
 int get_width_offset_from_display_index(int display_index){
   int index = 0;
 
-  for (int i = 0; i < display_index; i++) {
+  for (int i = 0; i < display_index; i++)
     index += get_display_index_width(i);
-  }
   return(index);
 }
 
 bool set_window_id_to_space(size_t window_id, int space_id) {
-  uint32_t wid = (uint32_t)window_id;
-  uint64_t sid = (uint64_t)space_id;
+  uint32_t   wid  = (uint32_t)window_id;
+  uint64_t   sid  = (uint64_t)space_id;
   CFArrayRef wids = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
+
   SLSMoveWindowsToManagedSpace(g_connection, wids, sid);
   return(true);
 }
@@ -1599,9 +2012,8 @@ void window_send_to_space(struct window_info_t *window, uint64_t dsid) {
   CFArrayRef window_list = cfarray_of_cfnumbers(&wid, sizeof(uint32_t), 1, kCFNumberSInt32Type);
 
   SLSMoveWindowsToManagedSpace(g_connection, window_list, dsid);
-  if (CGPointEqualToPoint(window->rect.origin, g_nirvana)) {
+  if (CGPointEqualToPoint(window->rect.origin, g_nirvana))
     SLSMoveWindow(g_connection, window->window_id, &g_nirvana);
-  }
 }
 
 bool get_window_id_is_minimized(size_t window_id){
@@ -1611,9 +2023,9 @@ bool get_window_id_is_minimized(size_t window_id){
   struct window_info_t *w = get_window_id_info(window_id);
 
   log_debug("Checking if window %lu is minimized", window_id);
-  if (w->window_id != window_id) {
+  if (w->window_id != window_id)
     return(false);
-  }
+
   errno = 0;
   AXUIElementRef app = AXWindowFromCGWindow(w->window);
   AXError        err = AXUIElementCopyAttributeValue(app, kAXMinimizedAttribute, &value);
@@ -1649,9 +2061,8 @@ int get_window_connection_id(struct window_info_t *w){
 bool get_window_is_popover(struct window_info_t *w){
   CFStringRef role = get_window_role_ref(w->window);
 
-  if (!role) {
+  if (!role)
     return(false);
-  }
 
   bool result = CFEqual(role, kAXPopoverRole);
 
@@ -1704,11 +2115,10 @@ struct window_info_t *get_focused_window_info(){
 
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {
     struct window_info_t *wi = (struct window_info_t *)vector_get(window_infos_v, i);
-    if (wi->is_focused == true) {
+    if (wi->is_focused == true)
       window_info = wi;
-    }else{
+    else
       free(wi);
-    }
   }
   return(window_info);
 }
@@ -1718,11 +2128,10 @@ struct window_info_t *get_window_id_info(size_t window_id){
 
   for (size_t i = 0; i < vector_size(window_infos_v); i++) {
     struct window_info_t *wi = (struct window_info_t *)vector_get(window_infos_v, i);
-    if (wi->window_id == window_id) {
+    if (wi->window_id == window_id)
       window_info = wi;
-    }else{
+    else
       free(wi);
-    }
   }
   return(window_info);
 }
@@ -1735,9 +2144,8 @@ void print_all_window_items(FILE *rsp) {
 
   for (int i = 0; i < window_count; ++i) {
     CFDictionaryRef dictionary = CFArrayGetValueAtIndex(window_list, i);
-    if (!dictionary) {
+    if (!dictionary)
       continue;
-    }
 
     CFStringRef     owner_ref         = CFDictionaryGetValue(dictionary, kCGWindowOwnerName);
     CFNumberRef     owner_pid_ref     = CFDictionaryGetValue(dictionary, kCGWindowOwnerPID);
@@ -1750,9 +2158,8 @@ void print_all_window_items(FILE *rsp) {
     CFNumberRef     store_type_ref    = CFDictionaryGetValue(dictionary, kCGWindowStoreType);
     CFBooleanRef    is_onscreen_ref   = CFDictionaryGetValue(dictionary, kCGWindowIsOnscreen);
 
-    if (!name_ref || !owner_ref || !owner_pid_ref || !layer_ref || !window_id_ref) {
+    if (!name_ref || !owner_ref || !owner_pid_ref || !layer_ref || !window_id_ref)
       continue;
-    }
 
     uint64_t      owner_pid = 0, window_id = 0, sharing_state = 0, store_type = 0;
     long long int layer = 0, memory_usage = 0;
@@ -1766,9 +2173,8 @@ void print_all_window_items(FILE *rsp) {
     CFNumberGetValue(sharing_state_ref, CFNumberGetType(sharing_state_ref), &sharing_state);
     CFNumberGetValue(window_id_ref, CFNumberGetType(window_id_ref), &window_id);
     CFNumberGetValue(owner_pid_ref, CFNumberGetType(owner_pid_ref), &owner_pid);
-    if (is_onscreen_ref) {
+    if (is_onscreen_ref)
       is_onscreen = CFBooleanGetValue(is_onscreen_ref);
-    }
     CGRectMakeWithDictionaryRepresentation(window_bounds, &bounds);
     owner = cfstring_copy(owner_ref);
     name  = cfstring_copy(name_ref);
@@ -1816,14 +2222,13 @@ CGImageRef capture_window_id_height(size_t window_id, size_t height){
 
   w[0] = CGImageGetWidth(img_ref);
   h[0] = CGImageGetHeight(img_ref);
-  if (h[0] < height) {
+  if (h[0] < height)
     return(img_ref);
-  }else{
+  else{
     h[1] = height;
     float factor = 1;
-    if (h[0] > 100) {
+    if (h[0] > 100)
       factor = (float)(h[0]) / (float)(h[1]);
-    }
 
     w[1] = (int)((float)w[0] / factor);
     return(resize_cgimage(img_ref, w[1], h[1]));
@@ -1835,9 +2240,9 @@ CGImageRef capture_window_id_width(size_t window_id, size_t width){
   int        w[2], h[2];
 
   w[0] = CGImageGetWidth(img_ref);
-  if (w[0] < width) {
+  if (w[0] < width)
     return(img_ref);
-  }else{
+  else{
     h[0] = CGImageGetHeight(img_ref);
     w[1] = width;
     float factor = (float)(w[0]) / (float)(w[1]);
@@ -1910,9 +2315,8 @@ char *window_title(char *windowRef){
   if (value) {
     title = cstring_from_CFString(value);
     CFRelease(value);
-  } else {
+  } else
     title = cstring_from_CFString("");
-  }
 
   return(title);
 }
@@ -1926,9 +2330,9 @@ char *get_focused_window_title(){
   GetProcessPID(&psn, &pid);
   AXUIElementRef application_ref = AXUIElementCreateApplication(pid);
 
-  if (!application_ref) {
+  if (!application_ref)
     return(NULL);
-  }
+
   CFTypeRef window_ref = NULL;
 
   AXUIElementCopyAttributeValue(application_ref, kAXFocusedWindowAttribute, &window_ref);
@@ -2089,9 +2493,8 @@ bool move_window_info(struct window_info_t *w, const int X, const int Y){
   AXWindowSetPosition(app, newPosition);
   bool ok = true;
 
-  if (ok == false) {
+  if (ok == false)
     log_error("Failed moving app");
-  }
   return(ok);
 }
 
@@ -2101,9 +2504,8 @@ bool resize_window_info(struct window_info_t *w, const int WIDTH, const int HEIG
     w->window_id);
   int qty = CFArrayGetCount(window_list);
 
-  if (WINDOW_UTILS_DEBUG_MODE) {
+  if (WINDOW_UTILS_DEBUG_MODE)
     log_debug("%d windows", qty);
-  }
   AXUIElementRef app       = AXWindowFromCGWindow(w->window);
   CGSize         size      = CGSizeMake(WIDTH, HEIGHT);
   AXValueRef     attrValue = AXValueCreate(kAXValueCGSizeType, &size);
@@ -2186,9 +2588,8 @@ int EnumerateWindows(char *pattern,
     subPatternLen = patternLen + strlen(starL) + strlen(starR) + 1;
     subPattern    = (char *)malloc(subPatternLen);
     snprintf(subPattern, subPatternLen, "%s%s%s", starL, pattern, starR);
-  } else {
+  } else
     subPattern = pattern;
-  }
 
   windowList = CGWindowListCopyWindowInfo(
     (kCGWindowListExcludeDesktopElements),
@@ -2199,43 +2600,35 @@ int EnumerateWindows(char *pattern,
     window = CFArrayGetValueAtIndex(windowList, i);
 
     layer = CFDictionaryGetInt(window, kCGWindowLayer);
-    if (layer > 0) {
+    if (layer > 0)
       continue;
-    }
 
     appName = windowName = title = NULL;
     appName = CFDictionaryCopyCString(window, kCGWindowOwnerName);
-    if (!appName || !*appName) {
+    if (!appName || !*appName)
       goto skip;
-    }
     windowName = CFDictionaryCopyCString(window, kCGWindowName);
-    if (!windowName || (!*windowName && !emptyWindowNameAllowed(appName))) {
+    if (!windowName || (!*windowName && !emptyWindowNameAllowed(appName)))
       goto skip;
-    }
     title = windowTitle(appName, windowName);
 
     if (!pattern || fnmatch(subPattern, title, 0) == 0) {
-      if (callback) {
+      if (callback)
         (*callback)(window, callback_data);
-      }
       count++;
     }
 
 skip:
-    if (title) {
+    if (title)
       free(title);
-    }
-    if (windowName) {
+    if (windowName)
       free(windowName);
-    }
-    if (appName) {
+    if (appName)
       free(appName);
-    }
   }
   CFRelease(windowList);
-  if (subPattern != pattern) {
+  if (subPattern != pattern)
     free(subPattern);
-  }
 
   return(count);
 } /* EnumerateWindows */
@@ -2249,24 +2642,21 @@ CGWindowID CGWindowWithInfo(AXUIElementRef window, __attribute__((unused)) CGPoi
 #else
   pid_t pid;
   error = AXUIElementGetPid(window, &pid);
-  if (error != kAXErrorSuccess) {
+  if (error != kAXErrorSuccess)
     return(kCGNullWindowID);
-  }
 
   CFStringRef title = NULL;
   error = AXUIElementGetTitle(window, &title);
 
   CGRect frame;
   error = AXUIElementGetFrame(window, &frame);
-  if (error != kAXErrorSuccess) {
+  if (error != kAXErrorSuccess)
     return(kCGNullWindowID);
-  }
 
   CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements,
                                                      kCGNullWindowID);
-  if (windowList == NULL) {
+  if (windowList == NULL)
     return(kCGNullWindowID);
-  }
 
   for (CFIndex i = 0; i < CFArrayGetCount(windowList); i++) {
     CFDictionaryRef window = CFArrayGetValueAtIndex(windowList, i);
@@ -2276,21 +2666,18 @@ CGWindowID CGWindowWithInfo(AXUIElementRef window, __attribute__((unused)) CGPoi
                      kCFNumberIntType,
                      &windowPID);
 
-    if (windowPID != pid) {
+    if (windowPID != pid)
       continue;
-    }
 
     CGRect windowBounds;
     CGRectMakeWithDictionaryRepresentation(CFDictionaryGetValue(window, kCGWindowBounds),
                                            &windowBounds);
 
-    if (!CGSizeEqualToSize(frame.size, windowBounds.size)) {
+    if (!CGSizeEqualToSize(frame.size, windowBounds.size))
       continue;
-    }
 
-    if (!CGRectContainsPoint(windowBounds, location)) {
+    if (!CGRectContainsPoint(windowBounds, location))
       continue;
-    }
 
     CFStringRef windowName = CFDictionaryGetValue(window, kCGWindowName);
     if (windowName == NULL || title == NULL || CFStringCompare(windowName, title, 0) == kCFCompareEqualTo) {
@@ -2313,9 +2700,8 @@ CGRect CGWindowGetBounds(CGWindowID windowID) {
   CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow,
                                                 windowID);
 
-  if (CFArrayGetCount(array) != 1) {
+  if (CFArrayGetCount(array) != 1)
     return(CGRectMake(NAN, NAN, NAN, NAN));
-  }
 
   CFDictionaryRef dict    = CFArrayGetValueAtIndex(array, 0);
   CFDictionaryRef _bounds = CFDictionaryGetValue(dict, kCGWindowBounds);
@@ -2343,9 +2729,8 @@ CGWindowID CGWindowAtPosition(CGPoint position) {
   CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListExcludeDesktopElements,
                                                      kCGNullWindowID);
 
-  if (windowList == NULL) {
+  if (windowList == NULL)
     return(kCGNullWindowID);
-  }
 
   CGWindowID windowID = kCGNullWindowID;
 
@@ -2356,9 +2741,8 @@ CGWindowID CGWindowAtPosition(CGPoint position) {
     CFNumberGetValue(CFDictionaryGetValue(window, kCGWindowLayer),
                      kCFNumberIntType,
                      &layer);
-    if (layer != 0) {
+    if (layer != 0)
       continue;
-    }
 
     CGRect windowBounds;
     CGRectMakeWithDictionaryRepresentation(CFDictionaryGetValue(window, kCGWindowBounds),
@@ -2412,4 +2796,5 @@ static void __attribute__((constructor)) __constructor__window_utils(void){
     log_debug("Enabling Window Utils Debug Mode");
     WINDOW_UTILS_DEBUG_MODE = true;
   }
+  DEBUG_STREAM_UPDATES = WINDOW_UTILS_DEBUG_MODE;
 }

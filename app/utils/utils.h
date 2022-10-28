@@ -89,5 +89,6 @@ struct authorized_tests_t {
 ///////////////////////////////////////////////////////////////////////
 authorized_test_t *execute_authorization_tests();
 void debug_app(struct app_t *app);
+hash_t *app_utils_get_closes_app_name_matches(char *name, size_t qty);
 #endif
 ///////////////////////////////////////////////////////////////////////

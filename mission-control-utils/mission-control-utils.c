@@ -50,9 +50,8 @@ int mission_control_index(uint64_t sid) {
       CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
       CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
       CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &result);
-      if (sid == result) {
+      if (sid == result)
         goto out;
-      }
 
       ++desktop_cnt;
     }

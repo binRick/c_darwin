@@ -50,9 +50,8 @@ static int receive_save_request_handler(void *R){
     save_started = timestamp();
     switch (res->format) {
     case IMAGE_TYPE_QOI:
-      if (!fsio_write_binary_file(res->file, res->pixels, res->len)) {
+      if (!fsio_write_binary_file(res->file, res->pixels, res->len))
         log_error("Failed to save QOI file %s with %lu Pixels", res->file, res->len);
-      }
       break;
     default:
       image_loader_name = vips_foreign_find_load_buffer(res->pixels, res->len);
@@ -67,26 +66,23 @@ static int receive_save_request_handler(void *R){
             image_loader_name
             );
 
-      if (!image_loader_name || !image || image_target_file_savers[res->format](image, res->file, NULL)) {
+      if (!image_loader_name || !image || image_target_file_savers[res->format](image, res->file, NULL))
         log_error("Failed to save file %s with loader %s", res->file, image_loader_name);
-      }
-      if (image) {
+      if (image)
         g_object_unref(image);
-      }
-
     }
     dur = timestamp() - save_started;
 
     log_debug("Thread #%lu>"
-            "\n\tReceived %s %s Save Capture Request #%lu to %s"
-            "%s",
-            r->index + 1,
-            bytes_to_string(res->len),
-            image_type_name(res->format),
-            qty,
-            res->file,
-            ""
-            );
+              "\n\tReceived %s %s Save Capture Request #%lu to %s"
+              "%s",
+              r->index + 1,
+              bytes_to_string(res->len),
+              image_type_name(res->format),
+              qty,
+              res->file,
+              ""
+              );
     r->bytes = fsio_file_size(res->file);
     chan_send(r->done_chan, (void *)r);
   }
@@ -138,8 +134,8 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
         ""
         );
   for (size_t i = 0; i < concurrency; i++) {
-    chans[i] = chan_init(vector_size(results_v));
-    done_chans[i] = chan_init(vector_size(results_v)/concurrency);
+    chans[i]      = chan_init(vector_size(results_v));
+    done_chans[i] = chan_init(vector_size(results_v) / concurrency);
     struct save_result_t *r = calloc(1, sizeof(struct save_result_t));
     r->done_chan = done_chans[i];
     r->recv_chan = chans[i];
@@ -153,11 +149,11 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
     chan_send(chans[i % concurrency], r);
   }
   sleep(1);
-  for (size_t i = 0; i < concurrency; i++) {
+  for (size_t i = 0; i < concurrency; i++)
     chan_close(chans[i % concurrency]);
-  }
-  size_t done_qty =0;
-  for (size_t i = 0; i < concurrency; i++) {
+  size_t done_qty = 0;
+
+  for (size_t i = 0; i < concurrency; i++)
     while (chan_recv(done_chans[i], &msg) == 0) {
       if (progress_bar_mode) {
         bar->progress += (float)((float)1 / (float)(vector_size(results_v)));
@@ -165,10 +161,9 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
       }
       struct save_result_t *r = (struct save_result_t *)msg;
       res->bytes += r->bytes;
-      log_debug("Received save result #%lu/%lu %s", done_qty+1, vector_size(results_v), bytes_to_string(r->bytes));
+      log_debug("Received save result #%lu/%lu %s", done_qty + 1, vector_size(results_v), bytes_to_string(r->bytes));
       done_qty++;
     }
-  }
   res->dur = timestamp() - res->started;
   if (progress_bar_mode) {
     bar->progress = (float)1.00;

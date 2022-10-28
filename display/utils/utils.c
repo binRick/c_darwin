@@ -80,9 +80,8 @@ static struct display_parser_t display_parsers[DISPLAY_PARSER_TYPES_QTY + 1] = {
 void print_displays(){
   struct Vector *displays_v = get_displays_v();
 
-  for (size_t i = 0; i < vector_size(displays_v); i++) {
+  for (size_t i = 0; i < vector_size(displays_v); i++)
     print_display((struct display_t *)vector_get(displays_v, i));
-  }
 }
 
 static void print_display(struct display_t *d){
@@ -107,19 +106,18 @@ static void print_display(struct display_t *d){
 }
 
 static void parse_display(struct display_t *d, size_t display_id){
-  for (size_t i = 0; i < DISPLAY_PARSER_TYPES_QTY; i++) {
-    if (display_parsers[i].enabled == true) {
+  for (size_t i = 0; i < DISPLAY_PARSER_TYPES_QTY; i++)
+    if (display_parsers[i].enabled == true)
       display_parsers[i].parser(d, display_id);
-    }
-  }
 }
 
 struct display_t *get_display_t_id(size_t display_id){
   struct display_t *d = NULL, *cur = NULL;
-  struct Vector *v = get_displays_v();
-  for(size_t i = 0; d == NULL && i < vector_size(v);i++){
-    cur = (struct display_t*)vector_get(v,i);
-    if(display_id ==  cur->display_id)
+  struct Vector    *v = get_displays_v();
+
+  for (size_t i = 0; d == NULL && i < vector_size(v); i++) {
+    cur = (struct display_t *)vector_get(v, i);
+    if (display_id == cur->display_id)
       d = cur;
   }
   return(d);
@@ -190,9 +188,8 @@ void get_display_bounds(int *x, int *y, int *w, int *h){
 int get_space_display_id(int sid){
   CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, (uint32_t)sid);
 
-  if (!uuid_string) {
+  if (!uuid_string)
     return(0);
-  }
 
   CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
   uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
@@ -219,9 +216,8 @@ uint64_t get_dsid_from_sid(uint32_t sid) {
       CFDictionaryRef space_ref = CFArrayGetValueAtIndex(spaces_ref, j);
       CFNumberRef     sid_ref   = CFDictionaryGetValue(space_ref, CFSTR("id64"));
       CFNumberGetValue(sid_ref, CFNumberGetType(sid_ref), &result);
-      if (sid == (uint32_t)desktop_cnt) {
+      if (sid == (uint32_t)desktop_cnt)
         goto out;
-      }
 
       ++desktop_cnt;
     }
@@ -236,14 +232,13 @@ out:
 int get_display_id_for_space(uint32_t sid) {
   uint64_t dsid = get_dsid_from_sid(sid);
 
-  if (!dsid) {
+  if (!dsid)
     return(0);
-  }
+
   CFStringRef uuid_string = SLSCopyManagedDisplayForSpace(g_connection, dsid);
 
-  if (!uuid_string) {
+  if (!uuid_string)
     return(0);
-  }
 
   CFUUIDRef uuid = CFUUIDCreateFromString(NULL, uuid_string);
   uint32_t  id   = CGDisplayGetDisplayIDFromUUID(uuid);
@@ -284,9 +279,8 @@ size_t get_display_index_id(int display_index){
 
   for (size_t i = 0; display_id == 0 && i < vector_size(v); i++) {
     id = (size_t)(vector_get(v, i));
-    if (get_display_id_index(id) == display_index) {
+    if (get_display_id_index(id) == display_index)
       display_id = id;
-    }
   }
   return(display_id);
 }
@@ -297,16 +291,12 @@ int get_display_id_index(size_t display_id){
   CGDirectDisplayID *display_ids        = calloc(MAX_DISPLAYS, sizeof(CGDirectDisplayID));
   CGError           get_displays_result = CGGetActiveDisplayList(UCHAR_MAX, display_ids, &displays_qty);
 
-  if (get_displays_result == kCGErrorSuccess) {
-    for (size_t i = 0; i < displays_qty && i < MAX_DISPLAYS; i++) {
-      if (display_id == (size_t)display_ids[i]) {
+  if (get_displays_result == kCGErrorSuccess)
+    for (size_t i = 0; i < displays_qty && i < MAX_DISPLAYS; i++)
+      if (display_id == (size_t)display_ids[i])
         index = i;
-      }
-    }
-  }
-  if (display_ids) {
+  if (display_ids)
     free(display_ids);
-  }
   return(index);
 }
 
@@ -316,14 +306,12 @@ struct Vector *get_display_ids_v(){
   CGDirectDisplayID *display_ids        = calloc(MAX_DISPLAYS, sizeof(CGDirectDisplayID));
   CGError           get_displays_result = CGGetActiveDisplayList(UCHAR_MAX, display_ids, &displays_qty);
 
-  if (get_displays_result == kCGErrorSuccess) {
+  if (get_displays_result == kCGErrorSuccess)
     for (size_t i = 0; i < displays_qty && i < MAX_DISPLAYS; i++) {
       size_t display_id = (size_t)display_ids[i];
-      if (display_id > 0) {
+      if (display_id > 0)
         vector_push(ids, (void *)display_id);
-      }
     }
-  }
   return(ids);
 }
 
@@ -351,9 +339,8 @@ char *get_display_uuid(uint32_t did){
 CFStringRef get_display_uuid_ref(uint32_t did){
   CFUUIDRef uuid_ref = CGDisplayCreateUUIDFromDisplayID(did);
 
-  if (!uuid_ref) {
+  if (!uuid_ref)
     return(NULL);
-  }
 
   CFStringRef uuid_str = CFUUIDCreateString(NULL, uuid_ref);
 
@@ -365,9 +352,8 @@ CFStringRef get_display_uuid_ref(uint32_t did){
 int get_display_id(CFStringRef uuid){
   CFUUIDRef uuid_ref = CFUUIDCreateFromString(NULL, uuid);
 
-  if (!uuid_ref) {
+  if (!uuid_ref)
     return(0);
-  }
 
   uint32_t did = CGDisplayGetDisplayIDFromUUID(uuid_ref);
 
@@ -444,9 +430,8 @@ struct Vector *get_display_id_space_ids_v(uint32_t did){
   for (int i = 0; i < display_spaces_count; i++) {
     CFDictionaryRef display_ref = CFArrayGetValueAtIndex(display_spaces_ref, i);
     CFStringRef     identifier  = CFDictionaryGetValue(display_ref, CFSTR("Display Identifier"));
-    if (!CFEqual(uuid, identifier)) {
+    if (!CFEqual(uuid, identifier))
       continue;
-    }
 
     CFArrayRef spaces_ref = CFDictionaryGetValue(display_ref, CFSTR("Spaces"));
     int        qty        = CFArrayGetCount(spaces_ref);

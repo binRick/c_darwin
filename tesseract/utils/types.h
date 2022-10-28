@@ -4,6 +4,7 @@
 #include "c_vector/vector/vector.h"
 #include "capture/utils/utils.h"
 #include "tesseract/capi.h"
+#include "tesseract/utils/utils.h"
 #include "window/utils/utils.h"
 #include <assert.h>
 #include <ctype.h>
@@ -14,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "tesseract/utils/utils.h"
 struct TesseractArgs {
   size_t                 id;
   char                   *file;

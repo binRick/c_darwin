@@ -28,18 +28,16 @@ static void dock_internal_fxn1(void);
 ////////////////////////////////////////////
 static void dock_internal_fxn1(void){
   log_info("Called function dock_internal_fxn1");
-  if (DOCK_DEBUG_MODE == true) {
+  if (DOCK_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void dock_fxn1(void){
   dock_internal_fxn1();
   log_info("Called function dock_fxn1");
-  if (DOCK_DEBUG_MODE == true) {
+  if (DOCK_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

@@ -59,9 +59,8 @@ char *get_config_response_body(){
            cfg_data_s, (size_t)((size_t)timestamp() - (size_t)config_started), strlen(cfg_data_s),
            ""
            );
-  if (cfg_data_s) {
+  if (cfg_data_s)
     free(cfg_data_s);
-  }
   return(response_body);
 }
 
@@ -255,9 +254,8 @@ JSON_Value *get_json_config(){
     struct window_info_t *w;
     for (size_t i = 0; i < vector_size(window_infos_v); i++) {
       w = (struct window_info_t *)vector_get(window_infos_v, i);
-      if (!w) {
+      if (!w)
         continue;
-      }
       JSON_Value *w_v = json_value_init_object();
       json_object_set_number(json_object(w_v), "pid", w->pid);
       json_object_set_number(json_object(w_v), "display_id", w->display_id);

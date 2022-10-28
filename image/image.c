@@ -28,18 +28,16 @@ static void image_internal_fxn1(void);
 ////////////////////////////////////////////
 static void image_internal_fxn1(void){
   log_info("Called function image_internal_fxn1");
-  if (IMAGE_DEBUG_MODE == true) {
+  if (IMAGE_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void image_fxn1(void){
   image_internal_fxn1();
   log_info("Called function image_fxn1");
-  if (IMAGE_DEBUG_MODE == true) {
+  if (IMAGE_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

@@ -108,33 +108,30 @@ static char *load_system_profiler_cache_item(char *ITEM_NAME, size_t CACHE_TTL){
   rc         = iwkv_get(mydb, &key, &val);
   if (rc) {
     if (SYSTEMPROFILER_DEBUG_MODE == true) {
-      if (rc == IWKV_ERROR_NOTFOUND) {
+      if (rc == IWKV_ERROR_NOTFOUND)
         log_error("Failed to get %s/%s from %s", cache_item_key, cache_item_ts_key, cache_item_file);
-      }else{
+      else
         iwlog_ecode_error3(rc);
-      }
     }
     goto fail;
   }
   rc = iwkv_get(mydb, &tskey, &tsval);
   if (rc) {
-    if (rc == IWKV_ERROR_NOTFOUND) {
+    if (rc == IWKV_ERROR_NOTFOUND)
       log_error("Items %s/%s not found in %s", cache_item_key, cache_item_ts_key, cache_item_file);
-    }else{
+    else
       iwlog_ecode_error3(rc);
-    }
     goto fail;
   }
   char   **ep;
   size_t ts      = (size_t)strtoimax(tsval.data, &ep, 10);
   char   *s      = strdup(val.data);
   bool   expired = ((((size_t)timestamp() - ts) / 1000) > CACHE_TTL) ? true : false;
-  if (SYSTEMPROFILER_DEBUG_MODE == true) {
+  if (SYSTEMPROFILER_DEBUG_MODE == true)
     log_debug("%s> %s cache with ts %lu|age: %s|expired:%d|", ITEM_NAME, bytes_to_string(strlen(s)), ts, milliseconds_to_string(((size_t)timestamp()) - ts), expired);
-  }
-  if (expired == true || strlen(s) < 1024) {
+  if (expired == true || strlen(s) < 1024)
     return(NULL);
-  }
+
   CLEANUP_SYSTEM_PROFILER_CACHE_ITEM()
   return(s);
 
@@ -147,9 +144,8 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
   char *cached = load_system_profiler_cache_item(ITEM_NAME, CACHE_TTL);
 
   if ((cached != NULL) && (cached[0] == '{') && (cached[strlen(cached) - 1] == '}')) {
-    if (SYSTEMPROFILER_DEBUG_MODE == true) {
+    if (SYSTEMPROFILER_DEBUG_MODE == true)
       log_debug("%s> returning cache!", ITEM_NAME);
-    }
     return(cached);
   }
 
@@ -171,9 +167,8 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
     };
 
     r = reproc_start(process, args, (reproc_options){ .nonblocking = true });
-    if (r < 0) {
+    if (r < 0)
       goto finish;
-    }
 
     children[i].process   = process;
     children[i].interests = REPROC_EVENT_OUT;
@@ -187,9 +182,8 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
     }
 
     for (int i = 0; i < NUM_CHILDREN; i++) {
-      if (children[i].process == NULL || !children[i].events) {
+      if (children[i].process == NULL || !children[i].events)
         continue;
-      }
       uint8_t output[1024 * 256];
       r = reproc_read(children[i].process, REPROC_STREAM_OUT, output, sizeof(output));
       if (r == REPROC_EPIPE) {
@@ -197,9 +191,8 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
         continue;
       }
 
-      if (r < 0) {
+      if (r < 0)
         goto finish;
-      }
 
       output[r] = '\0';
       stringbuffer_append_string(SB, output);
@@ -207,9 +200,8 @@ char *run_system_profiler_item_subprocess(char *ITEM_NAME, size_t CACHE_TTL){
   }
 
 finish:
-  for (int i = 0; i < NUM_CHILDREN; i++) {
+  for (int i = 0; i < NUM_CHILDREN; i++)
     reproc_destroy(children[i].process);
-  }
 
   if (r < 0) {
     log_error("%s", reproc_strerror(r));

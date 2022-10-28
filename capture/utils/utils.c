@@ -166,9 +166,9 @@ bool capture_type_capture_png_file(enum capture_type_id_t capture_type_id, size_
 }
 
 unsigned char *capture_type_capture_png(enum capture_type_id_t capture_type_id, size_t capture_id, size_t *size){
-  if (CACHE_ENABLED && capture_type_cache_file_is_expired(capture_type_id, capture_id) == false) {
+  if (CACHE_ENABLED && capture_type_cache_file_is_expired(capture_type_id, capture_id) == false)
     return(capture_type_get_cached_png(capture_type_id, capture_id, size));
-  }
+
   unsigned char *pixels = save_cgref_to_png_memory(capture_types[capture_type_id].capture(capture_id), size);
   return(
     (size > 0) == true
@@ -188,15 +188,14 @@ CGImageRef capture_type_capture_rect(enum capture_type_id_t capture_type_id, siz
 }
 
 CGImageRef capture_type_capture(enum capture_type_id_t capture_type_id, size_t capture_id){
-  if (CACHE_ENABLED && capture_type_cache_file_is_expired(capture_type_id, capture_id) == false) {
+  if (CACHE_ENABLED && capture_type_cache_file_is_expired(capture_type_id, capture_id) == false)
     return(capture_type_get_cached_cgimage(capture_type_id, capture_id));
-  }
+
   CGImageRef image_ref = capture_types[capture_type_id].capture(capture_id);
-  if (CACHE_ENABLED) {
+  if (CACHE_ENABLED)
     return(capture_type_cache(capture_type_id, capture_id, image_ref));
-  }else{
+  else
     return(image_ref);
-  }
 }
 
 struct Vector *capture_type_get_items(enum capture_type_id_t capture_type_id){

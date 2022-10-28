@@ -38,8 +38,7 @@ __attribute__((constructor)) void __kl__c_init(void){
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
-  if (isatty(STDOUT_FILENO)) {
+  if (isatty(STDOUT_FILENO))
     RUN_SUITE(s_keylogger);
-  }
   GREATEST_MAIN_END();
 }

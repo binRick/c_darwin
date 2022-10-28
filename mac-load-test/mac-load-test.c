@@ -11,7 +11,7 @@
 void MAC_Handler(OnRect, NSRect rect) {
   set(keyboardFocusIndicatorColor(_(NSColor)));
   const int n = 12;
-  for (double f = 0; f < 2 * M_PI; f += 2 * M_PI / n) {
+  for (double f = 0; f < 2 * M_PI; f += 2 * M_PI / n)
     for (double g = 0; g < 2 * M_PI; g += 2 * M_PI / n) {
       NSPoint begin = { (sin(f) + 1) * rect.size.width * 0.5,
                         (cos(f) + 1) * rect.size.height * 0.5 };
@@ -19,7 +19,6 @@ void MAC_Handler(OnRect, NSRect rect) {
                       (cos(g) + 1) * rect.size.height * 0.5 };
       strokeLineFromPoint_toPoint_(_(NSBezierPath), begin, end);
     }
-  }
 }
 
 void MAC_Handler(OnClose, __attribute__((unused)) NSNotification *notification) {
@@ -106,9 +105,8 @@ void __mac_load_test__setup_executable_path(const char **argv){
   realpath(argv[0], EXECUTABLE_PATH);
   EXECUTABLE              = basename(EXECUTABLE_PATH);
   EXECUTABLE_PATH_DIRNAME = dirname(EXECUTABLE_PATH);
-  if (DEBUG_MODE_ENABLED) {
+  if (DEBUG_MODE_ENABLED)
     fprintf(stderr, "mac-load-test Initialized @ %s/%s\n", EXECUTABLE_PATH_DIRNAME, EXECUTABLE_PATH);
-  }
 }
 
 void __attribute__((constructor)) __constructor__mac_load_test(){

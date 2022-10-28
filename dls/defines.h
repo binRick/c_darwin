@@ -10,5 +10,6 @@
 #define NORMALIZE_ARGV                         false
 #define DEFAULT_PROGRESS_BAR_ENABLED           true
 #define DEFAULT_CAPTURE_TYPE                   CAPTURE_TYPE_WINDOW
+#define MAX_SUBCOMMANDS                        1024
 
 #endif

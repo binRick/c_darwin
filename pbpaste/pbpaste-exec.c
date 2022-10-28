@@ -38,9 +38,8 @@ char *pbpaste_exec(void){
   assert_eq(result, 0, %d);
   do {
     bytes_read = subprocess_read_stdout(&subprocess, stdout_buffer, STDOUT_READ_BUFFER_SIZE - 1);
-    if (bytes_read > 0) {
+    if (bytes_read > 0)
       stringbuffer_append_string(SB, stdout_buffer);
-    }
     index += bytes_read;
   } while (bytes_read != 0);
   result = subprocess_join(&subprocess, &exited);

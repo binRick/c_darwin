@@ -6,19 +6,17 @@ static bool OSX_KEYS_DEBUG_MODE = false;
 void toKey(CGKeyCode kc, CGEventFlags flags, bool upOrDown) {
   CGEventRef theEvent = CGEventCreateKeyboardEvent(NULL, kc, upOrDown);
 
-  if (flags) {
+  if (flags)
     CGEventSetFlags(theEvent, flags);
-  }
   CGEventPost(kCGAnnotatedSessionEventTap, theEvent);
   CFRelease(theEvent);
 }
 
 short AsciiToKeyCode(Ascii2KeyCodeTable *ttable, short asciiCode) {
-  if (asciiCode >= 0 && asciiCode <= 255) {
+  if (asciiCode >= 0 && asciiCode <= 255)
     return(ttable->transtable[asciiCode]);
-  } else {
+  else
     return(false);
-  }
 }
 
 const char *convertKeyboardCode(const int keyCode) {

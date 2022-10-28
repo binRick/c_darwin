@@ -15,21 +15,19 @@ int32_t get_int_property(IOHIDDeviceRef device, CFStringRef key){
   int32_t   value;
 
   ref = IOHIDDeviceGetProperty(device, key);
-  if (ref) {
+  if (ref)
     if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
       CFNumberGetValue((CFNumberRef)ref, kCFNumberSInt32Type, &value);
       return(value);
     }
-  }
   return(0);
 }
 
 int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, size_t len){
   CFStringRef str;
 
-  if (!len) {
+  if (!len)
     return(0);
-  }
 
   str = (CFStringRef)IOHIDDeviceGetProperty(device, prop);
 
@@ -54,16 +52,14 @@ int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t *buf, s
                                       len * sizeof(wchar_t),
                                       &used_buf_len);
 
-    if (chars_copied <= 0) {
+    if (chars_copied <= 0)
       buf[0] = 0;
-    }else{
+    else
       buf[chars_copied] = 0;
-    }
 
     return(0);
-  }else {
+  }else
     return(-1);
-  }
 } /* get_string_property */
 
 unsigned short get_vendor_id(IOHIDDeviceRef device){

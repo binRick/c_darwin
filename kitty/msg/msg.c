@@ -61,6 +61,7 @@ static struct pos kitty_get_position(){
 
 static struct winsize *kitty_get_terminal_size(void){
   struct winsize *sz = calloc(1, sizeof(struct winsize));
+
   ioctl(STDOUT_FILENO, TIOCGWINSZ, sz);
   return(sz);
 }
@@ -267,12 +268,12 @@ static void __attribute__((constructor)) __constructor__kitty_msg(void){
     KITTY_MSG_DEBUG_MODE = true;
   }
   /*
-  struct winsize *ws = kitty_get_terminal_size();
-  log_info("%dpxx%dpx",
-      ws->ws_xpixel,
-      ws->ws_ypixel
-      ); 
-      */
+   * struct winsize *ws = kitty_get_terminal_size();
+   * log_info("%dpxx%dpx",
+   *  ws->ws_xpixel,
+   *  ws->ws_ypixel
+   *  );
+   */
 }
 
 static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){

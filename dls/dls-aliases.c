@@ -28,18 +28,17 @@ static const struct dls_ordered_arg_t {
 static const size_t dls_ordered_args_qty = (sizeof(dls_ordered_args) / sizeof(dls_ordered_args[0]));
 
 bool dls_get_arg_is_ordered(char *arg1, char *arg2){
-  if (!arg1 || !arg2) {
+  if (!arg1 || !arg2)
     return(false);
-  }
-  for (size_t i = 0; i < dls_ordered_args_qty; i++) {
+
+  for (size_t i = 0; i < dls_ordered_args_qty; i++)
     if (
       strcmp(arg2, dls_ordered_args[i].after) == 0
       &&
       strcmp(arg1, dls_ordered_args[i].before) == 0
-      ) {
+      )
       return(true);
-    }
-  }
+
   return(false);
 }
 
@@ -52,13 +51,10 @@ char **dls_get_alias_type_globs(enum alias_type_t type){
 }
 
 char *dls_get_alias_wildcard_glob_name(char *text){
-  for (int n = 0; n < ALIAS_TYPES_QTY; n++) {
-    for (int i = 0; i < MAX_ALIASES && alias_name_globs[n][i] != NULL; i++) {
-      if (strcmp(alias_name_globs[n][i], text) == 0) {
+  for (int n = 0; n < ALIAS_TYPES_QTY; n++)
+    for (int i = 0; i < MAX_ALIASES && alias_name_globs[n][i] != NULL; i++)
+      if (strcmp(alias_name_globs[n][i], text) == 0)
         return(dls_get_alias_type_name(n));
-      }
-    }
-  }
 }
 
 #endif

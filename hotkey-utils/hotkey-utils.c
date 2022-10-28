@@ -11,7 +11,9 @@
 #include "hash/hash.h"
 #include "dls/dls.h"
 #include "container_of/container_of.h"
+#include "submodules/levenshtein/deps/levenshtein.c/levenshtein.h"
 ////////////////////////////////////////////
+#define HOTKEY_MODE_NAME(ID) hk_layout_mode_names[ID]
 #define HOTKEY_UTILS_HASH_SEED    212136436
 #define RELOAD_CONFIG_MS 10000
 #define HOTKEYS_CONFIG_FILE_NAME    "config.yaml"
@@ -88,7 +90,7 @@ enum hk_err_t {
   HK_ERR_WINDOW_IDS_LOOKUP_FAILURE,
   HK_ERR_TYPES_QTY,
 };
-extern char DLS_EXECUTABLE[1024], **DLS_EXECUTABLE_ARGV; 
+extern char *DLS_EXECUTABLE, **DLS_EXECUTABLE_ARGV; 
 extern int DLS_EXECUTABLE_ARGC;
 static bool HOTKEY_UTILS_DEBUG_MODE = false, HOTKEY_UTILS_VERBOSE_DEBUG_MODE;
 static char *EXECUTABLE_PATH_DIRNAME;
@@ -123,6 +125,77 @@ enum hk_window_utils_id_t {
   HK_WINDOW_UTIL_TYPES_QTY,
 };
 
+
+struct hk_dur_t {
+  unsigned long dur, started;
+};
+enum hk_format_t {
+  HK_FORMAT_QOI,
+  HK_FORMAT_JPEG,
+  HK_FORMATS_QTY,
+};
+enum image_type_id_t hk_formats[] = {
+  [HK_FORMAT_JPEG] = IMAGE_TYPE_JPEG,
+  [HK_FORMAT_QOI] = IMAGE_TYPE_QOI,
+};
+enum hk_vip_t {
+  HK_VIP_IMAGE,
+  HK_VIP_RESIZED,
+  HK_VIP_RED_RECT,
+  HK_VIP_RESIZED_RED_RECT,
+  HK_VIPS_QTY,
+};
+struct hk_image_t {
+  CGImageRef img, resized;
+  unsigned char *qoi, *resized_qoi;
+  size_t len, qoi_len,resized_qoi_len;
+  uint32_t width,height;
+  uint32_t qoi_width,qoi_height;
+  uint32_t resized_width,resized_height;
+  struct hk_dur_t capture, convert, resize;
+  VipsImage *vips[HK_VIPS_QTY];
+  unsigned char *pixels[HK_FORMATS_QTY];
+  size_t sizes[HK_FORMATS_QTY];
+};
+struct hk_rendered_app_t {
+  size_t window_id;
+  pid_t pid;
+  char *name;
+  uint32_t x,y,width,height;
+  struct hk_image_t image;
+};
+struct hk_rendered_area_t {
+  size_t index, id;
+  uint32_t width,height;
+  struct hk_image_t image;
+  size_t len;
+};
+
+struct hk_render_t {
+  struct hk_rendered_area_t *display;
+  struct hk_rendered_area_t *space;
+  struct hk_rendered_app_t *master;
+  struct hk_rendered_app_t **items;
+};
+enum hk_fmt_t {
+    HK_FMT_TYPE_MASTER,
+    HK_FMT_TYPE_DISPLAY,
+    HK_FMT_TYPE_CHILD,
+    HK_FMT_TYPE_CHILDREN,
+    HK_FMT_TYPE_DURATION,
+    HK_FMT_TYPES_QTY,
+};
+
+#define CHILDREN_OFFSET 4
+#define ENSURE_LAYOUT_INDEX(I){ do{\
+  if(I<0){\
+    log_error("Layout not found");\
+    return(false);\
+  }\
+} while(0); }
+
+static double    red[]         = { 255, 0, 0, 255 };
+static double    transparent[] = { 0, 0, 0, 0 };
 
 static hash_t *get_window_ids_hash_from_layout_index(int index);
 static int get_first_space_id_direction_from_window_id(enum hk_utils_move_window_direction_type_t DIRECTION, size_t window_id);
@@ -512,6 +585,13 @@ int hk_get_layout_name_index(char *name){
   return(r);
 }
 
+int get_layout_mode_id_by_name(char *name){
+  for(size_t i = 0; i < HK_LAYOUT_MODE_TYPES_QTY;i++)
+    if(strcmp(hk_layout_mode_names[i],name)==0)
+      return(i);
+  return(-1);
+}
+
 struct layout_result_t *hk_render_layout_name(char *name){
   struct hotkeys_config_t *cfg         = hk_get_config();
   int I = hk_get_layout_name_index(name);
@@ -522,86 +602,40 @@ struct layout_result_t *hk_render_layout_name(char *name){
   struct layout_request_t *req; struct layout_result_t *res;
   req = layout_init_request();
   req->debug = HOTKEY_UTILS_DEBUG_MODE;
-  req->mode = LAYOUT_MODE_HORIZONTAL;
+  req->mode = get_layout_mode_id_by_name(cfg->layouts[I].mode);
+  req->gravity = cfg->layouts[I].gravity;
   req->max_width = get_display_width();
   req->max_height = get_display_height();
-  req->master_width = (int)((float)(req->max_width) * (float)(cfg->layouts[I].width)/100);
-  req->master_height = req->max_height;
+  req->master_margins[0] = 0;
+  req->content_margins[0] = 0;
+  req->master_margins[1] = 0;
+  req->content_margins[1] = 0;
+  req->master_margins[2] = 0;
+  req->content_margins[2] = 0;
+  req->master_margins[3] = 0;
+  req->content_margins[3] = 0;
+  if(dock_is_visible()){
+  }
+  if(get_menu_bar_visible()){
+    req->master_margins[1] += get_menu_bar_height();
+    req->content_margins[1] += get_menu_bar_height();
+  }
   req->qty = cfg->layouts[I].apps_count;
+  switch(hk_layout_mode_types[req->mode]){
+    case HK_LAYOUT_MODE_TYPE_HORIZONTAL:
+        req->master_width = (int)((float)(req->max_width) * (float)(cfg->layouts[I].size)/100);
+        req->master_height = req->max_height;
+      break;
+    case HK_LAYOUT_MODE_TYPE_VERTICAL:
+        req->master_height = (int)((float)(req->max_height) * (float)(cfg->layouts[I].size)/100);
+        req->master_width = req->max_width;
+      break;
+    default:break;
+  }
   res = layout_request(req);
   res->req = req;
   return(res);
 }
-
-struct hk_dur_t {
-  unsigned long dur, started;
-};
-enum hk_format_t {
-  HK_FORMAT_QOI,
-  HK_FORMAT_JPEG,
-  HK_FORMATS_QTY,
-};
-enum image_type_id_t hk_formats[] = {
-  [HK_FORMAT_JPEG] = IMAGE_TYPE_JPEG,
-  [HK_FORMAT_QOI] = IMAGE_TYPE_QOI,
-};
-enum hk_vip_t {
-  HK_VIP_IMAGE,
-  HK_VIP_RESIZED,
-  HK_VIP_RED_RECT,
-  HK_VIP_RESIZED_RED_RECT,
-  HK_VIPS_QTY,
-};
-struct hk_image_t {
-  CGImageRef img, resized;
-  unsigned char *qoi, *resized_qoi;
-  size_t len, qoi_len,resized_qoi_len;
-  uint32_t width,height;
-  uint32_t qoi_width,qoi_height;
-  uint32_t resized_width,resized_height;
-  struct hk_dur_t capture, convert, resize;
-  VipsImage *vips[HK_VIPS_QTY];
-  unsigned char *pixels[HK_FORMATS_QTY];
-  size_t sizes[HK_FORMATS_QTY];
-};
-struct hk_rendered_app_t {
-  size_t window_id;
-  pid_t pid;
-  char *name;
-  uint32_t x,y,width,height;
-  struct hk_image_t image;
-};
-struct hk_rendered_area_t {
-  size_t index, id;
-  uint32_t width,height;
-  struct hk_image_t image;
-  size_t len;
-};
-
-struct hk_render_t {
-  struct hk_rendered_area_t *display;
-  struct hk_rendered_area_t *space;
-  struct hk_rendered_app_t *master;
-  struct hk_rendered_app_t **items;
-};
-enum hk_fmt_t {
-    HK_FMT_TYPE_MASTER,
-    HK_FMT_TYPE_DISPLAY,
-    HK_FMT_TYPE_CHILD,
-    HK_FMT_TYPE_CHILDREN,
-    HK_FMT_TYPES_QTY,
-};
-
-#define CHILDREN_OFFSET 4
-#define ENSURE_LAYOUT_INDEX(I){ do{\
-  if(I<0){\
-    log_error("Layout not found");\
-    return(false);\
-  }\
-} while(0); }
-
-static double    red[]         = { 255, 0, 0, 255 };
-static double    transparent[] = { 0, 0, 0, 0 };
 
 //    if (vips_crop(image, &page[i], 0, page_height * i, image->Xsize, page_height, NULL)) {
     /*
@@ -647,6 +681,10 @@ char *create_master_table_report(struct layout_result_t *res){
       , "Size" \
       , "Position" \
       , "Application"
+#define HK_HEADERS_DURATION \
+      "Type" \
+      , "Duration" \
+      , "Size" 
 #define HK_HEADERS_MASTER \
       "Type" \
       , "Size" \
@@ -656,6 +694,7 @@ char *create_master_table_report(struct layout_result_t *res){
       , ""
   char *HK_HEADERS[HK_FMT_TYPES_QTY];
   HK_HEADERS[HK_FMT_TYPE_MASTER] = HK_HEADERS_MASTER;
+  HK_HEADERS[HK_FMT_TYPE_DURATION] = HK_HEADERS_DURATION;
   HK_HEADERS[HK_FMT_TYPE_DISPLAY] = HK_HEADERS_DISPLAY;
   HK_HEADERS[HK_FMT_TYPE_CHILDREN] = HK_HEADERS_CHILDREN;
   HK_HEADERS[HK_FMT_TYPE_CHILD] = HK_HEADERS_CHILD;
@@ -678,6 +717,8 @@ char *create_master_table_report(struct layout_result_t *res){
       "|%dx%d"
       "|%dx%d"
       "";
+     HK_FMTS[HK_FMT_TYPE_DURATION] = \
+        "%s|%s";
      HK_FMTS[HK_FMT_TYPE_CHILD] = \
         "%lu/%lu"
         "|%lu"
@@ -689,6 +730,7 @@ char *create_master_table_report(struct layout_result_t *res){
   ft_write_ln(table, HK_HEADERS_DISPLAY);
   ft_add_separator(table);
   ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+  ft_add_separator(table);
   ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
   ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_DISPLAY],
       "Display",
@@ -712,6 +754,13 @@ char *create_master_table_report(struct layout_result_t *res){
       res->master->x,res->master->y
       );
   ft_add_separator(table);
+  ft_write_ln(table, HK_HEADERS_DURATION);
+  ft_add_separator(table);
+  ft_set_cell_prop(table, ft_row_count(table)-1, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+  ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_DURATION],"Capture",milliseconds_to_string(res->render->display->image.capture.dur),bytes_to_string(res->render->display->image.len));
+  ft_u8printf_ln(table, HK_FMTS[HK_FMT_TYPE_DURATION],"Convert",milliseconds_to_string(res->render->display->image.convert.dur),bytes_to_string(res->render->display->image.len));
+  for (size_t i = 0; i < res->qty; i++) {
+  }
   /*
   ft_write_ln(table, HK_HEADERS_CHILDREN);
   ft_add_separator(table);
@@ -808,14 +857,14 @@ cur_layout_index++;
   struct hk_layout_t *l = (struct hk_layout_t*)&(cfg->layouts[I]);
   //hk_show_layout(l->name);
   window_ids[0] = get_first_window_id_by_name(l->app);
-  log_info("normalizing layout \"%s\" using %s and app %s to width %f",l->name,l->name,l->app,l->width  );
+  log_info("normalizing layout \"%s\" using %s and app %s to size %f",l->name,l->name,l->app,l->size  );
   req = layout_init_request();
   req->debug = HOTKEY_UTILS_DEBUG_MODE;
-  req->mode = LAYOUT_MODE_HORIZONTAL;
+  req->mode = get_layout_mode_id_by_name(cfg->layouts[I].mode);
   req->qty = l->apps_count;
-  req->max_width = get_display_width()/100;
+  req->max_width = get_display_width();
   req->max_height = get_display_height()/1;
-  req->master_width = (int)((float)(req->max_width) * (float)l->width);
+  req->master_width = (int)((float)(req->max_width) * (float)l->size);
   res = layout_request(req); 
   window_ids[0] = get_first_window_id_by_name(l->app);
   if(false)
@@ -1049,20 +1098,25 @@ bool hk_show_rendered_layout_name(char *name){
 }
 
 static hash_t *get_window_ids_hash_from_layout_index(int index){
-  hash_t *names;
+  hash_t *ids;
   struct hotkeys_config_t *cfg = NULL;
+  size_t id = 0;
+  char *name = NULL;
   {
     cfg = hk_get_config();
-    names = hash_new();
+    ids = hash_new();
+  }
+  id = get_first_window_id_by_name(cfg->layouts[index].app);
+  if(id>0){
+      hash_set(ids,cfg->layouts[index].app,(void*)id);
   }
   for(size_t i = 0; i < cfg->layouts[index].apps_count;i++){
-    char *name = cfg->layouts[index].apps[i].name;
-    hash_set(names,name,(void*)(size_t)0);
+    name = cfg->layouts[index].apps[i].name;
+    id = get_first_window_id_by_name(name);
+    if(id>0)
+      hash_set(ids,name,(void*)id);
   }
-  hash_t *ids_v = get_window_ids_v_from_names(names);
-  if(names)
-    hash_free(names);
-  return(ids_v);
+  return(ids);
 }
 
 bool hk_show_layout(char *name){
@@ -1078,6 +1132,8 @@ bool hk_show_layout(char *name){
     if((I = hk_get_layout_name_index(name))<0)
       Throw(HK_ERR_LAYOUT_NAME_NOT_FOUND);
     if(!(window_ids = get_window_ids_hash_from_layout_index(I)))
+      Throw(HK_ERR_WINDOW_IDS_LOOKUP_FAILURE);
+    if(hash_size(window_ids)!=cfg->layouts[I].apps_count+1)
       Throw(HK_ERR_WINDOW_IDS_LOOKUP_FAILURE);
     if(!(res = hk_render_layout_name(name)))
       Throw(HK_ERR_RENDER_LAYOUT_FAILURE);
@@ -1107,45 +1163,77 @@ bool hk_show_layout(char *name){
     if(i<cfg->layouts[I].apps_count-1)
       stringbuffer_append_string(sb,", ");
   }
+  size_t total_pixels = res->width*res->height;
   for (size_t i = 0; i < res->qty; i++) {
     char *_s;
     asprintf(&_s, AC_RESETALL "\t- #"AC_MAGENTA"%.2lu/%.2lu"AC_RESETALL "  "
                                     "|pos:"AC_RESETALL AC_YELLOW "%4dx%.4d"AC_RESETALL 
-                                    "|size:"AC_RESETALL AC_GREEN "%4dx%.4d"AC_RESETALL 
-                                    "|",
+                                    "|sz:"AC_RESETALL AC_GREEN "%4dx%.4d"AC_RESETALL 
+                                    "|px:%dk (%.1f%%)"
+                                    "|app:%s"
+                                    "|id:%lu"
+                                    "%s",
            i+1,res->qty,
            res->items[i]->x,
            res->items[i]->y,
            res->items[i]->width,
-           res->items[i]->height
+           res->items[i]->height,
+           (res->items[i]->width*res->items[i]->height)/1000,
+           (float)(res->items[i]->width*res->items[i]->height)/(float)(total_pixels)*100,
+           cfg->layouts[I].apps[i].name,
+           (size_t)hash_get(window_ids,cfg->layouts[I].apps[i].name),
+           ""
            ); 
     stringbuffer_append_string(children,"\n");
     stringbuffer_append_string(children,_s);
   }
-  char *master;
-  asprintf(&master,"%dx%d @ %dx%d",
-         res->master->width,
-         res->master->height,
-         res->master->x,
-         res->master->y);  
+  char *n = uppercase_first_word_letters(
+            hk_layout_mode_slugs[get_layout_mode_id_by_name(cfg->layouts[I].mode)]
+            );
+  n = pad_string_right(n,6,' ');
+  int offsets[2] = { 0, 0 };
+  if(get_menu_bar_visible())
+    offsets[1] = get_menu_bar_height();
   fprintf(stdout,
-       AC_YELLOW  "%s\n" AC_RESETALL
-       AC_GREEN   " Width     : %d%%\n" AC_RESETALL
-       AC_CYAN    " Mode      : %s\n" AC_RESETALL
-       AC_MAGENTA " Display   : %d\n" AC_RESETALL
-       AC_MAGENTA " Space     : %d\n" AC_RESETALL
-       AC_BLUE    " Total     : %dx%d" AC_RESETALL "\n"
-       AC_BLUE    " Master    : %s" AC_RESETALL "\n"
-       AC_BLUE    " Apps      : "AC_RESETALL AC_REVERSED AC_GREEN AC_BOLD "%s"AC_RESETALL
+       AC_YELLOW  " Name:     : " AC_DASHED_UNDERLINE "%s" AC_NOUNDERLINE "\n" AC_RESETALL
+       AC_GREEN   " %s    : %d%%\n" AC_RESETALL
+       AC_MAGENTA " Mode      : " AC_REVERSED AC_BOLD "%s" AC_RESETALL "\n" AC_RESETALL
+       AC_MAGENTA " Gravity   : " AC_REVERSED AC_BOLD "%s" AC_RESETALL "\n" AC_RESETALL
+       AC_GREEN   " Offsets   : " AC_RESETALL "\n" AC_RESETALL
+       AC_CYAN    "     x     : " AC_RESETALL "%d" AC_RESETALL "px\n"
+       AC_CYAN    "     y     : " AC_RESETALL "%d" AC_RESETALL "px\n"
+       AC_CYAN    " Display   : #%d\n" AC_RESETALL
+       AC_CYAN    "           : %lu\n" AC_RESETALL
+       AC_RED     " Space     : #%d\n" AC_RESETALL
+       AC_BLUE    " Total     : %dx%d" AC_RESETALL " (%lu Pixels)\n"
+       AC_BLUE    " Master    : " AC_RESETALL "\n"
+       AC_CYAN    "   App     : " AC_RESETALL "%s" AC_RESETALL "\n"
+       AC_CYAN    "   ID      : " AC_RESETALL "%lu" AC_RESETALL "\n"
+       AC_CYAN    "   Width   : " AC_RESETALL "%d" AC_RESETALL "px\n"
+       AC_CYAN    "   Height  : " AC_RESETALL "%d" AC_RESETALL "px\n"
+       AC_CYAN    "   X       : " AC_RESETALL "%d" AC_RESETALL "\n"
+       AC_CYAN    "   Y       : " AC_RESETALL "%d" AC_RESETALL "\n"
+       AC_CYAN    "   Pixels  : " AC_RESETALL "%dk" AC_RESETALL " " AC_GREEN "(%.1f%%)" AC_RESETALL "\n"
+       AC_BLUE    " Contents  : "AC_RESETALL AC_REVERSED AC_GREEN AC_BOLD "%s"AC_RESETALL
        AC_BLUE    "%s" AC_RESETALL "\n"
         "%s",
         cfg->layouts[I].name,
-        (int)(cfg->layouts[I].width),
-        cfg->layouts[I].mode,
-        cfg->layouts[I].display,
+        n,
+        (int)(cfg->layouts[I].size),
+        stringfn_to_uppercase(cfg->layouts[I].mode),
+        stringfn_to_uppercase(gravity_type_names[cfg->layouts[I].gravity]),
+        offsets[0],offsets[1],
+        cfg->layouts[I].display,get_display_index_id(cfg->layouts[I].display),
         cfg->layouts[I].display_space,
-        res->width,res->height,
-        master,
+        res->width,res->height,total_pixels,
+         cfg->layouts[I].app,
+         (size_t)hash_get(window_ids,cfg->layouts[I].app),
+         res->master->width,
+         res->master->height,
+         res->master->x,
+         res->master->y,
+         (res->master->width*res->master->height)/1000,
+         (float)(res->master->width*res->master->height)/(float)(total_pixels)*(float)100,
         stringbuffer_to_string(sb),
         stringbuffer_to_string(children),
         "");
@@ -1153,6 +1241,15 @@ bool hk_show_layout(char *name){
     stringbuffer_release(children);
     return(true);
   }
+
+hash_t *hk_get_layouts(){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  hash_t *h = hash_new();
+  for(size_t i = 0; i < cfg->layouts_count;i++){
+    hash_set(h,(void*)cfg->layouts[i].name,(void*)&(cfg->layouts[i]));
+  }
+  return(h);
+}
 
 bool hk_print_layout_names(){
   struct hotkeys_config_t *cfg         = hk_get_config();
@@ -1256,18 +1353,15 @@ int normalize_layout(void *LAYOUT){
     return(false);
   }
   struct hotkeys_config_t *cfg         = hk_get_config();
-  log_info("normalizing layout \"%s\" using %s and app %s to width %f",l->name,l->name,l->app,l->width);
+  log_info("normalizing layout \"%s\" using %s and app %s to size %f",l->name,l->name,l->app,l->size);
   struct layout_request_t *req; struct layout_result_t *res;
   req = layout_init_request();
   req->debug = true;
-  req->mode = LAYOUT_MODE_HORIZONTAL;
-  log_debug("%lu",cfg->layouts[I].apps_count);
-  for(size_t i=0; i < cfg->layouts[I].apps_count;i++){
-    req->qty++;
-  }
-  req->max_width = get_display_width()/100;
-  req->max_height = get_display_height()/1;
-  req->master_width = (int)((float)(req->max_width) * (float)l->width);
+  req->mode = get_layout_mode_id_by_name(cfg->layouts[I].mode);
+  req->qty = l->apps_count;
+  req->max_width = get_display_width();
+  req->max_height = get_display_height();
+  req->master_width = (int)((float)(req->max_width) * (float)l->size);
   res = layout_request(req);
   /*
   for(size_t i=0; i < cfg->layouts[I].apps_count;i++){
@@ -1283,6 +1377,7 @@ int normalize_layout(void *LAYOUT){
 
 int activate_application(void *KEY){  
   struct key_t *key = (struct key_t*)KEY;
+  stringfn_mut_to_lowercase(key->action);
   unsigned long started[3];
   started[0] = timestamp();
   char *APPLICATION_NAME = NULL;
@@ -1297,13 +1392,44 @@ int activate_application(void *KEY){
     if (HOTKEY_UTILS_DEBUG_MODE == true) {
       log_info("Activating Application %s", names.strings[i]);
     }
-    window_id = get_first_window_id_by_name(names.strings[i]);
-    if (window_id == 0){
+    if((window_id = get_first_window_id_by_name(names.strings[i])) == 0){
       asprintf(&names.strings[i],"%s.app",names.strings[i]);
       window_id = get_first_window_id_by_name(names.strings[i]);
     }
   }
   stringfn_release_strings_struct(names);
+  char *closest_path = NULL;
+
+  int64_t lowest_score = -1;
+  int64_t score;
+  char *closest_name = NULL;
+  if (window_id == 0) {
+      hash_t *matches_h = app_utils_get_closes_app_name_matches(APPLICATION_NAME, 10);
+      hash_t *hm;
+      hash_each(matches_h,{
+        hm = (hash_t*)val;
+        score = (size_t)hash_get(hm,"score");
+        log_info("%s [%lu] => %s (%s) -> %s",
+            key,
+            (size_t)hash_get(hm,"score"),
+            (char*)hash_get(hm,"name"),
+            (char*)hash_get(hm,"version"),
+            (char*)hash_get(hm,"path")
+            );
+            log_info("%d",hash_size(matches_h));
+              if((lowest_score == -1) || (score < lowest_score) ){
+                 if(closest_name)
+                   free(closest_name);
+                 if(closest_path)
+                   free(closest_path);
+                 closest_path = strdup((char*)hash_get(hm,"path"));
+                 closest_name = strdup((char*)hash_get(hm,"name"));
+                 lowest_score = score;
+              }
+          });
+      log_info("Lowest score: %lld, path: %s, name: %s", lowest_score, closest_path, closest_name);
+
+  }
   if (window_id == 0) {
     log_error("Failed to find window named '%s'", APPLICATION_NAME);
     return(EXIT_FAILURE);

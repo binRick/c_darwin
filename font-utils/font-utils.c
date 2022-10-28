@@ -235,11 +235,9 @@ void debug_font(struct font_t *font){
 }
 
 static void parse_font(struct font_t *font, JSON_Object *font_object){
-  for (size_t i = 0; i < FONT_PARSER_TYPES_QTY; i++) {
-    if (font_parsers[i].enabled == true) {
+  for (size_t i = 0; i < FONT_PARSER_TYPES_QTY; i++)
+    if (font_parsers[i].enabled == true)
       font_parsers[i].parser(font, font_object);
-    }
-  }
 }
 struct Vector *get_installed_fonts_v(){
   struct Vector *a          = vector_new();
@@ -253,9 +251,8 @@ struct Vector *get_installed_fonts_v(){
       for (size_t i = 0; i < fonts_qty; i++) {
         struct font_t *font = calloc(1, sizeof(struct font_t));
         parse_font(font, json_array_get_object(fonts_array, i));
-        if (font) {
+        if (font)
           vector_push(a, (void *)font);
-        }
       }
     }
   }

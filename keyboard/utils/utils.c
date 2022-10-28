@@ -26,11 +26,10 @@ static bool keyboard_utils_DEBUG_MODE = false;
 
 ///////////////////////////////////////////////////////////////////////
 short AsciiToKeyCode(Ascii2KeyCodeTable *ttable, short asciiCode) {
-  if (asciiCode >= 0 && asciiCode <= 255) {
+  if (asciiCode >= 0 && asciiCode <= 255)
     return(ttable->transtable[asciiCode]);
-  } else {
+  else
     return(false);
-  }
 }
 
 /*

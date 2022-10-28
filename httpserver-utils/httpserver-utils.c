@@ -158,37 +158,35 @@ static void request_params_parser(void *data, char *fst, char *snd) {
 
   if (strcmp(fst, "type") == 0) {
     parsed_data->type = snd;
-    if (strcmp(parsed_data->type, "display") == 0) {
+    if (strcmp(parsed_data->type, "display") == 0)
       parsed_data->type_id = CAPTURE_TYPE_DISPLAY;
-    }else if (strcmp(parsed_data->type, "window") == 0) {
+    else if (strcmp(parsed_data->type, "window") == 0)
       parsed_data->type_id = CAPTURE_TYPE_WINDOW;
-    }else if (strcmp(parsed_data->type, "space") == 0) {
+    else if (strcmp(parsed_data->type, "space") == 0)
       parsed_data->type_id = CAPTURE_TYPE_SPACE;
-    }else{
+    else
       parsed_data->type_id = -1;
-    }
-  }else if (strcmp(fst, "ocr") == 0) {
+  }else if (strcmp(fst, "ocr") == 0)
     parsed_data->ocr_mode = true;
-  }else if (strcmp(fst, "pid") == 0) {
+  else if (strcmp(fst, "pid") == 0)
     parsed_data->pid = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "resize_factor") == 0) {
+  else if (strcmp(fst, "resize_factor") == 0)
     parsed_data->resize_factor = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "grayscale") == 0) {
+  else if (strcmp(fst, "grayscale") == 0)
     parsed_data->grayscale_conversion = (snd && strlen(snd) > 0 && strcmp(snd, "1") == 0) ? true : false;
-  }else if (strcmp(fst, "preview") == 0) {
+  else if (strcmp(fst, "preview") == 0)
     parsed_data->preview_mode = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "thumbnail") == 0) {
+  else if (strcmp(fst, "thumbnail") == 0)
     parsed_data->thumbnail_mode = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "max_quant_qual") == 0) {
+  else if (strcmp(fst, "max_quant_qual") == 0)
     parsed_data->max_quant_qual = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "min_quant_qual") == 0) {
-  }else if (strcmp(fst, "id") == 0) {
+  else if (strcmp(fst, "min_quant_qual") == 0) {
+  }else if (strcmp(fst, "id") == 0)
     parsed_data->id = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "quant") == 0) {
+  else if (strcmp(fst, "quant") == 0)
     parsed_data->quant_mode = string_size_to_size_t(snd);
-  }else if (strcmp(fst, "space_id") == 0) {
+  else if (strcmp(fst, "space_id") == 0)
     parsed_data->space_id = string_size_to_size_t(snd);
-  }
 }
 
 static struct parsed_data_t *parse_request(const struct http_request_s *request){
@@ -202,9 +200,8 @@ static struct parsed_data_t *parse_request(const struct http_request_s *request)
     http_string_t _method = http_request_method(request);
     rq->method = stringfn_substring(_method.buf, 0, _method.len);
   }
-  if (!rq->parse_url) {
+  if (!rq->parse_url)
     asprintf(&rq->parse_url, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, rq->url->buf);
-  }
   rq->parsed = url_parse(rq->parse_url);
 
   struct parsed_data_t *data = calloc(1, sizeof(struct parsed_data_t));
@@ -237,22 +234,17 @@ static int request_target_is(const struct http_request_s *request, const char *t
   if (request && target) {
     url = http_request_target(request);
     if (url.buf && url.len > 0) {
-      if (!rq->path) {
+      if (!rq->path)
         rq->path = stringfn_substring(url.buf, 1, url.len - 1);
-      }
-      if (!rq->uri) {
+      if (!rq->uri)
         asprintf(&rq->uri, "%s://%s:%d/%s", DARWIN_LS_HTTPSERVER_PROTOCOL, DARWIN_LS_HTTPSERVER_HOST, DARWIN_LS_HTTPSERVER_PORT, rq->path);
-      }
-      if (!rq->parsed) {
+      if (!rq->parsed)
         rq->parsed = url_parse(rq->uri);
-      }
       if (rq->parsed->pathname) {
         res = (url.buf && target && rq->parsed->pathname && (memcmp(rq->parsed->pathname, target, strlen(rq->parsed->pathname))) == 0);
-        if (res == EXIT_SUCCESS && HTTPSERVER_UTILS_DEBUG_MODE) {
-          if (rq->parsed) {
+        if (res == EXIT_SUCCESS && HTTPSERVER_UTILS_DEBUG_MODE)
+          if (rq->parsed)
             url_data_inspect(rq->parsed);
-          }
-        }
       }
     }
   }
@@ -272,9 +264,9 @@ void handle_request(struct http_request_s *request) {
   rq->response_status = HANDLED_REQUEST_RESPONSE_CODE;
   http_request_set_userdata(request, (void *)rq);
   http_response_status(response, rq->response_status);
-  if (iterate_incbin_responses(request, response) == EXIT_SUCCESS) {
+  if (iterate_incbin_responses(request, response) == EXIT_SUCCESS)
     return;
-  }else if (request_target_is(request, "/enable_configured_key")) {
+  else if (request_target_is(request, "/enable_configured_key")) {
     http_string_t body = http_request_body(request);
     if (body.len > 1) {
       JSON_Value              *schema   = json_parse_string(body.buf);
@@ -310,29 +302,25 @@ void handle_request(struct http_request_s *request) {
     size_t     id      = capture_type_validate_id_or_get_default_id(rq->pd->type_id, rq->pd->id);
     CGImageRef img_ref = capture_type_capture(rq->pd->type_id, id);
     if (rq->pd->grayscale_conversion == true) {
-      if (HTTPSERVER_UTILS_DEBUG_MODE) {
+      if (HTTPSERVER_UTILS_DEBUG_MODE)
         log_info("Converting to grayscale");
-      }
       img_ref = cgimageref_to_grayscale(img_ref);
     }
     int w = CGImageGetWidth(img_ref), h = CGImageGetHeight(img_ref);
-    if (rq->pd->preview_mode) {
+    if (rq->pd->preview_mode)
       img_ref = resize_cgimage(img_ref, w / PREVIEW_FACTOR, h / PREVIEW_FACTOR);
-    }else if (rq->pd->thumbnail_mode) {
+    else if (rq->pd->thumbnail_mode)
       img_ref = resize_cgimage(img_ref, w / THUMBNAIL_FACTOR, h / THUMBNAIL_FACTOR);
-    }
-    if (rq->pd->resize_factor > 0) {
+    if (rq->pd->resize_factor > 0)
       img_ref = resize_cgimage(img_ref, w / rq->pd->resize_factor, h / rq->pd->resize_factor);
-    }
     size_t        rgb_len = 0;
     unsigned char *capture_pixels = NULL; size_t capture_len = 0;
     if (rq->pd->quant_mode) {
       unsigned char *rgb_pixels = save_cgref_to_rgb_memory(img_ref, &rgb_len);
       capture_pixels = imagequant_encode_rgb_pixels_to_png_buffer(rgb_pixels, w, h, rq->pd->min_quant_qual, rq->pd->max_quant_qual, &capture_len);
       free(rgb_pixels);
-    }else{
+    }else
       capture_pixels = save_cgref_to_png_memory(img_ref, &capture_len);
-    }
 
     if (rq->pd->ocr_mode == true) {
       char *pf;
@@ -493,9 +481,8 @@ void handle_request(struct http_request_s *request) {
 
     if (save_cgref_to_png_file(img_ref, output_file) == true && fsio_file_exists(output_file) && fsio_file_size(output_file) > 4096) {
       if (rq->pd->grayscale_conversion == true) {
-        if (HTTPSERVER_UTILS_DEBUG_MODE) {
+        if (HTTPSERVER_UTILS_DEBUG_MODE)
           log_info("Converting to grayscale");
-        }
         output_file = convert_png_to_grayscale(output_file, rq->pd->resize_factor);
       }
       extracted_text = get_extracted_image_text(output_file);
@@ -509,9 +496,8 @@ void handle_request(struct http_request_s *request) {
       http_respond(request, response);
       TessDeleteText(extracted_text);
       return;
-    }else{
+    }else
       RETURN_ERROR_PNG("Window", window_id);
-    }
   } else if (request_target_is(request, "/disable_configured_key")) {
     http_string_t body = http_request_body(request);
     if (body.len > 1) {
@@ -563,9 +549,8 @@ char * get_extracted_image_text(char *image_file){
   struct Pix                *img, *loaded_img;
   struct image_dimensions_t *png_size;
 
-  if (HTTPSERVER_UTILS_DEBUG_MODE) {
+  if (HTTPSERVER_UTILS_DEBUG_MODE)
     log_debug("Initializing Tesseract Version %s", tess_ver);
-  }
 
   TessBaseAPI *api = TessBaseAPICreate();
 
@@ -573,34 +558,30 @@ char * get_extracted_image_text(char *image_file){
   assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
   started = timestamp();
 
-  if (HTTPSERVER_UTILS_DEBUG_MODE) {
+  if (HTTPSERVER_UTILS_DEBUG_MODE)
     log_debug("Reading file %s", image_file);
-  }
   img = pixRead(image_file);
 
   assert(img != NULL);
-  if (HTTPSERVER_UTILS_DEBUG_MODE) {
+  if (HTTPSERVER_UTILS_DEBUG_MODE)
     log_info("Read %s Image %s in %s",
              bytes_to_string(fsio_file_size(image_file)), image_file, milliseconds_to_string(timestamp() - started)
              );
-  }
   started = timestamp();
   TessBaseAPISetImage2(api, img);
   loaded_img = TessBaseAPIGetInputImage(api);
 
   assert(loaded_img != NULL);
 
-  if (HTTPSERVER_UTILS_DEBUG_MODE) {
+  if (HTTPSERVER_UTILS_DEBUG_MODE)
     log_info("Loaded %s Image %s in %s",
              bytes_to_string(fsio_file_size(image_file)), image_file, milliseconds_to_string(timestamp() - started)
              );
-  }
   pixDestroy(&img);
   started = timestamp();
   assert(TessBaseAPIRecognize(api, NULL) == EXIT_SUCCESS);
-  if (HTTPSERVER_UTILS_DEBUG_MODE) {
+  if (HTTPSERVER_UTILS_DEBUG_MODE)
     log_debug("API Recognized in %s", milliseconds_to_string(timestamp() - started));
-  }
   extracted_text = TessBaseAPIGetUTF8Text(api);
   png_size       = get_png_dimensions(image_file);
 

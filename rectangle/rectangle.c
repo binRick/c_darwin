@@ -61,9 +61,8 @@ struct keycode_modifier_t *rectangle_get_todo_keys(){
   stringfn_mut_replace(keys, ']', ' ');
   asprintf(&kcm->keys, "%s", stringfn_remove(keys, " "));
 
-  if (keys) {
+  if (keys)
     free(keys);
-  }
 
   return(kcm);
 }
@@ -90,9 +89,9 @@ int rectangle_get_todo_width(){
 bool rectangle_run(){
   int pid = rectangle_get_pid();
 
-  if (pid > 2) {
+  if (pid > 2)
     return(true);
-  }
+
   char *cmd;
 
   asprintf(&cmd, "open -F -g -j -a '%s'", RECTANGLE_APP_PATH);
@@ -109,9 +108,8 @@ bool rectangle_kill(){
 
   while (pid != -1) {
     pid = rectangle_get_pid();
-    if (pid == -1) {
+    if (pid == -1)
       break;
-    }
     if (pid > 1) {
       int res = kill(pid, SIGINT);
       ok  = (res == 0) ? true : false;
@@ -160,9 +158,8 @@ char *rectangle_get_todo_app(){
   char                   *todo_app = stringfn_mut_trim(rectangle_run_cmd(cmd));
   struct StringFNStrings lines     = stringfn_split_lines_and_trim(todo_app);
 
-  if (lines.count > 1) {
+  if (lines.count > 1)
     todo_app = lines.strings[0];
-  }
 
   return(todo_app);
 }
@@ -191,27 +188,23 @@ int rectangle_get_pid(){
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     size_t pid = (size_t)vector_get(pids_v, i);
-    if (pid < 2) {
+    if (pid < 2)
       continue;
-    }
     struct Vector *pid_cmdline_v = get_process_cmdline(pid);
-    if (!pid_cmdline_v) {
+    if (!pid_cmdline_v)
       continue;
-    }
     if (vector_size(pid_cmdline_v) > 0) {
       char *cmdline = str_flatten(vector_to_array(pid_cmdline_v), 0, vector_size(pid_cmdline_v));
       if (cmdline) {
-        if (wildcardcmp("*/Rectangle.app/*", cmdline)) {
+        if (wildcardcmp("*/Rectangle.app/*", cmdline))
           rectangle_pid = pid;
-        }
         free(cmdline);
       }
       vector_release(pid_cmdline_v);
     }
   }
-  if (pids_v) {
+  if (pids_v)
     vector_release(pids_v);
-  }
   return(rectangle_pid);
 }
 

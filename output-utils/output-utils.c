@@ -35,18 +35,16 @@ static void output_utils_internal_fxn1(void);
 ////////////////////////////////////////////
 static void output_utils_internal_fxn1(void){
   log_info("Called function output_utils_internal_fxn1");
-  if (output_utils_DEBUG_MODE == true) {
+  if (output_utils_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void output_utils_fxn1(void){
   output_utils_internal_fxn1();
   log_info("Called function output_utils_fxn1");
-  if (output_utils_DEBUG_MODE == true) {
+  if (output_utils_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

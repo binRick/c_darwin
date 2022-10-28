@@ -63,9 +63,8 @@ int EnumerateWindows(char *pattern,
     subPatternLen = patternLen + strlen(starL) + strlen(starR) + 1;
     subPattern    = (char *)malloc(subPatternLen);
     snprintf(subPattern, subPatternLen, "%s%s%s", starL, pattern, starR);
-  } else {
+  } else
     subPattern = pattern;
-  }
 
   /* Iterate through list of all windows, run callback on pattern matches */
   windowList = CGWindowListCopyWindowInfo(
@@ -78,45 +77,37 @@ int EnumerateWindows(char *pattern,
 
     /* Skip windows that are not on the desktop layer */
     layer = CFDictionaryGetInt(window, kCGWindowLayer);
-    if (layer > 0) {
+    if (layer > 0)
       continue;
-    }
 
     /* Turn application name and title into string to match against */
     appName = windowName = title = NULL;
     appName = CFDictionaryCopyCString(window, kCGWindowOwnerName);
-    if (!appName || !*appName) {
+    if (!appName || !*appName)
       goto skip;
-    }
     windowName = CFDictionaryCopyCString(window, kCGWindowName);
-    if (!windowName || (!*windowName && !emptyWindowNameAllowed(appName))) {
+    if (!windowName || (!*windowName && !emptyWindowNameAllowed(appName)))
       goto skip;
-    }
     title = windowTitle(appName, windowName);
 
     /* If no pattern, or pattern matches, run callback */
     if (!pattern || fnmatch(subPattern, title, 0) == 0) {
-      if (callback) {
+      if (callback)
         (*callback)(window, callback_data);
-      }
       count++;
     }
 
 skip:
-    if (title) {
+    if (title)
       free(title);
-    }
-    if (windowName) {
+    if (windowName)
       free(windowName);
-    }
-    if (appName) {
+    if (appName)
       free(appName);
-    }
   }
   CFRelease(windowList);
-  if (subPattern != pattern) {
+  if (subPattern != pattern)
     free(subPattern);
-  }
 
   return(count);
 } /* EnumerateWindows */
@@ -140,9 +131,8 @@ char *CFDictionaryCopyCString(CFDictionaryRef dict, const void *key) {
   char       *value;
 
   dictValue = CFDictionaryGetValue(dict, key);
-  if (dictValue == NULL) {
+  if (dictValue == NULL)
     return(NULL);
-  }
 
   /* If empty value, allocate and return empty string */
   length  = CFStringGetLength(dictValue);
@@ -203,10 +193,10 @@ CGSize CGWindowGetSize(CFDictionaryRef window) {
 
 /* Return true if and only if we are authorized to do screen recording */
 bool isAuthorizedForScreenRecording() {
-  if (MAC_OS_X_VERSION_MIN_REQUIRED < 101500) {
+  if (MAC_OS_X_VERSION_MIN_REQUIRED < 101500)
     /* OS X prior to Catalina does not require separate permissions */
     return(1);
-  } else {
+  else {
     CGDisplayStreamFrameAvailableHandler handler =
       ^ (CGDisplayStreamFrameStatus status,
          uint64_t display_time,
@@ -214,9 +204,9 @@ bool isAuthorizedForScreenRecording() {
          CGDisplayStreamUpdateRef updateRef) { return; };
     CGDisplayStreamRef stream =
       CGDisplayStreamCreate(CGMainDisplayID(), 1, 1, 'BGRA', NULL, handler);
-    if (stream == NULL) {
+    if (stream == NULL)
       return(0);
-    } else {
+    else {
       CFRelease(stream);
       return(1);
     }
@@ -262,9 +252,8 @@ AXUIElementRef AXWindowFromCGWindow(CFDictionaryRef window) {
       if (actualWindowId == targetWindowId) {
         foundAppWindow = appWindow;
         break;
-      } else {
+      } else
         continue;
-      }
     }
   }
   CFRelease(app);

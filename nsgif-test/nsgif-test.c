@@ -116,9 +116,8 @@ const struct cli_table              cli = {
 
 static void *bitmap_create(int width, int height){
   /* Ensure a stupidly large bitmap is not created */
-  if (width > 4096 || height > 4096) {
+  if (width > 4096 || height > 4096)
     return(NULL);
-  }
 
   return(calloc(width * height, BYTES_PER_PIXEL));
 }
@@ -231,9 +230,9 @@ static bool save_palette(const char     *img_filename,
 
   for (int y = 0; y < size; y++) {
     for (int x = 0; x < size; x++) {
-      if (x % SIZE == 0 || y % SIZE == 0) {
+      if (x % SIZE == 0 || y % SIZE == 0)
         fprintf(f, "0 0 0 ");
-      } else {
+      else {
         size_t  offset = y / SIZE * COUNT + x / SIZE;
         uint8_t *entry = (uint8_t *)&palette[offset];
 
@@ -270,9 +269,8 @@ static bool save_local_palette(const nsgif_t *gif, uint32_t frame){
   snprintf(filename, sizeof(filename), "local-palette-%" PRIu32 ".ppm",
            frame);
 
-  if (!nsgif_local_palette(gif, frame, table, &entries)) {
+  if (!nsgif_local_palette(gif, frame, table, &entries))
     return(false);
-  }
 
   return(save_palette(nsgif_options.file, filename, table, entries));
 }
@@ -295,12 +293,10 @@ static void decode(FILE *ppm, const char *name, nsgif_t *gif, bool first){
             info->height * info->frame_count);
   }
 
-  if (first && nsgif_options.info) {
+  if (first && nsgif_options.info)
     print_gif_info(info);
-  }
-  if (first && nsgif_options.palette && info->global_palette) {
+  if (first && nsgif_options.palette && info->global_palette)
     save_global_palette(gif);
-  }
 
   /* decode the frames */
   while (true) {
@@ -317,24 +313,22 @@ static void decode(FILE *ppm, const char *name, nsgif_t *gif, bool first){
       FAIL();
     }
 
-    if (frame_new < frame_prev) {
+    if (frame_new < frame_prev)
       /* Must be an animation that loops. We only care about
        * decoding each frame once in this utility. */
       return;
-    }
+
     frame_prev = frame_new;
 
     if (first && nsgif_options.info) {
       const nsgif_frame_info_t *f_info;
 
       f_info = nsgif_get_frame_info(gif, frame_new);
-      if (f_info != NULL) {
+      if (f_info != NULL)
         print_gif_frame_info(f_info, frame_new);
-      }
     }
-    if (first && nsgif_options.palette) {
+    if (first && nsgif_options.palette)
       save_local_palette(gif, frame_new);
-    }
 
     err = nsgif_frame_decode(gif, frame_new, &bitmap);
     if (err != NSGIF_OK) {
@@ -357,10 +351,9 @@ static void decode(FILE *ppm, const char *name, nsgif_t *gif, bool first){
       }
     }
 
-    if (delay_cs == NSGIF_INFINITE) {
+    if (delay_cs == NSGIF_INFINITE)
       /** This frame is the last. */
       return;
-    }
   }
 } /* decode */
 
@@ -404,15 +397,13 @@ TEST t_nsgif(const int argc, const char *argv[]){
 
   /* Scan the raw data */
   err = nsgif_data_scan(gif, size, data);
-  if (err != NSGIF_OK) {
+  if (err != NSGIF_OK)
     /* Not fatal; some GIFs are nasty. Can still try to decode
      * any frames that were decoded successfully. */
     warning("nsgif_data_scan", err);
-  }
 
-  if (nsgif_options.loops == 0) {
+  if (nsgif_options.loops == 0)
     nsgif_options.loops = 1;
-  }
 
   for (uint64_t i = 0; i < nsgif_options.loops; i++) {
     decode(ppm, nsgif_options.file, gif, i == 0);
@@ -421,9 +412,8 @@ TEST t_nsgif(const int argc, const char *argv[]){
     nsgif_reset(gif);
   }
 
-  if (ppm != NULL) {
+  if (ppm != NULL)
     fclose(ppm);
-  }
 
   /* clean up */
   nsgif_destroy(gif);

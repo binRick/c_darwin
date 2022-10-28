@@ -2,6 +2,16 @@ darwin_ls_srcs = [
   'dls.c',
   'dls-commands.c',
   'dls-aliases.c',
+  'dls-bestline.c',
+  'meta.c',
+  'command-capture.c',
+  'command-extract.c',
+  'command-test.c',
+  'command-animate.c',
+  'command-clipboard.c',
+  'command-layout.c',
+  'command-prompt.c',
+  'command-display.c',
 ]
 if get_option('gpp_processor')
   message('GPP Processor Enabled')
@@ -30,12 +40,21 @@ endif
 inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
 darwin_ls_include_dirs = [
   '.',
+  '../',
+  '../../',
   inc,
 ]
 darwin_ls_deps = [
+  curses_dep,
+  c_pick_dep,
+  frameworks_dep,
+  metalang99_dep,
+  interface99_dep,
   core_dep,
   core_utils_dep,
   core_image_dep,
+  which_dep,
+  levenshtein_dep,
   font_utils_dep,
   kitty_dep,alacritty_dep,
   db_dep,
@@ -48,8 +67,10 @@ darwin_ls_deps = [
   dock_utils_dep,output_utils_dep,
   menu_bar_utils_dep, table_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,
   usbdevs_utils_dep,monitor_utils_dep,
-  icon_utils_dep,
-  capture_utils_dep,
+  icon_utils_dep,exec_fzf_dep,
+  c_greatest_dep,optparse_dep,variation_ui_dep,
+  libspinner_dep,
+  capture_utils_dep,libforks_dep,
   process_dep,keylogger_dep,hotkey_utils_dep,
   pasteboard_dep,
   vips_dep,
@@ -65,6 +86,7 @@ darwin_ls_deps = [
 
 darwin_ls_c_args = [
   '-Wno-missing-field-initializers',
+  '-Wno-unused-but-set-variable',
   tesseract_cflags,
   leptonica_cflags,
 ]
@@ -91,7 +113,7 @@ test_args = [
   #  { 'name': 'List Monitors', 'command': 'monitors', 'args': [],   'timeout': timeout,},
   #{ 'name': 'List Processes', 'command': 'processes', 'args': [],   'timeout': 30,},
   { 'name': 'Copy Contents to Clipboard', 'command': 'clipboard', 'args': ['copy','--content','test123'],   'timeout': timeout,},
-  { 'name': 'Paste Clipboard Contents', 'command': 'clipboard', 'args': ['paste'],   'timeout': timeout,},
+  #  { 'name': 'Paste Clipboard Contents', 'command': 'clipboard', 'args': ['paste'],   'timeout': timeout,},
   #{ 'name': 'List Kitty Processes', 'command': 'kittys', 'args': [],   'timeout': 10,},
   #  { 'name': 'List Alacritty Processes', 'command': 'alacrittys', 'args': [],   'timeout': 10,},
   #  { 'name': 'Capture Windows','command':'capture', 'args': ['window','--write','--dir','/tmp/dls-test-windows','--all','--limit','5','--formats','all'], 'timeout': 15, },

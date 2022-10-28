@@ -50,9 +50,9 @@ static unsigned long last_ts     = 0;
     } while (0); }
 
 void __at_exit(void){
-  if (exited == true) {
+  if (exited == true)
     return(0);
-  }
+
   exited = true;
   bool ic = seticanon(was_icanon, true);
   fprintf(stdout, AC_SHOW_CURSOR);
@@ -245,9 +245,8 @@ int keylogger_insert_db_window_row(){
 int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
   unsigned long cur_ts = timestamp();
 
-  if (last_ts == 0) {
+  if (last_ts == 0)
     last_ts = 0;
-  }
   if (initialized == false) {
     initialized = true;
     was_icanon  = (seticanon(false, false) == true) ? true : false;
@@ -271,7 +270,7 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
     pids_v            = get_all_processes();
     last_qty_check_ts = timestamp();
   }
-  if (updated_dur > 0) {
+  if (updated_dur > 0)
     fprintf(stdout,
             AC_CLS
             "\n\t  | Timestamp:     |%lu|"
@@ -317,7 +316,6 @@ int keylogger_insert_db_row(logged_key_event_t *LOGGED_EVENT){
             LOGGED_EVENT->mouse_x, LOGGED_EVENT->mouse_y,
             "\n"
             );
-  }
   for (size_t i = 0; i < LOGGED_EVENT->qty; i++) {
     db_st.rc = sqldbal_stmt_prepare(db,
                                     "INSERT INTO events\

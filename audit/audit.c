@@ -34,9 +34,9 @@ char       timebuff[26];
 bool isRoot() {
   uid_t euid = geteuid();
 
-  if (euid != 0) {
+  if (euid != 0)
     return(false);
-  }
+
   return(true);
 }
 
@@ -127,9 +127,8 @@ struct auditEvent getEvent(FILE *auditFile) {
   memset(&curr, 0, sizeof(curr));
 
   recordLength = au_read_rec(auditFile, &buffer);
-  if (recordLength == -1) {
+  if (recordLength == -1)
     return(curr);
-  }
 
   recordBalance   = recordLength;
   processedLength = 0;
@@ -196,9 +195,9 @@ char * getProcFromPid(pid_t pid) {
   if (ret <= 0) {
 //    fprintf(stderr, "[!] PID %d: proc_pidpath ();\n", pid);
 //    fprintf(stderr, "    %s\n", strerror(errno));
-  } else {
+  } else
     return(pathbuf);
-  }
+
   return("");
 }
 
@@ -222,9 +221,8 @@ void printEvent(struct auditEvent currentEvent) {
       || (strcmp(basename(strdup(currentEvent.processPath)), ".") == 0)
       || (strcmp(basename(strdup(currentEvent.processPath)), "suggestd") == 0)
       || (strcmp(basename(strdup(currentEvent.processPath)), "launchd") == 0)
-      ) {
+      )
       return;
-    }
 
     if (strcmp(event, "") == 0) {
       /*
@@ -237,12 +235,11 @@ void printEvent(struct auditEvent currentEvent) {
       sprintf(ev, C_RED "%d"C_RESET, currentEvent.eventType);
       event = ev;
     }
-    if (strcmp(event, "hide") == 0) {
+    if (strcmp(event, "hide") == 0)
       return;
-    }
 
     //TODO: find a better way to use these colors :/
-    if (currentEvent.filePath != NULL) {
+    if (currentEvent.filePath != NULL)
       fprintf(
         stdout,
         "%s ["C_CYAN "%s"C_RESET "] Detected "C_BLUE "%8d"C_RESET " "C_YELLOW "%s"C_RESET " event from "C_GREEN "%s"C_RESET " -> %s\n",
@@ -253,7 +250,7 @@ void printEvent(struct auditEvent currentEvent) {
         basename(strdup(currentEvent.processPath)),
         currentEvent.filePath
         );
-    } else {
+    else
       fprintf(
         stdout,
         "%s ["C_CYAN "%s"C_RESET "] Detected "C_BLUE "%8d"C_RESET " "C_MAGENTA "%s"C_RESET " event from "C_RED "%s"C_RESET "\n",
@@ -263,7 +260,6 @@ void printEvent(struct auditEvent currentEvent) {
         event,
         basename(strdup(currentEvent.processPath))
         );
-    }
 /*
  *  fprintf(
  *    stderr,
@@ -310,9 +306,8 @@ char * getEventType(int event) {
 }
 
 bool raiseAlertForFile(char *filePath) {
-  if (filePath == NULL) {
+  if (filePath == NULL)
     filePath = "";
-  }
 /*    if (fileFilter != NULL) {
  *      if (!strcasestr(filePath, fileFilter)) {
  *          return false;
@@ -340,11 +335,11 @@ bool raiseAlertForProcess(char *processPath) {
 
   // FIXME:
   // We need to check some white list and rules
-  if (isWhiteList(processPath)) {
+  if (isWhiteList(processPath))
     return(false);
-  }else if (isAllowedRule(processPath)) {
+  else if (isAllowedRule(processPath))
     return(false);
-  }
+
   return(true);
 }
 
@@ -358,11 +353,10 @@ char * getEventString(int event){
   ssize_t read;
 
   fp = fopen(AUDIT_EVENT_FILE, "r");
-  if (fp == NULL) {
+  if (fp == NULL)
     return("N/A");
-  }
 
-  while ((read = getline(&line, &len, fp)) != -1) {
+  while ((read = getline(&line, &len, fp)) != -1)
     //Getting the line of the event.
     if (startsWith(ev, line)) {
       //Parsing the line to return only the event human-readable.
@@ -380,7 +374,6 @@ char * getEventString(int event){
       fclose(fp);
       return(segment);
     }
-  }
   return("N/A");
 }
 

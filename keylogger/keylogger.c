@@ -65,35 +65,27 @@ static CGEventRef event_handler(__attribute__((unused)) CGEventTapProxy proxy, _
       char *ckc = keylogger_convertKeyboardCode(keyCode);
       if (strlen(ckc) > 0) {
         struct StringBuffer *event_flag_sb = stringbuffer_new();
-        if (event_flags & kCGEventFlagMaskAlternate) {
+        if (event_flags & kCGEventFlagMaskAlternate)
           stringbuffer_append_string(event_flag_sb, "alt+");
-        }
-        if (event_flags & kCGEventFlagMaskSecondaryFn) {
+        if (event_flags & kCGEventFlagMaskSecondaryFn)
           stringbuffer_append_string(event_flag_sb, "secondaryfxn+");
-        }
-        if (event_flags & kCGEventFlagMaskCommand) {
+        if (event_flags & kCGEventFlagMaskCommand)
           stringbuffer_append_string(event_flag_sb, "cmd+");
-        }
-        if (event_flags & kCGEventFlagMaskControl) {
+        if (event_flags & kCGEventFlagMaskControl)
           stringbuffer_append_string(event_flag_sb, "ctrl+");
-        }
-        if (event_flags & kCGEventFlagMaskShift) {
+        if (event_flags & kCGEventFlagMaskShift)
           stringbuffer_append_string(event_flag_sb, "shift+");
-        }
         stringbuffer_append_string(event_flag_sb, ckc);
 
         char *event_flag = stringbuffer_to_string(event_flag_sb);
         stringbuffer_release(event_flag_sb);
 
-        if (stringfn_ends_with(event_flag, "+")) {
+        if (stringfn_ends_with(event_flag, "+"))
           stringfn_mut_substring(event_flag, 0, strlen(event_flag) - 1);
-        }
         stringfn_mut_trim(event_flag);
-        if (CALLBACK != NULL) {
-          if (((int (*)(char *)) CALLBACK)(event_flag) == EXIT_SUCCESS) {
+        if (CALLBACK != NULL)
+          if (((int (*)(char *)) CALLBACK)(event_flag) == EXIT_SUCCESS)
             return(NULL);
-          }
-        }
       }
     }
   }

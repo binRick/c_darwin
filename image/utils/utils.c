@@ -142,9 +142,8 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
       unsigned char *pixels     = qoi_decode(buf,            len,         &desc,      4);
       *width  = desc.width;
       *height = desc.height;
-      if (pixels)     {
+      if (pixels)
         free(pixels);
-      }
       return(true);
     },
   },
@@ -222,7 +221,7 @@ bool compress_png_buffer(unsigned char *buf, size_t *len){
 
   free(raw_8bit_pixels);
   lodepng_state_cleanup(&state);
-  if (IMAGE_UTILS_DEBUG_MODE) {
+  if (IMAGE_UTILS_DEBUG_MODE)
     log_debug("Compressed %dx%d %s PNG Buffer from to %s %d bit PNG Buffer in %s using min quality %d and max quality %d",
               width, height,
               bytes_to_string(*len),
@@ -231,7 +230,6 @@ bool compress_png_buffer(unsigned char *buf, size_t *len){
               milliseconds_to_string(timestamp() - started),
               LODEPNG_MIN_QUALITY, LODEPNG_MAX_QUALITY
               );
-  }
   *len = out_len;
   return(true);
 
@@ -246,9 +244,8 @@ char *get_image_format_names_csv(){
 
   for (size_t i = 0; i < vector_size(v); i++) {
     stringbuffer_append_string(sb, (char *)vector_get(v, i));
-    if (i < vector_size(v) - 1) {
+    if (i < vector_size(v) - 1)
       stringbuffer_append_string(sb, ", ");
-    }
   }
   s = stringbuffer_to_string(sb);
   stringbuffer_release(sb);
@@ -258,19 +255,17 @@ char *get_image_format_names_csv(){
 static struct Vector *get_image_format_names_v(){
   struct Vector *v = vector_new();
 
-  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
+  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++)
     vector_push(v, (void *)stringfn_to_lowercase(image_type_name(i)));
-  }
   return(v);
 }
 
 enum image_type_id_t get_format_name(char *format){
-  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++) {
+  for (size_t i = 1; i < IMAGE_TYPES_QTY; i++)
     if (strcmp(stringfn_to_lowercase(format),
-               stringfn_to_lowercase(image_type_name(i))) == 0) {
+               stringfn_to_lowercase(image_type_name(i))) == 0)
       return(i);
-    }
-  }
+
   return(-1);
 }
 
@@ -297,16 +292,14 @@ char * convert_png_to_grayscale(char *png_file, size_t resize_factor){
   char *grayscale_file;
 
   asprintf(&grayscale_file, "%s-grayscale-resized-%lu-grayscale.tif", png_file, resize_factor);
-  if (IMAGE_UTILS_DEBUG_MODE) {
+  if (IMAGE_UTILS_DEBUG_MODE)
     log_info("Converting %s to %s resized by %lu%%", png_file, grayscale_file, resize_factor);
-  }
   FILE       *input_png_file = fopen(png_file, "rb");
   CGImageRef png_gs          = png_file_to_grayscale_cgimage_ref_resized(input_png_file, resize_factor);
 
   assert(write_cgimage_ref_to_tif_file_path(png_gs, grayscale_file) == true);
-  if (IMAGE_UTILS_DEBUG_MODE) {
+  if (IMAGE_UTILS_DEBUG_MODE)
     log_info("Converted to %s grayscale from %s PNG", bytes_to_string(fsio_file_size(grayscale_file)), bytes_to_string(fsio_file_size(png_file)));
-  }
   return(grayscale_file);
 }
 
@@ -334,11 +327,10 @@ bool save_cgref_to_image_type_file(enum image_type_id_t image_type, CGImageRef i
   CGImageDestinationAddImage(destination, image, nil);
   success = CGImageDestinationFinalize(destination);
   CFRelease(url); CFRelease(path); CFRelease(destination);
-  if (IMAGE_UTILS_DEBUG_MODE) {
+  if (IMAGE_UTILS_DEBUG_MODE)
     log_debug("Saved %s to %s file %s in %s",
               bytes_to_string(fsio_file_size(image_file)), image_types[image_type].name, image_file, milliseconds_to_string(timestamp() - started)
               );
-  }
   return((success == true) && fsio_file_exists(image_file));
 }
 
@@ -411,9 +403,9 @@ bool save_cgref_to_qoi_file(CGImageRef image, char *image_file) {
   size_t        qoi_len     = 0;
   unsigned char *qoi_pixels = save_cgref_to_qoi_memory(image, &qoi_len);
 
-  if (qoi_len < 1 || !qoi_pixels) {
+  if (qoi_len < 1 || !qoi_pixels)
     return(false);
-  }
+
   bool ok = fsio_write_binary_file(image_file, qoi_pixels, qoi_len);
 
   free(qoi_pixels);
@@ -427,24 +419,22 @@ unsigned char *save_cgref_to_webp_memory(CGImageRef image, size_t *len){
 
   *len = 0;
   rgb  = save_cgref_to_rgb_memory(image, &rgb_len);
-  if (!rgb || rgb_len < 1) {
+  if (!rgb || rgb_len < 1)
     log_error("Failed to save cgref to rgb");
-  }else{
+  else{
     errno = 0;
     v     = vips_image_new_from_memory(rgb, rgb_len, CGImageGetWidth(image), CGImageGetHeight(image), 4, VIPS_FORMAT_UCHAR);
-    if (!v) {
+    if (!v)
       log_error("Failed to load from buffer");
-    }else{
-      if (IMAGE_UTILS_DEBUG_MODE) {
+    else{
+      if (IMAGE_UTILS_DEBUG_MODE)
         log_debug("\nLoaded %s PNG Pixels to %dx%d %s Webp VIPImage using",
                   bytes_to_string(rgb_len),
                   vips_image_get_width(v), vips_image_get_height(v),
                   bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(v))
                   );
-      }
-      if (vips_webpsave_buffer(v, &buf, len, NULL)) {
+      if (vips_webpsave_buffer(v, &buf, len, NULL))
         log_error("Failed to save to buffer");
-      }
       g_object_unref(v);
     }
   }
@@ -460,14 +450,13 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   _ts[0] = timestamp();
   rgb    = save_cgref_to_rgb_memory(image_ref, &len);
   _ts[1] = timestamp() - _ts[0];
-  if (IMAGE_UTILS_DEBUG_MODE) {
+  if (IMAGE_UTILS_DEBUG_MODE)
     log_debug("[cgref to rgb] decoded %dx%d RGB (rgb len: %s/%lu) in %s",
               w, h,
               bytes_to_string(len),
               len,
               milliseconds_to_string(_ts[1])
               );
-  }
 
   qoi_desc *desc = &(qoi_desc){
     .width      = w,
@@ -480,11 +469,11 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   _ts[0] = timestamp();
   void *qoi_pixels = qoi_encode(rgb, desc, qoi_len);
 
-  if (!qoi_pixels) {
+  if (!qoi_pixels)
     log_error("Failed to qoi encode");
-  }else{
+  else{
     _ts[1] = timestamp() - _ts[0];
-    if (IMAGE_UTILS_DEBUG_MODE) {
+    if (IMAGE_UTILS_DEBUG_MODE)
       log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
                 w, h,
                 bytes_to_string(len), w, h,
@@ -492,11 +481,9 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
                 desc->width, desc->height,
                 milliseconds_to_string(_ts[1])
                 );
-    }
   }
-  if (rgb) {
+  if (rgb)
     free(rgb);
-  }
   return(qoi_pixels);
 } /* save_cgref_to_qoi_memory */
 
@@ -525,9 +512,8 @@ CGImageRef resize_png_file_factor(FILE *fp, double resize_factor){
 }
 
 CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
-  if (IMAGE_UTILS_DEBUG_MODE) {
+  if (IMAGE_UTILS_DEBUG_MODE)
     log_debug("resize_cgimage %dx%d", width, height);
-  }
   CGRect       newRect = CGRectIntegral(CGRectMake(0, 0, width, height));
   CGContextRef context = CGBitmapContextCreate(NULL,
                                                width, height,
@@ -536,9 +522,8 @@ CGImageRef resize_cgimage(CGImageRef imageRef, int width, int height) {
                                                CGImageGetColorSpace(imageRef),
                                                CGImageGetBitmapInfo(imageRef));
   if (!context) {
-    if (IMAGE_UTILS_DEBUG_MODE) {
+    if (IMAGE_UTILS_DEBUG_MODE)
       log_error("Failed to create context");
-    }
     return(NULL);
   }
 
@@ -558,13 +543,11 @@ unsigned char *rgb_pixels_to_png_pixels(int width, int height, const void *rgb, 
   CGImageRef            image;
 
   if (mask) {
-    for (int i = 0; i < width * height; i++) {
+    for (int i = 0; i < width * height; i++)
       ((char *)rgb)[i * 4] = ((char *)mask)[i];
-    }
     image = CGImageCreate(width, height, 8, 32, 4 * width, space, kCGImageAlphaFirst, provider, decode, true, kCGRenderingIntentDefault);
-  }else {
+  }else
     image = CGImageCreate(width, height, 8, 32, 4 * width, space, kCGImageAlphaNoneSkipFirst, provider, decode, true, kCGRenderingIntentDefault);
-  }
 
   CGImageDestinationAddImage(dest, image, NULL);
   CGImageDestinationFinalize(dest);
@@ -724,7 +707,6 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
     log_debug("Enabling Image Utils Debug Mode");
     IMAGE_UTILS_DEBUG_MODE = true;
   }
-  if (isatty(STDOUT_FILENO)) {
+  if (isatty(STDOUT_FILENO))
     FANCY_PROGRESS_ENABLED = true;
-  }
 }

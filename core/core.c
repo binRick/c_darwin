@@ -13,9 +13,17 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
+
+#include "roscha/include/hmap.h"
+#include "roscha/include/object.h"
+#include "roscha/include/parser.h"
+#include "roscha/include/roscha.h"
+#include "roscha/include/sds/sds.h"
+#include "roscha/include/token.h"
+#include "roscha/include/vector.h"
 #include <termios.h>
 ////////////////////////////////////////////
-static bool CORE_DEBUG_MODE = false;
+static bool     CORE_DEBUG_MODE = false;
 pthread_mutex_t *core_stdout_mutex;
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__core(void){
@@ -23,8 +31,8 @@ static void __attribute__((constructor)) __constructor__core(void){
     log_debug("Enabling core Debug Mode");
     CORE_DEBUG_MODE = true;
   }
-  core_stdout_mutex = calloc(1,sizeof(pthread_mutex_t));
-  pthread_mutex_init(core_stdout_mutex,(void*)0);
+  core_stdout_mutex = calloc(1, sizeof(pthread_mutex_t));
+  pthread_mutex_init(core_stdout_mutex, (void *)0);
 }
 ////////////////////////////////////////////
 #endif

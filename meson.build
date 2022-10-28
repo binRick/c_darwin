@@ -1,4 +1,8 @@
-project('c_darwin', ['c'],default_options: ['warning_level=1','c_std=gnu99','gpp_processor=true'],
+project('c_darwin', ['c'],default_options: [
+  'warning_level=0',
+  'c_std=gnu99',
+  'gpp_processor=false',
+],
   subproject_dir: 'submodules/c_deps/subprojects',
   version:'0.0.1')
 fs = import('fs')
@@ -37,7 +41,9 @@ subdir('submodules')
 #############################################################################
 subdir('frameworks')
 subdir('core')
+subdir('optparse')
 subdir('event')
+subdir('process')
 subdir('icons')
 subdir('cache-utils')
 subdir('output-utils')
@@ -53,7 +59,6 @@ subdir('usbdevs-utils')
 subdir('mission-control-utils')
 subdir('pbpaste')
 subdir('pasteboard')
-subdir('process')
 subdir('systemprofiler')
 subdir('app')
 subdir('display')
@@ -115,3 +120,5 @@ subdir('sqldbal-test')
 subdir('kitty-msg-test')
 subdir('mt')
 subdir('nsgif-test')
+subdir('async')
+subdir('async-test')

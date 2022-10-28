@@ -64,7 +64,7 @@ void __init(){
 TEST t_kitty_msg_image_buffers_resized(){
   char *msgs[MSGS_QTY];
 
-  for (size_t i = 0; i < files_qty; i++) {
+  for (size_t i = 0; i < files_qty; i++)
     for (size_t s = 0; s < sizes_qty; s++) {
       Info(">Buffer Size:%s|Resized to:%lupx Width & Height|", bytes_to_string(fsio_file_size(files[i])), sizes[s]);
       msgs[0] = kitty_msg_display_image_buffer_resized_width(fsio_read_binary_file(files[i]), fsio_file_size(files[i]), sizes[s]);
@@ -75,14 +75,13 @@ TEST t_kitty_msg_image_buffers_resized(){
       }
       fflush(stdout);
     }
-  }
   PASS();
 }
 
 TEST t_kitty_msg_image_files_resized(){
   char *msgs[MSGS_QTY];
 
-  for (size_t i = 0; i < files_qty; i++) {
+  for (size_t i = 0; i < files_qty; i++)
     for (size_t s = 0; s < sizes_qty; s++) {
       Info(">File:%s|Resized to:%lupx Width & Height|", files[i], sizes[s]);
       msgs[0] = kitty_msg_display_image_path_resized_width(files[i], sizes[s]);
@@ -93,7 +92,6 @@ TEST t_kitty_msg_image_files_resized(){
       }
       fflush(stdout);
     }
-  }
   PASS();
 }
 
@@ -125,7 +123,7 @@ TEST t_kitty_msg_cursor(){
   char *msg;
   int  row = 0, col = 0, nrow = 0, ncol = 0;
 
-  for (int i = 0; i < (int)files_qty; i++) {
+  for (int i = 0; i < (int)files_qty; i++)
     for (size_t s = 0; s < sizes_qty; s++) {
       nrow = row + (i * 5);
       ncol = col + (i * 5);
@@ -135,7 +133,6 @@ TEST t_kitty_msg_cursor(){
       fprintf(stdout, "%s\n", msg);
       fflush(stdout);
     }
-  }
   PASS();
 }
 

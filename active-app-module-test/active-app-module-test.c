@@ -56,9 +56,8 @@ GREATEST_MAIN_DEFS();
 
 int do_test(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
-  for (int i = 0; i < TEST_ITERATIONS; i++) {
+  for (int i = 0; i < TEST_ITERATIONS; i++)
     RUN_SUITE(the_suite);
-  }
   GREATEST_MAIN_END();
   return(0);
 }

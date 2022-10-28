@@ -20,9 +20,8 @@ static char *extract_xml_text_property(char *xml_file_name, char *xml_text_prope
         if (in_requested_prop == true) {
           in_requested_prop = false;
           return(value);
-        }else if (strcmp(xml_text_property_name, value) == 0) {
+        }else if (strcmp(xml_text_property_name, value) == 0)
           in_requested_prop = true;
-        }
       }
       ret = xmlTextReaderRead(reader);
     }

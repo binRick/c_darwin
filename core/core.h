@@ -27,7 +27,9 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "chan-utils/chan-utils.h"
 #include "container_of/container_of.h"
+#include "csplit/csplit.h"
 #include "date.c/date.h"
 #include "hash/hash.h"
 #include "hashmap.h/hashmap.h"
@@ -35,6 +37,7 @@
 #include "libfort/lib/fort.h"
 #include "ms/ms.h"
 #include "murmurhash.c/murmurhash.h"
+#include "optparse99/optparse99.h"
 #include "parson/parson.h"
 #include "path_module/src/path.h"
 #include "sqldbal/src/sqldbal.h"
@@ -46,7 +49,6 @@
 #include "tempdir.c/tempdir.h"
 #include "timelib/timelib.h"
 #include "timestamp/timestamp.h"
-#include "chan-utils/chan-utils.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"
@@ -65,14 +67,43 @@
 #include "image/image.h"
 #include "keylogger/keylogger.h"
 #include "layout/layout.h"
+#include "menu-bar-utils/menu-bar-utils.h"
+#include "optparse99/optparse99.h"
 #include "process/process.h"
+#include "reproc/reproc/include/reproc/export.h"
+#include "reproc/reproc/include/reproc/reproc.h"
 #include "space/space.h"
 #include "systemprofiler/systemprofiler.h"
 #include "window/window.h"
+#include <pthread.h>
 //////////////////////////////////////
 //#include "capture/capture.h"
 //#include "capture/type/type.h"
 //#include "capture/utils/utils.h"
 //////////////////////////////////////
-extern pthread_mutex_t *core_stdout_mutex;
+struct optparse_cmd;
+struct optparse_opt;
+extern char                *__option_names[];
+extern struct optparse_opt __optparse_opt[];
+extern struct optparse_cmd *dls_cmd;
+extern char                *DLS_RE_EXEC_CMD;
+extern pthread_mutex_t     *core_stdout_mutex;
+/*
+ * struct dls_conn_t {
+ * char *stdout_mutex,*cmd,**option_names;
+ * struct optparse_opt *options;
+ * };
+ * struct dls_conn_t *__core_conn__ = NULL;
+ * struct dls_conn_t *core_get_conn(){
+ #define c __core_conn__
+ * c->stdout_mutex = core_stdout_mutex;
+ * c->cmd = DLS_RE_EXEC_CMD;
+ * c->options = &(__optparse_opt);
+ * c->option_names = __option_names;
+ * return(c);
+ #undef c
+ * }
+ */
+/*
+ */
 #endif

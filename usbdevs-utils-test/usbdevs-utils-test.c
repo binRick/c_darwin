@@ -38,9 +38,8 @@ static void print_devs(libusb_device **devs){
     r = libusb_get_port_numbers(dev, path, sizeof(path));
     if (r > 0) {
       printf(" path: %d", path[0]);
-      for (j = 1; j < r; j++) {
+      for (j = 1; j < r; j++)
         printf(".%d", path[j]);
-      }
     }
     printf("\n");
   }
@@ -53,9 +52,8 @@ TEST t_usbdevs_utils_test(){
   ssize_t       cnt;
 
   r = libusb_init(NULL);
-  if (r < 0) {
+  if (r < 0)
     return(r);
-  }
 
   cnt = libusb_get_device_list(NULL, &devs);
   ASSERT_GT(cnt, 0);

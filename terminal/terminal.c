@@ -47,18 +47,16 @@ static void terminal_internal_fxn1(void);
 ////////////////////////////////////////////
 static void terminal_internal_fxn1(void){
   log_info("Called function terminal_internal_fxn1");
-  if (TERMINAL_DEBUG_MODE == true) {
+  if (TERMINAL_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void terminal_fxn1(void){
   terminal_internal_fxn1();
   log_info("Called function terminal_fxn1");
-  if (TERMINAL_DEBUG_MODE == true) {
+  if (TERMINAL_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

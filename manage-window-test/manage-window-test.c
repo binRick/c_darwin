@@ -33,9 +33,8 @@ TEST t_authorized_tests(void){
   authorized_test_t *authorized_test_results = execute_authorization_tests();
 
   for (size_t i = 0; i < AUTHORIZED_TEST_TYPE_IDS_QTY; i++) {
-    if (i != AUTHORIZED_ACCESSIBILITY) {
+    if (i != AUTHORIZED_ACCESSIBILITY)
       continue;
-    }
     log_debug("Auth test #%lu> %s => %s :: %s", i, authorized_test_results[i].name, authorized_test_results[i].authorized == true ? "OK" : "Failed", milliseconds_to_string(authorized_test_results[i].dur_ms));
     ASSERT_EQ(authorized_test_results[i].authorized, true);
   }
@@ -45,9 +44,8 @@ TEST t_authorized_tests(void){
 TEST t_manage_window_move_space_id(){
   struct window_info_t *w = get_window_id_info(cfg->WINDOWID);
 
-  if (w->window_id != cfg->WINDOWID) {
+  if (w->window_id != cfg->WINDOWID)
     FAIL();
-  }
 
   log_debug("Moving Window ID %lu from spaceid %lu to %d",
             w->window_id,
@@ -111,34 +109,26 @@ int main(const int argc, const char **argv) {
   RUN_TEST(t_authorized_tests);
   RUN_SUITE(s_manage_window_move);
   RUN_SUITE(s_manage_window_resize);
-  if (cfg->SPACEID > 0) {
+  if (cfg->SPACEID > 0)
     RUN_SUITE(s_manage_window_move_space_id);
-  }
   GREATEST_MAIN_END();
 }
 
 static void setup_cfg(){
-  if (getenv("SPACEID") != NULL) {
+  if (getenv("SPACEID") != NULL)
     cfg->SPACEID = atoi(getenv("SPACEID"));
-  }
-  if (getenv("WINDOWID") != NULL) {
+  if (getenv("WINDOWID") != NULL)
     cfg->WINDOWID = atoi(getenv("WINDOWID"));
-  }
-  if (getenv("WIDTH") != NULL) {
+  if (getenv("WIDTH") != NULL)
     cfg->WIDTH = atoi(getenv("WIDTH"));
-  }
-  if (getenv("HEIGHT") != NULL) {
+  if (getenv("HEIGHT") != NULL)
     cfg->HEIGHT = atoi(getenv("HEIGHT"));
-  }
-  if (getenv("X") != NULL) {
+  if (getenv("X") != NULL)
     cfg->X = atoi(getenv("X"));
-  }
-  if (getenv("Y") != NULL) {
+  if (getenv("Y") != NULL)
     cfg->Y = atoi(getenv("Y"));
-  }
-  if (cfg->WINDOWID < 1) {
+  if (cfg->WINDOWID < 1)
     cfg->WINDOWID = get_focused_window_id();
-  }
   if (cfg->Y < MIN_Y_VALUE) {
     log_info(AC_YELLOW "Adjusting Y to minimum value " AC_MAGENTA "%d" AC_RESETALL, MIN_Y_VALUE);
     cfg->Y = MIN_Y_VALUE;

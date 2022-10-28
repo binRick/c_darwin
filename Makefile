@@ -2,6 +2,8 @@ default: all
 ##############################################################
 include submodules/c_deps/etc/includes.mk
 MESON_DEFAULT_LIBRARY=shared
+REPO_DIR=$(shell pwd)
+WARN_LEVEL=0
 ##############################################################
 keybinds-yaml-to-json:
 	@cat etc/keybinds.yaml|yaml2json |jq |tee etc/keybinds.json
@@ -28,3 +30,10 @@ test-dls:
 
 test-mt:
 	@meson test -v --list -C build|egrep '^mt>'|xargs -I % meson test -v -C build "%"
+restic:
+	@[[ -d $(REPO_DIR)/.restic.db ]] || env RESTIC_PASSWORD=123123 restic init -r $(REPO_DIR)/.restic.db
+	@[[ -d ~/repos/c_darwin/.restic.db ]] && env RESTIC_PASSWORD=123123 restic backup ~/repos/c_deps/submodules -r ~/repos/c_darwin/.restic.db
+	@(cd ~/repos/c_darwin/ && make docker -B)
+
+gpp:
+	@bash -exc '(find . -maxdepth 2 -type f -name "*.*.gpp" | xargs -P 16  -I % bash -exc "(cd \`dirname %\` && gpp -x \`basename %\` -o /tmp/gpp-\`basename % .gpp\`)")'

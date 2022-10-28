@@ -13,9 +13,9 @@ static void __attribute__((constructor)) __constructor__menu_bar_utils(void){
 
 ////////////////////////////////////////////
 int get_menu_bar_height(){
-  if (get_menu_bar_visible() == false) {
+  if (get_menu_bar_visible() == false)
     return(0);
-  }
+
   int    _space_id   = get_current_space_id();
   int    _display_id = get_display_id_for_space(_space_id);
   CGRect rect        = get_menu_bar_rect(_display_id);

@@ -38,17 +38,15 @@ static void __attribute__((constructor)) __constructor__websocket_server(void){
     assert(libforks_start(&conn_websocket_mon) == libforks_OK);
     pid_t fork_mon_pid = libforks_get_server_pid(conn_websocket_mon);
     assert(fork_mon_pid > 0);
-    if (WEBSOCKET_SERVER_DEBUG_MODE) {
+    if (WEBSOCKET_SERVER_DEBUG_MODE)
       log_info(AC_YELLOW "Mon Server> Fork server with pid %d created"AC_RESETALL, fork_mon_pid);
-    }
 
     assert(libforks_start(&conn_websocket_server) == libforks_OK);
     pid_t fork_server_pid = libforks_get_server_pid(conn_websocket_server);
 
     assert(fork_server_pid > 0);
-    if (WEBSOCKET_SERVER_DEBUG_MODE) {
+    if (WEBSOCKET_SERVER_DEBUG_MODE)
       log_info(AC_YELLOW "Websocket Server> Fork server with pid %d created"AC_RESETALL, fork_server_pid);
-    }
     signal(SIGTERM, handle_sigterm);
   }
 }
@@ -80,9 +78,8 @@ int _read_from_pipe(void *f){
 
   stream = fdopen(file, "r");
   sb     = stringbuffer_new();
-  while ((c = fgetc(stream)) != EOF) {
+  while ((c = fgetc(stream)) != EOF)
     stringbuffer_append(sb, c);
-  }
   if (strlen(stringbuffer_to_string(sb)) > 0) {
     m = stringbuffer_to_string(sb);
     log_info("READ> %s", m);
@@ -151,16 +148,13 @@ static int create_listen_socket(const char *service) {
   for (rp = res; rp; rp = rp->ai_next) {
     int val = 1;
     sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-    if (sfd == -1) {
+    if (sfd == -1)
       continue;
-    }
     if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &val,
-                   (socklen_t)sizeof(val)) == -1) {
+                   (socklen_t)sizeof(val)) == -1)
       continue;
-    }
-    if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0) {
+    if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
       break;
-    }
     close(sfd);
   }
   freeaddrinfo(res);
@@ -269,9 +263,8 @@ static const char *http_header_find_field_value(const char *header,
     }
   } while (field_start != NULL);
 
-  if (field_start == NULL) {
+  if (field_start == NULL)
     return(NULL);
-  }
 
   /* Find the field terminator */
   next_crlf = strstr(field_start, "\r\n");
@@ -281,25 +274,22 @@ static const char *http_header_find_field_value(const char *header,
     return(NULL); /* Malformed HTTP header! */
   }
   /* If not looking for a value, then return a pointer to the start of values string */
-  if (value == NULL) {
+  if (value == NULL)
     return(field_end + 2);
-  }
 
   value_start = strstr(field_start, value);
 
   /* Value not found */
-  if (value_start == NULL) {
+  if (value_start == NULL)
     return(NULL);
-  }
 
   /* Found the value we're looking for */
   if (value_start > next_crlf) {
     return(NULL); /* ... but after the CRLF terminator of the field. */
   }
   /* The value we found should be properly delineated from the other tokens */
-  if (isalnum(value_start[-1]) || isalnum(value_start[strlen(value)])) {
+  if (isalnum(value_start[-1]) || isalnum(value_start[strlen(value)]))
     return(NULL);
-  }
 
   return(value_start);
 } /* http_header_find_field_value */
@@ -335,9 +325,9 @@ static int http_handshake(int fd) {
     } else {
       header_length += (size_t)r;
       if (header_length >= 4
-          && memcmp(header + header_length - 4, "\r\n\r\n", 4) == 0) {
+          && memcmp(header + header_length - 4, "\r\n\r\n", 4) == 0)
         break;
-      } else if (header_length == sizeof(header)) {
+      else if (header_length == sizeof(header)) {
         fprintf(stderr, "HTTP Handshake: Too large HTTP headers");
         return(-1);
       }
@@ -378,9 +368,8 @@ static int http_handshake(int fd) {
     if (r == -1) {
       perror("write");
       return(-1);
-    } else {
+    } else
       res_header_sent += (size_t)r;
-    }
   }
   return(0);
 } /* http_handshake */
@@ -397,18 +386,16 @@ static ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data,
   int              sflags = 0;
 
 #ifdef MSG_MORE
-  if (flags & WSLAY_MSG_MORE) {
+  if (flags & WSLAY_MSG_MORE)
     sflags |= MSG_MORE;
-  }
 #endif // MSG_MORE
   while ((r = send(session->fd, data, len, sflags)) == -1 && errno == EINTR) {
   }
   if (r == -1) {
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK)
       wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
-    } else {
+    else
       wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-    }
   }
   return(r);
 }
@@ -422,11 +409,10 @@ static ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf,
   while ((r = recv(session->fd, buf, len, 0)) == -1 && errno == EINTR) {
   }
   if (r == -1) {
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK)
       wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
-    } else {
+    else
       wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-    }
   } else if (r == 0) {
     /* Unexpected EOF is also treated as an error */
     wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
@@ -455,11 +441,10 @@ static void on_msg_recv_callback(wslay_event_context_ptr                  ctx,
     char                   *m;
     asprintf(&m, "recv callback");
     log_info("%s", m);
-    if (ok == 0) {
+    if (ok == 0)
       log_debug("Queued %s msg to %s", bytes_to_string(strlen(buf)), session->uuid);
-    }else{
+    else
       log_error("Failed to queue msg: %d", ok);
-    }
     log_debug("%lu queued msgs", wslay_event_get_queued_msg_length(ctx));
     asprintf(&m, "<%d>  recv|%s|%lu|%d|%d|", getpid(), arg->msg, arg->msg_length, arg->opcode, arg->status_code);
     //write_to_pipe(session->mypipe,m);
@@ -508,12 +493,12 @@ static int communicate(int fd, void *C, int mypipe){
   struct pollfd event;
   int           res = 0;
 
-  if (http_handshake(fd) == -1) {
+  if (http_handshake(fd) == -1)
     return(-1);
-  }
-  if (make_non_block(fd) == -1) {
+
+  if (make_non_block(fd) == -1)
     return(-1);
-  }
+
   if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) ==
       -1) {
     perror("setsockopt: TCP_NODELAY");
@@ -552,12 +537,10 @@ static int communicate(int fd, void *C, int mypipe){
       break;
     }
     event.events = 0;
-    if (wslay_event_want_read(ctx)) {
+    if (wslay_event_want_read(ctx))
       event.events |= POLLIN;
-    }
-    if (wslay_event_want_write(ctx)) {
+    if (wslay_event_want_write(ctx))
       event.events |= POLLOUT;
-    }
   }
   log_debug("<%d> Session Closing after %s |pid:%d|fd:%d|uuid:%s|started:%ld|"
             "%lu/%lu bytes read/written|%lu/%lu msgs sent/recvd|",
@@ -588,9 +571,9 @@ static void __attribute__((noreturn)) serve(int sfd, void *C){
       fprintf(stderr, "Pipe failed.\n");
       return(EXIT_FAILURE);
     }
-    if (fd == -1) {
+    if (fd == -1)
       perror("accept");
-    } else {
+    else {
       int r = fork();
       if (r == -1) {
         perror("fork");
@@ -600,11 +583,10 @@ static void __attribute__((noreturn)) serve(int sfd, void *C){
         r = communicate(fd, c, mypipe[1]);
         shutdown(fd, SHUT_WR);
         close(fd);
-        if (r == 0) {
+        if (r == 0)
           exit(EXIT_SUCCESS);
-        } else {
+        else
           exit(EXIT_FAILURE);
-        }
       }else{
         log_info("child pid %d", r);
         close(mypipe[1]);
@@ -636,12 +618,10 @@ int websocket_server(void *P){
       log_error("Failed to create server socket (%lu retries)", retries);
       retries++;
       sleep(1);
-      if (retries > 100) {
+      if (retries > 100)
         exit(EXIT_FAILURE);
-      }
-    }else{
+    }else
       created = true;
-    }
   }
   asprintf(&msg, "WebSocket echo server, listening on socket %s", c->socket);
   serve(sfd, (void *)c);

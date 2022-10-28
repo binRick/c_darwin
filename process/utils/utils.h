@@ -108,4 +108,5 @@ int get_window_id_display_id(size_t window_id);
 ///////////////////////////////////////////////////////////////////////////////
 #define CLOSE_SYSTEM_PREFERENCES_AND_OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD \
   CLOSE_SYSTEM_PREFERENCES OPEN_SYSTEM_PREFERENCES_PRIVACY_ACCESSIBILITY_WINDOW_OSASCRIPT_CMD
+bool run_cmd_in_parent(char **cmd_a);
 #endif

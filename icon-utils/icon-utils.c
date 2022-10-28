@@ -21,6 +21,7 @@
 #include "log/log.h"
 #include "ms/ms.h"
 #include "path_module/src/path.h"
+#include "process/utils/utils.h"
 #include "reproc/reproc/include/reproc/export.h"
 #include "reproc/reproc/include/reproc/reproc.h"
 #include "stb/stb_image.h"
@@ -83,26 +84,24 @@ static char *get_killall_dock_cmd(void);
 static char *get_killall_finder_cmd(void);
 ///////////////////////////////////////////////////////////////////////
 static void __attribute__((constructor)) __constructor__icon_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL) {
+  if (getenv("DEBUG") != NULL || getenv("DEBUG_icon_utils") != NULL)
     ICON_UTILS_DEBUG_MODE = true;
-  }
 }
 
 static struct app_icon_size_t *get_icon_size(size_t icon_size){
-  for (size_t i = 0; i < app_icon_sizes_qty; i++) {
-    if (app_icon_sizes[i].pixels == icon_size) {
+  for (size_t i = 0; i < app_icon_sizes_qty; i++)
+    if (app_icon_sizes[i].pixels == icon_size)
       return(&(app_icon_sizes[i]));
-    }
-  }
+
   return(NULL);
 }
 
 static int get_icon_size_value(size_t icon_size){
   struct app_icon_size_t *is = get_icon_size(icon_size);
 
-  if (is) {
+  if (is)
     return(is->value);
-  }
+
   DEFAULT_APP_ICON_SIZE->value;
   return(0);
 }
@@ -110,9 +109,8 @@ static int get_icon_size_value(size_t icon_size){
 static int get_icon_size_pixels(size_t icon_size){
   struct app_icon_size_t *is = get_icon_size(icon_size);
 
-  if (is) {
+  if (is)
     return(is->pixels);
-  }
 
   return(0);
 }
@@ -168,9 +166,8 @@ static bool save_cfdataref_to_icns_file(CFDataRef data_ref, FILE *fp){
   const unsigned char *buffer = CFDataGetBytePtr(data_ref);
   size_t              written = fwrite(buffer, 1, length, fp);
 
-  if (buffer) {
+  if (buffer)
     free(buffer);
-  }
 
   fflush(fp);
   fclose(fp);
@@ -190,9 +187,8 @@ static icns_family_t *get_icns_file_info(FILE *fp){
   icns_family_t *iconFamily = NULL;
   size_t        fp_size     = get_fp_size(fp);
 
-  if (ICON_UTILS_DEBUG_MODE == true) {
+  if (ICON_UTILS_DEBUG_MODE == true)
     log_info("icns file size: %s", bytes_to_string(fp_size));
-  }
 
   assert(icns_read_family_from_file(fp, &iconFamily) == 0);
 
@@ -235,9 +231,8 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
   if (icns_read_family_from_file(icnsfile, &iconFamily) != ICNS_STATUS_OK) {
     log_info("Creating new icon family");
     icns_create_family(&iconFamily);
-  }else{
+  }else
     log_info("Opening Existing icon family");
-  }
   icns_image_t     icnsImage;
   icns_image_t     icnsMask;
   icns_type_t      iconType;
@@ -301,11 +296,10 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
   }
   maskType = icns_get_mask_type_for_icon_type(iconType);
   icns_type_str(maskType, maskStr);
-  if (maskType != ICNS_NULL_TYPE) {
+  if (maskType != ICNS_NULL_TYPE)
     log_info("Using icns type '%s', mask '%s' for '%s'", iconStr, maskStr, png_file_path);
-  }else {
+  else
     log_info("Using icns type '%s' (ARGB) for '%s'", iconStr, png_file_path);
-  }
 
   icnsErr = icns_new_element_from_image(&icnsImage, iconType, &iconElement);
   if (iconElement != NULL) {
@@ -331,9 +325,8 @@ bool write_app_icon_from_png(char *app_path, char *png_file_path){
 
   printf("Saved icns file to %s\n", icnsfile_path);
 
-  if (iconFamily != NULL) {
+  if (iconFamily != NULL)
     free(iconFamily);
-  }
 
   return(true);
 } /* write_app_icon_from_png */
@@ -349,11 +342,9 @@ size_t get_minimum_icon_size(){
 struct Vector *get_app_icon_sizes_v(){
   struct Vector *v = vector_new();
 
-  for (size_t i = 0; i < app_icon_sizes_qty; i++) {
-    if (app_icon_sizes[i].pixels > 0) {
+  for (size_t i = 0; i < app_icon_sizes_qty; i++)
+    if (app_icon_sizes[i].pixels > 0)
       vector_push(v, (void *)(size_t)app_icon_sizes[i].pixels);
-    }
-  }
   return(v);
 }
 
@@ -367,9 +358,8 @@ static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_si
 
   assert(icns_get_element_from_family(iconFamily, get_icon_size_type(icon_size), &iconElement) == ICNS_STATUS_OK);
   assert(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK);
-  if (fsio_file_exists(png_file_path) == true) {
+  if (fsio_file_exists(png_file_path) == true)
     fsio_remove(png_file_path);
-  }
   stbi_write_png(
     png_file_path,
     iconImage->imageWidth,
@@ -394,9 +384,8 @@ bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size
 }
 
 bool get_icon_info(char *icns_file_path){
-  if (ICON_UTILS_DEBUG_MODE == true) {
+  if (ICON_UTILS_DEBUG_MODE == true)
     log_info("icns_file_path %s", icns_file_path);
-  }
   FILE           *fp         = fopen(icns_file_path, "rb");
   icns_family_t  *iconFamily = get_icns_file_info(fp);
   char           iconStr[5]  = { 0, 0, 0, 0, 0 };
@@ -462,9 +451,8 @@ struct Vector *get_clear_app_icon_cmds(char *app_path){
   asprintf(&cmds[3], "%s", get_killall_finder_cmd());
   for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++) {
     char *cmd = cmds[i];
-    if (ICON_UTILS_DEBUG_MODE == true) {
+    if (ICON_UTILS_DEBUG_MODE == true)
       log_info("%s", cmd);
-    }
     vector_push(v, (void *)cmd_to_cmd_array(cmd));
   }
 
@@ -504,9 +492,8 @@ struct Vector *get_clear_icons_cmds(){
            );
   asprintf(&cmds[2], "%s", get_killall_dock_cmd());
   asprintf(&cmds[3], "%s", get_killall_finder_cmd());
-  for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++) {
+  for (size_t i = 0; i < CLEAR_ICONS_CMDS_QTY; i++)
     vector_push(v, (void *)cmd_to_cmd_array(cmds[i]));
-  }
 
   return(v);
 }
@@ -518,59 +505,59 @@ static char **cmd_to_cmd_array(char *cmd){
   cmd_a[cmd_s.count] = NULL;
   return(cmd_a);
 }
-
-bool run_cmd_in_parent(char **cmd_a){
-  bool     ok       = false;
-  reproc_t *process = NULL;
-  int      r        = REPROC_ENOMEM;
-
-  process = reproc_new();
-  if (process == NULL) {
-    goto finish;
-  }
-
-  r = reproc_start(process, cmd_a,
-                   (reproc_options){
-    .redirect.parent = true,
-    .deadline        = 15000,
-  });
-  if (r < 0) {
-    goto finish;
-  }
-
-  r = reproc_wait(process, REPROC_INFINITE);
-  if (r < 0) {
-    goto finish;
-  }
-  ok = true;
-
-finish:
-  reproc_destroy(process);
-
-  if (r < 0) {
-    fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
-  }
-
-  if (ICON_UTILS_DEBUG_MODE) {
-    log_info("cleared icons cache with result %d", r);
-  }
-
-  return(ok);
-}
-
-bool clear_app_icon_cache(char *app_path){
-  bool          ok      = false;
-  struct Vector *cmds_v = get_clear_app_icon_cmds(app_path);
-
-  for (size_t i = 0; i < vector_size(cmds_v); i++) {
-    char **cmd = (char **)vector_get(cmds_v, i);
-    if (run_cmd_in_parent(cmd) != true) {
-      return(false);
-    }
-  }
-  ok = true;
-  return(ok);
-} /* clear_icons_cache */
+/*
+ * bool run_cmd_in_parent(char **cmd_a){
+ * bool     ok       = false;
+ * reproc_t *process = NULL;
+ * int      r        = REPROC_ENOMEM;
+ *
+ * process = reproc_new();
+ * if (process == NULL) {
+ *  goto finish;
+ * }
+ *
+ * r = reproc_start(process, cmd_a,
+ *                 (reproc_options){
+ *  .redirect.parent = true,
+ *  .deadline        = 15000,
+ * });
+ * if (r < 0) {
+ *  goto finish;
+ * }
+ *
+ * r = reproc_wait(process, REPROC_INFINITE);
+ * if (r < 0) {
+ *  goto finish;
+ * }
+ * ok = true;
+ *
+ * finish:
+ * reproc_destroy(process);
+ *
+ * if (r < 0) {
+ *  fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
+ * }
+ *
+ * if (ICON_UTILS_DEBUG_MODE) {
+ *  log_info("cleared icons cache with result %d", r);
+ * }
+ *
+ * return(ok);
+ * }
+ *
+ * bool clear_app_icon_cache(char *app_path){
+ * bool          ok      = false;
+ * struct Vector *cmds_v = get_clear_app_icon_cmds(app_path);
+ *
+ * for (size_t i = 0; i < vector_size(cmds_v); i++) {
+ *  char **cmd = (char **)vector_get(cmds_v, i);
+ *  if (run_cmd_in_parent(cmd) != true) {
+ *    return(false);
+ *  }
+ * }
+ * ok = true;
+ * return(ok);
+ * } */
 
 bool clear_icons_cache(){
   bool          ok      = false;
@@ -578,9 +565,8 @@ bool clear_icons_cache(){
 
   for (size_t i = 0; i < vector_size(cmds_v); i++) {
     char **cmd = (char **)vector_get(cmds_v, i);
-    if (run_cmd_in_parent(cmd) != true) {
+    if (run_cmd_in_parent(cmd) != true)
       return(false);
-    }
   }
   ok = true;
   return(ok);
@@ -589,26 +575,22 @@ bool clear_icons_cache(){
 bool write_icns_to_app_path(char *new_icns_file_path, char *app_path){
   bool ok = false;
 
-  if (ICON_UTILS_DEBUG_MODE == true) {
+  if (ICON_UTILS_DEBUG_MODE == true)
     log_info("writing app %s to icns %s", app_path, new_icns_file_path);
-  }
   char *app_plist_info_path = get_app_path_plist_info_path(app_path);
   char *app_icns_file_path  = get_info_plist_icon_file_path(app_plist_info_path);
   char *icns_file_path      = get_app_path_icns_file_path_icon_file_path(app_path, app_icns_file_path);
 
   if (fsio_file_exists(icns_file_path) == true && fsio_file_exists(new_icns_file_path)) {
     ok = fsio_copy_file(new_icns_file_path, icns_file_path);
-    if (ok == false) {
+    if (ok == false)
       log_error("Failed to copy file %s to file %s", new_icns_file_path, icns_file_path);
-    }else{
-      if (ICON_UTILS_DEBUG_MODE == true) {
-        log_info("set app %s icns file %s from new icns path %s",
-                 app_path,
-                 icns_file_path,
-                 new_icns_file_path
-                 );
-      }
-    }
+    else if (ICON_UTILS_DEBUG_MODE == true)
+      log_info("set app %s icns file %s from new icns path %s",
+               app_path,
+               icns_file_path,
+               new_icns_file_path
+               );
   }
 
   return(ok);
@@ -635,9 +617,9 @@ bool app_icon_size_is_valid(size_t icon_size){
 char *get_icon_size_name(size_t icon_size){
   struct app_icon_size_t *is = get_icon_size(icon_size);
 
-  if (is) {
+  if (is)
     return(is->name);
-  }
+
   return(0);
 }
 
@@ -655,9 +637,8 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
   int         rowsize;
 
   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if (png_ptr == NULL) {
+  if (png_ptr == NULL)
     return(FALSE);
-  }
 
   info = png_create_info_struct(png_ptr);
   if (info == NULL) {
@@ -702,11 +683,10 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
   case PNG_COLOR_TYPE_PALETTE:
     png_set_palette_to_rgb(png_ptr);
 
-    if (png_get_valid(png_ptr, info, PNG_INFO_tRNS)) {
+    if (png_get_valid(png_ptr, info, PNG_INFO_tRNS))
       png_set_tRNS_to_alpha(png_ptr);
-    }else{
+    else
       png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
-    }
     break;
 
   case PNG_COLOR_TYPE_RGB:
@@ -738,9 +718,8 @@ static int read_png(FILE *fp, png_bytepp buffer, int32_t *bpp, int32_t *width, i
   *buffer = malloc(rowsize * h + 8);
 
   rows[0] = *buffer;
-  for (row = 1; row < h; row++) {
+  for (row = 1; row < h; row++)
     rows[row] = rows[row - 1] + rowsize;
-  }
 
   png_read_image(png_ptr, rows);
   png_destroy_read_struct(&png_ptr, &info, NULL);
@@ -770,12 +749,10 @@ char *get_info_plist_icon_file_path(char *xml_file_path){
   char *icns_file     = get_app_list_icon_file_name(xml_file_path);
   char *icns_file_ext = extname(icns_file);
 
-  if (icns_file_ext == NULL || strlen(icns_file_ext) == 0) {
+  if (icns_file_ext == NULL || strlen(icns_file_ext) == 0)
     asprintf(&icns_file, "%s.icns", icns_file);
-  }
-  if (ICON_UTILS_DEBUG_MODE == true) {
+  if (ICON_UTILS_DEBUG_MODE == true)
     log_info("icns file:%s|ext:%s", icns_file, icns_file_ext);
-  }
   asprintf(&ret, "%s", icns_file);
   return(ret);
 }

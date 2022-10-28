@@ -13,6 +13,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+enum hk_layout_mode_type_id_t {
+  HK_LAYOUT_MODE_TYPE_HORIZONTAL,
+  HK_LAYOUT_MODE_TYPE_VERTICAL,
+  HK_LAYOUT_MODE_TYPES_QTY,
+};
+enum hk_gravity_type_id_t {
+  HK_GRAVITY_TYPE_TOP,
+  HK_GRAVITY_TYPE_BOTTOM,
+  HK_GRAVITY_TYPE_LEFT,
+  HK_GRAVITY_TYPE_RIGHT,
+  HK_GRAVITY_TYPES_QTY,
+};
+
+const char                          *hk_layout_mode_slugs[] = {
+  [HK_LAYOUT_MODE_TYPE_HORIZONTAL] = "width",
+  [HK_LAYOUT_MODE_TYPE_VERTICAL]   = "height",
+};
+const char                          *hk_layout_mode_names[] = {
+  [HK_LAYOUT_MODE_TYPE_HORIZONTAL] = "horizontal",
+  [HK_LAYOUT_MODE_TYPE_VERTICAL]   = "vertical",
+};
+
+const enum hk_layout_mode_type_id_t hk_layout_mode_types[] = {
+  [LAYOUT_MODE_HORIZONTAL] = HK_LAYOUT_MODE_TYPE_HORIZONTAL,
+  [LAYOUT_MODE_VERTICAL]   = HK_LAYOUT_MODE_TYPE_VERTICAL,
+};
+
 struct hotkeys_libforks_param_t {
   int socket_fd;
   int websocket_server_port;
@@ -78,18 +105,19 @@ struct hk_app_t {
   const char *name;
 };
 struct hk_layout_t {
-  const char            *app, *mode, *name;
-  const float           width;
-  const int             app_margins[4], content_margins[4];
-  const bool            debug;
-  const int             display, display_space;
-  const struct hk_app_t *apps;
-  size_t                apps_count;
+  const char                *app, *mode, *name;
+  const float               size;
+  const int                 app_margins[4], content_margins[4];
+  const bool                debug;
+  const int                 display, display_space;
+  const struct hk_app_t     *apps;
+  size_t                    apps_count;
+  enum hk_gravity_type_id_t gravity;
 };
 struct hk_appposition_t {
   const char  *app;
   const bool  enabled;
-  const float width;
+  const float size;
   const char  *side;
 };
 struct key_t {
@@ -108,6 +136,18 @@ struct hotkeys_config_t {
   size_t                  keys_count, layouts_count, apppositions_count;
 };
 //////////////////////////////////////
+static const cyaml_strval_t gravity_type_strings[] = {
+  { "left",   HK_GRAVITY_TYPE_LEFT   },
+  { "right",  HK_GRAVITY_TYPE_RIGHT  },
+  { "top",    HK_GRAVITY_TYPE_TOP    },
+  { "bottom", HK_GRAVITY_TYPE_BOTTOM },
+};
+static const char           *gravity_type_names[] = {
+  [HK_GRAVITY_TYPE_LEFT]   = "left",
+  [HK_GRAVITY_TYPE_RIGHT]  = "right",
+  [HK_GRAVITY_TYPE_TOP]    = "top",
+  [HK_GRAVITY_TYPE_BOTTOM] = "bottom",
+};
 static const cyaml_strval_t action_type_strings[] = {
   { "None",                                        ACTION_TYPE_NONE                                             },
   { "NormalizeLayout",                             ACTION_TYPE_NORMALIZE_LAYOUT                                 },
@@ -141,7 +181,7 @@ static const cyaml_strval_t action_type_strings[] = {
   { "MoveWindowToPrevSpace",                       ACTION_TYPE_MOVE_WINDOW_TO_PREV_SPACE                        },
   { "MoveWindowToNextDisplayRight50Percent",       ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_RIGHT_FIFTY_PERCENT  },
   { "MoveWindowToNextDisplayLeft50Percent",        ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_LEFT_FIFTY_PERCENT   },
-  { "ToggleLayout",                     ACTION_TYPE_TOGGLE_LAYOUT},
+  { "ToggleLayout",                                ACTION_TYPE_TOGGLE_LAYOUT                                    },
   { "None",                                        ACTION_TYPES_QTY                                             },
 };
 #define GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION(DIRECTION, FACTOR_TEXT, DIRECTION_LABEL, PERCENTAGE) \
@@ -246,7 +286,7 @@ int run_hotkeys_server();
 //////////////////////////////////////
 static struct action_type_handler_t __attribute__((unused)) action_type_handlers[] = {
 ////////////////////////////////////////////////////////////
-  [ACTION_TYPE_TOGGLE_LAYOUT]  =  { .fxn = hk_toggle_layout,  },
+  [ACTION_TYPE_TOGGLE_LAYOUT]                                   =  { .fxn = hk_toggle_layout,                                   },
   [ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_LEFT_FIFTY_PERCENT]  =  { .fxn = hk_move_window_to_next_display_left_fifty_percent,  },
   [ACTION_TYPE_MOVE_WINDOW_TO_NEXT_DISPLAY_RIGHT_FIFTY_PERCENT] =  { .fxn = hk_move_window_to_next_display_right_fifty_percent, },
   [ACTION_TYPE_MOVE_WINDOW_TO_PREV_DISPLAY]                     =  { .fxn = hk_move_window_to_prev_display,                     },
@@ -292,4 +332,5 @@ bool hk_print_layout_names();
 bool hk_show_layout(char *name);
 bool hk_show_rendered_layout_name(char *name);
 pid_t run_hotkeys_server_with_callback(void ( *cb )(char *));
+hash_t *hk_get_layouts();
 #endif

@@ -15,9 +15,8 @@ int ls_kitty(){
 
   for (size_t i = 0; i < PIDS_QTY; i++) {
     int pid = (int)(long long)vector_get(pids_v, i);
-    if (pid <= 1) {
+    if (pid <= 1)
       continue;
-    }
     struct Vector *PE = get_process_env(pid);
     searched_env_vars += vector_size(PE);
     for (size_t ii = 0; ii < vector_size(PE); ii++) {
@@ -30,38 +29,30 @@ int ls_kitty(){
         wildcardcmp("KITTY_TYPE", E->key)
         ||
         wildcardcmp("KITTY_PID", E->key)
-        ) {
+        )
         match = true;
-      }
-      if (match == false) {
+      if (match == false)
         for (size_t u = 0; u < vector_size(user_supplied_keys); u++) {
-          if (wildcardcmp((char *)vector_get(user_supplied_keys, u), E->key)) {
+          if (wildcardcmp((char *)vector_get(user_supplied_keys, u), E->key))
             match = true;
-          }else if (wildcardcmp(stringfn_to_uppercase((char *)vector_get(user_supplied_keys, u)), E->key)) {
+          else if (wildcardcmp(stringfn_to_uppercase((char *)vector_get(user_supplied_keys, u)), E->key))
             match = true;
-          }
-          if (wildcardcmp((char *)vector_get(user_supplied_keys, u), E->key)) {
+          if (wildcardcmp((char *)vector_get(user_supplied_keys, u), E->key))
             match = true;
-          }else if (wildcardcmp(stringfn_to_uppercase((char *)vector_get(user_supplied_keys, u)), E->key)) {
+          else if (wildcardcmp(stringfn_to_uppercase((char *)vector_get(user_supplied_keys, u)), E->key))
             match = true;
-          }
-          if (pid == atoi((char *)vector_get(user_supplied_keys, u))) {
+          if (pid == atoi((char *)vector_get(user_supplied_keys, u)))
             match = true;
-          }
         }
-      }
       if (match == true) {
         char *result;
         bool found = false;
         asprintf(&result, "%d %s %s", pid, E->key, E->val);
-        for (size_t j = 0; j < vector_size(saved); j++) {
-          if (strcmp(result, (char *)vector_get(saved, j)) == 0) {
+        for (size_t j = 0; j < vector_size(saved); j++)
+          if (strcmp(result, (char *)vector_get(saved, j)) == 0)
             found = true;
-          }
-        }
-        if (found == false) {
+        if (found == false)
           vector_push(saved, (void *)result);
-        }
       }
     }
     vector_release(PE);
@@ -75,9 +66,8 @@ int ls_kitty(){
   }
   long unsigned dur_ms = timestamp() - started;
 
-  if (verbose_mode) {
+  if (verbose_mode)
     fprintf(stderr, "Acquired %lu results from %lu env vars, %lu pids, and %lu bytes of env vars in %ldms using %lu user supplied search items\n", vector_size(saved), searched_env_vars, vector_size(pids_v), searched_env_var_bytes, dur_ms, vector_size(user_supplied_keys));
-  }
   vector_release(saved);
   vector_release(pids_v);
   vector_release(user_supplied_keys);
@@ -95,9 +85,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, ">Verbose Mode Enabled\n");
       }else{
         vector_push(user_supplied_keys, *tmp);
-        if (verbose_mode) {
+        if (verbose_mode)
           fprintf(stderr, ">Added env key/value glob and pid match for '%s'\n", *tmp);
-        }
       }
       *tmp++;
     }

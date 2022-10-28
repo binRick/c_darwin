@@ -21,10 +21,9 @@ static inline int logger_Update(){
       info.processInfoLength = sizeof(ProcessInfoRec);
       info.processName       = processName;
       err                    = GetProcessInformation(&psn, &info);
-      if (err == noErr) {
+      if (err == noErr)
         //sprintf(require(logger)->Name, stringfn_trim(strdup(processName)));
         GetProcessPID(&psn, &(require(logger)->PID));
-      }
     }
   }
   free(processName);
@@ -59,19 +58,16 @@ static inline char *logger_GetName(){
 }
 
 static inline void logger_info(char *message) {
-  if (require(logger)->mode >= LOGGER_INFO) {
+  if (require(logger)->mode >= LOGGER_INFO)
     fprintf(stdout, " info: %s\n", message);
-  }
 }
 
 static inline void logger_error(char *message) {
-  if (require(logger)->mode >= LOGGER_ERROR) {
+  if (require(logger)->mode >= LOGGER_ERROR)
     fprintf(stderr, "error: %s\n", message);
-  }
 }
 
 static inline void logger_debug(char *message) {
-  if (require(logger)->mode >= LOGGER_DEBUG) {
+  if (require(logger)->mode >= LOGGER_DEBUG)
     fprintf(stderr, "debug: %s\n", message);
-  }
 }

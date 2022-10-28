@@ -99,9 +99,8 @@ TEST t_kitty_module_pids_env(void){
     env_vars_qty += vector_size(pid_envs_v);
     stringbuffer_append_int(sb, vector_size(pid_envs_v));
     stringbuffer_append_string(sb, " envs");
-    if (i < KU->pids_qty - 1) {
+    if (i < KU->pids_qty - 1)
       stringbuffer_append_string(sb, ", ");
-    }
     for (size_t ii = 0; ii < vector_size(pid_envs_v); ii++) {
       process_env_t *E = (process_env_t *)(vector_get(pid_envs_v, ii));
 
@@ -119,9 +118,8 @@ TEST t_kitty_module_iterate_pids(void){
   for (size_t i = 0; i < KU->pids_qty; i++) {
     int pid = (int)(size_t)vector_get(KU->pids_v, i);
     stringbuffer_append_int(sb, pid);
-    if (i < KU->pids_qty - 1) {
+    if (i < KU->pids_qty - 1)
       stringbuffer_append_string(sb, ", ");
-    }
   }
   asprintf(&msg, "Iterated %lu Kitty PIDs: %s", vector_size(KU->pids_v), stringbuffer_to_string(sb));
   stringbuffer_release(sb);
@@ -142,9 +140,8 @@ TEST t_kitty_module_parse_listen_ons(void){
     stringbuffer_append_string(sb, parsed->host);
     stringbuffer_append_string(sb, ":");
     stringbuffer_append_int(sb, parsed->port);
-    if (i < KU->listen_ons_qty - 1) {
+    if (i < KU->listen_ons_qty - 1)
       stringbuffer_append_string(sb, ", ");
-    }
   }
   asprintf(&msg, "Parsed %lu Kitty Listen Ons: %s", vector_size(KU->listen_ons_v), stringbuffer_to_string(sb));
   stringbuffer_release(sb);
@@ -156,9 +153,8 @@ TEST t_kitty_module_listen_ons(void){
 
   for (size_t i = 0; i < KU->listen_ons_qty; i++) {
     stringbuffer_append_string(sb, (char *)vector_get(KU->listen_ons_v, i));
-    if (i < KU->listen_ons_qty - 1) {
+    if (i < KU->listen_ons_qty - 1)
       stringbuffer_append_string(sb, ", ");
-    }
   }
   asprintf(&msg, "%lu Kitty Listen Ons: %s", vector_size(KU->listen_ons_v), stringbuffer_to_string(sb));
   stringbuffer_release(sb);

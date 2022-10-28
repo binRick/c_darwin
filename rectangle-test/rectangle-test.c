@@ -78,9 +78,8 @@ TEST t_rectangle_get_todo_app(void){
   asprintf(&msg, "Todo Mode App: " AC_RESETALL AC_GREEN "%s" AC_RESETALL "\n",
            todo_app
            );
-  if (starting_todo_app == NULL) {
+  if (starting_todo_app == NULL)
     starting_todo_app = todo_app;
-  }
   PASSm(msg);
 }
 

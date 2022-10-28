@@ -133,7 +133,7 @@ struct focused_msg_t *focused_msg_unpack(msg_Data *tmp_data){
     ret = msgpack_unpack_next(&result, decoded_msg, rsize, &off);
   }
   // msgpack_unpacked_destroy(&result);
-  if (ret == MSGPACK_UNPACK_CONTINUE) {
+  if (ret == MSGPACK_UNPACK_CONTINUE)
     log_debug(
       AC_GREEN AC_INVERSE "Unpacked Message" AC_RESETALL
       "\n\tnumber        :          %lu"
@@ -147,9 +147,8 @@ struct focused_msg_t *focused_msg_unpack(msg_Data *tmp_data){
       (msg->verbose == true) ? "Yes" : "No",
       ""
       );
-  }else if (ret == MSGPACK_UNPACK_PARSE_ERROR) {
+  else if (ret == MSGPACK_UNPACK_PARSE_ERROR)
     log_error("The data in the buf is invalid format.");
-  }
 
 //    if(decoded_msg)
 //    free(decoded_msg);
@@ -262,9 +261,8 @@ static void msg_update_client(msg_Conn *conn, msg_Event event, msg_Data data) {
   log_info("<%d> Focused Client Update :: %s", getpid(), event_name(event));
   unsigned long           started = timestamp();
   struct focused_config_t *c      = NULL;
-  if (event == msg_connection_ready) {
+  if (event == msg_connection_ready)
     c = (struct focused_config_t *)conn->conn_context;
-  }
   switch (event) {
   case msg_listening_ended:
     log_info("<%d> Focused Client Listening Ended after %s", getpid(), milliseconds_to_string(timestamp() - started));
@@ -344,16 +342,13 @@ static int focus_client(void *VOID){
   unsigned long           started = timestamp();
   struct focused_config_t *c      = (struct focused_config_t *)VOID;
 
-  if (c->server->cl_debug_mode == true) {
+  if (c->server->cl_debug_mode == true)
     log_info("<%d> Focused Client Connecting to %s", getpid(), c->server->uri);
-  }
   msg_connect(c->server->uri, msg_update_client, (void *)c);
-  if (c->server->cl_debug_mode == true) {
+  if (c->server->cl_debug_mode == true)
     log_info("<%d> Focused Client Connected to %s in %s", getpid(), c->server->uri, milliseconds_to_string(timestamp() - started));
-  }
-  while (c->server->cl_recv_msgs < c->server->cl_send_msgs_qty || 1 == 1) {
+  while (c->server->cl_recv_msgs < c->server->cl_send_msgs_qty || 1 == 1)
     msg_runloop(10);
-  }
   log_info("<%d> Focused Client Success :: Received %lu messages of %s, Sent %lu messages of %s in %s ",
            getpid(),
            c->server->cl_recv_msgs, bytes_to_string(c->server->cl_recv_bytes),
@@ -369,9 +364,8 @@ static int focus_server(void *VOID){
   log_debug("<%d> Focused Server Binding %s", getpid(), c->server->uri);
   msg_listen(c->server->uri, msg_update_server);
   log_debug("<%d> Focused Server Listening on %s", getpid(), c->server->uri);
-  while (c->server->svr_recv_msgs < 100) {
+  while (c->server->svr_recv_msgs < 100)
     msg_runloop(10);
-  }
   msg_unlisten(server_listening_conn);
   msg_runloop(10);
   log_debug("Server Ended");
@@ -385,9 +379,8 @@ static void on_space_id_changed(void *event_data, void *VOID){
   log_info("on_space_id_changed, spaceid: %lu|focused window ids qty:%lu", space_id, vector_size(c->focused_window_ids));
   for (size_t i = 0; vector_size(c->focused_window_ids); i++) {
     size_t window_id = (size_t)vector_get(c->focused_window_ids, i);
-    if (window_id == 0) {
+    if (window_id == 0)
       break;
-    }
     log_debug("moving window %lu space %lu", window_id, space_id);
     window_id_send_to_space(window_id, (int)space_id);
     struct window_info_t *w = get_window_id_info(window_id);
@@ -411,12 +404,10 @@ static CGEventRef focused_event_handler(CGEventTapProxy proxy, CGEventType type,
   unsigned long           event_flags = (int)CGEventGetFlags(event);
   struct StringBuffer     *sb         = stringbuffer_new();
 
-  if (event_flags & kCGEventFlagMaskCommand) {
+  if (event_flags & kCGEventFlagMaskCommand)
     stringbuffer_append_string(sb, "command+");
-  }
-  if (event_flags & kCGEventFlagMaskControl) {
+  if (event_flags & kCGEventFlagMaskControl)
     stringbuffer_append_string(sb, "control+");
-  }
   stringbuffer_append_string(sb, kc);
   char *keys = stringbuffer_to_string(sb);
 

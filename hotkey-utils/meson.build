@@ -16,6 +16,7 @@ hotkey_utils_deps = [
   path_module_dep,window_utils_dep,app_utils_dep,vips_dep,
   capture_utils_dep,capture_type_dep,capture_dep,image_utils_dep,
   hash_dep,c_exception_dep,container_of_dep,
+  levenshtein_dep,menu_bar_utils_dep,dock_utils_dep,
 ]
 
 hotkey_utils_c_args = [

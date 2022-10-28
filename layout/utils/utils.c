@@ -34,6 +34,7 @@ static void print_rect(char *NAME, lay_vec4 RECT){
 
 struct Vector *get_layouts_v(void){
   struct Vector *v = vector_new();
+
   return(v);
 }
 struct layout_request_t *layout_init_request(){
@@ -108,24 +109,55 @@ bool layout_print_result(struct layout_result_t *res){
          res->master->y,
          res->master->width,
          res->master->height);
-  for (size_t i = 0; i < res->qty; i++) {
+  for (size_t i = 0; i < res->qty; i++)
     printf(" - Content #%lu\n\tpos:%dx%d|size:%dx%d\n",
            i,
            res->items[i]->x,
            res->items[i]->y,
            res->items[i]->width,
            res->items[i]->height);
-  }
   return(true);
 }
 
 struct layout_result_t *layout_request(struct layout_request_t *req){
   struct layout_result_t *res = layout_init_result(req->qty);
+  int                    contain_mode;
 
   lay_set_size_xy(res->layout->ctx, res->layout->root, req->max_width, req->max_height);
-  lay_set_contain(res->layout->ctx, res->layout->root, LAY_ROW);
-  lay_insert(res->layout->ctx, res->layout->root, res->layout->master);
-  lay_insert(res->layout->ctx, res->layout->root, res->layout->content);
+  switch (req->mode) {
+  case LAYOUT_MODE_VERTICAL:
+    if (LAYOUT_DEBUG_MODE)
+      log_info("vertical mode");
+    lay_set_contain(res->layout->ctx, res->layout->root, LAY_COLUMN);
+    contain_mode = LAY_ROW;
+    break;
+  case LAYOUT_MODE_HORIZONTAL:
+    if (LAYOUT_DEBUG_MODE)
+      log_info("horizontal mode");
+    lay_set_contain(res->layout->ctx, res->layout->root, LAY_ROW);
+    contain_mode = LAY_COLUMN;
+    break;
+  default:
+    log_error("Unhandled Layout mode: %d", req->mode);
+    exit(EXIT_FAILURE);
+    break;
+  }
+  switch (req->gravity) {
+  case LAYOUT_GRAVITY_TYPE_LEFT:
+  case LAYOUT_GRAVITY_TYPE_TOP:
+    lay_insert(res->layout->ctx, res->layout->root, res->layout->master);
+    lay_insert(res->layout->ctx, res->layout->root, res->layout->content);
+    break;
+  case LAYOUT_GRAVITY_TYPE_RIGHT:
+  case LAYOUT_GRAVITY_TYPE_BOTTOM:
+    lay_insert(res->layout->ctx, res->layout->root, res->layout->content);
+    lay_insert(res->layout->ctx, res->layout->root, res->layout->master);
+    break;
+  default:
+    log_error("Unhandled Layout gravity: %d", req->gravity);
+    exit(EXIT_FAILURE);
+    break;
+  }
   lay_set_size_xy(res->layout->ctx, res->layout->master, req->master_width, req->master_height);
   lay_set_behave(res->layout->ctx, res->layout->master, LAY_VFILL);
   lay_set_contain(res->layout->ctx, res->layout->master, LAY_ROW);
@@ -142,7 +174,7 @@ struct layout_result_t *layout_request(struct layout_request_t *req){
                        req->content_margins[3]
                        );
   lay_set_behave(res->layout->ctx, res->layout->content, LAY_VFILL | LAY_HFILL);
-  lay_set_contain(res->layout->ctx, res->layout->content, req->mode);
+  lay_set_contain(res->layout->ctx, res->layout->content, contain_mode);
   for (size_t i = 0; i < req->qty; i++) {
     res->layout->contents[i] = lay_item(res->layout->ctx);
     lay_insert(res->layout->ctx, res->layout->content, res->layout->contents[i]);
@@ -170,9 +202,8 @@ struct layout_result_t *layout_request(struct layout_request_t *req){
                       );
   }
   res->dur = timestamp() - res->started;
-  if (req->debug) {
+  if (req->debug)
     layout_print_result(res);
-  }
   return(res);
 } /* layout_request */
 

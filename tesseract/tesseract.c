@@ -28,18 +28,16 @@ static void tesseract_internal_fxn1(void);
 ////////////////////////////////////////////
 static void tesseract_internal_fxn1(void){
   log_info("Called function tesseract_internal_fxn1");
-  if (TESSERACT_DEBUG_MODE == true) {
+  if (TESSERACT_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 
 ////////////////////////////////////////////
 void tesseract_fxn1(void){
   tesseract_internal_fxn1();
   log_info("Called function tesseract_fxn1");
-  if (TESSERACT_DEBUG_MODE == true) {
+  if (TESSERACT_DEBUG_MODE == true)
     log_info("Debug Mode Enabled");
-  }
 }
 ////////////////////////////////////////////
 #endif

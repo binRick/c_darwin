@@ -70,9 +70,8 @@ TEST t_layout_test1(){
 
 SUITE(s_layout_test) {
   RUN_TEST(t_layout_test1);
-  if (isatty(STDOUT_FILENO)) {
+  if (isatty(STDOUT_FILENO))
     RUN_TEST(t_layout_test2);
-  }
 }
 
 GREATEST_MAIN_DEFS();

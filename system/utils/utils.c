@@ -110,29 +110,26 @@ double get_cpu_time( ){
 #else
     id = (clockid_t)-1;
 #endif
-    if (id != (clockid_t)-1 && clock_gettime(id, &ts) != -1) {
+    if (id != (clockid_t)-1 && clock_gettime(id, &ts) != -1)
       return((double)ts.tv_sec +
              (double)ts.tv_nsec / 1000000000.0);
-    }
   }
 #endif
 
 #if defined (RUSAGE_SELF)
   {
     struct rusage rusage;
-    if (getrusage(RUSAGE_SELF, &rusage) != -1) {
+    if (getrusage(RUSAGE_SELF, &rusage) != -1)
       return((double)rusage.ru_utime.tv_sec +
              (double)rusage.ru_utime.tv_usec / 1000000.0);
-    }
   }
 #endif
 
 #if defined (CLOCKS_PER_SEC)
   {
     clock_t cl = clock( );
-    if (cl != (clock_t)-1) {
+    if (cl != (clock_t)-1)
       return((double)cl / (double)CLOCKS_PER_SEC);
-    }
   }
 #endif
   return(-1);                   /* Failed. */
@@ -146,13 +143,13 @@ double get_cpu() {
   double         nowT;
   double         percent = 0.0;
 
-  if (gettimeofday(&tv, NULL) != 0) {
+  if (gettimeofday(&tv, NULL) != 0)
     return(-1);
-  }
+
   nowCPUTime = get_cpu_time();
-  if (nowCPUTime < 0) {
+  if (nowCPUTime < 0)
     return(-2);
-  }
+
   nowT = (double)tv.tv_sec + (double)(tv.tv_usec / 1000000.0);
   if (lastT <= 0) {
     lastT       = nowT;
@@ -176,9 +173,9 @@ uint32_t os_get_core_count() {
 static void get_sysctl(enum sysctls ctl) {
   size_t len;
 
-  if (ctl == MEM) {
+  if (ctl == MEM)
     get_mem();
-  } else {
+  else {
     sysctlbyname(SYSCTL_VALUES[ctl].ctls, NULL, &len, NULL, 0);
     char *type = malloc(len);
     sysctlbyname(SYSCTL_VALUES[ctl].ctls, type, &len, NULL, 0);
@@ -196,9 +193,8 @@ static const char *display_name_from_displayID(CGDirectDisplayID displayID, CFSt
 
   CFRelease(displayProductNameKey);
   if (CFDictionaryGetCount(localizedNames) > 0) {
-    if (!countryCode) {
+    if (!countryCode)
       countryCode = CFSTR("en_US");
-    }
     CFStringRef displayProductNameValue = (CFStringRef)CFDictionaryGetValue(localizedNames, countryCode);
     displayProductName = CFStringCopyUTF8String(displayProductNameValue);
     CFRelease(displayProductNameValue);
@@ -281,9 +277,8 @@ void get_gpu(void) {
   kern_return_t err = IOServiceGetMatchingServices(kIOMasterPortDefault,
                                                    IOServiceMatching("IOPCIDevice"), &Iterator);
 
-  if (err != KERN_SUCCESS) {
+  if (err != KERN_SUCCESS)
     fprintf(stderr, "IOServiceGetMatchingServices failed: %u\n", err);
-  }
 
   for (io_service_t Device; IOIteratorIsValid(Iterator)
        && (Device = IOIteratorNext(Iterator)); IOObjectRelease(Device)) {
@@ -293,7 +288,7 @@ void get_gpu(void) {
                                                        kCFAllocatorDefault,
                                                        kNilOptions);
 
-    if (Name) {
+    if (Name)
       if (CFStringCompare(Name, CFSTR("display"), 0) == kCFCompareEqualTo) {
         CFDataRef Model = IORegistryEntrySearchCFProperty(Device,
                                                           kIOServicePlane,
@@ -322,18 +317,16 @@ void get_gpu(void) {
             mach_vm_size_t Size = 0;
             CFTypeID       Type = CFGetTypeID(VRAM);
 
-            if (Type == CFDataGetTypeID()) {
+            if (Type == CFDataGetTypeID())
               Size = (CFDataGetLength(VRAM) == sizeof(uint32_t) ?
                       (mach_vm_size_t)*(const uint32_t *)CFDataGetBytePtr(VRAM):
                       *(const uint64_t *)CFDataGetBytePtr(VRAM));
-            } else if (Type == CFNumberGetTypeID()) {
+            else if (Type == CFNumberGetTypeID())
               CFNumberGetValue(VRAM,
                                kCFNumberSInt64Type, &Size);
-            }
 
-            if (ValueInBytes) {
+            if (ValueInBytes)
               Size >>= 20;
-            }
 
             printf("Graphics  : " "%s @ %llu MB\n", CFDataGetBytePtr(Model), Size);
             CFRelease(Model);
@@ -345,7 +338,6 @@ void get_gpu(void) {
         }
         CFRelease(Name);
       }
-    }
   }
 } /* gpu */
 
@@ -354,9 +346,8 @@ void uv_loadavg(double avg[3]) {
   size_t         size    = sizeof(info);
   int            which[] = { CTL_VM, VM_LOADAVG };
 
-  if (sysctl(which, ARRAY_SIZE(which), &info, &size, NULL, 0) < 0) {
+  if (sysctl(which, ARRAY_SIZE(which), &info, &size, NULL, 0) < 0)
     return;
-  }
 
   avg[0] = (double)info.ldavg[0] / info.fscale;
   avg[1] = (double)info.ldavg[1] / info.fscale;
@@ -388,31 +379,27 @@ char *osdep_get_name(int fd, __unused char *tty) {
   pid_t                    pgrp;
   int                      ret;
 
-  if ((pgrp = tcgetpgrp(fd)) == -1) {
+  if ((pgrp = tcgetpgrp(fd)) == -1)
     return(NULL);
-  }
 
   ret = proc_pidinfo(pgrp, PROC_PIDT_SHORTBSDINFO, 0,
                      &bsdinfo, sizeof bsdinfo);
-  if (ret == sizeof bsdinfo && *bsdinfo.pbsi_comm != '\0') {
+  if (ret == sizeof bsdinfo && *bsdinfo.pbsi_comm != '\0')
     return(strdup(bsdinfo.pbsi_comm));
-  }
 #else
   int               mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, 0 };
   size_t            size;
   struct kinfo_proc kp;
 
-  if ((mib[3] = tcgetpgrp(fd)) == -1) {
+  if ((mib[3] = tcgetpgrp(fd)) == -1)
     return(NULL);
-  }
 
   size = sizeof kp;
-  if (sysctl(mib, 4, &kp, &size, NULL, 0) == -1) {
+  if (sysctl(mib, 4, &kp, &size, NULL, 0) == -1)
     return(NULL);
-  }
-  if (*kp.kp_proc.p_comm == '\0') {
+
+  if (*kp.kp_proc.p_comm == '\0')
     return(NULL);
-  }
 
   return(strdup(kp.kp_proc.p_comm));
 #endif
@@ -424,9 +411,8 @@ char *osdep_get_cwd(int fd) {
   pid_t                     pgrp;
   int                       ret;
 
-  if ((pgrp = tcgetpgrp(fd)) == -1) {
+  if ((pgrp = tcgetpgrp(fd)) == -1)
     return(NULL);
-  }
 
   ret = proc_pidinfo(pgrp, PROC_PIDVNODEPATHINFO, 0,
                      &pathinfo, sizeof pathinfo);
@@ -476,15 +462,13 @@ void get_mem(void) {
   len = sizeof(value64);
 
   sysctlbyname(values[2].ctls, &value64, &len, NULL, 0);
-  if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS) {
+  if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS)
     if ((ret = host_statistics64(myHost, HOST_VM_INFO64, (host_info64_t)&
-                                 vm_stat, &count) == KERN_SUCCESS)) {
+                                 vm_stat, &count) == KERN_SUCCESS))
       printf(RED "%s    : "NOR "%llu MB of %.f MB\n",
              values[2].names,
              (uint64_t)(vm_stat.active_count +
                         vm_stat.inactive_count +
                         vm_stat.wire_count) * pageSize >> 20,
              value64 / 1e+06);
-    }
-  }
 }

@@ -1,6 +1,10 @@
 #pragma once
 #ifndef DLS_COMMANDS_C
 #define DLS_COMMANDS_C
+#define DLS_HELP_TEXT \
+  AC_YELLOW AC_ITALIC "Print help information and quit" AC_RESETALL
+#define DLS_HELP_CHAR    'h'
+#define DLS_HELP_WORD    "help"
 #include "c_vector/vector/vector.h"
 #include "capture/animate/animate.h"
 #include "capture/save/save.h"
@@ -10,6 +14,8 @@
 #include "db/db.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
+#include "dls/meta.h"
+#include "dls/meta.h"
 #include "fancy-progress/src/fancy-progress.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "httpserver-utils/httpserver-utils.h"
@@ -27,6 +33,7 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
+//#include "libpick/libpick.h"
 #define MAX_CONCURRENCY                        25
 #define MAX_FRAME_RATE                         30
 #define MAX_LIMIT                              99
@@ -61,6 +68,7 @@
     }                                                                     \
     exit(EXIT_SUCCESS);                                                   \
   }
+#define CLAMP_ARG_TYPE(ARGS, ARG, TYPE)               clamp(ARGS->ARG, arg_clamps[TYPE].min, arg_clamps[TYPE].max)
 #define COMMAND(ICON, CMD, NAME, __COLOR__, DESC, FXN)    \
   [COMMAND_ ## CMD] = {                                   \
     .name        = NAME,                                  \
@@ -93,7 +101,28 @@
       .arg_dest_size = &(args->SIZE),                                       \
     });                                                                     \
   },
-#define CLAMP_ARG_TYPE(ARGS, ARG, TYPE)    clamp(ARGS->ARG, arg_clamps[TYPE].min, arg_clamps[TYPE].max)
+#define CREATE_INT_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG_NAME, ARG)      \
+  [COMMON_OPTION_ ## NAME] = ^ struct optparse_opt (struct args_t *args){      \
+    return((struct optparse_opt)                                             { \
+      .short_name = SHORT,                                                     \
+      .long_name = LONG,                                                       \
+      .description = DESC,                                                     \
+      .arg_name = ARG_NAME,                                                    \
+      .arg_data_type = DATA_TYPE_INT,                                          \
+      .arg_dest = &(args->ARG),                                                \
+    });                                                                        \
+  },
+#define CREATE_FLOAT_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)              \
+  [COMMON_OPTION_ ## NAME] = ^ struct optparse_opt (struct args_t *args){      \
+    return((struct optparse_opt)                                             { \
+      .short_name = SHORT,                                                     \
+      .long_name = LONG,                                                       \
+      .description = DESC,                                                     \
+      .arg_name = DESC,                                                        \
+      .arg_data_type = DATA_TYPE_FLT,                                          \
+      .arg_dest = &(args->ARG),                                                \
+    });                                                                        \
+  },
 #define CREATE_BOOLEAN_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)            \
   [COMMON_OPTION_ ## NAME] = ^ struct optparse_opt (struct args_t *args){      \
     return((struct optparse_opt)                                             { \
@@ -104,7 +133,7 @@
       .flag = &(args->ARG),                                                    \
     });                                                                        \
   },
-#define COMMAND_PROTOTYPE(FXN)             static void _command_ ## FXN(void);
+#define COMMAND_PROTOTYPE(FXN)    static void _command_ ## FXN(void);
 #define COMMON_OPTION_CAPTURE_MODE(TYPE, NAME, UCFIRST)                                    \
   [COMMON_OPTION_CAPTURE_ ## TYPE ## _MODE] = ^ struct optparse_opt (struct args_t *args){ \
     return((struct optparse_opt){                                                          \
@@ -117,28 +146,18 @@
                      COLOR_CAPTURE_ ## TYPE ## _MODE UCFIRST AC_RESETALL,                  \
     });                                                                                    \
   }
-#define debug(M, ...)                      {  \
+#define debug(M, ...)             {           \
     do {                                      \
       if (IS_COMMAND_VERBOSE_OR_DEBUG_MODE) { \
         log_debug(M, ## __VA_ARGS__);         \
       }                                       \
     } while (0); }
 /////////////////////////////////////////////////////////////////////////////////////
-#define CLIPBOARD_COMMANDS()\
-  COMMAND(ICON_PASTE, PASTE, "paste", COLOR_PASTE, "Paste Clipboard", *_command_paste)\
-  COMMAND(ICON_COPY, COPY, "copy", COLOR_COPY, "Copy Clipboard", *_command_copy)
-#define ICON_COMMANDS()\
-  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)\
+#define ICON_COMMANDS()                                   \
+  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0) \
   COMMAND(ICON_LIST, ICON_LIST, "ls", COLOR_LIST, "List Icons", *_command_icon_list)
-#define EXTRACT_COMMANDS()\
-  COMMAND(ICON_EXTRACT, EXTRACT, "extract", COLOR_WINDOW, "Extract Text", 0)\
-  COMMAND(ICON_WINDOW, EXTRACT_WINDOW, "window", COLOR_WINDOW, "Extract Window", *_command_extract)\
-  COMMAND(ICON_SPACE, EXTRACT_SPACE, "space", COLOR_SPACE, "Extract Space", *_command_extract)\
-  COMMAND(ICON_DISPLAY, EXTRACT_DISPLAY, "display", COLOR_DISPLAY, "Extract Display", *_command_extract)\
 /////////////////////////////////////////////////////////////////////////////////////
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
-static void debug_dls_arguments();
-static bool initialize_args(struct args_t *ARGS);
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
 static const struct arg_clamp_t {
   signed long min, max;
@@ -245,10 +264,9 @@ static const struct capture_mode_t {
   },
 };
 
-static bool initialize_args(struct args_t *ARGS){
-  if (args->clear_screen == true) {
+bool initialize_args(struct args_t *ARGS){
+  if (args->clear_screen == true)
     fprintf(stdout, "%s", AC_CLS);
-  }
   ARGS->concurrency      = CLAMP_ARG_TYPE(ARGS, concurrency, ARG_CLAMP_TYPE_CONCURRENCY);
   ARGS->duration_seconds = CLAMP_ARG_TYPE(ARGS, duration_seconds, ARG_CLAMP_TYPE_DURATION);
   ARGS->frame_rate       = CLAMP_ARG_TYPE(ARGS, frame_rate, ARG_CLAMP_TYPE_FRAME_RATE);
@@ -258,9 +276,8 @@ static bool initialize_args(struct args_t *ARGS){
   ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
   if (args->db_tables_qty == 1 && strcmp(args->db_tables[0], "all") == 0) {
     struct Vector *tbls = db_tables_v();
-    if (args->db_tables) {
+    if (args->db_tables)
       free(args->db_tables);
-    }
     args->db_tables     = calloc(vector_size(tbls), sizeof(char *));
     args->db_tables_qty = vector_size(tbls);
     for (size_t i = 0; i < vector_size(tbls); i++) {
@@ -268,41 +285,38 @@ static bool initialize_args(struct args_t *ARGS){
       args->db_tables[i] = tbl;
     }
   }
-  if (!ARGS->format_ids_v) {
+  if (!ARGS->format_ids_v)
     ARGS->format_ids_v = vector_new();
-  }
-  if (!ARGS->formats_v) {
+  if (!ARGS->formats_v)
     ARGS->formats_v = vector_new();
-  }
-  if (vector_size(ARGS->format_ids_v) == 0) {
+  if (vector_size(ARGS->format_ids_v) == 0)
     vector_push(ARGS->format_ids_v, (void *)(IMAGE_TYPE_PNG));
-  }
   return(true);
 }
-static struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
+struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
   struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
-  for (size_t i = 0; i < vector_size(structs) && vector_size(ids) < limit; i++) {
+
+  for (size_t i = 0; i < vector_size(structs) && vector_size(ids) < limit; i++)
     vector_push(ids, (void *)capture_type_getters[id].get_struct_index_pk(structs, i));
-  }
   vector_release(structs);
   return(ids);
 }
-static struct Vector *get_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id){
+struct Vector *get_ids(enum capture_type_id_t type, bool all, size_t limit, bool random, size_t id){
   struct Vector *ids = NULL;
 
-  if (all) {
+  if (all)
     ids = get_all_capture_type_ids(type, limit);
-  }else if (args->id > 0) {
+  else if (args->id > 0) {
     ids = vector_new();
     vector_push(ids, (void *)(size_t)(id));
   }
   return(ids);
 }
 
-static void debug_dls_arguments(){
-  if (!IS_COMMAND_DEBUG_MODE) {
+void debug_dls_arguments(){
+  if (!IS_COMMAND_DEBUG_MODE)
     return;
-  }
+
   log_debug("All Mode:  %s", args->all_mode?"Yes":"No");
   log_debug("display :  %s", args->display_mode?"Yes":"No");
   log_debug("Write Images? :  %s", args->write_images_mode?"Yes":"No");
@@ -338,6 +352,7 @@ COMMAND_PROTOTYPE(layout_render)
 COMMAND_PROTOTYPE(layout_names)
 COMMAND_PROTOTYPE(window_ids)
 COMMAND_PROTOTYPE(window_names)
+COMMAND_PROTOTYPE(window_props)
 COMMAND_PROTOTYPE(window_qty)
 COMMAND_PROTOTYPE(window_sticky)
 COMMAND_PROTOTYPE(window_unsticky)
@@ -349,11 +364,12 @@ COMMAND_PROTOTYPE(icon_list)
 COMMAND_PROTOTYPE(capture_window)
 COMMAND_PROTOTYPE(capture_space)
 COMMAND_PROTOTYPE(capture_display)
+COMMAND_PROTOTYPE(prompt_bestline)
 COMMAND_PROTOTYPE(db_init)
+COMMAND_PROTOTYPE(db_test)
 COMMAND_PROTOTYPE(db_tables)
 COMMAND_PROTOTYPE(db_load)
 COMMAND_PROTOTYPE(db_info)
-COMMAND_PROTOTYPE(db_test)
 COMMAND_PROTOTYPE(db_rows)
 COMMAND_PROTOTYPE(db_table_ids)
 COMMAND_PROTOTYPE(animate)
@@ -402,6 +418,7 @@ COMMAND_PROTOTYPE(window_layer)
 COMMAND_PROTOTYPE(window_level)
 COMMAND_PROTOTYPE(write_app_icon_from_png)
 COMMAND_PROTOTYPE(write_app_icon_icns)
+ADD_COMMAND_PROTOTYPES()
 ////////////////////////////////////////////
 CREATE_CHECK_COMMAND_PROTOTYPE(write_directory, void)
 CREATE_CHECK_COMMAND_PROTOTYPE(id, size_t id)
@@ -439,41 +456,59 @@ static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 static void __at_exit(void);
 static void run_main_cmd(int argc, char *argv);
-common_option_b    common_options_b[] = {
+common_option_b common_options_b[] = {
 /////////////////////////////////////////////////////
-  COMMON_OPTION_CAPTURE_MODE(DISPLAY,                               "display", "Display"),
-  COMMON_OPTION_CAPTURE_MODE(SPACE,                                 "space",   "Space"),
-  COMMON_OPTION_CAPTURE_MODE(WINDOW,                                "window",  "Window"),
+  COMMON_OPTION_CAPTURE_MODE(DISPLAY,                                                           "display", "Display"),
+  COMMON_OPTION_CAPTURE_MODE(SPACE,                                                             "space",   "Space"),
+  COMMON_OPTION_CAPTURE_MODE(WINDOW,                                                            "window",  "Window"),
 #undef COMMON_OPTION_CAPTURE_MODE
-  COMMON_OPTION_LIST(SHOW_COLUMNS,                                  'K',       "show",               "Show Columns",                                                            "COLUMN-NAMES", show_columns, show_columns_qty)
-  COMMON_OPTION_LIST(HIDE_COLUMNS,                                  'H',       "hide",               "Hide Columns",                                                            "COLUMN-NAMES", hide_columns, hide_columns_qty)
-  COMMON_OPTION_LIST(DB_TABLES,                                     't',       "tables",             "Database Tables",                                                         "TABLE-NAMES",  db_tables, db_tables_qty)
+  COMMON_OPTION_LIST(SHOW_COLUMNS,                                                              'K',       "show",               "Show Columns",                                                            "COLUMN-NAMES", show_columns, show_columns_qty)
+  COMMON_OPTION_LIST(HIDE_COLUMNS,                                                              'H',       "hide",               "Hide Columns",                                                            "COLUMN-NAMES", hide_columns, hide_columns_qty)
+  COMMON_OPTION_LIST(DB_TABLES,                                                                 't',       "tables",             "Database Tables",                                                         "TABLE-NAMES",  db_tables, db_tables_qty)
+  COMMON_OPTION_LIST(PROMPT_COMMANDS,                                                           'c',       "commands",           "Execute Commands",                                                        "COMMANDS",     prompt_commands, prompt_commands_qty)
+  COMMON_OPTION_LIST(SEARCH_WORDS,                                                              'w',       "words",              "Search Words",                                                            "SEARCH-WORDS", search_words, search_words_qty)
+  COMMON_OPTION_LIST(GLOBS,                                                              'G',       "globs",              "Glob Patterns",                                                            "GLOBS", globs, globs_qty)
 #undef COMMON_OPTION_LIST
-  CREATE_STRING_COMMON_OPTION(LAYOUT_NAME,                          'n',       "name",               "Layout Name",                                                             "LAYOUT-NAME",  layout_name)
+  CREATE_INT_COMMAND_OPTION(INDEX,                                                              'I',       "index",              "Index",                                                                   "INDEX",        index)
+#undef CREATE_INT_COMMON_OPTION
+  CREATE_STRING_COMMON_OPTION(LAYOUT_NAME,                                                      'n',       "name",               "Layout Name",                                                             "LAYOUT-NAME",  layout_name)
 #undef CREATE_STRING_COMMON_OPTION
-  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,                       'C',       "clear",              "Clear Screen",                                                            clear_screen)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,                  0,         "not-current-space",  "Windows not on Currently Focused Space only",                             not_current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,                      0,         "current-space",      "Windows on Currently Focused Space only",                                 current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,                0,         "not-current-display","Windows not on Currently Focused Display only",                           not_current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_DISPLAY,                    0,         "current-display",    "Windows on Currently Focused Display only",                               current_display_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(PURGE_WRITE_DIRECTORY_BEFORE_WRITE, 0,         "purge",              "Purge Contents of Write Directory Before any Writes. Must Prefix --dir",  purge_write_directory_before_write)
-  CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,                      'Q',       "quantize",           "Enable Quantized Compression",                                            quantize_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,                           'A',       "all",                "All IDs",                                                                 all_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,                      0,         "not-minimized",      "Show Non Minimized Only",                                                 not_minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,                          0,         "minimized",          "Show Minimized Only",                                                     minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,                  0,         "clear-icons-cache",  "Clear Icons Cache",                                                       clear_icons_cache)
-  CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,                      0,         "non-duplicate",      "Show Non Duplicate Fonts",                                                non_duplicate)
-  CREATE_BOOLEAN_COMMAND_OPTION(DUPLICATE,                          0,         "duplicate",          "Show Duplicate Fonts",                                                    duplicate)
-  CREATE_BOOLEAN_COMMAND_OPTION(CASE_SENSITIVE,                     0,         "case-sensitive",     "Case Sensitive Match",                                                    case_sensitive)
-  CREATE_BOOLEAN_COMMAND_OPTION(EXACT_MATCH,                        'e',       "exact-match",        "Exact Match",                                                             exact_match)
-  CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,                         'd',       "debug",              "Enable Debug Mode",                                                       debug_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,                       'v',       "verbose",            "Enable Verbose Mode",                                                     verbose_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,                           'z',       "compress",           "Enable Compression",                                                      compress)
-  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,                     0,         "grayscale",          "Enable Grayscale Mode",                                                   grayscale_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,                'D',       "display",            "Display Result",                                                          display_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,                  0,         "write",              "Write Results",                                                           write_images_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,           'p',       "progress",           "Enable Progress Bar",                                                     progress_bar_mode)
-  CREATE_BOOLEAN_COMMAND_OPTION(DB_SAVE,           'b',       "db",           "Save Results to DB",                                                     db_save_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ABORT_TESTS_MODE,                                               'a',       "abort",
+                                AC_RED AC_DASHED_UNDERLINE "Abort on Test Failure" AC_RESETALL,
+                                abort_tests_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(LIST_TESTS_MODE,                                                'l',       "tests",
+                                AC_YELLOW AC_DOTTED_UNDERLINE "List Tests" AC_RESETALL,
+                                list_tests_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(LIST_SUITES_MODE,                                               'L',       "suites",
+                                AC_YELLOW AC_DOTTED_UNDERLINE  "List Suites" AC_RESETALL,
+                                list_suites_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_SCREEN,                                                   'C',       "clear",
+                                AC_CYAN AC_CURLY_UNDERLINE "Clear Screen" AC_RESETALL,
+                                clear_screen)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_SPACE,                                              0,         "not-current-space",  "Windows not on Currently Focused Space only",                             not_current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_SPACE,                                                  0,         "current-space",      "Windows on Currently Focused Space only",                                 current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_CURRENT_DISPLAY,                                            0,         "not-current-display","Windows not on Currently Focused Display only",                           not_current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_DISPLAY,                                                0,         "current-display",    "Windows on Currently Focused Display only",                               current_display_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(PURGE_WRITE_DIRECTORY_BEFORE_WRITE,                             0,         "purge",              "Purge Contents of Write Directory Before any Writes. Must Prefix --dir",  purge_write_directory_before_write)
+  CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,                                                  'Q',       "quantize",           "Enable Quantized Compression",                                            quantize_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,                                                       'A',       "all",                "All IDs",                                                                 all_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,                                                  0,         "not-minimized",      "Show Non Minimized Only",                                                 not_minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,                                                      0,         "minimized",          "Show Minimized Only",                                                     minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,                                              0,         "clear-icons-cache",  "Clear Icons Cache",                                                       clear_icons_cache)
+  CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,                                                  0,         "non-duplicate",      "Show Non Duplicate Fonts",                                                non_duplicate)
+  CREATE_BOOLEAN_COMMAND_OPTION(DUPLICATE,                                                      0,         "duplicate",          "Show Duplicate Fonts",                                                    duplicate)
+  CREATE_BOOLEAN_COMMAND_OPTION(CASE_SENSITIVE,                                                 0,         "case-sensitive",     "Case Sensitive Match",                                                    case_sensitive)
+  CREATE_BOOLEAN_COMMAND_OPTION(EXACT_MATCH,                                                    'e',       "exact-match",        "Exact Match",                                                             exact_match)
+  CREATE_BOOLEAN_COMMAND_OPTION(DEBUG_MODE,                                                     'd',       "debug",              AC_GREEN AC_BOLD AC_DOUBLE_UNDERLINE "Enable Debug Mode" AC_RESETALL,      debug_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(VERBOSE_MODE,                                                   'v',       "verbose",            AC_GREEN AC_DOUBLE_UNDERLINE "Enable Verbose Mode" AC_RESETALL,            verbose_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(COMPRESS,                                                       'z',       "compress",           "Enable Compression",                                                      compress)
+  CREATE_BOOLEAN_COMMAND_OPTION(GRAYSCALE_MODE,                                                 'g',         "grayscale",          "Enable Grayscale Mode",                                                   grayscale_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(DISPLAY_OUTPUT_FILE,                                            'D',       "display",            "Display Result",                                                          display_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(QUIET_MODE,                                            'q',       "quiet",            "Quiet Mode",                                                          quiet_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(WRITE_IMAGES_MODE,                                              0,         "write",              "Write Results",                                                           write_images_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(ENABLE_PROGRESS_BAR_MODE,                                       'p',       "progress",           "Enable Progress Bar",                                                     progress_bar_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(DB_SAVE,                                                        'b',       "db",                 "Save Results to DB",                                                      db_save_mode)
+  ADD_COMMAND_OPTIONS()
 #undef CREATE_BOOLEAN_COMMAND_OPTION
 /////////////////////////////////////////////////////
   [COMMON_OPTION_HEIGHT_LESS] = ^ struct optparse_opt (struct args_t *args) {
@@ -505,6 +540,26 @@ common_option_b    common_options_b[] = {
       .arg_data_type = check_cmds[CHECK_COMMAND_CONCURRENCY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_CONCURRENCY].fxn,
       .arg_dest = &(args->concurrency),
+    });
+  },
+  [COMMON_OPTION_LAYOUT_QTY] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'q',
+      .long_name = "qty",
+      .description = "Layout Quantity",
+      .arg_name = "QTY",
+      .arg_data_type = DATA_TYPE_INT,
+      .arg_dest = &(args->layout_qty),
+    });
+  },
+  [COMMON_OPTION_LAYOUT_SIZE] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt){
+      .short_name = 's',
+      .long_name = "size",
+      .description = "Layout Size",
+      .arg_name = "SIZE",
+      .arg_data_type = DATA_TYPE_FLT,
+      .arg_dest = &(args->layout_size),
     });
   },
   [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
@@ -590,9 +645,9 @@ common_option_b    common_options_b[] = {
   },
   [COMMON_OPTION_HELP_SUBCMD] = ^ struct optparse_opt (struct args_t __attribute__((unused)) *args) {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'h',
-      .long_name = "help",
-      .description = COLOR_HELP "Command Help" AC_RESETALL,
+      .short_name = DLS_HELP_CHAR,
+      .long_name = DLS_HELP_WORD,
+      .description = DLS_HELP_TEXT,
       .function = optparse_print_help,
     });
   },
@@ -631,9 +686,9 @@ common_option_b    common_options_b[] = {
   },
   [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args) {
     return((struct optparse_opt)                                                                            {
-      .short_name = 'h',
-      .long_name = "help",
-      .description = "Print help information and quit",
+      .short_name = DLS_HELP_CHAR,
+      .long_name = DLS_HELP_WORD,
+      .description = DLS_HELP_TEXT,
       .function = optparse_print_help,
     });
   },
@@ -804,7 +859,8 @@ common_option_b    common_options_b[] = {
     return((struct optparse_opt)                                                                            {
       .short_name = 'm',
       .long_name = "mode",
-      .description = "Output Mode- text, json, or table",
+      .description =
+        AC_CYAN "Output Mode- text, json, or table"AC_RESETALL,
       .arg_name = "OUTPUT-MODE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
@@ -943,10 +999,11 @@ common_option_b    common_options_b[] = {
       .arg_dest = &(args->height),
     });
   },
+
   [COMMON_OPTION_DISABLE_PROGRESS_BAR_MODE] = ^ struct optparse_opt (struct args_t *args){
     return((struct optparse_opt){
       .long_name = "no-progress",
-      .description = "Disable Progress Bar",
+      .description = COLOR_PROGRESS "Disable Progress Bar" AC_RESETALL,
       .group = COMMON_OPTION_GROUP_PROGRESS_BAR_MODE,
       .flag_type = FLAG_TYPE_SET_FALSE,
       .flag = &(args->progress_bar_mode),
@@ -1124,7 +1181,8 @@ struct check_cmd_t check_cmds[] = {
   [CHECK_COMMAND_TYPES_QTY] =            { 0 },
 };
 
-struct cmd_t       cmds[] = {
+struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
+  ADD_COMMANDS()
   [COMMAND_CLIPBOARD] =           {
     .name = "clipboard", .icon = "☯", .color = COLOR_WINDOW, .description = "Clipboard",
   },
@@ -1176,9 +1234,6 @@ struct cmd_t       cmds[] = {
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
-  CLIPBOARD_COMMANDS()
-  ICON_COMMANDS()
-  EXTRACT_COMMANDS()
   COMMAND(ICON_SECURITY, SECURITY, "security", COLOR_SECURITY, "Security Automation", *_command_open_security)
   COMMAND(ICON_HTTP, HTTPSERVER, "http", COLOR_HTTP, "HTTP Server", *_command_httpserver)
   COMMAND(ICON_MENU, MENU_BAR, "menu-bar", COLOR_MENU, "Menu Bar Info", *_command_menu_bar)
@@ -1192,24 +1247,18 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
   COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
   COMMAND(ICON_APP, APPS, "app", COLOR_SERVER, "Application", 0)
-  COMMAND(ICON_LIST, APPS_LIST, "ls", COLOR_SERVER, "List Application", *_command_list_app)
+  COMMAND(ICON_LIST, APPS_LIST, "ls", COLOR_SERVER, "List Applications", *_command_list_app)
   COMMAND(ICON_SERVER, HOTKEYS, "hotkey", COLOR_SERVER, "Hotkey", 0)
   COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkey Server", *_command_hotkeys_server)
   COMMAND(ICON_SERVER, HOTKEYS_FORK_SERVER, "fork-server", COLOR_SERVER, "Hotkey Fork Server", *_command_hotkeys_fork_server)
   COMMAND(ICON_LIST, HOTKEYS_LIST, "ls", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
-  COMMAND(ICON_LAYOUT, LAYOUT, "layout", COLOR_LAYOUT, "Layout Manager", 0)
-  COMMAND(ICON_LIST, LAYOUT_LIST, "ls", COLOR_LIST, "List Layouts", *_command_layout_list)
-  COMMAND(ICON_NAME, LAYOUT_NAMES, "names", COLOR_NAME, "List Layout Names", *_command_layout_names)
-  COMMAND(ICON_TEST, LAYOUT_TEST, "test", COLOR_TEST, "Test Layout", *_command_layout_test)
-  COMMAND(ICON_APPLY, LAYOUT_APPLY, "apply", COLOR_APPLY, "Apply Layout", *_command_layout_apply)
-  COMMAND(ICON_SHOW, LAYOUT_SHOW, "show", COLOR_SHOW, "Show Layout", *_command_layout_show)
-  COMMAND(ICON_RENDER, LAYOUT_RENDER, "render", COLOR_RENDER, "Render Layout", *_command_layout_render)
   COMMAND(ICON_LIST, LIST, "ls", COLOR_LIST, "List", 0)
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
   COMMAND(ICON_LIST, WINDOW_LIST, "ls", AC_RED, "List Windows", *_command_list_window)
   COMMAND(ICON_ID, WINDOW_IDS, "ids", COLOR_ID, "List Window IDs", *_command_window_ids)
   COMMAND(ICON_QTY, WINDOW_QTY, "qty", COLOR_QTY, "List Windows Quantity", *_command_window_qty)
   COMMAND(ICON_NAME, WINDOW_NAMES, "names", COLOR_NAME, "List Windows Names", *_command_window_names)
+  COMMAND(ICON_NAME, WINDOW_PROPS, "props", COLOR_PROP, "List Windows Properties", *_command_window_props)
   COMMAND(ICON_MOVE, WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
   COMMAND(ICON_STICKY, WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
   COMMAND(ICON_STICKY, WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
@@ -1222,14 +1271,6 @@ struct cmd_t       cmds[] = {
   COMMAND(ICON_SPACE, SPACE, "space", AC_RED, "Spaces", 0)
   COMMAND(ICON_CREATE, SPACE_CREATE, "create", AC_RED, "Create Space", 0)
   COMMAND(ICON_LIST, SPACE_LIST, "ls", AC_RED, "List Spaces", 0)
-  COMMAND(ICON_CAPTURE, CAPTURE, "capture", COLOR_CAPTURE, "Capture Image", 0)
-  COMMAND(ICON_WINDOW, CAPTURE_WINDOW, "window", COLOR_WINDOW, "Capture Window", *_command_capture_window)
-  COMMAND(ICON_SPACE, CAPTURE_SPACE, "space", COLOR_SPACE, "Capture Space", *_command_capture_space)
-  COMMAND(ICON_DISPLAY, CAPTURE_DISPLAY, "display", COLOR_DISPLAY, "Capture Display", *_command_capture_display)
-  COMMAND(ICON_WINDOW, ANIMATE_WINDOW, "window", COLOR_WINDOW, "Animate Window", *_command_animate)
-  COMMAND(ICON_SPACE, ANIMATE_SPACE, "space", COLOR_SPACE, "Animate Space", *_command_animate)
-  COMMAND(ICON_DISPLAY, ANIMATE_DISPLAY, "display", COLOR_DISPLAY, "Animate Display", *_command_animate)
-  COMMAND(ICON_ANIMATE, ANIMATE, "animate", COLOR_ANIMATE, "Animated Capture", *_command_animate)
   COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)
   COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)
   COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)
@@ -1245,7 +1286,7 @@ struct cmd_t       cmds[] = {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
   LIST_SUBCOMMAND(SPACES, "space", "Space", _command_list_space),
-  LIST_SUBCOMMAND(DISPLAYS, "display", "Display", _command_list_display),
+//  LIST_SUBCOMMAND(DISPLAYS, "display", "Display", _command_list_display),
 //  LIST_SUBCOMMAND(APPS, "app", "Application", _command_list_app),
   LIST_SUBCOMMAND(FONTS, "font", "Font", _command_list_font),
   LIST_SUBCOMMAND(PROCESSES, "process", "Process", _command_list_process),
@@ -1264,27 +1305,23 @@ static int hotkey_callback(char *KEYS){
   char                    *config_path = get_homedir_yaml_config_file_path();
   struct hotkeys_config_t *cfg         = load_yaml_config_file_path(config_path);
 
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
     log_info("Keys: " AC_YELLOW "%s" AC_RESETALL "|" "hotkey config %s with %lu hotkeys", KEYS, config_path, cfg->keys_count);
-  }
   struct key_t *key = get_hotkey_config_key(cfg, KEYS);
 
   if (key == NULL) {
-    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
       log_debug("Non existent hotkey %s", KEYS);
-    }
   }else{
-    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
       log_debug("Existent hotkey %s", KEYS);
-    }
     int rc = execute_hotkey_config_key(key);
     if (rc != EXIT_SUCCESS) {
       log_error("Failed to execute Action %s", key->action);
       exit(EXIT_FAILURE);
     }else{
-      if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+      if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
         log_debug("Executed Action %s", key->action);
-      }
       return(EXIT_SUCCESS);
     }
   }
@@ -1293,12 +1330,10 @@ static int hotkey_callback(char *KEYS){
 
 ////////////////////////////////////////////
 static void _check_formats(char *formats){
-  if (formats) {
+  if (formats)
     formats = stringfn_mut_trim(formats);
-  }
-  if (strcmp(formats, "all") == 0) {
+  if (strcmp(formats, "all") == 0)
     formats = get_image_format_names_csv();
-  }
 
   args->formats_v    = vector_new();
   args->format_ids_v = vector_new();
@@ -1310,15 +1345,12 @@ static void _check_formats(char *formats){
   char                   *line = NULL;
   for (int i = 0; i < split.count; i++) {
     line = stringfn_mut_trim(split.strings[i]);
-    if (strcmp(line, "cgimage") == 0) {
+    if (strcmp(line, "cgimage") == 0)
       continue;
-    }
-    if (strcmp(line, "rgb") == 0) {
+    if (strcmp(line, "rgb") == 0)
       continue;
-    }
-    if (strcmp(line, "bmp") == 0) {
+    if (strcmp(line, "bmp") == 0)
       continue;
-    }
     debug(" - %s", line);
     vector_push(args->formats_v, (void *)line);
     vector_push(args->format_ids_v, (void *)get_format_name(line));
@@ -1339,12 +1371,10 @@ static void _check_formats(char *formats){
         vector_size(args->formats_v), msg[0],
         vector_size(args->format_ids_v), msg[1]
         );
-  if (msg[0]) {
+  if (msg[0])
     free(msg[0]);
-  }
-  if (msg[1]) {
+  if (msg[1])
     free(msg[1]);
-  }
 } /* _check_formats */
 
 static void _check_sort_direction_desc(){
@@ -1394,9 +1424,8 @@ static void _check_pid(){
     exit(EXIT_FAILURE);
   }
   log_debug("check pid %d", args->pid);
-  if (args->id < 1 && args->pid > 0) {
+  if (args->id < 1 && args->pid > 0)
     args->id = get_pid_window_id(args->pid);
-  }
   if (args->id < 1) {
     log_error("Invalid ID %d", args->id);
     exit(EXIT_FAILURE);
@@ -1410,21 +1439,18 @@ static void _check_pid(){
 
 static void _check_icon_sizes(char *strs){
   args->icon_sizes_v = vector_new();
-  if (strs) {
+  if (strs)
     strs = stringfn_mut_trim(strs);
-  }
-  if (strcmp(strs, "all") == 0) {
+  if (strcmp(strs, "all") == 0)
     args->icon_sizes_v = get_app_icon_sizes_v();
-  }
 
   struct StringFNStrings split = stringfn_split(strs, ',');
   char                   *line = NULL;
   for (int i = 0; i < split.count; i++) {
     line = stringfn_mut_trim(split.strings[i]);
 
-    if (!app_icon_size_is_valid(atoi(line))) {
+    if (!app_icon_size_is_valid(atoi(line)))
       continue;
-    }
     debug(" - %s", line);
     vector_push(args->icon_sizes_v, (void *)(size_t)atoi(line));
   }
@@ -1475,11 +1501,10 @@ static void _check_random_id(void){
   case CAPTURE_TYPE_WINDOW: args->id = get_random_window_info()->window_id; break;
   default: log_error("Invalid capture type"); return(EXIT_FAILURE); break;
   }
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_debug("random id:%d|",
               args->id
               );
-  }
   return(EXIT_SUCCESS);
 }
 
@@ -1492,9 +1517,8 @@ static void _check_input_png_file(char *input_png_file){
 }
 
 static void _check_capture_mode(enum capture_type_id_t type){
-  if (IS_COMMAND_DEBUG_MODE) {
+  if (IS_COMMAND_DEBUG_MODE)
     log_info("Setting capture mode to %d|%s", type, get_capture_type_name(type));
-  }
   args->capture_type = type;
   return;
 }
@@ -1541,20 +1565,18 @@ static void _check_output_icns_file(char *output_icns_file){
 }
 
 static void _check_output_mode(char *output_mode){
-  for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++) {
+  for (size_t i = 1; i < OUTPUT_MODES_QTY && output_modes[i] != NULL; i++)
     if (strcmp(output_mode, output_modes[i]) == 0) {
       args->output_mode = i;
       exit(EXIT_SUCCESS);
     }
-  }
   log_error("Invalid Output Mode '%s'", output_mode);
   exit(EXIT_FAILURE);
 }
 
 static void _check_height_group(uint16_t height){
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_info("Validating Grouped Height %d", height);
-  }
   args->width_or_height       = COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT;
   args->width_or_height_group = height;
   args->height                = height;
@@ -1562,9 +1584,8 @@ static void _check_height_group(uint16_t height){
 }
 
 static void _check_width_group(uint16_t width){
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_info("Validating Grouped Width %d", width);
-  }
   args->width_or_height       = COMMON_OPTION_WIDTH_OR_HEIGHT_WIDTH;
   args->width_or_height_group = width;
   args->width                 = width;
@@ -1580,33 +1601,29 @@ static void _check_write_directory(void){
              basename(args->write_directory),
              timestamp()
              );
-    if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE)
       log_info("moving %s to %s", args->write_directory, new_dir);
-    }
     errno = 0;
     if (!process_utils_move_directory_contents(args->write_directory, new_dir)) {
       log_error("Failed to move \"%s\" to \"%s\"", args->write_directory, new_dir);
       exit(EXIT_FAILURE);
     }
   }
-  if (!stringfn_starts_with(args->write_directory, "/")) {
+  if (!stringfn_starts_with(args->write_directory, "/"))
     asprintf(&(args->write_directory), "%s/%s",
              gettempdir(),
              args->write_directory
              );
-  }
   asprintf(&test_files[0], ".dls-test-file-%lld-%d.%s", timestamp(), getpid(), "txt");
   asprintf(&test_files[1], "%s/%s", args->write_directory, test_files[0]);
   asprintf(&test_files[2], "%d", getpid());
 
   errno = 0;
   if (!fsio_dir_exists(args->write_directory)
-      && (!fsio_mkdirs(args->write_directory, S_IRWXU | S_IRWXG | S_IRWXO) || !fsio_dir_exists(args->write_directory))) {
+      && (!fsio_mkdirs(args->write_directory, S_IRWXU | S_IRWXG | S_IRWXO) || !fsio_dir_exists(args->write_directory)))
     goto fail;
-  }
-  if (!fsio_write_text_file(test_files[1], test_files[2]) || (atoi(fsio_read_text_file(test_files[1])) != getpid()) || !fsio_remove(test_files[1])) {
+  if (!fsio_write_text_file(test_files[1], test_files[2]) || (atoi(fsio_read_text_file(test_files[1])) != getpid()) || !fsio_remove(test_files[1]))
     goto fail;
-  }
 
   char td[PATH_MAX];
 
@@ -1640,28 +1657,25 @@ do_error:
 ////////////////////////////////////////////
 
 static void _command_clear_icons_cache(){
-  exit((clear_icons_cache() == true) ? EXIT_SUCCESS : EXIT_FAILURE);
+//  exit((clear_icons_cache() == true) ? EXIT_SUCCESS : EXIT_FAILURE);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_open_security(){
-  if (args->retries <= 0) {
+  if (args->retries <= 0)
     args->retries = OPEN_SECURITY_DEFAULT_RETRIES_QTY;
-  }
   int ret = EXIT_FAILURE;
   for (int tries = 0; tries <= args->retries && ret == EXIT_FAILURE; tries++) {
     errno = 0;
     ret   = ((tesseract_security_preferences_logic(args->space_id) == true) ? EXIT_SUCCESS: EXIT_FAILURE);
-    if (ret == EXIT_SUCCESS || (ret != EXIT_SUCCESS && tries >= args->retries)) {
+    if (ret == EXIT_SUCCESS || (ret != EXIT_SUCCESS && tries >= args->retries))
       break;
-    }
     tries++;
     log_warn("tesseract_security_preferences_logic Returned %d> Attempt #%d/%d", ret, tries, args->retries);
     usleep(1000 * OPEN_SECURITY_RETRY_INTERVAL_MS);
   }
-  if (ret) {
+  if (ret)
     log_error("tesseract_security_preferences_logic Failed");
-  }
   exit(ret);
 }
 
@@ -1673,11 +1687,10 @@ static void _command_paste(){
     exit(EXIT_FAILURE);
   }
   size_t len = (pasteboard_content != NULL) ? strlen(pasteboard_content) : 0;
-  if (len < 1) {
+  if (len < 1)
     exit(EXIT_FAILURE);
-  }
-  if(args->output_file)
-    fsio_write_binary_file(args->output_file,pasteboard_content,len);
+  if (args->output_file)
+    fsio_write_binary_file(args->output_file, pasteboard_content, len);
   else
     fprintf(stdout, "%s\n", pasteboard_content);
   exit(EXIT_SUCCESS);
@@ -1685,19 +1698,17 @@ static void _command_paste(){
 
 static void _command_copy(){
   bool ok = false;
-  if(args->input_file)
+
+  if (args->input_file)
     args->content = fsio_read_binary_file(args->input_file);
 
-  if (args->content == NULL) {
+  if (args->content == NULL)
     asprintf(&(args->content), "%lld", timestamp());
-  }
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_info("copying '%s'", args->content);
-  }
   ok = copy_clipboard(args->content);
-  if (ok == false) {
+  if (ok == false)
     log_error("Failed to copy %s to clipboard", bytes_to_string(strlen(args->content)));
-  }
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -1705,23 +1716,19 @@ static void _command_app_icns_path(){
   bool ok                   = false;
   char *app_plist_info_path = get_app_path_plist_info_path(args->application_path);
 
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
     log_info("Application %s has plist file %s", args->application_path, app_plist_info_path);
-  }
   char *app_icns_file_path = get_info_plist_icon_file_path(app_plist_info_path);
 
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
     log_info("Application %s has icns file name %s", args->application_path, app_icns_file_path);
-  }
   char *icns_file_path = get_app_path_icns_file_path_icon_file_path(args->application_path, app_icns_file_path);
 
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
     log_info("Application %s has icns file %s", args->application_path, icns_file_path);
-  }
   ok = (fsio_file_exists(icns_file_path)) ? true : false;
-  if (ok == true) {
+  if (ok == true)
     fprintf(stdout, "%s\n", icns_file_path);
-  }
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -1787,9 +1794,8 @@ static void _command_save_app_icon_to_png(){
       printf("\n");
       fflush(stdout);
     }
-    if (rm_output_png_file) {
+    if (rm_output_png_file)
       fsio_remove(args->output_png_file);
-    }
   }
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
@@ -1802,28 +1808,22 @@ static void _command_save_app_icon_to_icns(){
 }
 
 static void _command_write_app_icon_icns(){
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
     log_info("setting app icon for app %s from icns %s", args->application_path, args->input_icns_file);
-  }
   bool ok = write_icns_to_app_path(args->input_icns_file, args->application_path);
-  if (ok == true) {
+  if (ok == true)
     fprintf(stdout, "Set Application %s icon using icns file %s\n", args->application_path, args->input_icns_file);
-  }
   if (ok == true && isatty(STDOUT_FILENO) && args->clear_icons_cache == true) {
-    ok = clear_app_icon_cache(args->application_path);
-    if (ok == false) {
+    ok = true;//clear_app_icon_cache(args->application_path);
+    if (ok == false)
       log_error("Failed to clear icons cache");
-    }else{
+    else
       fprintf(stderr, "Cleared icons cache\n");
-    }
-    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
+    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
       log_debug("Cleared icons cache");
-    }
-  }else{
-    if (DARWIN_LS_COMMANDS_DEBUG_MODE == true) {
-      log_info("not clearing icons cache");
-    }
-  }
+  }else if (DARWIN_LS_COMMANDS_DEBUG_MODE == true)
+    log_info("not clearing icons cache");
+
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -1856,7 +1856,7 @@ static void _command_animate(){
     req->format            = IMAGE_TYPE_GIF;
     req->width             = args->width;
     req->height            = args->height;
-    req->db_save_mode            = args->db_save_mode;
+    req->db_save_mode      = args->db_save_mode;
     req->time.dur          = 0;
     req->time.started      = timestamp();
     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
@@ -1877,7 +1877,7 @@ static void _command_animate(){
         req->time.started = i == 0 ? timestamp() : req->time.started;
         chan_send(acap->chan, (void *)r);
 //        get_cputime();
-        if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+        if (DARWIN_LS_COMMANDS_DEBUG_MODE)
           log_info("Frame #%lu/%lu> Received %lu Results in %s"
                    "\n\tID:%lu|Size:%s|Delta ms:%s|Time left:%lldms|"
                    "\n\t%s",
@@ -1890,11 +1890,9 @@ static void _command_animate(){
                    end_ts - timestamp(),
                    ""
                    );
-        }
       }
-      while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5)))) {
+      while ((unsigned long)timestamp() < ((unsigned long)(last_ts + interval_ms - (delta_ms / 5))))
         usleep((interval_ms / 10) * 1000);
-      }
       pthread_mutex_lock(acap->mutex);
       qty = vector_size(acap->frames_v);
       pthread_mutex_unlock(acap->mutex);
@@ -1904,9 +1902,8 @@ static void _command_animate(){
     pthread_join(acap->thread, NULL);
     assert(end_animation(acap) == true);
     assert(fsio_file_exists(acap->file));
-    if (args->output_file) {
+    if (args->output_file)
       fsio_copy_file(acap->file, args->output_file);
-    }
     if (args->display_mode) {
       kitty_display_image_path(acap->file);
       printf("\n");
@@ -1928,14 +1925,27 @@ static char *get_type_format_output_file(size_t id, char *dir, enum capture_type
   return(output_file);
 }
 
+static bool set_results_grayscale(struct Vector *results_v){
+  struct capture_image_result_t *r = NULL;
+
+  for (size_t i = 0; i < vector_size(results_v); i++) {
+    r = (struct capture_image_result_t *)vector_get(results_v, i);
+    log_info("Setting %s %s result to grayscale",
+             bytes_to_string(r->len),
+             image_type_name(r->format)
+             );
+  }
+//  exit(0);
+  return(true);
+}
+
 static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
   struct capture_image_result_t *r = NULL;
 
   for (size_t i = 0; i < vector_size(results_v); i++) {
     r = (struct capture_image_result_t *)vector_get(results_v, i);
-    if (r) {
+    if (r)
       r->file = get_type_format_output_file(r->id, dir, type, format_id);
-    }
   }
   return(true);
 }
@@ -1990,9 +2000,8 @@ static bool save_results(char *dir, enum capture_type_id_t type, enum image_type
       complete = true;
       for (size_t i = 0; i < 3; i++) {
         bars[i].progress += 0.0001 * (i + 1);
-        if (bars[i].progress <= 1.0) {
+        if (bars[i].progress <= 1.0)
           complete = false;
-        }
       }
       cbar_display_bars(bars, 3);
       usleep(0.001 * 100000.0);
@@ -2041,18 +2050,19 @@ static bool display_results(struct Vector *results_v){
     r = (struct capture_image_result_t *)vector_get(results_v, i);
     if (r->len > 0 && r->pixels) {
       debug("Displaying %lux%lu %s File", r->width, r->height, bytes_to_string(r->len));
-      if (kitty_display_image_buffer_resized_width(r->pixels, r->len, CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE)) {
+      size_t len = CAPTURE_IMAGE_TERMINAL_DISPLAY_SIZE;
+      if (args->fullscreen_mode)
+        len = (size_t)((float)get_terminal_size()->ws_xpixel * (float)0.95);
+      if (kitty_display_image_buffer_resized_width(r->pixels, r->len, len))
         printf("\n");
-      }
     }
   }
-  if (r) {
+  if (r)
     free(r);
-  }
   return(true);
 }
 
-static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height, bool db_save_mode){
+static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height, bool db_save_mode, bool grayscale_mode){
   struct Vector                  *results_v;
   struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
 
@@ -2068,14 +2078,14 @@ static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids
   req->db_save_mode      = db_save_mode;
   req->time.dur          = 0;
   req->time.started      = timestamp();
+  req->grayscale_mode    = grayscale_mode;
   results_v              = capture_image(req);
   return(results_v);
 }
 
 static void _command_extract(){
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_info("Capturing using mode %d|%s", args->capture_type, get_capture_type_name(args->capture_type));
-  }
   initialize_args(args);
   debug_dls_arguments();
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
@@ -2104,27 +2114,34 @@ static void _command_capture(){
       args->progress_bar_mode,
       args->width,
       args->height,
-      args->db_save_mode
+      args->db_save_mode,
+      args->grayscale_mode
       );
+    if (args->grayscale_mode)
+      set_results_grayscale(results_v);
     set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v);
+    if(args->output_file && vector_size(results_v)==1){
+      struct capture_image_result_t *res = (struct capture_image_result_t *)vector_get(results_v,0);
+      if(!fsio_write_binary_file(args->output_file,res->pixels,res->len))
+        log_error("Failed to save file %s",args->output_file);
+      else
+        fprintf(stderr,"Wrote %s output file %s\n",bytes_to_string(fsio_file_size(args->output_file)),args->output_file);
+    }
     if (args->write_images_mode) {
       errno = 0;
-      if (!save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v, args->concurrency, args->progress_bar_mode)) {
+      if (!save_results(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v, args->concurrency, args->progress_bar_mode))
         log_error("Failed to save results");
-      }
     }
     if (args->display_mode) {
       errno = 0;
-      if (!display_results(results_v)) {
+      if (!display_results(results_v))
         log_error("Failed to display results");
-      }
     }
 
     switch (args->output_mode) {
     case OUTPUT_MODE_TABLE:
-      if (false) {
+      if (false)
         list_captured_window_table(filter);
-      }
       break;
     case OUTPUT_MODE_JSON:
       break;
@@ -2161,9 +2178,8 @@ static void _command_list_font(){
 static void _command_move_window(){
   struct window_info_t *w = get_window_id_info(args->id);
 
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE) {
+  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
     log_debug("moving window %lu to %dx%d", w->window_id, args->x, args->y);
-  }
   log_debug("Moving window #%lu to %dx%d on space %d on display %d",
             w->window_id,
             args->x, args->y,
@@ -2294,16 +2310,14 @@ static void _command_set_window_space(){
 }
 
 static void _command_set_space(){
-  if (args->space_id == get_current_space_id()) {
+  if (args->space_id == get_current_space_id())
     exit(EXIT_SUCCESS);
-  }
   struct Vector        *v = get_window_infos_v(), *wins = vector_new();
   struct window_info_t *w;
   for (size_t i = 0; i < vector_size(v); i++) {
     w = (struct window_info_t *)vector_get(v, i);
-    if (!w || (w->space_id != (size_t)args->space_id)) {
+    if (!w || (w->space_id != (size_t)args->space_id))
       vector_remove(v, i);
-    }
   }
   uint64_t   set_tags        = 1;
   uint64_t   clear_tags      = 0;
@@ -2322,9 +2336,8 @@ static void _command_set_space(){
       log_debug("%lu|%lu", wid, parent_wid);
       for (size_t i = 0; i < vector_size(v); i++) {
         w = (struct window_info_t *)vector_get(v, i);
-        if (w->window_id == wid) {
+        if (w->window_id == wid)
           vector_push(wins, (void *)w);
-        }
       }
     }
   }
@@ -2340,9 +2353,8 @@ static void _command_set_space(){
     usleep(500 * 1000);
     int cur = get_current_space_id();
     log_debug("%d/%d", cur, args->space_id);
-    if (cur == args->space_id) {
+    if (cur == args->space_id)
       exit(EXIT_SUCCESS);
-    }
   }
   exit(EXIT_FAILURE);
 } /* _command_set_space */
@@ -2350,11 +2362,10 @@ static void _command_set_space(){
 static void _command_focus(){
   initialize_args(args);
   debug_dls_arguments();
-  if (args->id > 0) {
+  if (args->id > 0)
     focus_window_id(args->id);
-  }else if (args->pid > 0) {
+  else if (args->pid > 0)
     focus_pid(args->id);
-  }
   //else if(strlen(args->windowids)>0)
 //    if(false)
 //      focus_window_id(args->windowids);
@@ -2397,11 +2408,10 @@ static void _command_focused(){
   {
     sb = stringbuffer_new();
     for (size_t i = 0; i < vector_size(_space_window_ids_v); i++) {
-      if (i == 0 || ((i % 6) == 0)) {
+      if (i == 0 || ((i % 6) == 0))
         stringbuffer_append_string(sb, "\n                                             ");
-      }else{
+      else
         stringbuffer_append_string(sb, ", ");
-      }
       stringbuffer_append_unsigned_long_long(sb, (unsigned long long)vector_get(_space_window_ids_v, i));
     }
     _space_window_ids_csv = stringbuffer_to_string(sb);
@@ -2410,9 +2420,8 @@ static void _command_focused(){
   {
     sb = stringbuffer_new();
     for (size_t i = 0; i < vector_size(_space_owners); i++) {
-      if (i > 0 && i < vector_size(_space_owners) - 1) {
+      if (i > 0 && i < vector_size(_space_owners) - 1)
         stringbuffer_append_string(sb, ", ");
-      }
       stringbuffer_append_unsigned_long_long(sb, (unsigned long long)vector_get(_space_owners, i));
     }
     _space_owners_csv = stringbuffer_to_string(sb);
@@ -2495,11 +2504,9 @@ static void _command_create_space(){
 
 static void _command_db_rows(){
   COMMAND_DB_COMMON();
-  for (size_t i = 0; i < args->db_tables_qty; i++) {
-    if (!db_rows(args->db_tables[i])) {
+  for (size_t i = 0; i < args->db_tables_qty; i++)
+    if (!db_rows(args->db_tables[i]))
       log_error("Failed to List Table %s Rows", args->db_tables[i]);
-    }
-  }
   exit(EXIT_SUCCESS);
 }
 
@@ -2507,9 +2514,9 @@ static void _command_db_table_ids(){
   COMMAND_DB_COMMON();
   struct Vector *v;
   for (size_t i = 0; i < args->db_tables_qty; i++) {
-    if ((v = db_table_ids_v(args->db_tables[i]))) {
+    if ((v = db_table_ids_v(args->db_tables[i])))
       printf("Table %s has %lu rows\n", args->db_tables[i], vector_size(v));
-    }else{
+    else{
       log_error("Failed to List Table %s IDs", args->db_tables[i]);
       exit(EXIT_FAILURE);
     }
@@ -2522,9 +2529,8 @@ static void _command_db_tables(){
   struct Vector *v;
   if ((v = db_tables_v())) {
     printf("Database has %lu tables\n", vector_size(v));
-    for (size_t i = 0; i < vector_size(v); i++) {
+    for (size_t i = 0; i < vector_size(v); i++)
       printf(" - %s\n", (char *)vector_get(v, i));
-    }
   }else{
     log_error("Failed to List Tables");
     exit(EXIT_FAILURE);
@@ -2541,14 +2547,12 @@ static void _command_db_load(){
   char          *tbl;
   for (size_t i = 0; i < vector_size(tbls); i++) {
     tbl = (char *)vector_get(tbls, i);
-    for (size_t x = 0; x < args->db_tables_qty; x++) {
+    for (size_t x = 0; x < args->db_tables_qty; x++)
       if ((int)db_loader_name_id(args->db_tables[x]) >= 0 && strcmp(args->db_tables[x], tbl) == 0) {
         Dbg(db_loader_name_id(args->db_tables[x]), %d);
-        if (!db_loader_name(tbl)) {
+        if (!db_loader_name(tbl))
           log_error("Failed to load %s", tbl);
-        }
       }
-    }
   }
   exit(EXIT_SUCCESS);
 }
@@ -2568,16 +2572,39 @@ static void _command_db_info(){
 static void _command_hotkeys_fork_server(){
   log_info("fork server");
   pid_t pid = run_hotkeys_server_with_callback(&hotkey_callback);
-  log_info("Forked %d",pid);
-  while(true)
+  log_info("Forked %d", pid);
+  while (true)
     sleep(5);
   //exit((hotkeys_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
+
 static void _command_hotkeys_server(){
   exit((hotkeys_exec_with_callback(hotkey_callback) == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 static void _command_icon_list(){
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_pick(){
+  log_debug("pick");
+  /*
+   * struct pick_ctx_t *CTX = pick_init_ctx();
+   *
+   * vector_push(CTX->choices_s_v, "opt 0");
+   * vector_push(CTX->choices_s_v, "opt 1 | opt 1 desc");
+   * vector_push(CTX->choices_s_v, "opt 2 | opt 2 desc");
+   * vector_push(CTX->choices_s_v, "opt 3 | opt 3 desc");
+   * vector_push(CTX->choices_s_v, "opt 4 | opt 4 desc");
+   *
+   * char *picked = do_pick_single(CTX);
+   *
+   * if (picked) {
+   * fprintf(stdout, "You picked '%s'\n", picked);
+   * }else{
+   * fprintf(stdout, "You didn't pick an option\n");
+   * }
+   */
   exit(EXIT_SUCCESS);
 }
 
@@ -2587,10 +2614,141 @@ static void _command_db_init(){
 }
 #undef COMMAND_DB_COMMON
 
+static void _command_prompt_bestline(){
+  //printf(AC_SAVE_PALETTE);
+//  printf(AC_ALT_SCREEN_ON);
+  printf(AC_SHOW_CURSOR);
+  fflush(stdout);
+  dls_bestline_loop();
+  printf(AC_ALT_SCREEN_OFF);
+  printf(AC_RESTORE_PALETTE);
+  fflush(stdout);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_droid(){
+  Droid c_3po = DYN_LIT(C_3PO, Droid, { 0 });
+  Droid r2_d2 = DYN_LIT(R2_D2, Droid, { 0 });
+
+  VCALL_OBJ(c_3po, turn_on);
+  VCALL_OBJ(r2_d2, turn_on);
+
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_layout_vertical(){
+  initialize_args(args);
+  float  size = args->layout_size > 0 ? args->layout_size : 0.1;
+  int    qty  = args->layout_qty > 0 ? args->layout_qty : 2;
+  Layout v    = DYN_LIT(Vertical, Layout, { 0 });
+  VCALL(v, init, get_display_width(), get_display_height(), size, qty);
+  VCALL(v, size, size);
+  VCALL(v, qty, qty);
+  VCALL(v, render);
+  VCALL(v, print);
+  char *s = VCALL(v, string);
+  log_info(AC_YELLOW "%s" AC_RESETALL, s);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_layout_horizontal(){
+  initialize_args(args);
+  float  size = args->layout_size > 0 ? args->layout_size : 0.1;
+  int    qty  = args->layout_qty > 0 ? args->layout_qty : 2;
+  Layout h    = DYN_LIT(Horizontal, Layout, { 0 });
+  VCALL(h, init, get_display_width(), get_display_height(), size, qty);
+  VCALL(h, size, size);
+  VCALL(h, qty, qty);
+  VCALL(h, render);
+  VCALL(h, print);
+  char *s = VCALL(h, string);
+  log_info(AC_RED "%s" AC_RESETALL, s);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_find_window(){
+  char       *name = "main"; int id = 123;
+  FindWindow f[2];
+
+  f[0] = DYN_LIT(ByID, FindWindow, { 0 });
+  f[1] = DYN_LIT(ByName, FindWindow, { 0 });
+  log_debug("f0 name: %s", VCALL(f[0], name));
+  log_debug("f0 id  : %d", VCALL(f[0], id));
+  VCALL(f[0], find, (void *)(size_t)id);
+  VCALL(f[1], find, (void *)name);
+  log_debug("f1 name: %s", VCALL(f[0], name));
+  log_debug("f1 id  : %d", VCALL(f[1], id));
+  log_info("name:%s", VCALL(DYN_LIT(ByName, FindWindow, { 0 }), find, (void *)name)->name);
+  log_info("id:%d", VCALL(DYN_LIT(ByName, FindWindow, { 0 }), find, (void *)name)->id);
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_layouts(){
+  initialize_args(args);
+  _command_test_layout_vertical();
+  _command_test_layout_horizontal();
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_frog(){
+  Frog *paul  = Frog_new("Paul");
+  Frog *steve = Frog_new("Steve");
+
+  VCALL(DYN(Frog, Croak, paul), croak);
+  VCALL(DYN(Frog, Croak, steve), croak);
+  VCALL(DYN(Frog, Croak, steve), croak);
+  VCALL(DYN(Frog, Croak, steve), croak);
+  VCALL(DYN(Frog, Croak, steve), croak);
+  VCALL(DYN(Frog, Croak, paul), croak);
+
+  Frog_free(paul);
+  Frog_free(steve);
+
+  exit(EXIT_SUCCESS);
+}
+
+static void _command_test_shape(){
+  DLS r = DYN_LIT(Rectangle, DLS, { 5, 7 });
+  DLS t = DYN_LIT(Triangle, DLS, { 10, 20, 30 });
+
+  printf("perim        = %d\n", VCALL(r, perim));
+  printf("perim        = %d\n", VCALL(t, perim));
+  VCALL(r, scale, 5);
+  VCALL(t, scale, 5);
+  printf("scaled perim = %d\n", VCALL(r, perim));
+  printf("scaled perim = %d\n", VCALL(t, perim));
+  exit(EXIT_SUCCESS);
+}
+
+int vector_sort_fxn1(const void *i0, const void *i1){
+  return(
+    ((size_t)i0 > (size_t)i1)
+        ? 1
+        : ((size_t)i0 < (size_t)i1)
+          ? -1
+          : 0
+    );
+}
+
+static void _command_test_vector(){
+  struct Vector *v[10];
+
+  v[0] = vector_new();
+  vector_push(v[0], (void *)12345);
+  vector_push(v[0], (void *)123);
+  vector_push(v[0], (void *)12399);
+  v[1] = vector_filter_new(v[0], ^ bool (__attribute__((unused)) size_t i, void *I){
+    return((size_t)I > 1000);
+  });
+  Dbg(vector_size(v[0]), %u);
+  Dbg(vector_size(v[1]), %u);
+
+  exit(EXIT_SUCCESS);
+}
+
 static void _command_print_strings_v(struct Vector *strings){
-  for (size_t i = 0; i < vector_size(strings) && i < args->limit; i++) {
+  for (size_t i = 0; i < vector_size(strings) && i < args->limit; i++)
     printf("%s\n", (char *)(vector_get(strings, i)));
-  }
   exit(EXIT_SUCCESS);
 }
 
@@ -2600,14 +2758,17 @@ static void _command_print_qty(size_t qty){
 }
 
 static void _command_print_ids_v(struct Vector *ids){
-  for (size_t i = 0; i < vector_size(ids) && i < args->limit; i++) {
+  for (size_t i = 0; i < vector_size(ids) && i < args->limit; i++)
     printf("%lu\n", (size_t)(vector_get(ids, i)));
-  }
   exit(EXIT_SUCCESS);
 }
 
 static void _command_window_qty(){
   return(_command_print_qty(require(window)->qty()));
+}
+
+static void _command_window_props(){
+  return(_command_print_strings_v(require(window)->props()));
 }
 
 static void _command_window_names(){
@@ -2620,16 +2781,22 @@ static void _command_window_ids(){
 
 static void _command_capture_display(){
   args->capture_type = CAPTURE_TYPE_DISPLAY;
+  if (args->id < 1 && !args->random_ids_mode)
+    args->all_mode = true;
   return(_command_capture());
 }
 
 static void _command_capture_window(){
   args->capture_type = CAPTURE_TYPE_WINDOW;
+  if (args->id < 1 && !args->random_ids_mode)
+    args->all_mode = true;
   return(_command_capture());
 }
 
 static void _command_capture_space(){
   args->capture_type = CAPTURE_TYPE_SPACE;
+  if (args->id < 1 && !args->random_ids_mode)
+    args->all_mode = true;
   return(_command_capture());
 }
 
@@ -2643,14 +2810,13 @@ static void _command_list_alacritty(){
           vector_size(_alacritty_pids),
           "\n"
           );
-  for (size_t i = 0; i < vector_size(_alacritty_pids); i++) {
+  for (size_t i = 0; i < vector_size(_alacritty_pids); i++)
     fprintf(stdout,
             "\t\t" AC_CYAN AC_BOLD "%lu" AC_RESETALL
             "%s",
             (size_t)vector_get(_alacritty_pids, i),
             "\n"
             );
-  }
   vector_release(_alacritty_pids);
 
   exit(EXIT_SUCCESS);
@@ -2684,7 +2850,21 @@ static void _command_layout_apply(){
 }
 
 static void _command_layout_render(){
-  exit((hk_show_rendered_layout_name(args->layout_name))? EXIT_SUCCESS : EXIT_FAILURE);
+  hash_t *h;
+
+  if (strcmp(stringfn_to_lowercase(args->layout_name), "all") == 0)
+    h = hk_get_layouts();
+  else{
+    h = hash_new();
+    hash_set(h, args->layout_name, (void *)0);
+  }
+  hash_each(h, {
+    if (!hk_show_rendered_layout_name(key)) {
+      log_error("Failed to render %s", key);
+      exit(EXIT_FAILURE);
+    }
+  });
+  exit(EXIT_SUCCESS);
 }
 
 static void _command_layout_show(){
