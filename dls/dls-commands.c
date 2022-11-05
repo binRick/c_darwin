@@ -36,7 +36,7 @@
 //#include "libpick/libpick.h"
 #define MAX_CONCURRENCY                        25
 #define MAX_FRAME_RATE                         30
-#define MAX_LIMIT                              99
+#define MAX_LIMIT                              999
 #define MAX_DURATION                           300
 #define MAX_WINDOW_SIZE                        4000
 #define MAX_DURATION                           300
@@ -58,7 +58,12 @@
     struct list_table_t *filter = &(struct list_table_t){                 \
       .limit    = args->limit,                                            \
       .sort_key = args->sort_key, .sort_direction = args->sort_direction, \
-    };                                                                    \
+      .offset = (size_t)(args->offset),\
+      .fd = args->fd,\
+    };                                     \
+    size_t buf_len = get_terminal_width()*get_terminal_height()*32;\
+    char *buf = calloc(1,buf_len+1);\
+    filter->fd = fmemopen(buf,buf_len,"w");\
     switch (args->output_mode) {                                          \
     case OUTPUT_MODE_TABLE: list_ ## NAME ## _table(filter); break;       \
     case OUTPUT_MODE_JSON:                                                \
@@ -66,6 +71,8 @@
     case OUTPUT_MODE_TEXT:                                                \
       break;                                                              \
     }                                                                     \
+    fclose(filter->fd);\
+    fprintf(stdout,"%s",(char*)buf);\
     exit(EXIT_SUCCESS);                                                   \
   }
 #define CLAMP_ARG_TYPE(ARGS, ARG, TYPE)               clamp(ARGS->ARG, arg_clamps[TYPE].min, arg_clamps[TYPE].max)
@@ -868,6 +875,16 @@ common_option_b common_options_b[] = {
       .arg_dest = &(args->output_mode_s),
     });
   },
+  [COMMON_OPTION_OFFSET] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'o',
+      .long_name = "offset",
+      .description = "Offset",
+      .arg_name = "OFFSET",
+      .arg_dest = &(args->offset),
+      .arg_data_type = DATA_TYPE_UINT64,
+    });
+  },
   [COMMON_OPTION_LIMIT] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 'l',
@@ -1239,6 +1256,8 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_HTTP, HTTPSERVER, "http", COLOR_HTTP, "HTTP Server", *_command_httpserver)
   COMMAND(ICON_MENU, MENU_BAR, "menu-bar", COLOR_MENU, "Menu Bar Info", *_command_menu_bar)
   COMMAND(ICON_DOCK, DOCK, "dock", COLOR_DOCK, "Dock Info", *_command_dock)
+  COMMAND(ICON_PROCESS, PROCESS, "process", COLOR_PROCESS, "Processes", 0)
+  COMMAND(ICON_LIST, PROCESS_LIST, "ls", COLOR_LIST, "List Processes", *_command_list_process)
   COMMAND(ICON_DB, DB, "db", AC_RED, "Database Manager", 0)
   COMMAND(ICON_INIT, DB_INIT, "init", COLOR_INIT, "Initialize Database", *_command_db_init)
   COMMAND(ICON_TEST, DB_TEST, "test", COLOR_TEST, "Database Test", *_command_db_test)
@@ -1247,8 +1266,8 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_INFO, DB_INFO, "info", COLOR_INFO, "Database Info", *_command_db_info)
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
   COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
-  COMMAND(ICON_APP, APPS, "app", COLOR_SERVER, "Application", 0)
-  COMMAND(ICON_LIST, APPS_LIST, "ls", COLOR_SERVER, "List Applications", *_command_list_app)
+  COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)
+  COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app)
   COMMAND(ICON_SERVER, HOTKEYS, "hotkey", COLOR_SERVER, "Hotkey", 0)
   COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkey Server", *_command_hotkeys_server)
   COMMAND(ICON_SERVER, HOTKEYS_FORK_SERVER, "fork-server", COLOR_SERVER, "Hotkey Fork Server", *_command_hotkeys_fork_server)
@@ -1288,7 +1307,7 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
 //  LIST_SUBCOMMAND(DISPLAYS, "display", "Display", _command_list_display),
 //  LIST_SUBCOMMAND(APPS, "app", "Application", _command_list_app),
   LIST_SUBCOMMAND(FONTS, "font", "Font", _command_list_font),
-  LIST_SUBCOMMAND(PROCESSES, "process", "Process", _command_list_process),
+//  LIST_SUBCOMMAND(PROCESSES, "process", "Process", _command_list_process),
 //  LIST_SUBCOMMAND(KITTYS, "kittys", "Kittys", _command_list_kitty),
   LIST_SUBCOMMAND(USBS, "usbs", "USB Devices", _command_list_usb),
   LIST_SUBCOMMAND(MONITORS, "monitors", "Monitors", _command_list_monitor),

@@ -296,8 +296,8 @@ struct process_info_t *get_process_info(int pid){
   I->open_ports_v       = vector_new();
   I->open_connections_v = vector_new();
   I->open_files_v       = vector_new();
-  //I->env_v       = get_process_env(I->pid);
   I->env_v        = vector_new();
+ // I->env_v       = get_process_env(I->pid);
   I->child_pids_v = get_child_pids(I->pid);
   I->ppid         = get_process_ppid(I->pid);
   I->ppids_v      = get_process_ppids(I->pid);
@@ -1125,8 +1125,7 @@ struct Vector *get_all_processes(){
 
 struct Vector *get_process_env(int process){
   struct Vector *process_env_v = vector_new();
-
-  if (process == 1)
+  if (process <= 1)
     return(process_env_v);
 
   struct Vector          *vector = vector_new();

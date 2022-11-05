@@ -9,6 +9,7 @@ app_utils_deps = [
   process_utils_dep,
   systemprofiler_dep,
   icon_utils_dep,
+  kitty_msg_dep,glib_dep,vips_dep,
 ]
 app_utils_link_flags = ['-Wl,-framework,CoreFoundation','-Wl,-framework,Carbon','-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
 app_utils_lib = library('app-utils',

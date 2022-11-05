@@ -1,6 +1,7 @@
 #pragma once
 #ifndef TABLE_UTILS_C
 #define TABLE_UTILS_C
+#define MAX_NAME_TERMINAL_WIDTH_PERCENTAGE 0.20
 #define LOCAL_DEBUG_MODE           TABLE_UTILS_DEBUG_MODE
 #define DEFAULT_FONTS_LIMIT        50
 #define DEFAULT_APPS_LIMIT         50
@@ -11,7 +12,7 @@
 #define KITTY_COLUMNS              "PID"
 #define USB_COLUMNS                "Product", "Manufacturer"
 #define FONT_COLUMNS               "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
-#define APP_COLUMNS                "ID", "Name", "Version", "Path"
+#define APP_COLUMNS                "ID", "Name", "Version", "Path", "Icon"
 #define WINDOW_COLUMNS             "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Can Min", "Full", "Dur"
 #define SPACE_COLUMNS              "ID", "Current", "Window IDs", "Windows"
 #define HOTKEY_COLUMNS             "ID", "Name", "Key", "Action", "Enabled"
@@ -302,9 +303,10 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .columns     = { APP_COLUMNS },
     .row         = ^ void (ft_table_t *table,                                                        size_t index,                          void *item){
       struct app_t *app = (struct app_t *)item;
-      term_width = 120;//get_terminal_width();
+      term_width = get_terminal_width();
       ft_printf_ln(table,
                    "%ld"
+                   "|%.*s"
                    "|%.*s"
                    "|%.*s"
                    "|%.*s"
@@ -312,7 +314,8 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    index + 1,
                    (int)((float)term_width * .25),                                                   app->name,
                    (int)((float)term_width * .5),                                                    app->version,
-                   (int)((float)term_width * .50),                                                   app->path,
+                   (int)((float)term_width * .40),                                                   app->path,
+                   (int)((float)term_width * .10), bytes_to_string((size_t)(app->png_len)),
                    ""
                    );
     },
@@ -359,8 +362,10 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
     .query_items = get_window_infos_v,
     .columns     = { WINDOW_COLUMNS },
     .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
-      int max_name_len        = 20;
       struct window_info_t *w = (struct window_info_t *)item;
+      int max_name_len        = (int)((float)get_terminal_width() * MAX_NAME_TERMINAL_WIDTH_PERCENTAGE);
+      if(stringfn_ends_with(w->name,".app"))
+        w->name = stringfn_substring(w->name,0,strlen(w->name)-strlen(".app"));
       ft_printf_ln(table,
                    "%lu|%d|%.*s|%dx%d|%dx%d|%lu|%d|%s|%s|%s|%s"
                    "%s",
@@ -625,8 +630,9 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    );                                                                                \
       ft_set_cell_span(TABLE, ft_row_count(TABLE) - 1, 0, ft_col_count(TABLE));                      \
       ft_set_cell_prop(TABLE, ft_row_count(TABLE) - 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
+      size_t w=0,h=0;\
       char *table_s = ft_to_string(table);                                                           \
-      fprintf(stdout, "%s\n", table_s);                                                              \
+      fprintf(TABLE_FD, "%s\n", table_s);                                                              \
       ft_destroy_table(table);                                                                       \
       return((strlen(table_s) > 0) ? EXIT_SUCCESS : EXIT_FAILURE);                                   \
     } while (0); }
@@ -652,6 +658,7 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
 
 #define INIT_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)                                                          \
   struct list_table_t *args = (struct list_table_t *)ARGS;                                                 \
+  FILE *TABLE_FD = args->fd;\
   struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(), *sorted_items = vector_new(); \
   struct STRUCT_TYPE  *item, *_item;                                                                       \
   ft_table_t          *table;                                                                              \
@@ -709,7 +716,7 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
     for (size_t i = 0; i < vector_size(items_v); i++) {                                                                                 \
       BREAK_IF_ROW_LIMIT(table, args)                                                                                                   \
       item = VECTOR_ITEM(items_v, TYPE *, i);                                                                                           \
-      CONTINUE_IF_ROW_SKIP(tables[TABLE_TYPE_ ## TYPE]->row_skip ? tables[TABLE_TYPE_ ## TYPE]->row_skip(table, i, item, args) : false) \
+      CONTINUE_IF_ROW_SKIP(i<args->offset ? true : tables[TABLE_TYPE_ ## TYPE]->row_skip ? tables[TABLE_TYPE_ ## TYPE]->row_skip(table, i, item, args) : false) \
       tables[TABLE_TYPE_ ## TYPE]->row(table, i, item);                                                                                 \
       tables[TABLE_TYPE_ ## TYPE]->row_style(table, i, item);                                                                           \
     }                                                                                                                                   \

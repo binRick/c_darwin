@@ -23,8 +23,8 @@ int stop_loop(void *L){
   usleep(1000 * delay_ms);
   pthread_mutex_lock(l->mutex);
   l->ended = true;
-  CFRunLoopStop(l->loop);
   pthread_mutex_unlock(l->mutex);
+  CFRunLoopStop(l->loop);
   return(EXIT_SUCCESS);
 }
 
@@ -291,15 +291,15 @@ void _command_test_stream_display(){
     .debug_mode          = args->debug_mode,
   };
 
+  pthread_create(&(l.threads[0]), NULL, stop_loop, (void *)&l);
   pthread_create(&(l.threads[3]), NULL, wu_receive_stream, (void *)&l);
 //  pthread_create(&(l.threads[2]), NULL, wu_monitor_stream, (void *)&l);
-  pthread_create(&(l.threads[0]), NULL, stop_loop, (void *)&l);
   pthread_create(&(l.threads[1]), NULL, wu_stream_display, (void *)&l);
   CFRunLoopRun();
   pthread_join(&(l.threads[0]), NULL);
+  pthread_join(&(l.threads[3]), NULL);
   pthread_join(&(l.threads[1]), NULL);
 //  pthread_join(&(l.threads[2]), NULL);
-  pthread_join(&(l.threads[3]), NULL);
   exit(EXIT_SUCCESS);
 }
 

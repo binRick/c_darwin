@@ -140,9 +140,9 @@ keys:
     action_type: NormalizeLayout
     enabled: yes
 
-  - name: Activate iTerm2
+  - name: Activate iTerm
     key: ctrl+'
-    action: iTerm2|iTerm
+    action: iTerm
     action_type: ActivateApplication
     enabled: yes
 

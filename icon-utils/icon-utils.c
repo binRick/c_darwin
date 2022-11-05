@@ -190,7 +190,8 @@ static icns_family_t *get_icns_file_info(FILE *fp){
   if (ICON_UTILS_DEBUG_MODE == true)
     log_info("icns file size: %s", bytes_to_string(fp_size));
 
-  assert(icns_read_family_from_file(fp, &iconFamily) == 0);
+  if(icns_read_family_from_file(fp, &iconFamily) != EXIT_SUCCESS)
+    return(NULL);
 
   return(iconFamily);
 }
@@ -350,6 +351,8 @@ struct Vector *get_app_icon_sizes_v(){
 
 static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_size){
   icns_family_t *iconFamily = get_icns_file_info(fp);
+  if(!iconFamily)
+    return(false);
 
   fclose(fp);
   // icns_family_t   *iconFamily   = calloc(1, sizeof(icns_family_t));
@@ -371,6 +374,49 @@ static bool write_icns_file_to_png(FILE *fp, char *png_file_path, size_t icon_si
   return(fsio_file_exists(png_file_path));
 }
 
+bool write_app_icon_to_png_buffer(char *app_path, unsigned char *buf, size_t *buf_len, size_t icon_size){
+  CFDataRef     data_ref   = get_icon_from_path(app_path);
+  struct icns_t *icns_data = cfdataref_to_icns_bytes(data_ref);
+  *buf_len = icns_data->size;
+  buf       = calloc(1, *buf_len);
+  FILE          *fp        = fmemopen(buf, *buf_len, "wb");
+  save_cfdataref_to_icns_file(data_ref, fp);
+  fclose(fp);
+  fp = fmemopen(buf, icns_data->size, "r");
+  icns_family_t *iconFamily = get_icns_file_info(fp);
+  fclose(fp);
+  icns_image_t   *iconImage   = calloc(1, sizeof(icns_image_t));
+  icns_element_t *iconElement = calloc(1, sizeof(icns_element_t));
+  assert(icns_get_element_from_family(iconFamily, get_icon_size_type(icon_size), &iconElement) == ICNS_STATUS_OK);
+  assert(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK);
+  *buf_len = iconImage->imageDataSize;
+  buf = calloc(1,*buf_len);
+  memcpy(buf,iconImage->imageData,iconImage->imageDataSize);
+  free(iconImage);
+  free(iconElement);
+  return(buf_len>0 && buf);
+}
+size_t get_icon_index_size(char *icns_file_path,size_t index){
+  FILE           *fp         = fopen(icns_file_path, "rb");
+  icns_family_t  *iconFamily = get_icns_file_info(fp);
+  char           iconStr[5]  = { 0, 0, 0, 0, 0 };
+  icns_type_str(iconFamily->resourceType, iconStr);
+  int32_t        element_qty   = -1;
+  icns_element_t *iconElement  = NULL;
+  struct Vector  *icon_sizes_v = get_app_icon_sizes_v();
+  assert(icns_count_elements_in_family(iconFamily, &element_qty) == ICNS_STATUS_OK);
+  for (size_t i = index; i < vector_size(icon_sizes_v); i++) {
+    size_t cur_size = (size_t)vector_get(icon_sizes_v, i);
+    if(icns_get_element_from_family(iconFamily, get_icon_size_type(cur_size), &iconElement) == ICNS_STATUS_OK){
+      icns_type_str(iconFamily->resourceType, iconStr);
+      icns_image_t *iconImage = calloc(1, sizeof(icns_image_t));
+      if(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK){
+        return((size_t)cur_size);
+      }
+    }
+  }
+  return(0);
+}
 bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size){
   CFDataRef     data_ref   = get_icon_from_path(app_path);
   struct icns_t *icns_data = cfdataref_to_icns_bytes(data_ref);
@@ -381,6 +427,10 @@ bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size
   fclose(fp);
   fp = fmemopen(buf, icns_data->size, "r");
   return(write_icns_file_to_png(fp, png_file_path, icon_size));
+}
+
+size_t get_first_icon_size(char *icns_file_path){
+  return(get_icon_index_size(icns_file_path,0));
 }
 
 bool get_icon_info(char *icns_file_path){
@@ -407,18 +457,19 @@ bool get_icon_info(char *icns_file_path){
     );
   for (size_t i = 0; i < vector_size(icon_sizes_v); i++) {
     size_t cur_size = (size_t)vector_get(icon_sizes_v, i);
-    assert(icns_get_element_from_family(iconFamily, get_icon_size_type(cur_size), &iconElement) == ICNS_STATUS_OK);
-    icns_type_str(iconFamily->resourceType, iconStr);
-    icns_image_t *iconImage = calloc(1, sizeof(icns_image_t));
-    assert(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK);
-
-    printf("  %12s |Type: %s|Size:%dx%d|Data Size:%6s|\n",
+    if(icns_get_element_from_family(iconFamily, get_icon_size_type(cur_size), &iconElement) == ICNS_STATUS_OK){
+      icns_type_str(iconFamily->resourceType, iconStr);
+      icns_image_t *iconImage = calloc(1, sizeof(icns_image_t));
+      if(icns_get_image_from_element(iconElement, iconImage) == ICNS_STATUS_OK){
+        printf("  %12s |Type: %s|Size:%dx%d|Data Size:%6s|\n",
            get_icon_size_name(cur_size),
            iconStr,
            iconImage->imageWidth, iconImage->imageHeight,
            bytes_to_string(iconImage->imageDataSize)
            );
-    free(iconImage);
+      }
+      free(iconImage);
+    }
   }
 
   return(ok);

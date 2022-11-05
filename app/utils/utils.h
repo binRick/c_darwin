@@ -36,6 +36,9 @@ struct app_t {
   timelib_time  *last_modified_time;
   unsigned long last_modified_timestamp;
   bool          path_exists;
+  unsigned char *png; 
+  size_t png_len;
+  size_t png_width, png_height;
 };
 const char *app_type_names[APP_TYPES_QTY + 1];
 ///////////////////////////////////////////////////////////////////////
@@ -60,6 +63,7 @@ enum app_parser_type_t {
   APP_PARSER_TYPE_OBTAINED_FROM,
   APP_PARSER_TYPE_INFO,
   APP_PARSER_TYPE_ARCH,
+  APP_PARSER_TYPE_ICON_INFO,
   APP_PARSER_TYPES_QTY,
 };
 struct app_parser_t {

@@ -7,6 +7,9 @@
 const char *dls_command_names[];
 ////////////////////////////////////////////
 #define ICON_APP                      "🍍"
+#define ICON_APP_LIST                      "🍍"
+#define ICON_PROCESS                      "🍍"
+#define ICON_PROCESS_LIST                      "🍍"
 #define ICON_FILE                     "👽"
 #define ICON_FILE_READER              "💽"
 #define ICON_LIST                     "💈"
@@ -78,6 +81,8 @@ const char *dls_command_names[];
 #define COLOR_ID                      "\x1b[38;2;162;194;208m"
 #define COLOR_QTY                     "\x1b[38;2;162;194;208m"
 #define COLOR_CAPTURE                 "\x1b[38;2;162;194;208m"
+#define COLOR_PROCESS                 "\x1b[38;2;162;194;208m"
+#define COLOR_PROCESS_LIST                 "\x1b[38;2;162;194;208m"
 #define COLOR_INIT                    "\x1b[38;2;162;194;208m"
 #define COLOR_NAME                    "\x1b[38;2;162;194;208m"
 #define COLOR_PROP                    "\x1b[38;2;162;194;208m"
@@ -205,6 +210,7 @@ enum common_option_name_t {
   COMMON_OPTION_CLEAR_SCREEN,
   COMMON_OPTION_QUIET_MODE,
   COMMON_OPTION_GLOBS,
+  COMMON_OPTION_OFFSET,
   COMMON_OPTION_HIDE_COLUMNS,
   COMMON_OPTION_SHOW_COLUMNS,
   COMMON_OPTION_COMPRESS,
@@ -300,6 +306,8 @@ enum command_type_t {
   COMMAND_WINDOW_SPACE,
   COMMAND_WINDOW_NOT_ALL_SPACES,
   COMMAND_WINDOW,
+  COMMAND_PROCESS,
+  COMMAND_PROCESS_LIST,
   COMMAND_CAPTURE_WINDOW,
   COMMAND_CAPTURE_DEV,
   COMMAND_CAPTURE_SPACE,
@@ -326,9 +334,8 @@ enum command_type_t {
   COMMAND_STICKY_WINDOW,
   COMMAND_MENU_BAR,
   COMMAND_DOCK,
-  COMMAND_APPS,
-  COMMAND_APPS_LIST,
-  COMMAND_PROCESSES,
+  COMMAND_APP,
+  COMMAND_APP_LIST,
   COMMAND_USBS,
   COMMAND_MONITORS,
   COMMAND_FONTS,

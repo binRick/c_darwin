@@ -28,6 +28,8 @@ struct args_t {
   struct window_info_t                 *window;
   struct Vector                        *formats_v, *format_ids_v;
   int                                  space_id, id, display_id, x, y, width, height, width_or_height_group, output_mode, retries, concurrency, limit, pid, width_greater, width_less, height_greater, height_less, frame_rate, duration_seconds, index;
+  size_t offset;
+  FILE *fd;
   float                                layout_size; int layout_qty;
   char                                 *windowids;
   char                                 **format_names, **hide_columns, **show_columns, **db_tables, **search_words, **prompt_commands, **globs;

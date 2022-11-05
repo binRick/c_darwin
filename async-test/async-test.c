@@ -43,7 +43,7 @@ TEST t_async_test2(){
     Dbg((size_t)vector_get(results[0],i),%lu);
 
   AsyncMap *m = AsyncMap_load(v[1]);
-  results[1] = AsyncMap_iterate(s,I);
+  results[1] = AsyncMap_iterate(s,I,1);
   Dbg(vector_size(results[1]),%lu);
   for(size_t i = 0; i <vector_size(results[1]);i++)
     Dbg((size_t)vector_get(results[1],i),%lu);
@@ -94,7 +94,7 @@ TEST t_async_test1(){
     Dbg((char*)vector_get(results[10],i),%s);
 
   AsyncMap *m = AsyncMap_load(v[1]);
-  results[1] = AsyncMap_iterate(s,I);
+  results[1] = AsyncMap_iterate(s,I,1);
   Dbg(vector_size(results[1]),%lu);
   for(size_t i = 0; i <vector_size(results[1]);i++)
     Dbg((char*)vector_get(results[1],i),%s);
