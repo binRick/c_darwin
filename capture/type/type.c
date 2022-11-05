@@ -990,8 +990,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     }
     for (int x = 0; x < req->concurrency; x++)
       chan_close(req->comp->chans[x]);
-    if (req->grayscale_mode)
-      log_info("grayscale mode");
     chan_recv(compression_results_chan, &compressed_images_msg);
     compressed_images_msg_v = (struct Vector *)compressed_images_msg;
     debug("\treceived compression results with %lu items", vector_size(compressed_images_msg_v));

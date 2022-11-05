@@ -9,16 +9,16 @@
 #include "dls/dls.h"
 #include "submodules/c_deps/submodules/c_greatest/greatest/greatest.h"
 #include "window/utils/utils.h"
+#include "capture/type/type.h"
+#include "capture/utils/utils.h"
 extern int  DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 ///////////////////////////////////////////
 
 int stop_loop(void *L){
   struct stream_setup_t *l = (struct stream_setup_t *)L;
-
   pthread_mutex_lock(l->mutex);
   size_t delay_ms = l->delay_ms;
-
   pthread_mutex_unlock(l->mutex);
   usleep(1000 * delay_ms);
   pthread_mutex_lock(l->mutex);
@@ -28,11 +28,77 @@ int stop_loop(void *L){
   return(EXIT_SUCCESS);
 }
 
+#define SIZE 200
+void wu_dev_vips(){
+        int x, y, z;
+        VipsPel *mem;
+        VipsImage *image;
+        if( !(mem = VIPS_ARRAY( NULL, 4 * SIZE * SIZE, VipsPel )) )
+                vips_error_exit( NULL );
+        for( y = 0; y < SIZE; y++ )
+                for( x = 0; x < SIZE; x++ )
+                        for( z = 0; z < 4; z++ )
+                                mem[y * 4 * SIZE + x * 4 + z] = 2 * (x + y + z);
+
+        if( !(image = vips_image_new_from_memory( mem, 4 * SIZE * SIZE, SIZE, SIZE, 4, VIPS_FORMAT_UCHAR )) )
+                vips_error_exit( NULL );
+
+        if( vips_image_write_to_file( image, "/tmp/d.png", NULL ) )
+                vips_error_exit( NULL );
+
+        g_object_unref( image );
+        g_free( mem );
+}
+
 #define DO_LOG true
 #define LOG_INTERVAL 50
-#define MAX_HISTORY_SIZE 500
+#define MAX_HISTORY_SIZE 5
 #define HISTORY_MS 10000
+bool wu_analyze_buf(void *L){
+  struct stream_setup_t *u = (struct stream_update_t *)L;
+  bool ok = (u->width && u->height);
+  (u->img=vips_image_new_from_memory(u->png,u->png_len,u->width,u->height,4,VIPS_FORMAT_UCHAR)) && (vips_image_write_to_buffer(u->img,".png",&(u->png), &(u->png_len), NULL) && u->png_len && u->png);
+  log_info("analzying.......");
+  return(ok);
+}
+bool wu_save_png_file(void *L){
+  struct stream_setup_t *u = (struct stream_update_t *)L;
+  if( vips_pngsave( u->png, u->png_file, NULL ) ){
+        log_error("Failed to save png file");
+        return(false);
+  }
+  return(true);
+}
+static VipsImage **pre_images = NULL;
+int crop_animation( VipsObject *context, VipsImage *image, VipsImage **out,
+  int left, int top, int width, int height )
+{
+  int page_height = vips_image_get_page_height( image );
+  int n_pages = image->Ysize / page_height;
+  VipsImage **page = (VipsImage **) vips_object_local_array( context, n_pages );
+  VipsImage **copy = (VipsImage **) vips_object_local_array( context, 1 );
+  VipsImage **imgs = (VipsImage **) vips_object_local_array( context, 10 );
+  VipsImage **pres = (VipsImage **) vips_object_local_array( context, 10 );
+  VipsImage **posts = (VipsImage **) vips_object_local_array( context, 10 );
+  VipsImage **sides = (VipsImage **) vips_object_local_array( context, 10 );
+  if(!pre_images)
+    pre_images = (VipsImage **) vips_object_local_array( context, 10 );
+  int i;
+  for( i = 0; i < n_pages; i++ ){
+    if(vips_crop( image, &page[i],left, page_height * i + top, width, height, NULL ) )
+      return( -1 );
+    if( vips_arrayjoin( page, &copy[0], n_pages, "across", 1, NULL ) || vips_copy( copy[0], out, NULL ) )
+      return( -1 );
+  }
+  if(vips_crop( image, &imgs[i],left, page_height * i + top, width, height, NULL ) )
+      return( -1 );
+  if(vips_crop( pre_images[3], &pres[i],left, page_height * i + top, width, height, NULL ) )
+      return( -1 );
+  vips_image_set_int( *out, "page-height", height );
+  return( 0 );
+}
 int wu_receive_stream(void *L){
+  //wu_save_png_file(L);
   struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool                  ended;
   struct winsize *ws = get_terminal_size();
@@ -41,18 +107,49 @@ int wu_receive_stream(void *L){
   int width = ws->ws_col,height=ws->ws_row, w, h;
   size_t qty=0, copied=0;
   char *s;
-  ringbuf_t rb = ringbuf_new(1024*1024*128);
-
   pthread_mutex_lock(l->mutex);
   ended = l->ended;
   pthread_mutex_unlock(l->mutex);
   unsigned long started = timestamp(), last_ts = timestamp();
+  pthread_mutex_lock(l->mutex);
   struct Vector *history = vector_new_with_options(MAX_HISTORY_SIZE, false);
+  pthread_mutex_unlock(l->mutex);
   while (!ended && chan_recv(l->chan, &msg) == 0) {
+    pthread_mutex_lock(l->mutex);
     struct stream_update_t *u = (struct stream_update_t *)msg;
+    pthread_mutex_unlock(l->mutex);
     if (!u) continue;
     qty++;
+    pthread_mutex_lock(l->mutex);
     copied += u->buf_len;
+    pthread_mutex_unlock(l->mutex);
+    pthread_mutex_lock(l->mutex);
+//    if(u->width && u->height)
+//      wu_analyze_buf((void*)u);
+    pthread_mutex_unlock(l->mutex);
+#if 0
+  if(!wu_analyze_buf((void*)u)){
+#else
+  if(false){
+#endif
+ //   log_error("analyze err");
+  }else{
+    /*
+    log_debug("analze ok");
+    Dbg(u->height,%lu);
+    Dbg(u->width,%lu);
+    Dbg(u->pixels_qty,%lu);
+    Dbg(u->buf_len,%lu);
+    */
+ //   vips_image_new_from_memory(l->png,l->png_len,l->width,l->height,4,VIPS_FORMAT_UCHAR);
+//      u->img = vips_image_new_from_memory(u->buf,u->buf_len,u->width,u->height,4,VIPS_FORMAT_UCHAR);
+//      u->png_img = 
+        //vips_image_write_to_buffer(u->img,".png",&(u->png_buf),&(u->png_buf_len),NULL);
+//      Dbg(vips_image_get_width(u->img),%d);
+//  i->img=vips_image_new_from_memory(u->png,u->png_len,u->width,u->height,4,VIPS_FORMAT_UCHAR)) && (vips_image_write_to_buffer(u->img,".png",&(u->png), &(u->png_len), NULL) && u->png_len && u->png));
+    //Dbg(l->png_len,%lu);
+//    Dbg(l->png_file,%s);
+  }
     while(vector_size(history)>0 && (size_t)vector_get(history,vector_size(history)-1) < timestamp()-HISTORY_MS + 1000)
       vector_pop(history);
     while(vector_size(history)>=vector_capacity(history))
@@ -61,8 +158,15 @@ int wu_receive_stream(void *L){
     if(DO_LOG && (timestamp() - last_ts) > LOG_INTERVAL){
       last_ts = timestamp();
       struct StringFNStrings split;
-      if(false)
-        ringbuf_memcpy_into(rb,u->buf,u->buf_len);
+//      if( vips_pngsave( u->png, "/tmp/d.png", NULL ) )
+//        log_error("Failed to save png file");
+      /*
+        vips_error_exit( NULL );
+      g_object_unref( u->image );
+      g_free( u->mem );
+      */
+//      if(false)
+ //       ringbuf_memcpy_into(rb,u->buf,u->buf_len);
       asprintf(&s,
        AC_YELLOW  "#%lu> " AC_RESETALL
         "\n|%lu|ID:%lu"
@@ -71,8 +175,11 @@ int wu_receive_stream(void *L){
         "\n|Update:"
         "\n|    Size  : %dx%d"
         "\n|    Range : %lux%lu - %lux%lu"
-        "\n|            ("AC_RED"%s"AC_RESETALL" Pixels- "AC_RESETALL AC_BLUE"%.2f%%"AC_RESETALL")"
+        "\n|            ("AC_RED"%s"AC_RESETALL" Thousand Pixels- "AC_RESETALL AC_BLUE"%.2f%%"AC_RESETALL")"
         "\n|"AC_RESETALL "Copied   : " AC_BLUE "%s" AC_RESETALL 
+        "\n|"AC_RESETALL "Pre Rect   : " AC_BLUE "%s" AC_RESETALL 
+        "\n|"AC_RESETALL "Data Rect   : " AC_BLUE "%s" AC_RESETALL 
+        "\n|"AC_RESETALL "Post Rect   : " AC_BLUE "%s" AC_RESETALL 
         "\n|"AC_RESETALL "Runtime  : "AC_MAGENTA"%s"AC_RESETALL
         "\n|"AC_RESETALL "Rate     : "AC_GREEN"%s"AC_RESETALL"/s" 
         "\n|"AC_RESETALL "RingBuf  : "AC_GREEN"%s/%s Used (%f)"AC_RESETALL 
@@ -87,14 +194,18 @@ int wu_receive_stream(void *L){
         (int)u->rect.size.width, (int)u->rect.size.height,
         u->start_x, u->start_y,
         u->end_x, u->end_y, 
-        bytes_to_string(u->pixels_qty),
+        bytes_to_string((size_t)(u->pixels_qty)/1024),
         u->pixels_percent,
         bytes_to_string(copied),
         milliseconds_to_string(timestamp() -started),
         bytes_to_string(copied / (timestamp()-started)),
-        bytes_to_string(ringbuf_bytes_used(rb)),
-        bytes_to_string(ringbuf_capacity(rb)),
-        (float)ringbuf_bytes_used(rb)/(float)ringbuf_capacity(rb),
+        "xxxxxxx",
+        "yyyyyyyy",
+        "zzzzzzzz",
+               "","",(float)0,
+    //    bytes_to_string(ringbuf_bytes_used(u->rb)),
+  //      bytes_to_string(ringbuf_capacity(u->rb)),
+//        (float)ringbuf_bytes_used(u->rb)/(float)ringbuf_capacity(u->rb),
         vector_size(history),
         vector_capacity(history),
         milliseconds_to_string(timestamp() - (size_t)(vector_get(history,0))),
@@ -116,10 +227,18 @@ int wu_receive_stream(void *L){
       );
       if(s)free(s);
       stringfn_release_strings_struct(split);
+//      VipsImage *image;
+//      if(!(image = vips_image_new_from_memory(u->buf,u->buf_len,u->width,u->height,4,VIPS_FORMAT_UCHAR))){
+//        log_error("Failed to decode buffer");
+//      }
+//      Dbg(vips_image_get_width(image),%d);
+//      Dbg(vips_image_get_height(image),%d);
     }
+    pthread_mutex_lock(l->mutex);
     if (u->buf) free(u->buf);
     if (u) free(u);
-    pthread_mutex_lock(l->mutex);
+//    if(!u->rb)
+//      u->rb = ringbuf_new(1024*1024*128);
     ended = l->ended;
     pthread_mutex_unlock(l->mutex);
   }
@@ -175,7 +294,7 @@ void _command_test_stream_display(){
   pthread_create(&(l.threads[3]), NULL, wu_receive_stream, (void *)&l);
 //  pthread_create(&(l.threads[2]), NULL, wu_monitor_stream, (void *)&l);
   pthread_create(&(l.threads[0]), NULL, stop_loop, (void *)&l);
-  pthread_create(&(l.threads[1]), NULL, wu_stream_active_display, (void *)&l);
+  pthread_create(&(l.threads[1]), NULL, wu_stream_display, (void *)&l);
   CFRunLoopRun();
   pthread_join(&(l.threads[0]), NULL);
   pthread_join(&(l.threads[1]), NULL);
@@ -185,8 +304,8 @@ void _command_test_stream_display(){
 }
 
 void _command_test_stream_window(){
-  wu_stream_active_window(args->width, args->height);
-  CFRunLoopRun();
+  //wu_stream_window(args->width, args->height);
+  //CFRunLoopRun();
   exit(EXIT_SUCCESS);
 }
 

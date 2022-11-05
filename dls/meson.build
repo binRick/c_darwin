@@ -12,6 +12,7 @@ darwin_ls_srcs = [
   'command-layout.c',
   'command-prompt.c',
   'command-display.c',
+  'command-keylogger.c',
 ]
 if get_option('gpp_processor')
   message('GPP Processor Enabled')

@@ -179,6 +179,7 @@ struct Window *ByName_find(const VSelf, void *NAME) {
 implExtern(FindWindow, ByID);
 implExtern(FindWindow, ByName);
 
+
 int Rectangle_perim(const VSelf) {
   VSELF(const Rectangle);
   return((self->a + self->b) * 2);

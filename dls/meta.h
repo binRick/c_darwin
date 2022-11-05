@@ -70,6 +70,7 @@ char *Vertical_string(const VSelf);
 declImplExtern(Layout, Horizontal);
 declImplExtern(Layout, Vertical);
 
+
 #define DLS_IFACE                \
   vfunc(int, perim, const VSelf) \
   vfunc(void, scale, VSelf, int factor)

@@ -18,6 +18,9 @@
                                                       RC = sqldbal_stmt_prepare(DB, DB_CAPTURE_TABLE_FIELDS_INSERT_STATEMENT, -1, &STATEMENT); \
                                                       assert(RC == SQLDBAL_STATUS_OK);
 //////////////////////////////////////
+#define TABLE_NAME_KEYS "keys"
+#define TABLE_FIELDS_KEYS           "key TEXT"
+
 #define TABLE_NAME_WINDOWS             "windows"
 #define TABLE_FIELDS_WINDOWS           "id INTEGER, is_focused INTEGER, qoi BLOB"
 #define TABLE_NAME_SPACES              "spaces"

@@ -4,14 +4,22 @@
 #include "dls/commands.h"
 struct stream_update_t {
   CGRect        rect;
-  size_t        buf_len;
-  unsigned char *buf;
+  size_t        buf_len, png_len;
+  unsigned char *buf, *png;
   unsigned long ts;
   size_t        width, height, id, seed;
   size_t        start_x, start_y, end_x, end_y;
   size_t        bytes_per_pixel;
   size_t        pixels_qty;
   float         pixels_percent;
+  char *png_file;
+  VipsImage *imgs[10];
+  VipsImage *image;
+  VipsImage *img, *png_img;
+  size_t png_buf_len;
+  unsigned char *png_buf;
+  VipsPel *mem;
+  ringbuf_t rb;
 };
 struct stream_setup_t {
   CFRunLoopRef    *loop;
@@ -19,8 +27,15 @@ struct stream_setup_t {
   bool            ended, debug_mode, verbose_mode;
   pthread_t       threads[5];
   pthread_mutex_t *mutex;
+  void **buffers;
   struct Vector   *heartbeat, *rectangles;
   chan_t          *chan;
+  unsigned long ts;
+  char *png_file;
+  unsigned char *png; size_t png_len;
+  VipsImage *imgs[10];
+  VipsImage *image;
+  VipsImage *img;
 };
 #define ADD_TEST_COMMAND_PROTOTYPES()       \
   COMMAND_PROTOTYPE(test_test_hash)         \
@@ -176,16 +191,15 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 ////////////////
 #define ADD_TEST_SUBCOMMANDS()                      \
   CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST),        \
-  CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST_CAP),    \
-  CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST_STREAM), \
 ////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMANDS()                                                                                                            \
   COMMAND(ICON_TEST, TEST, "test", COLOR_LIST, "Test Commands", 0)                                                                     \
   COMMAND(ICON_CMD, TEST_CMD, "cmd", COLOR_CMD, "Test Command Parser", 0)                                                              \
   COMMAND(ICON_STREAM, TEST_STREAM, "stream", COLOR_STREAM, "Test Stream", 0)                                                          \
+  COMMAND(ICON_CAP, TEST_CAP, "cap", COLOR_CAP, "Test Capture", 0)                                                                     \
+  COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
   COMMAND(ICON_WINDOW, TEST_STREAM_WINDOW, "window", COLOR_WINDOW, "Test Window Stream", *_command_test_stream_window)                 \
   COMMAND(ICON_DISPLAY, TEST_STREAM_DISPLAY, "display", COLOR_DISPLAY, "Test Display Stream", *_command_test_stream_display)           \
-  COMMAND(ICON_CAP, TEST_CAP, "cap", COLOR_CAP, "Test Capture", 0)                                                                     \
   COMMAND(ICON_WINDOW, TEST_CAP_WINDOW, "window", COLOR_WINDOW, "Test Window Capture", *_command_test_cap_window)                      \
   COMMAND(ICON_DISPLAY, TEST_CAP_DISPLAY, "display", COLOR_DISPLAY, "Test Display Capture", *_command_test_cap_display)                \
   COMMAND(ICON_HASH, TEST_HASH, "hash", COLOR_HASH, "Test Hash", *_command_test_test_hash)                                             \
@@ -197,7 +211,6 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   COMMAND(ICON_DROID, TEST_DROID, "droid", COLOR_DROID, "Test Droid", *_command_test_droid)                                            \
   COMMAND(ICON_FILE, TEST_FILE_READER, "file-reader", COLOR_FILE, "Test File Reader", *_command_test_file_reader)                      \
   COMMAND(ICON_FROG, TEST_FROG, "frog", COLOR_FROG, "Test Frog", *_command_test_frog)                                                  \
-  COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
   COMMAND(ICON_LAYOUT, TEST_LAYOUTS, "all", COLOR_LAYOUT, "Test Layouts", *_command_test_layouts)                                      \
   COMMAND(ICON_LAYOUT, TEST_LAYOUT_VERTICAL, "vertical", COLOR_LAYOUT, "Test Vertical Layout", *_command_test_layout_vertical)         \
   COMMAND(ICON_WINDOW, TEST_FIND_WINDOW, "find", COLOR_WINDOW, "Test Find Window", *_command_test_find_window)                         \

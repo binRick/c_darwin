@@ -16,7 +16,7 @@ const char *dls_command_names[];
 #define ICON_APPLY                    "🧢"
 #define ICON_LAYOUT                   "💥"
 #define ICON_PROMPT                   "💥"
-#define ICON_NAME                     "🏁"
+#define ICON_NAME                     "🔤"
 #define ICON_INIT                     "🎭"
 #define ICON_LOAD                     "🎯"
 #define ICON_TABLE                    "🎢"
@@ -24,7 +24,7 @@ const char *dls_command_names[];
 #define ICON_WINDOW                   "🏠"
 #define ICON_MOVE                     "🍭"
 #define ICON_STICKY                   "🍔"
-#define ICON_UNSTICKY                 "🍕"
+#define ICON_UNSTICKY                 "🍯"
 #define ICON_RESIZE                   "🍖"
 #define ICON_INFO                     "🌿"
 #define ICON_ROW                      "🌽"
@@ -40,23 +40,22 @@ const char *dls_command_names[];
 #define ICON_PASTE                    "🤽"
 #define ICON_SAVE                     "🤽"
 #define ICON_CREATE                   "🤽"
-#define ICON_ALL                      "🐧"
+#define ICON_ALL                      "💌"
 #define ICON_NOT_ALL                  "🐧"
-#define ICON_MINIMIZE                 "🐧"
-#define ICON_UNMINIMIZE               "🐧"
+#define ICON_MINIMIZE                 "🇲"
+#define ICON_UNMINIMIZE               "🇺"
 #define ICON_WRITE                    "🐧"
-#define ICON_XXXXXXX                  "🐧"
-#define ICON_SECURITY                 "🐧"
-#define ICON_HTTP                     "🐧"
-#define ICON_MENU                     "🐧"
-#define ICON_DOCK                     "🐧"
-#define ICON_IMAGE                    "🐧"
-#define ICON_GRAY                     "🐧"
-#define ICON_XML                      "🐧"
+#define ICON_SECURITY                 "📊"
+#define ICON_HTTP                     "🇭"
+#define ICON_MENU                     "🥪"
+#define ICON_DOCK                     "🇩"
+#define ICON_IMAGE                    "🖼"
+#define ICON_GRAY                     "🍦"
+#define ICON_XML                      "💻"
 #define ICON_CLEAR                    "🐧"
-#define ICON_PATH                     "🐧"
+#define ICON_PATH                     "🚶"
 #define ICON_PNG                      "🐧"
-#define ICON_ICNS                     "🐧"
+#define ICON_ICNS                     "🚥"
 #define COLOR_CAPTURE_MODE            "\x1b[38;2;50;252;142m" AC_BOLD AC_CURLY_UNDERLINE
 #define COLOR_CAPTURE_WINDOW_MODE     "\x1b[38;2;151;252;50m" AC_ITALIC
 #define COLOR_CAPTURE_DISPLAY_MODE    "\x1b[38;2;97;50;50m" AC_ITALIC
@@ -99,8 +98,8 @@ const char *dls_command_names[];
 #define COLOR_SPACE                   "\x1b[38;2;97;252;50m"
 #define COLOR_INFO                    "\x1b[38;2;189;50;252m"
 #define COLOR_DEBUG                   "\x1b[38;2;252;50;127m"
-#define COLOR_WINDOW                  "\x1b[38;2;252;163;50m"
-#define COLOR_MOVE                    "\x1b[38;2;252;83;50m"
+#define COLOR_WINDOW                  "\x1b[38;2;117;151;143m"
+#define COLOR_MOVE                    "\x1b[38;2;186;195;204m"
 #define COLOR_START                   "\x1b[38;2;62;252;50m"
 #define COLOR_GET                     "\x1b[38;2;252;50;252m"
 #define COLOR_SET                     "\x1b[38;2;252;163;252m"
@@ -415,6 +414,7 @@ enum command_type_t {
   COMMAND_WINDOW_PROPS,
   COMMAND_IMAGE_CONVERSIONS,
   COMMAND_SECURITY,
+  COMMAND_KEYLOGGER,
   COMMAND_PASTE,
   COMMAND_COPY,
   COMMAND_WINDOW_PID_INFOS,

@@ -37,12 +37,14 @@ static struct sqldbal_db            *db                        = NULL;
 static const db_loader_fxn          db_loaders[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = space_db_load,
   [DB_LOADER_WINDOWS] = window_db_load,
+//  [DB_LOADER_KEYS] = keys_db_load,
 //  [DB_LOADER_CAPTURES] = capture_db_load,
 };
 
 static const char                   *db_loader_names[DB_LOADERS_QTY] = {
   [DB_LOADER_SPACES]  = "spaces",
   [DB_LOADER_WINDOWS] = "windows",
+//  [DB_LOADER_KEYS] = "keys",
 //  [DB_LOADER_CAPTURES] = "captures",
 };
 static const enum capture_type_id_t db_loader_capture_types[DB_LOADERS_QTY] = {
@@ -233,6 +235,7 @@ static bool db_create_tables(void){
   CREATE_TABLE(TABLE_NAME_PROCESSES, TABLE_FIELDS_PROCESSES);
   CREATE_TABLE(TABLE_NAME_COLORS, TABLE_FIELDS_COLORS);
   CREATE_TABLE(TABLE_NAME_CAPTURES, TABLE_FIELDS_CAPTURES);
+  CREATE_TABLE(TABLE_NAME_KEYS, TABLE_FIELDS_KEYS);
 /////////////////////////////////////////////////////////////
 #undef CREATE_TABLE
   return(true);

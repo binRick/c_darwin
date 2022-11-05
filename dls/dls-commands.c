@@ -422,6 +422,7 @@ ADD_COMMAND_PROTOTYPES()
 ////////////////////////////////////////////
 CREATE_CHECK_COMMAND_PROTOTYPE(write_directory, void)
 CREATE_CHECK_COMMAND_PROTOTYPE(id, size_t id)
+#undef COMMAND_PROTOTYPE
 static void _check_formats(char *formats);
 static void _check_sort_direction_desc(void);
 static void _check_capture_window_mode(void);
@@ -1270,7 +1271,7 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_SPACE, WINDOW_SPACE, "space", AC_RED, "Set Window Space", *_command_set_window_space)
   COMMAND(ICON_SPACE, SPACE, "space", AC_RED, "Spaces", 0)
   COMMAND(ICON_CREATE, SPACE_CREATE, "create", AC_RED, "Create Space", 0)
-  COMMAND(ICON_LIST, SPACE_LIST, "ls", AC_RED, "List Spaces", 0)
+  COMMAND(ICON_LIST, SPACE_LIST, "ls", AC_RED, "List Spaces", *_command_list_space)
   COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)
   COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)
   COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)
@@ -1279,9 +1280,7 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_PATH, APP_ICNS_PATH, "path", COLOR_PATH, "App Icons Path", *_command_app_icns_path)
   COMMAND(ICON_CLEAR, CLEAR_ICONS_CACHE, "clear", COLOR_CLEAR, "Clear App Icons Cache", *_command_clear_icons_cache)
   COMMAND(ICON_XML, PARSE_XML_FILE, "parse", COLOR_XML, "Parse XML File", *_command_parse_xml_file)
-  COMMAND(ICON_GRAY, GRAYSCALE_PNG_FILE, "grayscale", COLOR_GRAY, "Grayscale Mode", *_command_grayscale_png)
   COMMAND(ICON_IMAGE, IMAGE_CONVERSIONS, "image-conversions", COLOR_IMAGE, "Image Conversions", *_command_image_conversions)
-#undef COMMAND_PROTOTYPE
 #undef COMMAND
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -1754,15 +1753,6 @@ static void _command_icon_info(){
   exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-static void _command_grayscale_png(){
-  log_info("Converting %s to grayscale %s", args->input_file, args->output_file);
-  bool       ok              = false;
-  FILE       *input_png_file = fopen(args->input_file, "rb");
-  CGImageRef png_gs          = png_file_to_grayscale_cgimage_ref_resized(input_png_file, args->resize_factor);
-  ok = write_cgimage_ref_to_tif_file_path(png_gs, args->output_file);
-  exit((ok == true) ? EXIT_SUCCESS : EXIT_FAILURE);
-}
-
 static void _command_write_app_icon_from_png(){
   log_info("setting app icon from app %s from png file %s", args->application_path, args->input_png_file);
 
@@ -1925,19 +1915,6 @@ static char *get_type_format_output_file(size_t id, char *dir, enum capture_type
   return(output_file);
 }
 
-static bool set_results_grayscale(struct Vector *results_v){
-  struct capture_image_result_t *r = NULL;
-
-  for (size_t i = 0; i < vector_size(results_v); i++) {
-    r = (struct capture_image_result_t *)vector_get(results_v, i);
-    log_info("Setting %s %s result to grayscale",
-             bytes_to_string(r->len),
-             image_type_name(r->format)
-             );
-  }
-//  exit(0);
-  return(true);
-}
 
 static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
   struct capture_image_result_t *r = NULL;
@@ -2117,8 +2094,6 @@ static void _command_capture(){
       args->db_save_mode,
       args->grayscale_mode
       );
-    if (args->grayscale_mode)
-      set_results_grayscale(results_v);
     set_result_filenames(args->write_directory, args->capture_type, (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i), results_v);
     if (args->output_file && vector_size(results_v) == 1) {
       struct capture_image_result_t *res = (struct capture_image_result_t *)vector_get(results_v, 0);

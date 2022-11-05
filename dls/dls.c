@@ -8,6 +8,12 @@ static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 static bool                   DARWIN_LS_DEBUG_MODE = false;
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 static void __at_exit(void);
+static void __at_exit(void){
+  fprintf(stdout,"%s",AC_SHOW_CURSOR);
+  fprintf(stdout,"%s",AC_RESTORE_PALETTE);
+  fflush(stdout);
+  return;
+}
 #define CREATE_SUBCOMMAND(NAME, SUBCOMMANDS)                                     \
   {                                                                              \
     .name        = cmds[COMMAND_ ## NAME].name,                                  \
@@ -231,6 +237,7 @@ int                 dls_cmd_argc;
 
 ////////////////////////////////////////////
 int main(int argc, char *argv[]) {
+  atexit(__at_exit);
   return(handle_main(argc, argv));
 }
 
@@ -280,7 +287,7 @@ int handle_main(int argc, char *argv[]) {
         .function    = optparse_print_help_subcmd,
       },
       ADD_SUBCOMMANDS()
-      CREATE_SUBCOMMAND(PROCESSES, ),
+#undef ADD_SUBCOMMANDS
       CREATE_SUBCOMMAND(DOCK, ),
       CREATE_SUBCOMMAND(MENU_BAR, ),
       CREATE_SUBCOMMAND(APPS, ),
@@ -288,7 +295,6 @@ int handle_main(int argc, char *argv[]) {
       CREATE_SUBCOMMAND(HOTKEYS, SUBCOMMANDS_HOTKEYS),
       CREATE_SUBCOMMAND(SPACE, SUBCOMMANDS_SPACE),
       CREATE_SUBCOMMAND(ICON, SUBCOMMANDS_ICON),
-#undef ADD_SUBCOMMANDS
 #undef CREATE_SUBCOMMAND
       {
         END_OF_SUBCOMMANDS
@@ -383,30 +389,27 @@ static void __attribute__((destructor)) __destructor__dls(void){
 static void __attribute__((constructor)) __constructor__dls(void){
   log_debug("%lu options", sizeof(__optparse_opt) / sizeof(__optparse_opt[0]));
 //^[\^[]4;1;#cc6666^[\^[]4;2;#66cc99^[\^[]4;3;#cc9966^[\^[]4;4;#6699cc^[\^[]4;5;#cc6699^[\^[]4;6;#66cccc^[\^[]4;7;#cccccc^[\^[]4;8;#999999^[\^[]4;9;#cc6666^[\^[]4;10;#66cc99^[\^[]4;11;#cc9966^[\^[]4;12;#6699cc^[\^[]4;13;#cc6699^[\^[]4;14;#66cccc^[\^[]4;15;#cccccc^[\^[[21D"
-  char *__ansi = "\033[c";
-/*
- * "\033]11;#000000"\
- * "\033]10;#ffffff"\
- * "\033]12;#ff9999"\
- * "\033]4;13;#cc6699"\
- * "\033]4;14;#66cccc"\
- * "\033]4;15;#cccccc"\
- * "\033[?1049l"\
- * "\033[21D"\
- * "";*/
+  char *__ansi = ""\
+  "\033]11;#000000"\
+  "\033]10;#ffffff"\
+  "\033]12;#ff9999"\
+  "\033]4;13;#cc6699"\
+  "\033]4;14;#66cccc"\
+  "\033]4;15;#cccccc"\
+  "\033[?1049l"\
+  "\033[21D"\
+  "";
   if (false)
     printf(
       "%s"
       "%s"
-      "%s"
       "%s",
       AC_SAVE_PALETTE,
-      AC_ALT_SCREEN_ON,
       AC_HIDE_CURSOR,
       __ansi
-
       );
   initialized = true;
+//  fprintf(stdout, AC_SAVE_PALETTE);
   fprintf(stdout, AC_HIDE_CURSOR);
   fflush(stdout);
 

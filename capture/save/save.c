@@ -73,7 +73,7 @@ static int receive_save_request_handler(void *R){
     }
     dur = timestamp() - save_started;
 
-    log_debug("Thread #%lu>"
+    debug("Thread #%lu>"
               "\n\tReceived %s %s Save Capture Request #%lu to %s"
               "%s",
               r->index + 1,
@@ -97,6 +97,7 @@ static int receive_save_request_handler(void *R){
     );
   return(EXIT_SUCCESS);
 } /* receive_save_request_handler */
+
 struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t type, enum image_type_id_t format, struct Vector *results_v, size_t concurrency, char *save_directory, bool progress_bar_mode){
   struct save_capture_result_t *res = calloc(1, sizeof(struct save_capture_result_t));
 
@@ -148,10 +149,8 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
     r->format = format;
     chan_send(chans[i % concurrency], r);
   }
-  sleep(1);
   for (size_t i = 0; i < concurrency; i++)
     chan_close(chans[i % concurrency]);
-  size_t done_qty = 0;
 
   for (size_t i = 0; i < concurrency; i++)
     while (chan_recv(done_chans[i], &msg) == 0) {
@@ -161,8 +160,8 @@ struct save_capture_result_t *save_capture_type_results(enum capture_type_id_t t
       }
       struct save_result_t *r = (struct save_result_t *)msg;
       res->bytes += r->bytes;
-      log_debug("Received save result #%lu/%lu %s", done_qty + 1, vector_size(results_v), bytes_to_string(r->bytes));
-      done_qty++;
+      debug("Received save result #%lu/%lu %s", res->qty + 1, vector_size(results_v), bytes_to_string(r->bytes));
+      res->qty++;
     }
   res->dur = timestamp() - res->started;
   if (progress_bar_mode) {
