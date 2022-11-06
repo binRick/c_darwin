@@ -19,7 +19,7 @@ sdl_utils_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
-  qoi_dep,qoi_ci_dep,
+  qoi_dep,qoi_ci_dep,clamp_dep,
   sdl2_dep,tempdir_dep,
   sdl_qoi_dep,
 ]
