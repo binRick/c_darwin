@@ -396,6 +396,7 @@ bool write_app_icon_to_png_buffer(char *app_path, unsigned char *buf, size_t *bu
   free(iconElement);
   return(buf_len>0 && buf);
 }
+
 size_t get_icon_index_size(char *icns_file_path,size_t index){
   FILE           *fp         = fopen(icns_file_path, "rb");
   icns_family_t  *iconFamily = get_icns_file_info(fp);
@@ -417,12 +418,12 @@ size_t get_icon_index_size(char *icns_file_path,size_t index){
   }
   return(0);
 }
+
 bool write_app_icon_to_png(char *app_path, char *png_file_path, size_t icon_size){
   CFDataRef     data_ref   = get_icon_from_path(app_path);
   struct icns_t *icns_data = cfdataref_to_icns_bytes(data_ref);
   void          *buf       = calloc(1, icns_data->size);
   FILE          *fp        = fmemopen(buf, icns_data->size, "ab");
-
   save_cfdataref_to_icns_file(data_ref, fp);
   fclose(fp);
   fp = fmemopen(buf, icns_data->size, "r");
@@ -556,59 +557,6 @@ static char **cmd_to_cmd_array(char *cmd){
   cmd_a[cmd_s.count] = NULL;
   return(cmd_a);
 }
-/*
- * bool run_cmd_in_parent(char **cmd_a){
- * bool     ok       = false;
- * reproc_t *process = NULL;
- * int      r        = REPROC_ENOMEM;
- *
- * process = reproc_new();
- * if (process == NULL) {
- *  goto finish;
- * }
- *
- * r = reproc_start(process, cmd_a,
- *                 (reproc_options){
- *  .redirect.parent = true,
- *  .deadline        = 15000,
- * });
- * if (r < 0) {
- *  goto finish;
- * }
- *
- * r = reproc_wait(process, REPROC_INFINITE);
- * if (r < 0) {
- *  goto finish;
- * }
- * ok = true;
- *
- * finish:
- * reproc_destroy(process);
- *
- * if (r < 0) {
- *  fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
- * }
- *
- * if (ICON_UTILS_DEBUG_MODE) {
- *  log_info("cleared icons cache with result %d", r);
- * }
- *
- * return(ok);
- * }
- *
- * bool clear_app_icon_cache(char *app_path){
- * bool          ok      = false;
- * struct Vector *cmds_v = get_clear_app_icon_cmds(app_path);
- *
- * for (size_t i = 0; i < vector_size(cmds_v); i++) {
- *  char **cmd = (char **)vector_get(cmds_v, i);
- *  if (run_cmd_in_parent(cmd) != true) {
- *    return(false);
- *  }
- * }
- * ok = true;
- * return(ok);
- * } */
 
 bool clear_icons_cache(){
   bool          ok      = false;

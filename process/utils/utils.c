@@ -68,6 +68,7 @@ static bool       PROCESS_UTILS_VERBOSE_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process_utils(void);
 static const char *EXCLUDED_WINDOW_INFO_NAMES[] = {
   "Window Server",
+  "ReportPanic",
   "com.apple.appkit.xpc.open",
   "OSDUIHelper",
   "com.apple.*",
@@ -296,8 +297,7 @@ struct process_info_t *get_process_info(int pid){
   I->open_ports_v       = vector_new();
   I->open_connections_v = vector_new();
   I->open_files_v       = vector_new();
-  I->env_v        = vector_new();
- // I->env_v       = get_process_env(I->pid);
+  I->env_v       = get_process_env(I->pid);
   I->child_pids_v = get_child_pids(I->pid);
   I->ppid         = get_process_ppid(I->pid);
   I->ppids_v      = get_process_ppids(I->pid);
@@ -1133,74 +1133,80 @@ struct Vector *get_process_env(int process){
   int                    env_res = -1, nargs;
   char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *env_start, *s;
   size_t                 argmax;
+  int mib[3];
 
   argmax   = get_argmax();
   procargs = (char *)malloc(argmax);
-  arg_end  = &procargs[argmax];
-  memcpy(&nargs, procargs, sizeof(nargs));
-  arg_ptr = procargs + sizeof(nargs);
-  arg_ptr = memchr(arg_ptr, '\0', arg_end - arg_ptr);
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROCARGS2;
+  mib[2] = (pid_t)process;
+  if (sysctl(mib, 3, procargs, &argmax, NULL, 0) == 0) {
+    arg_end  = &procargs[argmax];
+    memcpy(&nargs, procargs, sizeof(nargs));
+    arg_ptr = procargs + sizeof(nargs);
+    arg_ptr = memchr(arg_ptr, '\0', arg_end - arg_ptr);
 
-  for ( ; arg_ptr < arg_end; arg_ptr++)
-    if (*arg_ptr != '\0')
-      break;
-  while (arg_ptr < arg_end && nargs > 0)
-    if (*arg_ptr++ == '\0')
-      nargs--;
-  env_start = arg_ptr;
-  procenv   = calloc(1, arg_end - arg_ptr);
+    for ( ; arg_ptr < arg_end; arg_ptr++)
+      if (*arg_ptr != '\0')
+        break;
+    while (arg_ptr < arg_end && nargs > 0)
+      if (*arg_ptr++ == '\0')
+        nargs--;
+    env_start = arg_ptr;
+    procenv   = calloc(1, arg_end - arg_ptr);
 
-  while (*arg_ptr != '\0' && arg_ptr < arg_end) {
-    s = memchr(arg_ptr + 1, '\0', arg_end - arg_ptr);
-    if (s == NULL)
-      break;
-    memcpy(procenv + (arg_ptr - env_start), arg_ptr, s - arg_ptr);
-    arg_ptr = s + 1;
-    if (strlen(arg_ptr) < 3)
-      continue;
-    EnvSplit = stringfn_split(arg_ptr, '=');
-    if (EnvSplit.count > 1)
-      vector_push(vector, arg_ptr);
-  }
+    while (*arg_ptr != '\0' && arg_ptr < arg_end) {
+      s = memchr(arg_ptr + 1, '\0', arg_end - arg_ptr);
+      if (s == NULL)
+        break;
+      memcpy(procenv + (arg_ptr - env_start), arg_ptr, s - arg_ptr);
+      arg_ptr = s + 1;
+      if (strlen(arg_ptr) < 3)
+        continue;
+      EnvSplit = stringfn_split(arg_ptr, '=');
+      if (EnvSplit.count > 1)
+        vector_push(vector, arg_ptr);
+    }
 
-  for (size_t i = 0; i < vector_size(vector); i++) {
-    EnvSplit = stringfn_split(vector_get(vector, i), '=');
-    process_env_t *pe = malloc(sizeof(process_env_t));
-    pe->key = strdup(EnvSplit.strings[0]);
-    pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
-    if (false)
+    for (size_t i = 0; i < vector_size(vector); i++) {
+      EnvSplit = stringfn_split(vector_get(vector, i), '=');
+      process_env_t *pe = malloc(sizeof(process_env_t));
+      pe->key = strdup(EnvSplit.strings[0]);
+      pe->val = strdup(stringfn_join(EnvSplit.strings, "=", 1, EnvSplit.count - 1));
+      if (false)
+        fprintf(stderr,
+                AC_RESETALL AC_BLUE "%s=>%s\n" AC_RESETALL, pe->key, pe->val);
+      vector_push(process_env_v, pe);
+    }
+    if (true == DEBUG_PID_ENV)
       fprintf(stderr,
-              AC_RESETALL AC_BLUE "%s=>%s\n" AC_RESETALL, pe->key, pe->val);
-    vector_push(process_env_v, pe);
+              "process:%d\n"
+              "argmax:%lu\n"
+              "env_res:%d\n"
+              "nargs:%d\n"
+              "progargs:%s\n"
+              "arg_ptr:%s\n"
+              "arg_end:%s\n"
+              "vectors:%lu\n"
+              "process env vector len:%lu\n",
+              process,
+              argmax,
+              env_res,
+              nargs,
+              procargs,
+              arg_ptr,
+              arg_end,
+              vector_size(vector),
+              vector_size(process_env_v)
+              );
+    if (procargs != NULL)
+      free(procargs);
+    if (procenv != NULL)
+      free(procenv);
+    if (vector_size(vector) > 0)
+      stringfn_release_strings_struct(EnvSplit);
+    vector_release(vector);
   }
-  if (true == DEBUG_PID_ENV)
-    fprintf(stderr,
-            "process:%d\n"
-            "argmax:%lu\n"
-            "env_res:%d\n"
-            "nargs:%d\n"
-            "progargs:%s\n"
-            "arg_ptr:%s\n"
-            "arg_end:%s\n"
-            "vectors:%lu\n"
-            "process env vector len:%lu\n",
-            process,
-            argmax,
-            env_res,
-            nargs,
-            procargs,
-            arg_ptr,
-            arg_end,
-            vector_size(vector),
-            vector_size(process_env_v)
-            );
-  if (procargs != NULL)
-    free(procargs);
-  if (procenv != NULL)
-    free(procenv);
-  if (vector_size(vector) > 0)
-    stringfn_release_strings_struct(EnvSplit);
-  vector_release(vector);
   return(process_env_v);
 } /* get_process_env */
 

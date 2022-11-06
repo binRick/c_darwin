@@ -13,6 +13,7 @@ darwin_ls_srcs = [
   'command-prompt.c',
   'command-display.c',
   'command-keylogger.c',
+  'command-terminal.c',
 ]
 if get_option('gpp_processor')
   message('GPP Processor Enabled')
@@ -134,10 +135,13 @@ CaptureCommands = [
 CaptureFormats = ['png','gif','webp','jpeg','qoi','tiff','all']
 CaptureWidths = [
   {'name': '200 Pixels Wide','arg':'--width','value':'200','slug':'200x'},
+  {'name': '1000 Pixels Wide','arg':'--width','value':'1000','slug':'1000x'},
   ]
 CaptureModes = [
   { 'name': 'Uncompressed', 'flags': [], },
   { 'name': 'Compressed', 'flags': ['-z'], },
+  { 'name': 'Grayscale', 'flags': ['-g'], },
+  { 'name': 'CompressedGrayscale', 'flags': ['-z','-g'], },
   ]
 foreach w : CaptureWidths
 foreach c : CaptureCommands

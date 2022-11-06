@@ -73,6 +73,7 @@ struct stream_setup_t {
   COMMAND_TEST_ADD_TEST_PROTOTYPE(test, vector)    \
 ///////////////////////////////////////////
 #include "dls/dls.h"
+int _command_test_terminal(void);
 COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #undef COMMAND_TEST_ADD_TEST_PROTOTYPES
 #define COLOR_CMD            "\x1b[38;2;50;252;50m"
@@ -146,6 +147,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   common_options_b[COMMON_OPTION_ID](args),               \
   common_options_b[COMMON_OPTION_INDEX](args),            \
 ///////////////
+#define COMMON_OPTIONS_TEST_TERMINAL
 #define COMMON_OPTIONS_TEST_STREAM_WINDOW            \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
 ///////////////
@@ -181,6 +183,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_DROID, ),                         \
   CREATE_SUBCOMMAND(TEST_FILE_READER, ),                   \
   CREATE_SUBCOMMAND(TEST_FROG, ),                          \
+  CREATE_SUBCOMMAND(TEST_TERMINAL, ),                          \
   CREATE_SUBCOMMAND(TEST_SHAPE, ),                         \
   CREATE_SUBCOMMAND(TEST_LAYOUT, SUBCOMMANDS_TEST_LAYOUT), \
   CREATE_SUBCOMMAND(TEST_CAP, SUBCOMMANDS_TEST_CAP),       \
@@ -213,6 +216,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   COMMAND(ICON_FROG, TEST_FROG, "frog", COLOR_FROG, "Test Frog", *_command_test_frog)                                                  \
   COMMAND(ICON_LAYOUT, TEST_LAYOUTS, "all", COLOR_LAYOUT, "Test Layouts", *_command_test_layouts)                                      \
   COMMAND(ICON_LAYOUT, TEST_LAYOUT_VERTICAL, "vertical", COLOR_LAYOUT, "Test Vertical Layout", *_command_test_layout_vertical)         \
+  COMMAND(ICON_TERMINAL, TEST_TERMINAL, "terminal", COLOR_TERMINAL, "Test Terminal", *_command_test_terminal)         \
   COMMAND(ICON_WINDOW, TEST_FIND_WINDOW, "find", COLOR_WINDOW, "Test Find Window", *_command_test_find_window)                         \
   COMMAND(ICON_LAYOUT, TEST_LAYOUT_HORIZONTAL, "horizontal", COLOR_LAYOUT, "Test Horizontal Layout", *_command_test_layout_horizontal) \
 //////////////////////////////////////////////////

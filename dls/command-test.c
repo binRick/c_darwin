@@ -14,7 +14,14 @@
 extern int  DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 ///////////////////////////////////////////
-
+int _command_test_terminal(){
+  log_info("tt");
+  int x=0,y=0;
+  tc_get_cursor(&x,&y);
+  Dbg(x,%d);
+  Dbg(y,%d);
+  exit(EXIT_SUCCESS);
+}
 int stop_loop(void *L){
   struct stream_setup_t *l = (struct stream_setup_t *)L;
   pthread_mutex_lock(l->mutex);
