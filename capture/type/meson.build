@@ -10,7 +10,7 @@ capture_type_include_dirs = [
 ]
 
 capture_type_deps = [
-  core_dep,
+  core_dep,qoir_dep,
   kitty_msg_dep,qoi_ci_dep,
   imagequant_dep,capture_utils_dep,image_utils_dep,
   capture_utils_dep,stb_dep,msf_gif_dep,gifdec_dep,

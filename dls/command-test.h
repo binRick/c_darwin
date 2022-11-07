@@ -37,6 +37,9 @@ struct stream_setup_t {
   VipsImage *image;
   VipsImage *img;
 };
+////////////////////////////////////////////////////////////
+#define ADD_DB_COMMAND_PROTOTYPES()
+////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMAND_PROTOTYPES()       \
   COMMAND_PROTOTYPE(test_test_hash)         \
   COMMAND_PROTOTYPE(test_test_clipboard)    \
@@ -56,6 +59,8 @@ struct stream_setup_t {
   COMMAND_PROTOTYPE(test_stream_window)     \
   COMMAND_PROTOTYPE(test_stream_display)    \
   COMMAND_PROTOTYPE(test_cmd)               \
+//////////////////////////////////////////////////
+#define ADD_DB_COMMAND_ENUMS()
 //////////////////////////////////////////////////
 #define ADD_TEST_COMMAND_ENUMS() \
   COMMAND_TEST_WINDOWS,          \
@@ -77,6 +82,7 @@ int _command_test_terminal(void);
 COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #undef COMMAND_TEST_ADD_TEST_PROTOTYPES
 #define COLOR_CMD            "\x1b[38;2;50;252;50m"
+#define COLOR_TERMPAINT            "\x1b[38;2;50;252;50m"
 #define COLOR_TEST           "\x1b[38;2;243;233;217m"
 #define COLOR_CAP            "\x1b[38;2;151;252;50m"
 #define COLOR_HASH           "\x1b[38;2;151;50;252m"
@@ -100,9 +106,12 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define ICON_RUN             "👽"
 #define ICON_TEST            "🔔"
 #define ICON_CMD             "💻"
+#define ICON_TERMPAINT             "💻"
 #define ICON_STREAM          "🌊"
 #define ICON_CAP             "🎩"
 ///////////////
+#define COMMON_OPTIONS_TERMPAINT
+#define COMMON_OPTIONS_DB
 #define COMMON_OPTIONS_TEST                           \
   common_options_b[COMMON_OPTION_CLEAR_SCREEN](args), \
 ///////////////
@@ -151,6 +160,10 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define COMMON_OPTIONS_TEST_STREAM_WINDOW            \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
 ///////////////
+#define COMMON_OPTIONS_TEST_TERMPAINT           \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+///////////////
+///////////////
 #define COMMON_OPTIONS_TEST_STREAM_DISPLAY           \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
 ///////////////
@@ -189,11 +202,18 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_CAP, SUBCOMMANDS_TEST_CAP),       \
   CREATE_SUBCOMMAND(TEST_STREAM, SUBCOMMANDS_TEST_STREAM), \
 ////////////////
+#define ADD_DB_TYPES()
+////////////////////////////////////////////////////////////
 #define ADD_TEST_TYPES() \
   COMMAND_TEST_CMD,      \
 ////////////////
 #define ADD_TEST_SUBCOMMANDS()                      \
   CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST),        \
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+#define ADD_DB_SUBCOMMANDS()                      \
+////////////////////////////////////////////////////////////
+#define ADD_DB_COMMANDS()\
 ////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMANDS()                                                                                                            \
   COMMAND(ICON_TEST, TEST, "test", COLOR_LIST, "Test Commands", 0)                                                                     \

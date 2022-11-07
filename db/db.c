@@ -235,6 +235,7 @@ static bool db_create_tables(void){
   CREATE_TABLE(TABLE_NAME_PROCESSES, TABLE_FIELDS_PROCESSES);
   CREATE_TABLE(TABLE_NAME_COLORS, TABLE_FIELDS_COLORS);
   CREATE_TABLE(TABLE_NAME_CAPTURES, TABLE_FIELDS_CAPTURES);
+  CREATE_TABLE(TABLE_NAME_APP_ICONS, TABLE_FIELDS_APP_ICONS);
   CREATE_TABLE(TABLE_NAME_KEYS, TABLE_FIELDS_KEYS);
 /////////////////////////////////////////////////////////////
 #undef CREATE_TABLE
@@ -400,6 +401,59 @@ static void __attribute__((constructor)) __constructor__db(void){
   assert((db = db_init()));
   assert(db_create_tables() == true);
 }
+
+bool Table_create(const VSelf) {
+  VSELF(const DB);
+  return(NULL);
+}
+bool Table_insert(const VSelf) {
+  VSELF(const DB);
+  return(NULL);
+}
+bool Table_delete_id(const VSelf, size_t id) {
+  VSELF(const DB);
+  return(false);
+}
+bool Table_delete_hash(const VSelf, hash_t *h) {
+  VSELF(const DB);
+  return(false);
+}
+char *Table_schema(const VSelf) {
+  VSELF(const DB);
+  return(NULL);
+}
+char *Table_hash(const VSelf) {
+  VSELF(const DB);
+  return(NULL);
+}
+bool Table_exists_id(const VSelf, size_t id) {
+  VSELF(const DB);
+  return(false);
+}
+bool Table_exists_hash(const VSelf, hash_t *h) {
+  VSELF(const DB);
+  return(false);
+}
+hash_t *Table_select_id(const VSelf, size_t id) {
+  VSELF(const DB);
+  return(NULL);
+}
+hash_t *Table_select_hash(const VSelf, hash_t *h) {
+  VSELF(const DB);
+  return(NULL);
+}
+
+typedef struct {
+  const char *name;
+} Table;
+Table *Table_new(const char *name) {
+    Table *self = malloc(sizeof *self);
+    assert(self);
+    self->name = name;
+    return self;
+}
+implExtern(DB, Table);
+
 ////////////////////////////////////////////
 #undef LOCAL_DEBUG_MODE
 #endif

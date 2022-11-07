@@ -42,11 +42,11 @@ struct image_type_t {
   bool               (^validate_header)(unsigned char *header_buf);
   bool               (^validate_buffer)(unsigned char *image_buf, size_t len);
   bool               (^validate_file)(char *image_path);
-  unsigned char      *(^decode_buffer_to_rgb_buffer)(char *image_buf, size_t image_buf_len, size_t *len);
+  unsigned char      *(^decode_buffer_to_rgb_buffer)(unsigned char *image_buf, size_t image_buf_len, size_t *len);
   unsigned char      *(^decode_file_to_rgb_buffer)(char *image_path, size_t *len);
   unsigned char      *(^encode_rgb_buffer_to_buffer)(unsigned char *image_buf, size_t image_buf_len, size_t *len);
-  bool               *(^encode_rgb_buffer_to_file)(unsigned char *image_buf, size_t image_buf_len, char *image_path);
-  bool               *(^encode_buffer_to_image_type_file)(unsigned char *image_buf, size_t image_buf_len, enum image_type_id_t image_type_id, char *image_path);
+  bool               (^encode_rgb_buffer_to_file)(unsigned char *image_buf, size_t image_buf_len, char *image_path);
+  bool               (^encode_buffer_to_image_type_file)(unsigned char *image_buf, size_t image_buf_len, enum image_type_id_t image_type_id, char *image_path);
   unsigned char      *(^encode_buffer_to_image_type_buffer)(unsigned char *image_buf, size_t image_buf_len, enum image_type_id_t image_type_id, size_t *len);
   unsigned char      *(^read_file_header)(char *image_buf);
   unsigned char      *(^read_buffer_header)(unsigned char *image_buf);
@@ -87,7 +87,9 @@ bool save_cgref_to_tiff_file(CGImageRef image, char *image_file);
 unsigned char *save_cgref_to_rgb_memory(CGImageRef image_ref, size_t *len);
 unsigned char *save_cgref_to_rgb_memory1(CGImageRef image_ref, size_t *len);
 bool save_cgref_to_qoi_file(CGImageRef image_ref, char *image_file);
+bool save_cgref_to_qoir_file(CGImageRef image_ref, char *image_file);
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
+unsigned char *save_cgref_to_qoir_memory(CGImageRef image_ref, size_t *qoir_len);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality);
 CGImageRef png_fp_to_cgimage(FILE *fp);

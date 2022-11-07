@@ -49,7 +49,7 @@ darwin_ls_include_dirs = [
 darwin_ls_deps = [
   curses_dep,
   c_pick_dep,
-  frameworks_dep,
+  frameworks_dep,tp_dep,
   metalang99_dep,
   interface99_dep,
   core_dep,
@@ -101,7 +101,7 @@ darwin_ls_link_args = [
 ]
 
 darwin_ls_dir = join_paths(meson.current_source_dir(), '..')
-timeout = 15
+timeout = 30
 test_args = [
   #{ 'name': 'List Up to 10 Spaces', 'command': 'spaces', 'args': ['--limit','10'], 'timeout': 20, },
   #{ 'name': 'List Up to 10 Displays', 'command': 'displays', 'args': ['--limit','10'], 'timeout': timeout,  },

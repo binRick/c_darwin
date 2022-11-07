@@ -373,6 +373,7 @@ COMMAND_PROTOTYPE(capture_space)
 COMMAND_PROTOTYPE(capture_display)
 COMMAND_PROTOTYPE(prompt_bestline)
 COMMAND_PROTOTYPE(db_init)
+COMMAND_PROTOTYPE(db_insert_app_icon)
 COMMAND_PROTOTYPE(db_test)
 COMMAND_PROTOTYPE(db_tables)
 COMMAND_PROTOTYPE(db_load)
@@ -1258,14 +1259,17 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_DOCK, DOCK, "dock", COLOR_DOCK, "Dock Info", *_command_dock)
   COMMAND(ICON_PROCESS, PROCESS, "process", COLOR_PROCESS, "Processes", 0)
   COMMAND(ICON_LIST, PROCESS_LIST, "ls", COLOR_LIST, "List Processes", *_command_list_process)
+  /*************************************/
   COMMAND(ICON_DB, DB, "db", AC_RED, "Database Manager", 0)
   COMMAND(ICON_INIT, DB_INIT, "init", COLOR_INIT, "Initialize Database", *_command_db_init)
   COMMAND(ICON_TEST, DB_TEST, "test", COLOR_TEST, "Database Test", *_command_db_test)
   COMMAND(ICON_LOAD, DB_LOAD, "load", COLOR_LOAD, "Database Load", *_command_db_load)
   COMMAND(ICON_TABLE, DB_TABLES, "tables", COLOR_TABLE, "Database Tables", *_command_db_tables)
   COMMAND(ICON_INFO, DB_INFO, "info", COLOR_INFO, "Database Info", *_command_db_info)
+  COMMAND(ICON_ROW, DB_INSERT_ROW_APP_ICON, "icon", COLOR_INFO, "Insert App Icon Row", *_command_db_insert_app_icon)
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
   COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
+  /*************************************/
   COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)
   COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app)
   COMMAND(ICON_SERVER, HOTKEYS, "hotkey", COLOR_SERVER, "Hotkey", 0)
@@ -2602,6 +2606,15 @@ static void _command_test_pick(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_db_insert_app_icon(){
+  COMMAND_DB_COMMON();
+  log_info("%s",TABLE_FIELDS_INSERT_STATEMENT_APP_ICONS);
+  hash_t *H = hash_new();
+  hash_set(H,"created_ts",(void*)(size_t)timestamp());
+  hash_set(H,"binary_path",(void*)"xxxxxxxxx");
+  BIND_FIELDS_INSERT_STATEMENT_APP_ICONS(H)
+  exit(EXIT_SUCCESS);
+}
 static void _command_db_init(){
   COMMAND_DB_COMMON();
   exit(EXIT_SUCCESS);

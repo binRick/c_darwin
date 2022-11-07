@@ -39,28 +39,6 @@ declImplExtern(Iterator, MapIterator);
 bool SeriesIterator_iterate(struct Vector *, iterator_cb *);
 declImplExtern(Iterator, SeriesIterator);
 
-/*
- #define Iterate_IFACE               \
- * vfunc(const char *, name, void) \
- * vfuncDefault(void, iterate, Iterate i)
- * interface(Iterate);
- * typedef struct {
- * struct Vector *items;
- * size_t concurrency;
- * unsigned long started, dur;
- * } Map;
- * typedef struct {
- * struct Vector *items;
- * unsigned long started, dur;
- * } Series;
- * Iterate *iterate(Iterate i);
- * void Map_iterate(Iterate i);
- * void Series_iterate(Iterate i);
- * const char *Map_name(void);
- * const char *Series_name(void);
- * declImplExtern(Iterate, Series);
- * declImplExtern(Iterate, Map);
- */
 typedef void*(^async_iterator)(size_t index, size_t qty, void *item);
 typedef void*(^wi_async_iterator)(size_t index, size_t qty, void *item, void *res);
 #define ASYNC_IFACE\

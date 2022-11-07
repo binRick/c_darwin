@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
+#define HASH_LEN 32
 static bool kitty_pid_is_kitty_process(int pid);
 const size_t KITTY_TCP_BUFFER_SIZE                   = 8192;
 const char   *KITTY_ESC_CODE_CLEAR                   = "\x1b_Ga=d,q=2\x1b\\";
@@ -547,14 +548,67 @@ int get_pid_kitty_pid(int pid){
 
 struct Vector *get_kittys(){
   struct Vector *v = vector_new(), *pids_v = get_kitty_pids();
+  struct Vector *e_v;
+  process_env_t *e;
+  pid_t pid;
 
   for (size_t i = 0; i < vector_size(pids_v); i++) {
     struct kitty_t *k = calloc(1, sizeof(struct kitty_t));
     k->pid = (pid_t)(size_t)vector_get(pids_v, i);
-    vector_push(v, (void *)k);
+    k->env_v = get_process_env(k->pid);
+    struct Vector *cl;
+    struct stat ts;
+    if(vector_size(k->env_v)>0){
+      cl = get_process_cmdline(k->pid);
+      if(!cl)continue;
+      k->binary = (char*)vector_get(cl,0);
+      if(!k->binary)continue;
+      k->binary_size = fsio_file_size(k->binary);
+      if(k->binary_size<1)continue;
+      stat(k->binary,&ts);
+      if(!ts.st_birthtimespec.tv_sec)continue;
+      unsigned char buf[HASH_LEN] = { 0 };
+      sha256_hash(buf,(unsigned char*)fsio_read_binary_file(k->binary),fsio_file_size(k->binary));
+      k->binary_hash = b64_encode(buf,HASH_LEN);
+      k->binary_ts = (unsigned long)((double)ts.st_birthtimespec.tv_sec+(double)ts.st_birthtimespec.tv_nsec / 1000000000.0);
+      k->cmdline = stringfn_join(vector_to_array(cl)," ",0,vector_size(cl));
+      k->cwd = get_pid_cwd(k->pid);
+      k->window_id = (size_t)get_kitty_pid_windowid(k->pid);
+      k->kitty_window_id = -1;
+      k->pids_v = get_child_pids(k->pid);
+      k->ppids_v = get_process_ppids(k->pid);
+
+      for(int a=0;a<vector_size(k->pids_v);a++){
+        if(a==-1)
+          pid =k->pid;
+        else
+          pid = (pid_t)(size_t)vector_get(k->pids_v,a);
+        e_v = get_process_env(pid);
+        for(size_t c=0;e_v && c<vector_size(e_v);c++){
+          e = (process_env_t *)(vector_get(e_v, c));
+          if (stringfn_starts_with(e->key,"KITTY_")){
+            if (strcmp(e->key, "KITTY_LISTEN_ON") == 0)
+              asprintf(&(k->kitty_listen_on),"%s",e->val);
+            else if (strcmp(e->key, "KITTY_SHELL_INTEGRATION") == 0)
+              asprintf(&(k->kitty_shell_integration),"%s",e->val);
+            else if (strcmp(e->key, "KITTY_PUBLIC_KEY") == 0)
+              asprintf(&(k->kitty_public_key),"%s",e->val);
+            else if (strcmp(e->key, "KITTY_LAUNCHED_BY_LAUNCH_SERVICES") == 0)
+              k->kitty_launched_by_launch_services = strcmp(e->val,"1")==0 ? true : false;
+            else if (strcmp(e->key, "KITTY_CONFIG_DIRECTORY") == 0)
+              asprintf(&(k->kitty_config_directory),"%s",e->val);
+          }
+        }
+        vector_release(e_v);
+      }
+      if(k->pid>1)
+        vector_push(v, (void *)k);
+    }
   }
+  vector_release(pids_v);
   return(v);
 }
+
 struct Vector *get_kitty_pids(){
   struct Vector *pids_v       = get_all_processes();
   struct Vector *kitty_pids_v = vector_new();
@@ -563,11 +617,11 @@ struct Vector *get_kitty_pids(){
     int pid = (int)(long long)vector_get(pids_v, i);
     if (vector_contains_pid(kitty_pids_v, pid) == true)
       continue;
-    get_process_cmdline(pid);
     int kp = get_pid_kitty_pid(pid);
     if (kp > 1 && (vector_contains_pid(kitty_pids_v, kp) == false))
       vector_push(kitty_pids_v, (void *)(size_t)kp);
   }
+  vector_release(pids_v);
   return(kitty_pids_v);
 }
 

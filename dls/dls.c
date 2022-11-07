@@ -64,6 +64,16 @@ static void __at_exit(void){
   common_options_b[COMMON_OPTION_WIDTH](args), \
   common_options_b[COMMON_OPTION_HEIGHT](args),
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#define SUBCOMMANDS_DB\
+  CREATE_SUBCOMMAND(DB_INIT, ),      \
+  CREATE_SUBCOMMAND(DB_INSERT_ROW_APP_ICON, ),      \
+  CREATE_SUBCOMMAND(DB_TEST, ),      \
+  CREATE_SUBCOMMAND(DB_INFO, ),      \
+  CREATE_SUBCOMMAND(DB_LOAD, ),      \
+  CREATE_SUBCOMMAND(DB_TABLES, ),    \
+  CREATE_SUBCOMMAND(DB_ROWS, ),      \
+  CREATE_SUBCOMMAND(DB_TABLE_IDS, ), \
+  CREATE_SUBCOMMAND(DB,),
 #define SUBCOMMANDS_APP_LIST
 #define SUBCOMMANDS_APP\
   CREATE_SUBCOMMAND(APP_LIST, ),
@@ -84,6 +94,7 @@ static void __at_exit(void){
   common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args), \
   common_options_b[COMMON_OPTION_HIDE_COLUMNS](args),     \
   common_options_b[COMMON_OPTION_SHOW_COLUMNS](args),
+#define COMMON_OPTIONS_DB_INSERT_ROW_APP_ICON 
 #define COMMON_OPTIONS_DB_SAVE \
   common_options_b[COMMON_OPTION_DB_SAVE](args),
 #define COMMON_OPTIONS_PROCESSES \
@@ -203,14 +214,6 @@ static void __at_exit(void){
 #define SUBCOMMANDS_HOTKEYS          \
   CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
   CREATE_SUBCOMMAND(HOTKEYS_SERVER, ),
-#define SUBCOMMANDS_DB               \
-  CREATE_SUBCOMMAND(DB_INIT, ),      \
-  CREATE_SUBCOMMAND(DB_TEST, ),      \
-  CREATE_SUBCOMMAND(DB_INFO, ),      \
-  CREATE_SUBCOMMAND(DB_LOAD, ),      \
-  CREATE_SUBCOMMAND(DB_TABLES, ),    \
-  CREATE_SUBCOMMAND(DB_ROWS, ),      \
-  CREATE_SUBCOMMAND(DB_TABLE_IDS, ), \
 //#########################################
 struct normalized_argv_t {
   char          *mode, *executable;
@@ -312,6 +315,7 @@ int handle_main(int argc, char *argv[]) {
       },
       ADD_SUBCOMMANDS()
 #undef ADD_SUBCOMMANDS
+      CREATE_SUBCOMMAND(DB, SUBCOMMANDS_DB),
       CREATE_SUBCOMMAND(DOCK, ),
       CREATE_SUBCOMMAND(MENU_BAR, ),
       CREATE_SUBCOMMAND(APP, SUBCOMMANDS_APP),

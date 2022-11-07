@@ -18,11 +18,14 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include "qoir/src/qoir.h"
 //////////////////////////////////////
 #include "submodules/c_ansi/ansi-codes/ansi-codes.h"
 #include "submodules/c_ansi/ansi-utils/ansi-utils.h"
 //////////////////////////////////////
 #include "bytes/bytes.h"
+#include "sha256.c/sha256.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"

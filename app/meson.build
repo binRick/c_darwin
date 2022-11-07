@@ -1,4 +1,5 @@
 subdir('utils')
+subdir('observe')
 app_srcs = [
   'app.c',
 ]

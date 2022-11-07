@@ -12,6 +12,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "interface99/interface99.h"
+
+/************************************************************/    
+#define DB_IFACE\
+    vfunc( bool,         create, const VSelf)\
+    vfunc( bool,         insert, const VSelf, hash_t *)\
+    vfunc( char *,       schema, const VSelf)\
+    vfunc( char *,         hash, const VSelf)\
+    vfunc( bool,      delete_id, const VSelf, size_t)\
+    vfunc( bool,    delete_hash, const VSelf, hash_t *)\
+    vfunc( bool,      exists_id, const VSelf, size_t)\
+    vfunc( bool,    exists_hash, const VSelf, hash_t *)\
+    vfunc( hash_t*,   select_id, const VSelf, size_t)\
+    vfunc( hash_t*, select_hash, const VSelf, hash_t *)
+interface(DB);
+/************************************************************/    
+
 #define DB_CAPTURE_STATEMENT_STRUCT    struct sqldbal_stmt
 #define DB_CAPTURE_INSERT_SETUP(DB, STATEMENT)    { do {                                                                                       \
                                                       enum sqldbal_status_code RC;                                                             \
@@ -21,6 +38,68 @@
 #define TABLE_NAME_KEYS "keys"
 #define TABLE_FIELDS_KEYS           "key TEXT"
 
+#define TABLE_NAME_APP_ICONS             "app_icons"
+#define TABLE_FIELDS_APP_ICONS            "created_ts INTEGER, binary_path TEXT, binary_len INTEGER, binary_hash TEXT, app_path TEXT, version TEXT, name TEXT, icon_encoded_len INTEGER, icon_decoded_len INTEGER,icon_decoded_format TEXT, icon_decoded_width INTEGER, icon_decoded_height INTEGER, icon_encoded BLOB"
+#define TABLE_FIELDS_INSERT_STATEMENT_APP_ICONS      \
+  "INSERT INTO " TABLE_NAME_APP_ICONS \
+  " ( "   \
+  "created_ts"\
+  ",binary_path, binary_len,  binary_hash"\
+  ",app_path,    version,     name"\
+  ",icon_decoded_len"\
+  ",icon_decoded_width"\
+  ",icon_decoded_height"\
+  ",icon_decoded_format"\
+  ",icon_encoded_len,      icon_encoded"\
+  " ) "\
+  " VALUES "\
+  " ("\
+  "  ?"\
+  ", ?, ?, ?"\
+  ", ?, ?, ?"\
+  ", ?, ?, ?, ?"\
+  ", ?, ?"\
+  ")"
+#define BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT, SQL_INDEX, SQL_HASH, KEY, COLUMN_TYPE, C_TYPE, DEFAULT){ do {       \
+  int bind_rc;\
+  C_TYPE val = (C_TYPE)hash_get((hash_t *)(SQL_HASH),KEY);\
+ if(!(bind_rc=sqldbal_stmt_bind_##COLUMN_TYPE(SQL_STATEMENT, SQL_INDEX, val,DEFAULT)!=SQLDBAL_STATUS_OK)){\
+   char *errstr;\
+   int g_rc = sqldbal_errstr(DB, &errstr);\
+   log_error("%s "AC_RED"Statement Bind Error"AC_RESETALL" #%d %s", KEY, bind_rc,errstr); \
+ }\
+}while(0); }
+
+#define BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT, SQL_INDEX, SQL_HASH, KEY, COLUMN_TYPE, C_TYPE){ do {       \
+  int bind_rc;\
+  C_TYPE val = (C_TYPE)hash_get((hash_t *)(SQL_HASH),KEY);\
+ if(!(bind_rc=sqldbal_stmt_bind_##COLUMN_TYPE(SQL_STATEMENT, SQL_INDEX, val)!=SQLDBAL_STATUS_OK)){\
+   char *errstr;\
+   int g_rc = sqldbal_errstr(DB, &errstr);\
+   log_error("%s "AC_RED"Statement Bind Error"AC_RESETALL" #%d %s", KEY, bind_rc,errstr); \
+  }\
+}while(0); }
+/////////////////////
+#define BIND_FIELDS_INSERT_STATEMENT_APP_ICONS(SQL_HASH)\
+  enum sqldbal_status_code RC;                           \
+  DB_CAPTURE_STATEMENT_STRUCT *SQL_STATEMENT;           \
+  struct sqldbal_db *DB = db_init();\
+  RC = sqldbal_stmt_prepare(DB, TABLE_FIELDS_INSERT_STATEMENT_APP_ICONS, -1, &SQL_STATEMENT); \
+  assert(RC == SQLDBAL_STATUS_OK);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT,0,SQL_HASH,"created_ts",int64, size_t);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,1,SQL_HASH,"binary_path",text, char *,"");\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT,2,SQL_HASH,"binary_len",int64, size_t);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,3,SQL_HASH,"binary_hash",text, char *,"");\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,4,SQL_HASH,"app_path",text, char *,"unknown");\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,5,SQL_HASH,"version",text, char *,"unknown");\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,6,SQL_HASH,"name",text, char *,"unknown");\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT,7,SQL_HASH,"icon_decoded_len",int64, size_t);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT,8,SQL_HASH,"icon_decoded_width",int64, size_t);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT,9,SQL_HASH,"icon_decoded_height",int64, size_t);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,10,SQL_HASH,"icon_decoded_format",text, char *,"unknown");\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_NUMBER(DB,SQL_STATEMENT,11,SQL_HASH,"icon_encoded_len",int64, size_t);\
+  BIND_INSERT_STATEMENT_COLUMN_TYPE_TEXT(DB,SQL_STATEMENT,12,SQL_HASH,"icon_encoded",text, char *,"");\
+/////////////////////
 #define TABLE_NAME_WINDOWS             "windows"
 #define TABLE_FIELDS_WINDOWS           "id INTEGER, is_focused INTEGER, qoi BLOB"
 #define TABLE_NAME_SPACES              "spaces"
@@ -120,6 +199,7 @@ enum db_loader_t {
   DB_LOADER_SPACES,
   DB_LOADER_WINDOWS,
   DB_LOADER_CAPTURES,
+  DB_LOADER_APP_ICONS,
   DB_LOADERS_QTY,
 };
 typedef bool (*db_loader_fxn)(struct sqldbal_db *db);
@@ -135,4 +215,5 @@ bool db_loader_name(char *name);
 bool db_loader_id(enum db_loader_t type);
 bool db_tables(void);
 int db_capture_save(hash_t *map);
+struct sqldbal_db *db_init(void);
 #endif

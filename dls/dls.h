@@ -17,6 +17,7 @@
 #include "dls/dls-bestline.h"
 #include "dls/vars.h"
 #include "optparse/optparse.h"
+#include "tp/tp.h"
 //////////////////////////////////////
 int handle_main(int argc, char *argv[]);
 #endif

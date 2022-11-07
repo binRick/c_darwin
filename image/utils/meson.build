@@ -10,7 +10,7 @@ image_utils_deps = [
   vips_dep,
   tesseract_dep,
   qoi_ci_dep,
-  core_utils_dep,
+  core_utils_dep,qoir_dep,
 ]
 image_utils_link_flags = [
   osx_link_args,

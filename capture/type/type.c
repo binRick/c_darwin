@@ -1,5 +1,6 @@
 #pragma once
 #include "db/db.h"
+#include "qoir/src/qoir.h"
 #ifndef CAPTURE_TYPE_C
 #define CAPTURE_TYPE_C
 #define LOCAL_DEBUG_MODE                     CAPTURE_TYPE_DEBUG_MODE

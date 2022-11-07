@@ -77,6 +77,7 @@ const char *dls_command_names[];
 #define COLOR_FOCUS                   "\x1b[38;2;151;252;50m"
 #define COLOR_EXTRACT                 "\x1b[38;2;151;252;50m"
 #define COLOR_COPY                    "\x1b[38;2;151;252;50m"
+#define COLOR_DB                    "\x1b[38;2;151;252;50m"
 #define COLOR_PASTE                   "\x1b[38;2;162;194;208m"
 #define COLOR_ID                      "\x1b[38;2;162;194;208m"
 #define COLOR_QTY                     "\x1b[38;2;162;194;208m"
@@ -309,6 +310,7 @@ enum command_type_t {
   COMMAND_TERMINAL,
   COMMAND_TERMINAL_KITTY,
   COMMAND_TERMINAL_KITTY_LIST,
+  COMMAND_TERMINAL_KITTY_PIDS,
   COMMAND_TEST_TERMINAL,
   COMMAND_PROCESS,
   COMMAND_PROCESS_LIST,
@@ -401,9 +403,11 @@ enum command_type_t {
   COMMAND_LAYOUT_APPLY,
   COMMAND_LAYOUT_SHOW,
   COMMAND_LAYOUT_RENDER,
+  COMMAND_TEST_PICK,
+  /**************************/
   COMMAND_DB,
   COMMAND_DB_INIT,
-  COMMAND_TEST_PICK,
+  COMMAND_DB_INSERT_ROW_APP_ICON,
   COMMAND_DB_INFO,
   COMMAND_DB_ROWS,
   COMMAND_DB_TABLES,
@@ -411,6 +415,7 @@ enum command_type_t {
   COMMAND_DB_TABLE_IDS,
   COMMAND_DB_SAVE,
   COMMAND_DB_LOAD,
+  /**************************/
   COMMAND_HOTKEYS_SERVER,
   COMMAND_HOTKEYS_FORK_SERVER,
   COMMAND_HOTKEYS_LIST,
