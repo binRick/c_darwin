@@ -297,11 +297,11 @@ struct process_info_t *get_process_info(int pid){
   I->open_ports_v       = vector_new();
   I->open_connections_v = vector_new();
   I->open_files_v       = vector_new();
-  I->env_v       = get_process_env(I->pid);
-  I->child_pids_v = get_child_pids(I->pid);
-  I->ppid         = get_process_ppid(I->pid);
-  I->ppids_v      = get_process_ppids(I->pid);
-  I->started      = timestamp();
+  I->env_v              = get_process_env(I->pid);
+  I->child_pids_v       = get_child_pids(I->pid);
+  I->ppid               = get_process_ppid(I->pid);
+  I->ppids_v            = get_process_ppids(I->pid);
+  I->started            = timestamp();
 
   int bufferSize = proc_pidinfo(I->pid, PROC_PIDLISTFDS, 0, 0, 0);
 
@@ -1125,6 +1125,7 @@ struct Vector *get_all_processes(){
 
 struct Vector *get_process_env(int process){
   struct Vector *process_env_v = vector_new();
+
   if (process <= 1)
     return(process_env_v);
 
@@ -1133,15 +1134,15 @@ struct Vector *get_process_env(int process){
   int                    env_res = -1, nargs;
   char                   *procenv = NULL, *procargs, *arg_ptr, *arg_end, *env_start, *s;
   size_t                 argmax;
-  int mib[3];
+  int                    mib[3];
 
   argmax   = get_argmax();
   procargs = (char *)malloc(argmax);
-  mib[0] = CTL_KERN;
-  mib[1] = KERN_PROCARGS2;
-  mib[2] = (pid_t)process;
+  mib[0]   = CTL_KERN;
+  mib[1]   = KERN_PROCARGS2;
+  mib[2]   = (pid_t)process;
   if (sysctl(mib, 3, procargs, &argmax, NULL, 0) == 0) {
-    arg_end  = &procargs[argmax];
+    arg_end = &procargs[argmax];
     memcpy(&nargs, procargs, sizeof(nargs));
     arg_ptr = procargs + sizeof(nargs);
     arg_ptr = memchr(arg_ptr, '\0', arg_end - arg_ptr);

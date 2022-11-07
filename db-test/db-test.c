@@ -7,9 +7,9 @@
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "db-test/db-test.h"
+#include "db/db.h"
 #include "log/log.h"
 #include "ms/ms.h"
-#include "db/db.h"
 #include "timestamp/timestamp.h"
 
 TEST t_db_test2(){

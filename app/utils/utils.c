@@ -2,10 +2,10 @@
 #include "app/utils/utils.h"
 #include "kitty/msg/msg.h"
 #include "vips/vips.h"
-#define DISPLAY_ICON_PNG false
+#define DISPLAY_ICON_PNG                  false
 #define APP_UTILS_SYSTEM_PROFILER_MODE    "SPApplicationsDataType"
 #define APP_UTILS_SYSTEM_PROFILER_TTL     (60 * 60 * 8) * 1000
-static authorized_tests_t  authorized_tests = {
+static authorized_tests_t authorized_tests = {
   .tests             = {
     [AUTHORIZED_ACCESSIBILITY] =     {
       .id            = AUTHORIZED_ACCESSIBILITY,
@@ -23,104 +23,103 @@ static authorized_tests_t  authorized_tests = {
   },
 };
 static struct app_parser_t app_parsers[APP_PARSER_TYPES_QTY] = {
-  [APP_PARSER_TYPE_NAME] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->name                 = (json_object_has_value_of_type(app_object, "_name", JSONString))
+  [APP_PARSER_TYPE_NAME] =                                                { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->name                                             = (json_object_has_value_of_type(app_object, "_name", JSONString))
                     ? json_object_get_string(app_object, "_name")
                     : NULL;
-                                                }, },
-  [APP_PARSER_TYPE_VERSION] =                 { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->version           = (json_object_has_value_of_type(app_object, "version", JSONString))
+                                                                            }, },
+  [APP_PARSER_TYPE_VERSION] =                                             { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->version                                       = (json_object_has_value_of_type(app_object, "version", JSONString))
                     ? json_object_get_string(app_object, "version")
                     : NULL;
-                                                }, },
-  [APP_PARSER_TYPE_LAST_MODIFIED] =           { .enabled     = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->last_modified_s = (json_object_has_value_of_type(app_object, "lastModified", JSONString))
+                                                                            }, },
+  [APP_PARSER_TYPE_LAST_MODIFIED] =                                       { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->last_modified_s                         = (json_object_has_value_of_type(app_object, "lastModified", JSONString))
                     ? json_object_get_string(app_object, "lastModified")
                     : NULL;
-                                                }, },
-  [APP_PARSER_TYPE_LAST_MODIFIED_TIME] =      { .enabled             = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->last_modified_time = (app->last_modified_s)
+                                                                            }, },
+  [APP_PARSER_TYPE_LAST_MODIFIED_TIME] =                                  { .enabled = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->last_modified_time                 = (app->last_modified_s)
                     ? timelib_strtotime(app->last_modified_s, strlen(app->last_modified_s), NULL, timelib_builtin_db(), timelib_parse_tzfile)
                     : NULL;
-                                                }, },
-  [APP_PARSER_TYPE_ICON_INFO] = { .enabled                       = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-    size_t scale_px = 128, icon_size_index = 0;
-    char *ip;
-    char *f;
-    size_t png_len=0, resized_png_len=0;
-    unsigned char *png_buf = NULL,*resized_png_buf=NULL;
-    float scale = 0;
-    VipsImage *imgs[2];
-    if(fsio_path_exists(app->path)){
-      char *i = get_app_path_plist_info_path(app->path);
-      if(i&&fsio_file_exists(i)&&stringfn_ends_with(i,".plist")&&fsio_file_size(i)>4096){
-          asprintf(&ip,"%s/Contents/Resources/%s",app->path,get_info_plist_icon_file_path(i));
-          if(ip&&fsio_file_exists(ip)&&fsio_file_size(ip)>4096&&stringfn_ends_with(ip,".icns")){
-            size_t icon_size = get_icon_index_size(ip,icon_size_index);
-            if(icon_size>0){
-              asprintf(&f,"%s%s.png",gettempdir(),app->name);
-              stringfn_mut_replace(f,' ','_');
-              write_app_icon_to_png(app->path,f,icon_size);
-              png_buf = fsio_read_binary_file(f);
-              png_len = fsio_file_size(f);
-              if(fsio_file_exists(f))
-                fsio_remove(f);
-              free(f);
-              if(png_buf){
-                if(vips_pngload_buffer(png_buf,png_len,&imgs[0],NULL)== EXIT_SUCCESS){
-                  scale = (float)scale_px/(float)vips_image_get_width(imgs[0]);
-                  if(vips_resize(imgs[0],&imgs[1],scale,NULL)==EXIT_SUCCESS){
-                    if(vips_pngsave_buffer(imgs[1],&resized_png_buf,&resized_png_len,NULL)==EXIT_SUCCESS){
-                      app->png = resized_png_buf;
-                      app->png_len=resized_png_len;
-                      app->png_width=vips_image_get_width(imgs[1]);
-                      app->png_height=vips_image_get_height(imgs[1]);
-  if(DISPLAY_ICON_PNG){
-                      kitty_display_image_buffer(app->png,app->png_len);
-                      printf("\n");
-  }
-                      g_object_unref(imgs[1]);
-                    }
-                  }
-                  g_object_unref(imgs[0]);
-                }
-                free(png_buf);
-              }
-            }
-        }
-      }
-    }
-  }, },
-  [APP_PARSER_TYPE_LAST_MODIFIED_TIMESTAMP] = { .enabled                       = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  if (app->last_modified_time)
-                                                    timelib_update_ts(app->last_modified_time, NULL);
-                                                  app->last_modified_timestamp = (app->last_modified_time)
+                                                                            }, },
+  [APP_PARSER_TYPE_ICON_INFO] =                                           { .enabled = true,                   .parser          = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              size_t scale_px                                  = 128,                    icon_size_index  = 0;
+                                                                              char *ip;
+                                                                              char *f;
+                                                                              size_t png_len                                   = 0,                      resized_png_len  = 0;
+                                                                              unsigned char *png_buf                           = NULL,                   *resized_png_buf = NULL;
+                                                                              float scale                                      = 0;
+                                                                              VipsImage *imgs[2];
+                                                                              if (fsio_path_exists(app->path))      {
+                                                                                char *i                                        = get_app_path_plist_info_path(app->path);
+                                                                                if (i && fsio_file_exists(i) && stringfn_ends_with(i, ".plist") && fsio_file_size(i) > 4096) {
+                                                                                  asprintf(&ip, "%s/Contents/Resources/%s", app->path, get_info_plist_icon_file_path(i));
+                                                                                  if (ip && fsio_file_exists(ip) && fsio_file_size(ip) > 4096 && stringfn_ends_with(ip, ".icns")) {
+                                                                                    size_t icon_size                           = get_icon_index_size(ip, icon_size_index);
+                                                                                    if (icon_size > 0)              {
+                                                                                      asprintf(&f, "%s%s.png", gettempdir(), app->name);
+                                                                                      stringfn_mut_replace(f, ' ', '_');
+                                                                                      write_app_icon_to_png(app->path, f, icon_size);
+                                                                                      png_buf = fsio_read_binary_file(f);
+                                                                                      png_len = fsio_file_size(f);
+                                                                                      if (fsio_file_exists(f))
+                                                                                        fsio_remove(f);
+                                                                                      free(f);
+                                                                                      if (png_buf)                  {
+                                                                                        if (vips_pngload_buffer(png_buf, png_len, &imgs[0], NULL) == EXIT_SUCCESS) {
+                                                                                          scale                                = (float)scale_px / (float)vips_image_get_width(imgs[0]);
+                                                                                          if (vips_resize(imgs[0], &imgs[1], scale, NULL) == EXIT_SUCCESS)
+                                                                                            if (vips_pngsave_buffer(imgs[1], &resized_png_buf, &resized_png_len, NULL) == EXIT_SUCCESS) {
+                                                                                              app->png        = resized_png_buf;
+                                                                                              app->png_len    = resized_png_len;
+                                                                                              app->png_width  = vips_image_get_width(imgs[1]);
+                                                                                              app->png_height = vips_image_get_height(imgs[1]);
+                                                                                              if (DISPLAY_ICON_PNG) {
+                                                                                                kitty_display_image_buffer(app->png, app->png_len);
+                                                                                                printf("\n");
+                                                                                              }
+                                                                                              g_object_unref(imgs[1]);
+                                                                                            }
+                                                                                          g_object_unref(imgs[0]);
+                                                                                        }
+                                                                                        free(png_buf);
+                                                                                      }
+                                                                                    }
+                                                                                  }
+                                                                                }
+                                                                              }
+                                                                            }, },
+  [APP_PARSER_TYPE_LAST_MODIFIED_TIMESTAMP] =                             { .enabled = true, .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              if (app->last_modified_time)
+                                                                                timelib_update_ts(app->last_modified_time, NULL);
+                                                                              app->last_modified_timestamp       = (app->last_modified_time)
                     ? app->last_modified_time->sse
                     : 0;
-                                                }, },
-  [APP_PARSER_TYPE_PATH] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->path                 = (json_object_has_value_of_type(app_object, "path", JSONString))
+                                                                            }, },
+  [APP_PARSER_TYPE_PATH] =                                                { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->path                                             = (json_object_has_value_of_type(app_object, "path", JSONString))
                     ? json_object_get_string(app_object, "path")
                     : NULL;
-                                                  app->path_exists          = (app->path)
+                                                                              app->path_exists                                      = (app->path)
                     ? fsio_path_exists(app->path)
                     : false;
-                                                }, },
-  [APP_PARSER_TYPE_OBTAINED_FROM] =           { .enabled   = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->obtained_from = (json_object_has_value_of_type(app_object, "obtained_from", JSONString))
+                                                                            }, },
+  [APP_PARSER_TYPE_OBTAINED_FROM] =                                       { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->obtained_from                           = (json_object_has_value_of_type(app_object, "obtained_from", JSONString))
                     ? json_object_get_string(app_object, "obtained_from")
                     : NULL;
-                                                }, },
-  [APP_PARSER_TYPE_INFO] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->info                 = (json_object_has_value_of_type(app_object, "info", JSONString))
+                                                                            }, },
+  [APP_PARSER_TYPE_INFO] =                                                { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->info                                             = (json_object_has_value_of_type(app_object, "info", JSONString))
                     ? json_object_get_string(app_object, "info")
                     : NULL;
-                                                }, },
-  [APP_PARSER_TYPE_ARCH] =                    { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
-                                                  app->arch                 = (json_object_has_value_of_type(app_object, "arch_kind", JSONString))
+                                                                            }, },
+  [APP_PARSER_TYPE_ARCH] =                                                { .enabled = true,                                      .parser = ^ void (struct app_t *app, JSON_Object *app_object){
+                                                                              app->arch                                             = (json_object_has_value_of_type(app_object, "arch_kind", JSONString))
                     ? json_object_get_string(app_object, "arch_kind")
                     : NULL;
-                                                }, },
+                                                                            }, },
 };
 ///////////////////////////////////////////////////////////////////////
 static void parse_app(struct app_t *app, JSON_Object *app_object);

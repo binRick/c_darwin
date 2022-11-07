@@ -27,9 +27,9 @@
 #include "process/process.h"
 #include "process/utils/utils.h"
 #include "qoi/qoi.h"
-#include "qoir/src/qoir.h"
 #include "qoi_ci/QOI-stdio.h"
 #include "qoi_ci/transpiled/QOI.h"
+#include "qoir/src/qoir.h"
 #include "space/utils/utils.h"
 #include "string-utils/string-utils.h"
 #include "submodules/log/log.h"
@@ -132,45 +132,45 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
       return(true);
     },
   },
-  [IMAGE_TYPE_QOIR] =  {
-    .file_extension             = "qoir",
-    .save_buffer_fxn            = NULL,
-    .name                       = "QOIR",
-    .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
-    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
-    .decode_file_to_rgb_buffer = ^ unsigned char *(char *path, size_t *rgb_len){
+  [IMAGE_TYPE_QOIR] = {
+    .file_extension            = "qoir",
+    .save_buffer_fxn           = NULL,
+    .name                      = "QOIR",
+    .get_format                = ^ CFStringRef (void){ return(NULL);                                                },
+    .validate_header           = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);     },
+    .decode_file_to_rgb_buffer = ^ unsigned char *(char *path,        size_t *rgb_len){
       return(NULL);
     },
-    .decode_buffer_to_rgb_buffer = ^ unsigned char *(unsigned char *buf,size_t len,  size_t *decoded_len){
-      qoir_decode_options decopts = {0};
-      decopts.pixfmt = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
-      qoir_decode_result dec = qoir_decode(buf, len, &decopts);
+    .decode_buffer_to_rgb_buffer  = ^ unsigned char *(unsigned char *buf,size_t len, size_t *decoded_len){
+      qoir_decode_options decopts ={ 0                                                                                           };
+      decopts.pixfmt              = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+      qoir_decode_result dec      = qoir_decode(buf,                     len, &decopts);
       return(NULL);
     },
-    .encode_rgb_buffer_to_file = ^ bool(unsigned char *rgb,size_t rgb_len, char *path){
-      qoir_decode_options decopts = {0};
-      decopts.pixfmt = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
-      qoir_decode_result dec = qoir_decode(rgb, rgb_len, &decopts);
+    .encode_rgb_buffer_to_file    = ^ bool (unsigned char *rgb,          size_t rgb_len, char *path){
+      qoir_decode_options decopts ={ 0                                                                                           };
+      decopts.pixfmt              = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+      qoir_decode_result dec      = qoir_decode(rgb,                     rgb_len, &decopts);
       return(true);
     },
-    .encode_rgb_buffer_to_buffer = ^ unsigned char *(unsigned char *rgb,size_t rgb_len, size_t *len){
-      qoir_decode_options decopts = {0};
-      decopts.pixfmt = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
-      qoir_decode_result dec = qoir_decode(rgb, rgb_len, &decopts);
-      size_t bpp = qoir_pixel_format__bytes_per_pixel(dec.dst_pixbuf.pixcfg.pixfmt);
-      size_t stride = dec.dst_pixbuf.stride_in_bytes;
-      Dbg(bpp,%lu);
-      Dbg(stride,%lu);
+    .encode_rgb_buffer_to_buffer  = ^ unsigned char *(unsigned char *rgb,size_t rgb_len, size_t *len){
+      qoir_decode_options decopts ={ 0                                                                                           };
+      decopts.pixfmt              = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+      qoir_decode_result dec = qoir_decode(rgb,                     rgb_len, &decopts);
+      size_t bpp             = qoir_pixel_format__bytes_per_pixel(dec.dst_pixbuf.pixcfg.pixfmt);
+      size_t stride          = dec.dst_pixbuf.stride_in_bytes;
+      Dbg(bpp, %u);
+      Dbg(stride, %u);
       return(dec.dst_pixbuf.data);
     },
-    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
-      qoir_decode_options decopts = {0};
-      decopts.pixfmt = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
-      qoir_decode_result dec = qoir_decode(buf, len, &decopts);
-      *width = dec.dst_pixbuf.pixcfg.width_in_pixels;
+    .get_dimensions_from_buffer   = ^ bool (unsigned char *buf,          size_t len, int *width, int *height){
+      qoir_decode_options decopts ={ 0                                                                                           };
+      decopts.pixfmt              = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+      qoir_decode_result dec      = qoir_decode(buf,                     len, &decopts);
+      *width  = dec.dst_pixbuf.pixcfg.width_in_pixels;
       *height = dec.dst_pixbuf.pixcfg.height_in_pixels;
-      Dbg(*width,%d);
-      Dbg(*height,%d);
+      Dbg(*width, %d);
+      Dbg(*height, %d);
       return(true);
     },
   },
@@ -487,6 +487,7 @@ unsigned char *save_cgref_to_webp_memory(CGImageRef image, size_t *len){
 unsigned char *save_cgref_to_qoir_memory(CGImageRef image_ref, size_t *qoir_len){
   log_info("xxxxxxxx");
 }
+
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   unsigned long _ts[2];
   int           w = CGImageGetWidth(image_ref), h = CGImageGetHeight(image_ref);

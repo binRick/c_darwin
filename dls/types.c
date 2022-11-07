@@ -12,7 +12,7 @@ struct args_t *args = &(struct args_t){
   //.capture_mode[DEFAULT_CAPTURE_TYPE] = true,
   //.output_mode = DEFAULT_OUTPUT_MODE,
   .dls_clear_screen = false,
-  .space_id     = -1, .display_id = -1, .id = -1,
+  .space_id         = -1, .display_id = -1, .id = -1,
   //.capture_type                       = DEFAULT_CAPTURE_TYPE,
   .sort_key                           = NULL, .sort_direction = "asc",
   .current_space_only                 = false, .minimized_only = false,

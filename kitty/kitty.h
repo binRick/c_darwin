@@ -78,15 +78,15 @@ typedef struct {
   char *val;
 } process_env_t;
 struct kitty_t {
-  pid_t pid, ppid, ppids[32], pids[32];
+  pid_t         pid, ppid, ppids[32], pids[32];
   struct Vector *pids_v, *ppids_v;
-  bool kitty_launched_by_launch_services;
-  char *cwd, *cmdline, *binary, *kitty_config_directory, *kitty_config_path, *version, *kitty_listen_on, *kitty_shell_integration, *kitty_public_key, *app_dir;
+  bool          kitty_launched_by_launch_services;
+  char          *cwd, *cmdline, *binary, *kitty_config_directory, *kitty_config_path, *version, *kitty_listen_on, *kitty_shell_integration, *kitty_public_key, *app_dir;
   struct Vector *env_v;
-  size_t window_id, space_id, display_id, binary_size;
+  size_t        window_id, space_id, display_id, binary_size;
   unsigned long binary_ts;
-  char *binary_hash;
-  int kitty_window_id;
+  char          *binary_hash;
+  int           kitty_window_id;
 };
 struct kitty_foreground_process_t {
   int  pid;

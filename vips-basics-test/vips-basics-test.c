@@ -6,6 +6,7 @@
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "kitty/msg/msg.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
@@ -21,7 +22,7 @@ INCBIN(kitty_icon, "assets/kitty_icon.png");
 static char *files[] = {
   "/tmp/communist-goals.png",
   "/tmp/kitty_icon.png",
-}, *exts[] = { "png", "gif", "jpg", "tif", "raw", "webp", "vips" };
+}, *exts[] = { "qoi", "png", "gif", "jpg", "tif", "raw", "webp", "vips" };
 static size_t files_qty = QTY(files), exts_qty = QTY(exts);
 
 static int annotate_image(VipsObject *context, VipsImage *image, VipsImage **out) {
@@ -45,7 +46,7 @@ static int annotate_image(VipsObject *context, VipsImage *image, VipsImage **out
   if (!(overlay[0] = vips_image_new_from_image(page[0], red, VIPS_NUMBER(red)))
       || vips_draw_rect(
         overlay[0], transparent, VIPS_NUMBER(transparent),
-        10, 10, overlay[0]->Xsize - 20, overlay[0]->Ysize - 20, "fill", TRUE, NULL
+        10, 10, overlay[0]->Xsize - 20, overlay[0]->Ysize - 20, "fill", true, NULL
         )
       )
     return(-1);
@@ -80,7 +81,8 @@ TEST t_vips_basics_test3(){
     for (size_t o = 0; o < exts_qty; o++) {
       VipsImage *image;
       char      *outfile;
-      asprintf(&outfile, "/tmp/output-%lu-%lu-%lu.%s", i, o, TEST_INDEX, exts[o]);
+      float     resize = (float)1 / ((float)1 / (float)(o + (float)1) * 10);
+      asprintf(&outfile, "/tmp/output-resized-%.0f-percent-%lu-%lu-%lu.%s", resize * 100, i, o, TEST_INDEX, exts[o]);
 
       if (VIPS_INIT(files[i]))
         FAIL();
@@ -89,17 +91,16 @@ TEST t_vips_basics_test3(){
         FAIL();
 
       VipsImage *out;
-      float     resize = (float)1 / ((float)1 / (float)(o + (float)1) * 10);
 
       if (vips_resize(image, &out, resize, NULL))
         FAIL();
-      log_debug(AC_BLUE "Resizing by %f %s %s [%dx%d] (%d)" AC_RESETALL,
+      log_debug(AC_BLUE "Resizing by %f %s %s [%dx%d] (%d) %s" AC_RESETALL,
                 resize,
                 bytes_to_string(fsio_file_size(files[i])),
                 files[i],
                 vips_image_get_width(image),
                 vips_image_get_height(image),
-                vips_image_get_format(image)
+                vips_image_get_format(image), outfile
                 );
 
       vips_image_set_progress(out, PROGRESS);
@@ -109,7 +110,6 @@ TEST t_vips_basics_test3(){
 
       if (vips_image_write_to_file(out, outfile, NULL))
         FAIL();
-      timg_utils_image(outfile);
       log_debug(AC_MAGENTA "%s %s [%dx%d] (%d)" AC_RESETALL,
                 bytes_to_string(fsio_file_size(outfile)),
                 outfile,
@@ -117,8 +117,23 @@ TEST t_vips_basics_test3(){
                 vips_image_get_height(out),
                 vips_image_get_format(out)
                 );
-      g_object_unref(out);
+      if (!stringfn_ends_with(outfile, ".raw"))
+        if (!stringfn_ends_with(outfile, ".vips"))
+          kitty_display_image_buffer(fsio_read_binary_file(outfile), fsio_file_size(outfile));
 
+      g_object_unref(out);
+      unsigned long ts = timestamp();
+      if (!(out = vips_image_new_from_file(outfile, "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
+        FAIL();
+      log_debug(AC_GREEN "%s %s [%dx%d] (%d) %s" AC_RESETALL,
+                bytes_to_string(fsio_file_size(outfile)),
+                outfile,
+                vips_image_get_width(out),
+                vips_image_get_height(out),
+                vips_image_get_format(out), milliseconds_to_string(timestamp() - ts)
+                );
+
+      g_object_unref(out);
       g_object_unref(image);
     }
   PASS();
@@ -160,7 +175,6 @@ TEST t_vips_basics_test2(){
         FAIL();
         g_object_unref(image);
       }
-      timg_utils_image(outfile);
       log_debug(AC_CYAN "Annotated Image: %s [%dx%d] (%d)" AC_RESETALL,
                 outfile,
                 vips_image_get_width(image),
@@ -221,9 +235,13 @@ GREATEST_MAIN_DEFS();
 int main(int argc, char **argv) {
   VIPS_INIT(argv);
   fsio_write_binary_file(files[0], gcommunist_goalsData, gcommunist_goalsSize);
-  timg_utils_image(files[0]);
+  //
+  ///
+  ///timg_utils_image(files[0]);
   fsio_write_binary_file(files[1], gkitty_iconData, gkitty_iconSize);
-  timg_utils_image(files[1]);
+  // kitty_display_image_buffer(fsio_read_binary_file(files[0]),fsio_file_size(files[0]));
+  //timg_utils_image(files[1]);
+//  kitty_display_image_buffer(fsio_read_binary_file(files[1]),fsio_file_size(files[1]));
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_vips_basics_test1);
   RUN_SUITE(s_vips_basics_test2);

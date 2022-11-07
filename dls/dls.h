@@ -11,8 +11,8 @@
 //////////////////////////////////////
 #include "core/core.h"
 #include "dls/command-capture.h"
-#include "dls/command-test.h"
 #include "dls/command-keylogger.h"
+#include "dls/command-test.h"
 #include "dls/commands.h"
 #include "dls/dls-bestline.h"
 #include "dls/vars.h"

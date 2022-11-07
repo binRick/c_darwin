@@ -33,6 +33,6 @@ char *get_app_path_plist_info_path(char *app_path);
 char *get_app_path_icns_file_path_icon_file_path(char *app_path, char *icns_file_path);
 bool clear_app_icon_cache(char *app_path);
 size_t get_first_icon_size(char *icns_file_path);
-size_t get_icon_index_size(char *icns_file_path,size_t index);
+size_t get_icon_index_size(char *icns_file_path, size_t index);
 bool write_app_icon_to_png_buffer(char *app_path, unsigned char *buf, size_t *buf_len, size_t icon_size);
 #endif

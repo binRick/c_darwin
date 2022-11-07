@@ -92,8 +92,8 @@ struct list_table_t {
   bool          minimized_only, not_minimized_only;
   bool          current_space_only, current_display_only, exact_match, case_sensitive, duplicate, non_duplicate, not_current_display_only, not_current_space_only;
   int           display_id;
-  size_t offset;
-  FILE *fd;
+  size_t        offset;
+  FILE          *fd;
   int           space_id, window_id;
   char          *sort_key, *sort_direction, *application_name, *font_family, *font_name, *font_type, *font_style;
   int           width_less, width_greater, height_less, height_greater, width, height, limit;

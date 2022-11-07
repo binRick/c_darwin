@@ -1,12 +1,12 @@
 #ifndef DLS_META_C
 #define DLS_META_C
 #include "core/core.h"
+#include "core/core.h"
 #include "dls/meta.h"
 #include "frameworks/frameworks.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "core/core.h"
 
 #define __LAYOUT_QTY(QTY)      { do {                      \
                                    self->layout.qty = QTY; \
@@ -179,7 +179,6 @@ struct Window *ByName_find(const VSelf, void *NAME) {
 implExtern(FindWindow, ByID);
 implExtern(FindWindow, ByName);
 
-
 int Rectangle_perim(const VSelf) {
   VSELF(const Rectangle);
   return((self->a + self->b) * 2);
@@ -327,11 +326,10 @@ static void Frog_croak(VSelf) {
   VSELF(Frog);
   self->ncroaks++;
   struct vn_init vn;
-  vn.width = 60;
+  vn.width  = 60;
   vn.height = 5;
-  vn.pos_x = 2;
-  vn.pos_y = 2;
-
+  vn.pos_x  = 2;
+  vn.pos_y  = 2;
 
   printf("%s: croak! #%d\n", self->name, self->ncroaks);
 }

@@ -53,8 +53,8 @@
 #include "dls/command-extract.h"
 #include "dls/command-layout.h"
 #include "dls/command-prompt.h"
-#include "dls/command-test.h"
 #include "dls/command-terminal.h"
+#include "dls/command-test.h"
 //////////////////////////////////////////////////////
 #define ADD_COMMAND_OPTIONS()   \
   ADD_CAPTURE_COMMAND_OPTIONS() \
@@ -71,7 +71,7 @@
   ADD_PROMPT_COMMANDS()    \
   ADD_TEST_COMMANDS()      \
   ADD_DISPLAY_COMMANDS()   \
-  ADD_TERMINAL_COMMANDS()   \
+  ADD_TERMINAL_COMMANDS()  \
 //////////////////////////////////////////////////////
 /*
  */
@@ -85,7 +85,7 @@
   ADD_LAYOUT_SUBCOMMANDS()    \
   ADD_PROMPT_SUBCOMMANDS()    \
   ADD_DISPLAY_SUBCOMMANDS()   \
-  ADD_TERMINAL_SUBCOMMANDS()   \
+  ADD_TERMINAL_SUBCOMMANDS()  \
 /////////////////////////////////////////////////////
 /*
  */

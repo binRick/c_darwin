@@ -1,22 +1,22 @@
 #pragma once
 #ifndef TABLE_UTILS_C
 #define TABLE_UTILS_C
-#define MAX_NAME_TERMINAL_WIDTH_PERCENTAGE 0.20
-#define LOCAL_DEBUG_MODE           TABLE_UTILS_DEBUG_MODE
-#define DEFAULT_FONTS_LIMIT        50
-#define DEFAULT_APPS_LIMIT         50
-#define CAPTURED_WINDOW_COLUMNS    "ID", "Width", "Height", "Dur", "Size", "Compressed", "Application", "File", "Format"
-#define MONITOR_COLUMNS            "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
-#define LAYOUT_COLUMNS             "Name"
-#define PROCESS_COLUMNS            "PID", "Open Ports", "Open Files", "Open Connections", "PPID", "PPIDs", "# Env", "# PIDs", "Dur"
-#define KITTY_COLUMNS              "PID"
-#define USB_COLUMNS                "Product", "Manufacturer"
-#define FONT_COLUMNS               "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
-#define APP_COLUMNS                "ID", "Name", "Version", "Path", "Icon"
-#define WINDOW_COLUMNS             "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Can Min", "Full", "Dur"
-#define SPACE_COLUMNS              "ID", "Current", "Window IDs", "Windows"
-#define HOTKEY_COLUMNS             "ID", "Name", "Key", "Action", "Enabled"
-#define DISPLAY_COLUMNS            "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows", "Offset", "Center"
+#define MAX_NAME_TERMINAL_WIDTH_PERCENTAGE    0.20
+#define LOCAL_DEBUG_MODE                      TABLE_UTILS_DEBUG_MODE
+#define DEFAULT_FONTS_LIMIT                   50
+#define DEFAULT_APPS_LIMIT                    50
+#define CAPTURED_WINDOW_COLUMNS               "ID", "Width", "Height", "Dur", "Size", "Compressed", "Application", "File", "Format"
+#define MONITOR_COLUMNS                       "Name", "UUID", "ID", "Primary", "Width", "Height", "Refresh", "Modes"
+#define LAYOUT_COLUMNS                        "Name"
+#define PROCESS_COLUMNS                       "PID", "Open Ports", "Open Files", "Open Connections", "PPID", "PPIDs", "# Env", "# PIDs", "Dur"
+#define KITTY_COLUMNS                         "PID"
+#define USB_COLUMNS                           "Product", "Manufacturer"
+#define FONT_COLUMNS                          "ID", "Family", "Enabled", "Size", "Type", "Style", "Faces", "Dupe"
+#define APP_COLUMNS                           "ID", "Name", "Version", "Path", "Icon"
+#define WINDOW_COLUMNS                        "ID", "PID", "Name", "Size", "Position", "Space", "Disp", "Min", "Can Min", "Full", "Dur"
+#define SPACE_COLUMNS                         "ID", "Current", "Window IDs", "Windows"
+#define HOTKEY_COLUMNS                        "ID", "Name", "Key", "Action", "Enabled"
+#define DISPLAY_COLUMNS                       "Index", "ID", "Main", "Width", "Height", "# Spaces", "# Windows", "Offset", "Center"
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
 #include "bytes/bytes.h"
@@ -48,7 +48,7 @@
 static size_t term_width = 80, cur_display_id, cur_space_id;
 static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool case_sensitive);
 static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
-#define VECTOR_ITEM(VECTOR,                                                                          TYPE,                                  INDEX)    (struct TYPE)vector_get(VECTOR, INDEX)
+#define VECTOR_ITEM(VECTOR,                                                                          TYPE,                                    INDEX)    (struct TYPE)vector_get(VECTOR, INDEX)
   [TABLE_TYPE_LAYOUT] = &(struct table_logic_t){
 #define type    layout_t
     .query_items = get_layouts_v,                                                                    .columns = { LAYOUT_COLUMNS },
@@ -121,9 +121,9 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       size_t i,
       void __attribute__((unused)) *item
       ){
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
     },
   },
 #undef type
@@ -154,9 +154,9 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       size_t i,
       void __attribute__((unused)) *item
       ){
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
     },
 #undef type
   },
@@ -195,12 +195,12 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       size_t i,
       void __attribute__((unused)) *item
       ){
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
     },
 #undef type
   },
@@ -231,18 +231,18 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
       size_t i,
       void __attribute__((unused)) *item
       ){
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
     },
   },
   [TABLE_TYPE_FONT] = &(struct table_logic_t){
     .query_items = get_installed_fonts_v,
     .columns     = { FONT_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t index,                          void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t index,                            void *item){
       struct font_t *f = (struct font_t *)item;
       term_width = 120;//get_terminal_width();
       ft_printf_ln(table,
@@ -266,42 +266,42 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    ""
                    );
     },
-    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
+    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,        void *item,                               struct list_table_t *args){
       struct font_t *f = (struct font_t *)item;
-      return((string_compare_skip_row(args->font_family,                                             f->family,                             args->exact_match,                        args->case_sensitive))
-             || (string_compare_skip_row(args->font_name,                                            f->name,                               args->exact_match,                        args->case_sensitive))
-             || (string_compare_skip_row(args->font_style,                                           f->style,                              args->exact_match,                        args->case_sensitive))
-             || (string_compare_skip_row(args->font_type,                                            f->type,                               args->exact_match,                        args->case_sensitive))
+      return((string_compare_skip_row(args->font_family,                                             f->family,                               args->exact_match,                        args->case_sensitive))
+             || (string_compare_skip_row(args->font_name,                                            f->name,                                 args->exact_match,                        args->case_sensitive))
+             || (string_compare_skip_row(args->font_style,                                           f->style,                                args->exact_match,                        args->case_sensitive))
+             || (string_compare_skip_row(args->font_type,                                            f->type,                                 args->exact_match,                        args->case_sensitive))
              || (args->duplicate && !f->duplicate)
              || (args->non_duplicate && f->duplicate)
              );
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
       struct font_t *f = (struct font_t *)item;
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_FG_COLOR, (f->enabled == true)?FT_COLOR_GREEN:FT_COLOR_RED);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, f->size > 5 * 1024 * 1024 ? FT_COLOR_RED : f->size > 1024 * 1024 ? FT_COLOR_BLUE : FT_COLOR_LIGHT_BLUE);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 4,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 4,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 5,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 6,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 7,                                        FT_CPROP_CONT_FG_COLOR, f->duplicate ? FT_COLOR_RED : FT_COLOR_GREEN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 7,                                        FT_CPROP_CONT_TEXT_STYLE, f->duplicate ? (FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED) : FT_TSTYLE_DEFAULT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_FG_COLOR, (f->enabled == true)?FT_COLOR_GREEN:FT_COLOR_RED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   3,                                        FT_CPROP_CONT_FG_COLOR, f->size > 5 * 1024 * 1024 ? FT_COLOR_RED : f->size > 1024 * 1024 ? FT_COLOR_BLUE : FT_COLOR_LIGHT_BLUE);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   4,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   4,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   5,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   6,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   7,                                        FT_CPROP_CONT_FG_COLOR, f->duplicate ? FT_COLOR_RED : FT_COLOR_GREEN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   7,                                        FT_CPROP_CONT_TEXT_STYLE, f->duplicate ? (FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED) : FT_TSTYLE_DEFAULT);
     },
   },
   [TABLE_TYPE_APP] = &(struct table_logic_t){
     .query_items = get_installed_apps_v,
     .columns     = { APP_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t index,                          void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t index,                            void *item){
       struct app_t *app = (struct app_t *)item;
       term_width = get_terminal_width();
       ft_printf_ln(table,
@@ -315,43 +315,43 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    (int)((float)term_width * .25),                                                   app->name,
                    (int)((float)term_width * .5),                                                    app->version,
                    (int)((float)term_width * .40),                                                   app->path,
-                   (int)((float)term_width * .10), bytes_to_string((size_t)(app->png_len)),
+                   (int)((float)term_width * .10),                                                   bytes_to_string((size_t)(app->png_len)),
                    ""
                    );
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
 
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
 
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
 
-      ft_set_cell_prop(table,                                                                        i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
     },
-    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
+    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,        void *item,                               struct list_table_t *args){
       struct app_t *app = (struct app_t *)item;
       return(
-        string_compare_skip_row(args->application_name,                                              app->name,                             args->exact_match,                        args->case_sensitive)
+        string_compare_skip_row(args->application_name,                                              app->name,                               args->exact_match,                        args->case_sensitive)
         );
     },
   },
   [TABLE_TYPE_CAPTURED_WINDOW] = &(struct table_logic_t){
     .query_items = get_captured_window_infos_v,
     .columns     = { CAPTURED_WINDOW_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,    void *item){
       return;
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
       size_t row              = ft_row_count(table) - 1;
       struct window_info_t *w = (struct window_info_t *)item;
       return;
     },
-    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
+    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,        void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
 
@@ -361,19 +361,19 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
   [TABLE_TYPE_WINDOW] = &(struct table_logic_t){
     .query_items = get_window_infos_v,
     .columns     = { WINDOW_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,    void *item){
       struct window_info_t *w = (struct window_info_t *)item;
       int max_name_len        = (int)((float)get_terminal_width() * MAX_NAME_TERMINAL_WIDTH_PERCENTAGE);
-      if(stringfn_ends_with(w->name,".app"))
-        w->name = stringfn_substring(w->name,0,strlen(w->name)-strlen(".app"));
+      if (stringfn_ends_with(w->name,                                                                ".app"))
+        w->name = stringfn_substring(w->name,                                                        0,                                       strlen(w->name) - strlen(".app"));
       ft_printf_ln(table,
                    "%lu|%d|%.*s|%dx%d|%dx%d|%lu|%d|%s|%s|%s|%s"
                    "%s",
                    w->window_id,
                    w->pid,
-                   max_name_len,w->name,
-                   (int)w->rect.size.width,(int)w->rect.size.height,
-                   (int)w->rect.origin.x,(int)w->rect.origin.y,
+                   max_name_len,                                                                     w->name,
+                   (int)w->rect.size.width,                                                          (int)w->rect.size.height,
+                   (int)w->rect.origin.x,                                                            (int)w->rect.origin.y,
                    w->space_id,
                    get_display_id_index(w->display_id),
                    (w->is_minimized == true) ? "Yes" : "No",
@@ -382,74 +382,74 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    milliseconds_to_string(w->dur),
                    "");
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
       size_t row              = ft_row_count(table) - 1;
       struct window_info_t *w = (struct window_info_t *)item;
-      ft_set_cell_prop(table,                                                                        row,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-      ft_set_cell_prop(table,                                                                        row,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-      ft_set_cell_prop(table,                                                                        row,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        row,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-      ft_set_cell_prop(table,                                                                        row,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      ft_set_cell_prop(table,                                                                        row,                                   2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
-      ft_set_cell_prop(table,                                                                        row,                                   2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        row,                                     0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+      ft_set_cell_prop(table,                                                                        row,                                     0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+      ft_set_cell_prop(table,                                                                        row,                                     0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        row,                                     1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+      ft_set_cell_prop(table,                                                                        row,                                     1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+      ft_set_cell_prop(table,                                                                        row,                                     2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
+      ft_set_cell_prop(table,                                                                        row,                                     2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
       if (w->rect.size.width < 2 || w->rect.size.height < 2)
-        ft_set_cell_prop(table,                                                                      row,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+        ft_set_cell_prop(table,                                                                      row,                                     3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
       else if (w->rect.size.width == 0 && w->rect.size.height == 0)
-        ft_set_cell_prop(table,                                                                      row,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
+        ft_set_cell_prop(table,                                                                      row,                                     3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
       else
-        ft_set_cell_prop(table,                                                                      row,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+        ft_set_cell_prop(table,                                                                      row,                                     3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
       if ((int)w->rect.origin.x < 0 || (int)w->rect.origin.y < 0) {
-        ft_set_cell_prop(table,                                                                      row,                                   4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-        ft_set_cell_prop(table,                                                                      row,                                   4,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+        ft_set_cell_prop(table,                                                                      row,                                     4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+        ft_set_cell_prop(table,                                                                      row,                                     4,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
       }else
-        ft_set_cell_prop(table,                                                                      row,                                   4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
+        ft_set_cell_prop(table,                                                                      row,                                     4,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
       if (w->space_id == cur_space_id) {
-        ft_set_cell_prop(table,                                                                      row,                                   5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
-        ft_set_cell_prop(table,                                                                      row,                                   5,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+        ft_set_cell_prop(table,                                                                      row,                                     5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+        ft_set_cell_prop(table,                                                                      row,                                     5,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
       }else
-        ft_set_cell_prop(table,                                                                      row,                                   5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_RED);
+        ft_set_cell_prop(table,                                                                      row,                                     5,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_RED);
       if (w->display_id == cur_display_id) {
-        ft_set_cell_prop(table,                                                                      row,                                   6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
-        ft_set_cell_prop(table,                                                                      row,                                   6,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+        ft_set_cell_prop(table,                                                                      row,                                     6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_BLUE);
+        ft_set_cell_prop(table,                                                                      row,                                     6,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
       }else
-        ft_set_cell_prop(table,                                                                      row,                                   6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+        ft_set_cell_prop(table,                                                                      row,                                     6,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
       if (w->is_minimized == true) {
-        ft_set_cell_prop(table,                                                                      row,                                   7,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-        ft_set_cell_prop(table,                                                                      row,                                   7,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+        ft_set_cell_prop(table,                                                                      row,                                     7,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+        ft_set_cell_prop(table,                                                                      row,                                     7,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
       }else
-        ft_set_cell_prop(table,                                                                      row,                                   7,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+        ft_set_cell_prop(table,                                                                      row,                                     7,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
       if (w->can_minimize == true) {
-        ft_set_cell_prop(table,                                                                      row,                                   8,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-        ft_set_cell_prop(table,                                                                      row,                                   8,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+        ft_set_cell_prop(table,                                                                      row,                                     8,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+        ft_set_cell_prop(table,                                                                      row,                                     8,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
       }else
-        ft_set_cell_prop(table,                                                                      row,                                   8,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+        ft_set_cell_prop(table,                                                                      row,                                     8,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
       if (w->is_fullscreen == true) {
-        ft_set_cell_prop(table,                                                                      row,                                   9,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-        ft_set_cell_prop(table,                                                                      row,                                   9,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+        ft_set_cell_prop(table,                                                                      row,                                     9,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+        ft_set_cell_prop(table,                                                                      row,                                     9,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
       }else
-        ft_set_cell_prop(table,                                                                      row,                                   9,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+        ft_set_cell_prop(table,                                                                      row,                                     9,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
       if (w->dur == 0)
-        ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+        ft_set_cell_prop(table,                                                                      row,                                     10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
       else if (w->dur > 20) {
-        ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-        ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
+        ft_set_cell_prop(table,                                                                      row,                                     10,                                       FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+        ft_set_cell_prop(table,                                                                      row,                                     10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_RED);
       }else if (w->dur > 10)
-        ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+        ft_set_cell_prop(table,                                                                      row,                                     10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
       else
-        ft_set_cell_prop(table,                                                                      row,                                   10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_MAGENTA);
+        ft_set_cell_prop(table,                                                                      row,                                     10,                                       FT_CPROP_CONT_FG_COLOR, FT_COLOR_MAGENTA);
     },
-    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,      void *item,                               struct list_table_t *args){
+    .row_skip = ^ bool (ft_table_t __attribute__((unused)) *table,                                   size_t __attribute__((unused)) i,        void *item,                               struct list_table_t *args){
       struct window_info_t *w = (struct window_info_t *)item;
       bool skip_row           = false;
       return(skip_row);
 
       cur_display_id = get_current_display_id();
       cur_space_id   = get_current_space_id();
-      if (args->application_name && string_compare_skip_row(args->application_name,                  w->name,                               args->exact_match,                        args->case_sensitive))
+      if (args->application_name && string_compare_skip_row(args->application_name,                  w->name,                                 args->exact_match,                        args->case_sensitive))
         skip_row = true;
       if (args->application_name) {
         char *name;
-        asprintf(&name,                                                                              "%s.app",                              args->application_name);
+        asprintf(&name,                                                                              "%s.app",                                args->application_name);
         if (
           (strcmp(stringfn_to_lowercase(args->application_name),                                     stringfn_to_lowercase(w->name)) != 0)
           && (strcmp(stringfn_to_lowercase(name),                                                    stringfn_to_lowercase(w->name)) != 0)
@@ -496,7 +496,7 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
   [TABLE_TYPE_SPACE] = &(struct table_logic_t){
     .query_items = get_spaces_v,
     .columns     = { SPACE_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,    void *item){
       struct space_t *space = (struct space_t *)item;
       term_width = 120;//get_terminal_width();
       ft_printf_ln(table,
@@ -511,27 +511,27 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    vector_size(space->window_ids_v),
                    "");
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
       struct space_t *space = (struct space_t *)item;
 
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
       if (space->is_current == true) {
-        ft_set_cell_prop(table,                                                                      i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
-        ft_set_cell_prop(table,                                                                      i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+        ft_set_cell_prop(table,                                                                      i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);
+        ft_set_cell_prop(table,                                                                      i + 1,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
       }else
-        ft_set_cell_prop(table,                                                                      i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GRAY);
+        ft_set_cell_prop(table,                                                                      i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GRAY);
       if (vector_size(space->window_ids_v) > 0)
-        ft_set_cell_prop(table,                                                                      i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
+        ft_set_cell_prop(table,                                                                      i + 1,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_GREEN);
       else
-        ft_set_cell_prop(table,                                                                      i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
+        ft_set_cell_prop(table,                                                                      i + 1,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_YELLOW);
     },
   },
   [TABLE_TYPE_DISPLAY] = &(struct table_logic_t){
     .query_items = get_displays_v,
     .columns     = { DISPLAY_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,    void *item){
       struct display_t *display = (struct display_t *)item;
       ft_printf_ln(table,
                    "%lu"
@@ -555,19 +555,19 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    display->center_x,                                                                display->center_y,
                    "");
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
       struct display_t *display = (struct display_t *)item;
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_FG_COLOR, ((display->is_main == true) ? FT_COLOR_GREEN : FT_COLOR_RED));
-      ft_set_cell_prop(table,                                                                        i + 1,                                 5,                                        FT_CPROP_CONT_FG_COLOR, ((vector_size(display->space_ids_v) > 0) ? FT_COLOR_GREEN : FT_COLOR_RED));
-      ft_set_cell_prop(table,                                                                        i + 1,                                 6,                                        FT_CPROP_CONT_FG_COLOR, ((vector_size(display->window_ids_v) > 0) ? FT_COLOR_GREEN : FT_COLOR_RED));
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_FG_COLOR, ((display->is_main == true) ? FT_COLOR_GREEN : FT_COLOR_RED));
+      ft_set_cell_prop(table,                                                                        i + 1,                                   5,                                        FT_CPROP_CONT_FG_COLOR, ((vector_size(display->space_ids_v) > 0) ? FT_COLOR_GREEN : FT_COLOR_RED));
+      ft_set_cell_prop(table,                                                                        i + 1,                                   6,                                        FT_CPROP_CONT_FG_COLOR, ((vector_size(display->window_ids_v) > 0) ? FT_COLOR_GREEN : FT_COLOR_RED));
     },
   },
   [TABLE_TYPE_HOTKEY] = &(struct table_logic_t){
     .query_items = get_config_keys_v,
     .columns     = { HOTKEY_COLUMNS },
-    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,  void *item){
+    .row         = ^ void (ft_table_t *table,                                                        size_t __attribute__((unused)) index,    void *item){
       struct key_t *hk = (struct key_t *)item;
       ft_printf_ln(table,
                    "%ld"
@@ -583,18 +583,18 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    hk->enabled ? "Yes" : "No",
                    "");
     },
-    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                              void *item){
+    .row_style = ^ void (ft_table_t *table,                                                          size_t i,                                void *item){
       struct key_t *hk = (struct key_t *)item;
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
-      ft_set_cell_prop(table,                                                                        i + 1,                                 4,                                        FT_CPROP_CONT_FG_COLOR, (hk->enabled == true)? FT_COLOR_GREEN : FT_COLOR_RED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_YELLOW);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD | FT_TSTYLE_INVERTED);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   0,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_CYAN);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_ITALIC);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   1,                                        FT_CPROP_TEXT_ALIGN, FT_ALIGNED_LEFT);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_MAGENTA);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   2,                                        FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   3,                                        FT_CPROP_CONT_FG_COLOR, FT_COLOR_LIGHT_BLUE);
+      ft_set_cell_prop(table,                                                                        i + 1,                                   4,                                        FT_CPROP_CONT_FG_COLOR, (hk->enabled == true)? FT_COLOR_GREEN : FT_COLOR_RED);
     },
   },
 };
@@ -630,9 +630,9 @@ static struct table_logic_t *tables[TABLE_TYPES_QTY] = {
                    );                                                                                \
       ft_set_cell_span(TABLE, ft_row_count(TABLE) - 1, 0, ft_col_count(TABLE));                      \
       ft_set_cell_prop(TABLE, ft_row_count(TABLE) - 1, 0, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
-      size_t w=0,h=0;\
-      char *table_s = ft_to_string(table);                                                           \
-      fprintf(TABLE_FD, "%s\n", table_s);                                                              \
+      size_t w = 0, h = 0;                                                                           \
+      char   *table_s = ft_to_string(table);                                                         \
+      fprintf(TABLE_FD, "%s\n", table_s);                                                            \
       ft_destroy_table(table);                                                                       \
       return((strlen(table_s) > 0) ? EXIT_SUCCESS : EXIT_FAILURE);                                   \
     } while (0); }
@@ -658,7 +658,7 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
 
 #define INIT_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)                                                          \
   struct list_table_t *args = (struct list_table_t *)ARGS;                                                 \
-  FILE *TABLE_FD = args->fd;\
+  FILE                *TABLE_FD = args->fd;                                                                \
   struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(), *sorted_items = vector_new(); \
   struct STRUCT_TYPE  *item, *_item;                                                                       \
   ft_table_t          *table;                                                                              \
@@ -708,19 +708,19 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
                                                                    }                                                                                                               \
                                                                  }                                                                                                                 \
                                                                }while (0); }
-#define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE)                                                                                        \
-  int FXN(void *ARGS) {                                                                                                                 \
-    INIT_TABLE_VARS(table, TYPE, STRUCT_TYPE);                                                                                          \
-    SETUP_TABLE_VARS(table, TYPE, STRUCT_TYPE);                                                                                         \
-    IF_SORT_FUNCTION_DO_SORT(NAME, TYPE, STRUCT_TYPE);                                                                                  \
-    for (size_t i = 0; i < vector_size(items_v); i++) {                                                                                 \
-      BREAK_IF_ROW_LIMIT(table, args)                                                                                                   \
-      item = VECTOR_ITEM(items_v, TYPE *, i);                                                                                           \
-      CONTINUE_IF_ROW_SKIP(i<args->offset ? true : tables[TABLE_TYPE_ ## TYPE]->row_skip ? tables[TABLE_TYPE_ ## TYPE]->row_skip(table, i, item, args) : false) \
-      tables[TABLE_TYPE_ ## TYPE]->row(table, i, item);                                                                                 \
-      tables[TABLE_TYPE_ ## TYPE]->row_style(table, i, item);                                                                           \
-    }                                                                                                                                   \
-    TABLE_SUMMARY(NAME, items_v, table, durs);                                                                                          \
+#define LIST_TABLE(FXN, NAME, TYPE, STRUCT_TYPE)                                                                                                                  \
+  int FXN(void *ARGS) {                                                                                                                                           \
+    INIT_TABLE_VARS(table, TYPE, STRUCT_TYPE);                                                                                                                    \
+    SETUP_TABLE_VARS(table, TYPE, STRUCT_TYPE);                                                                                                                   \
+    IF_SORT_FUNCTION_DO_SORT(NAME, TYPE, STRUCT_TYPE);                                                                                                            \
+    for (size_t i = 0; i < vector_size(items_v); i++) {                                                                                                           \
+      BREAK_IF_ROW_LIMIT(table, args)                                                                                                                             \
+      item = VECTOR_ITEM(items_v, TYPE *, i);                                                                                                                     \
+      CONTINUE_IF_ROW_SKIP(i < args->offset ? true : tables[TABLE_TYPE_ ## TYPE]->row_skip ? tables[TABLE_TYPE_ ## TYPE]->row_skip(table, i, item, args) : false) \
+      tables[TABLE_TYPE_ ## TYPE]->row(table, i, item);                                                                                                           \
+      tables[TABLE_TYPE_ ## TYPE]->row_style(table, i, item);                                                                                                     \
+    }                                                                                                                                                             \
+    TABLE_SUMMARY(NAME, items_v, table, durs);                                                                                                                    \
   }
 LIST_TABLE_ITEMS()
 #undef LIST_TABLE

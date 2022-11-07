@@ -8,8 +8,8 @@
 #include "c_vector/vector/vector.h"
 #include "log/log.h"
 #include "ms/ms.h"
-#include "sdl-utils/sdl-utils.h"
 #include "sdl-utils-test/sdl-utils-test.h"
+#include "sdl-utils/sdl-utils.h"
 #include "timestamp/timestamp.h"
 
 TEST t_sdl_utils_test1(){

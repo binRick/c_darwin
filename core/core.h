@@ -2,6 +2,7 @@
 #ifndef CORE_H
 #define CORE_H
 //////////////////////////////////////
+#include "qoir/src/qoir.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -15,18 +16,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include "qoir/src/qoir.h"
 //////////////////////////////////////
 #include "submodules/c_ansi/ansi-codes/ansi-codes.h"
 #include "submodules/c_ansi/ansi-utils/ansi-utils.h"
 //////////////////////////////////////
 #include "bytes/bytes.h"
-#include "sha256.c/sha256.h"
 #include "c_fsio/include/fsio.h"
+#include "c_ringbuf/ringbuf.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
@@ -43,6 +43,7 @@
 #include "optparse99/optparse99.h"
 #include "parson/parson.h"
 #include "path_module/src/path.h"
+#include "sha256.c/sha256.h"
 #include "sqldbal/src/sqldbal.h"
 #include "string-utils/string-utils.h"
 #include "submodules/bitfield/bitfield.h"
@@ -53,7 +54,6 @@
 #include "timelib/timelib.h"
 #include "timestamp/timestamp.h"
 #include "variation-ui/vn_ui.h"
-#include "c_ringbuf/ringbuf.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"

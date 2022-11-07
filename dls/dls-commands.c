@@ -58,12 +58,12 @@
     struct list_table_t *filter = &(struct list_table_t){                 \
       .limit    = args->limit,                                            \
       .sort_key = args->sort_key, .sort_direction = args->sort_direction, \
-      .offset = (size_t)(args->offset),\
-      .fd = args->fd,\
-    };                                     \
-    size_t buf_len = get_terminal_width()*get_terminal_height()*32;\
-    char *buf = calloc(1,buf_len+1);\
-    filter->fd = fmemopen(buf,buf_len,"w");\
+      .offset   = (size_t)(args->offset),                                 \
+      .fd       = args->fd,                                               \
+    };                                                                    \
+    size_t buf_len = get_terminal_width() * get_terminal_height() * 32;   \
+    char   *buf    = calloc(1, buf_len + 1);                              \
+    filter->fd = fmemopen(buf, buf_len, "w");                             \
     switch (args->output_mode) {                                          \
     case OUTPUT_MODE_TABLE: list_ ## NAME ## _table(filter); break;       \
     case OUTPUT_MODE_JSON:                                                \
@@ -71,8 +71,8 @@
     case OUTPUT_MODE_TEXT:                                                \
       break;                                                              \
     }                                                                     \
-    fclose(filter->fd);\
-    fprintf(stdout,"%s",(char*)buf);\
+    fclose(filter->fd);                                                   \
+    fprintf(stdout, "%s", (char *)buf);                                   \
     exit(EXIT_SUCCESS);                                                   \
   }
 #define CLAMP_ARG_TYPE(ARGS, ARG, TYPE)               clamp(ARGS->ARG, arg_clamps[TYPE].min, arg_clamps[TYPE].max)
@@ -1938,7 +1938,6 @@ static char *get_type_format_output_file(size_t id, char *dir, enum capture_type
   return(output_file);
 }
 
-
 static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v){
   struct capture_image_result_t *r = NULL;
 
@@ -2608,13 +2607,14 @@ static void _command_test_pick(){
 
 static void _command_db_insert_app_icon(){
   COMMAND_DB_COMMON();
-  log_info("%s",TABLE_FIELDS_INSERT_STATEMENT_APP_ICONS);
+  log_info("%s", TABLE_FIELDS_INSERT_STATEMENT_APP_ICONS);
   hash_t *H = hash_new();
-  hash_set(H,"created_ts",(void*)(size_t)timestamp());
-  hash_set(H,"binary_path",(void*)"xxxxxxxxx");
+  hash_set(H, "created_ts", (void *)(size_t)timestamp());
+  hash_set(H, "binary_path", (void *)"xxxxxxxxx");
   BIND_FIELDS_INSERT_STATEMENT_APP_ICONS(H)
   exit(EXIT_SUCCESS);
 }
+
 static void _command_db_init(){
   COMMAND_DB_COMMON();
   exit(EXIT_SUCCESS);

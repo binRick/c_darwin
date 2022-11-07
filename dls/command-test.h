@@ -12,14 +12,14 @@ struct stream_update_t {
   size_t        bytes_per_pixel;
   size_t        pixels_qty;
   float         pixels_percent;
-  char *png_file;
-  VipsImage *imgs[10];
-  VipsImage *image;
-  VipsImage *img, *png_img;
-  size_t png_buf_len;
+  char          *png_file;
+  VipsImage     *imgs[10];
+  VipsImage     *image;
+  VipsImage     *img, *png_img;
+  size_t        png_buf_len;
   unsigned char *png_buf;
-  VipsPel *mem;
-  ringbuf_t rb;
+  VipsPel       *mem;
+  ringbuf_t     rb;
 };
 struct stream_setup_t {
   CFRunLoopRef    *loop;
@@ -27,15 +27,15 @@ struct stream_setup_t {
   bool            ended, debug_mode, verbose_mode;
   pthread_t       threads[5];
   pthread_mutex_t *mutex;
-  void **buffers;
+  void            **buffers;
   struct Vector   *heartbeat, *rectangles;
   chan_t          *chan;
-  unsigned long ts;
-  char *png_file;
-  unsigned char *png; size_t png_len;
-  VipsImage *imgs[10];
-  VipsImage *image;
-  VipsImage *img;
+  unsigned long   ts;
+  char            *png_file;
+  unsigned char   *png; size_t png_len;
+  VipsImage       *imgs[10];
+  VipsImage       *image;
+  VipsImage       *img;
 };
 ////////////////////////////////////////////////////////////
 #define ADD_DB_COMMAND_PROTOTYPES()
@@ -82,7 +82,7 @@ int _command_test_terminal(void);
 COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #undef COMMAND_TEST_ADD_TEST_PROTOTYPES
 #define COLOR_CMD            "\x1b[38;2;50;252;50m"
-#define COLOR_TERMPAINT            "\x1b[38;2;50;252;50m"
+#define COLOR_TERMPAINT      "\x1b[38;2;50;252;50m"
 #define COLOR_TEST           "\x1b[38;2;243;233;217m"
 #define COLOR_CAP            "\x1b[38;2;151;252;50m"
 #define COLOR_HASH           "\x1b[38;2;151;50;252m"
@@ -106,7 +106,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define ICON_RUN             "👽"
 #define ICON_TEST            "🔔"
 #define ICON_CMD             "💻"
-#define ICON_TERMPAINT             "💻"
+#define ICON_TERMPAINT       "💻"
 #define ICON_STREAM          "🌊"
 #define ICON_CAP             "🎩"
 ///////////////
@@ -160,7 +160,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define COMMON_OPTIONS_TEST_STREAM_WINDOW            \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
 ///////////////
-#define COMMON_OPTIONS_TEST_TERMPAINT           \
+#define COMMON_OPTIONS_TEST_TERMPAINT                \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
 ///////////////
 ///////////////
@@ -196,7 +196,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_DROID, ),                         \
   CREATE_SUBCOMMAND(TEST_FILE_READER, ),                   \
   CREATE_SUBCOMMAND(TEST_FROG, ),                          \
-  CREATE_SUBCOMMAND(TEST_TERMINAL, ),                          \
+  CREATE_SUBCOMMAND(TEST_TERMINAL, ),                      \
   CREATE_SUBCOMMAND(TEST_SHAPE, ),                         \
   CREATE_SUBCOMMAND(TEST_LAYOUT, SUBCOMMANDS_TEST_LAYOUT), \
   CREATE_SUBCOMMAND(TEST_CAP, SUBCOMMANDS_TEST_CAP),       \
@@ -207,13 +207,13 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define ADD_TEST_TYPES() \
   COMMAND_TEST_CMD,      \
 ////////////////
-#define ADD_TEST_SUBCOMMANDS()                      \
-  CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST),        \
+#define ADD_TEST_SUBCOMMANDS()               \
+  CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST), \
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
-#define ADD_DB_SUBCOMMANDS()                      \
+#define ADD_DB_SUBCOMMANDS() \
 ////////////////////////////////////////////////////////////
-#define ADD_DB_COMMANDS()\
+#define ADD_DB_COMMANDS() \
 ////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMANDS()                                                                                                            \
   COMMAND(ICON_TEST, TEST, "test", COLOR_LIST, "Test Commands", 0)                                                                     \
@@ -236,7 +236,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   COMMAND(ICON_FROG, TEST_FROG, "frog", COLOR_FROG, "Test Frog", *_command_test_frog)                                                  \
   COMMAND(ICON_LAYOUT, TEST_LAYOUTS, "all", COLOR_LAYOUT, "Test Layouts", *_command_test_layouts)                                      \
   COMMAND(ICON_LAYOUT, TEST_LAYOUT_VERTICAL, "vertical", COLOR_LAYOUT, "Test Vertical Layout", *_command_test_layout_vertical)         \
-  COMMAND(ICON_TERMINAL, TEST_TERMINAL, "terminal", COLOR_TERMINAL, "Test Terminal", *_command_test_terminal)         \
+  COMMAND(ICON_TERMINAL, TEST_TERMINAL, "terminal", COLOR_TERMINAL, "Test Terminal", *_command_test_terminal)                          \
   COMMAND(ICON_WINDOW, TEST_FIND_WINDOW, "find", COLOR_WINDOW, "Test Find Window", *_command_test_find_window)                         \
   COMMAND(ICON_LAYOUT, TEST_LAYOUT_HORIZONTAL, "horizontal", COLOR_LAYOUT, "Test Horizontal Layout", *_command_test_layout_horizontal) \
 //////////////////////////////////////////////////

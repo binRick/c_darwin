@@ -74,15 +74,15 @@ static int receive_save_request_handler(void *R){
     dur = timestamp() - save_started;
 
     debug("Thread #%lu>"
-              "\n\tReceived %s %s Save Capture Request #%lu to %s"
-              "%s",
-              r->index + 1,
-              bytes_to_string(res->len),
-              image_type_name(res->format),
-              qty,
-              res->file,
-              ""
-              );
+          "\n\tReceived %s %s Save Capture Request #%lu to %s"
+          "%s",
+          r->index + 1,
+          bytes_to_string(res->len),
+          image_type_name(res->format),
+          qty,
+          res->file,
+          ""
+          );
     r->bytes = fsio_file_size(res->file);
     chan_send(r->done_chan, (void *)r);
   }

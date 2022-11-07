@@ -8,9 +8,10 @@ static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
 static bool                   DARWIN_LS_DEBUG_MODE = false;
 const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 static void __at_exit(void);
+
 static void __at_exit(void){
-  fprintf(stdout,"%s",AC_SHOW_CURSOR);
-  fprintf(stdout,"%s",AC_RESTORE_PALETTE);
+  fprintf(stdout, "%s", AC_SHOW_CURSOR);
+  fprintf(stdout, "%s", AC_RESTORE_PALETTE);
   fflush(stdout);
   return;
 }
@@ -29,21 +30,21 @@ static void __at_exit(void){
   }
 #define COMMON_OPTIONS_BASE \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-#define COMMON_OPTIONS_APP\
-  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-  common_options_b[COMMON_OPTION_VERBOSE_MODE](args),              \
-  common_options_b[COMMON_OPTION_DEBUG_MODE](args),                \
+#define COMMON_OPTIONS_APP                            \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),  \
+  common_options_b[COMMON_OPTION_VERBOSE_MODE](args), \
+  common_options_b[COMMON_OPTION_DEBUG_MODE](args),   \
   common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-#define COMMON_OPTIONS_APP_LIST\
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_APP_LIST                 \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_PROCESS\
-  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-  common_options_b[COMMON_OPTION_VERBOSE_MODE](args),              \
-  common_options_b[COMMON_OPTION_DEBUG_MODE](args),                \
+#define COMMON_OPTIONS_PROCESS                        \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),  \
+  common_options_b[COMMON_OPTION_VERBOSE_MODE](args), \
+  common_options_b[COMMON_OPTION_DEBUG_MODE](args),   \
   common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
-#define COMMON_OPTIONS_PROCESS_LIST\
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_PROCESS_LIST             \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_UI                                          \
   common_options_b[COMMON_OPTION_VERBOSE_MODE](args),              \
@@ -64,21 +65,21 @@ static void __at_exit(void){
   common_options_b[COMMON_OPTION_WIDTH](args), \
   common_options_b[COMMON_OPTION_HEIGHT](args),
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-#define SUBCOMMANDS_DB\
-  CREATE_SUBCOMMAND(DB_INIT, ),      \
-  CREATE_SUBCOMMAND(DB_INSERT_ROW_APP_ICON, ),      \
-  CREATE_SUBCOMMAND(DB_TEST, ),      \
-  CREATE_SUBCOMMAND(DB_INFO, ),      \
-  CREATE_SUBCOMMAND(DB_LOAD, ),      \
-  CREATE_SUBCOMMAND(DB_TABLES, ),    \
-  CREATE_SUBCOMMAND(DB_ROWS, ),      \
-  CREATE_SUBCOMMAND(DB_TABLE_IDS, ), \
-  CREATE_SUBCOMMAND(DB,),
+#define SUBCOMMANDS_DB                         \
+  CREATE_SUBCOMMAND(DB_INIT, ),                \
+  CREATE_SUBCOMMAND(DB_INSERT_ROW_APP_ICON, ), \
+  CREATE_SUBCOMMAND(DB_TEST, ),                \
+  CREATE_SUBCOMMAND(DB_INFO, ),                \
+  CREATE_SUBCOMMAND(DB_LOAD, ),                \
+  CREATE_SUBCOMMAND(DB_TABLES, ),              \
+  CREATE_SUBCOMMAND(DB_ROWS, ),                \
+  CREATE_SUBCOMMAND(DB_TABLE_IDS, ),           \
+  CREATE_SUBCOMMAND(DB, ),
 #define SUBCOMMANDS_APP_LIST
-#define SUBCOMMANDS_APP\
+#define SUBCOMMANDS_APP \
   CREATE_SUBCOMMAND(APP_LIST, ),
 #define SUBCOMMANDS_PROCESS_LIST
-#define SUBCOMMANDS_PROCESS\
+#define SUBCOMMANDS_PROCESS \
   CREATE_SUBCOMMAND(PROCESS_LIST, ),
 #define COMMON_OPTIONS_TABLE                         \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
@@ -94,7 +95,7 @@ static void __at_exit(void){
   common_options_b[COMMON_OPTION_SORT_WINDOW_KEYS](args), \
   common_options_b[COMMON_OPTION_HIDE_COLUMNS](args),     \
   common_options_b[COMMON_OPTION_SHOW_COLUMNS](args),
-#define COMMON_OPTIONS_DB_INSERT_ROW_APP_ICON 
+#define COMMON_OPTIONS_DB_INSERT_ROW_APP_ICON
 #define COMMON_OPTIONS_DB_SAVE \
   common_options_b[COMMON_OPTION_DB_SAVE](args),
 #define COMMON_OPTIONS_PROCESSES \
@@ -133,8 +134,8 @@ static void __at_exit(void){
   COMMON_OPTIONS_DB            \
   common_options_b[COMMON_OPTION_DB_TABLES](args),
 #define COMMON_OPTIONS_SPACE
-#define COMMON_OPTIONS_SPACE_LIST\
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_SPACE_LIST               \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_SPACE_CREATE
 #define COMMON_OPTIONS_WINDOW
@@ -144,18 +145,18 @@ static void __at_exit(void){
 #define COMMON_OPTIONS_HOTKEYS_LIST \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_HOTKEYS_SERVER
-#define COMMON_OPTIONS_WINDOW_LIST \
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_WINDOW_LIST              \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_WINDOW_PROPS \
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_WINDOW_PROPS             \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
-#define COMMON_OPTIONS_WINDOW_NAMES \
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_WINDOW_NAMES             \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_WINDOW_QTY
-#define COMMON_OPTIONS_WINDOW_IDS \
-  common_options_b[COMMON_OPTION_OFFSET](args),\
+#define COMMON_OPTIONS_WINDOW_IDS               \
+  common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
 #define COMMON_OPTIONS_WINDOW_STICKY
 #define COMMON_OPTIONS_WINDOW_UNSTICKY
@@ -232,7 +233,7 @@ struct args_t *args = &(struct args_t){
   .sort_key                           = NULL,
   .sort_direction                     = "asc",
   .current_space_only                 = false,
-  .dls_clear_screen                       = false,
+  .dls_clear_screen                   = false,
   .minimized_only                     = false,
   .application_name                   = NULL,
   .width_greater                      = -1, .width_less = -1,
@@ -255,7 +256,7 @@ struct args_t *args = &(struct args_t){
   .icon_sizes_v                       = NULL,
   .format_names_qty                   = 0,
   .hide_columns_qty                   = 0,
-  .offset = 0,
+  .offset                             = 0,
 //  .fd = stdout,
 };
 char                *DLS_RE_EXEC_CMD = NULL;
@@ -418,16 +419,16 @@ static void __attribute__((destructor)) __destructor__dls(void){
 static void __attribute__((constructor)) __constructor__dls(void){
   log_debug("%lu options", sizeof(__optparse_opt) / sizeof(__optparse_opt[0]));
 //^[\^[]4;1;#cc6666^[\^[]4;2;#66cc99^[\^[]4;3;#cc9966^[\^[]4;4;#6699cc^[\^[]4;5;#cc6699^[\^[]4;6;#66cccc^[\^[]4;7;#cccccc^[\^[]4;8;#999999^[\^[]4;9;#cc6666^[\^[]4;10;#66cc99^[\^[]4;11;#cc9966^[\^[]4;12;#6699cc^[\^[]4;13;#cc6699^[\^[]4;14;#66cccc^[\^[]4;15;#cccccc^[\^[[21D"
-  char *__ansi = ""\
-  "\033]11;#000000"\
-  "\033]10;#ffffff"\
-  "\033]12;#ff9999"\
-  "\033]4;13;#cc6699"\
-  "\033]4;14;#66cccc"\
-  "\033]4;15;#cccccc"\
-  "\033[?1049l"\
-  "\033[21D"\
-  "";
+  char *__ansi = ""                  \
+                 "\033]11;#000000"   \
+                 "\033]10;#ffffff"   \
+                 "\033]12;#ff9999"   \
+                 "\033]4;13;#cc6699" \
+                 "\033]4;14;#66cccc" \
+                 "\033]4;15;#cccccc" \
+                 "\033[?1049l"       \
+                 "\033[21D"          \
+                 "";
   if (false)
     printf(
       "%s"

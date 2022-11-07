@@ -406,38 +406,47 @@ bool Table_create(const VSelf) {
   VSELF(const DB);
   return(NULL);
 }
+
 bool Table_insert(const VSelf) {
   VSELF(const DB);
   return(NULL);
 }
+
 bool Table_delete_id(const VSelf, size_t id) {
   VSELF(const DB);
   return(false);
 }
+
 bool Table_delete_hash(const VSelf, hash_t *h) {
   VSELF(const DB);
   return(false);
 }
+
 char *Table_schema(const VSelf) {
   VSELF(const DB);
   return(NULL);
 }
+
 char *Table_hash(const VSelf) {
   VSELF(const DB);
   return(NULL);
 }
+
 bool Table_exists_id(const VSelf, size_t id) {
   VSELF(const DB);
   return(false);
 }
+
 bool Table_exists_hash(const VSelf, hash_t *h) {
   VSELF(const DB);
   return(false);
 }
+
 hash_t *Table_select_id(const VSelf, size_t id) {
   VSELF(const DB);
   return(NULL);
 }
+
 hash_t *Table_select_hash(const VSelf, hash_t *h) {
   VSELF(const DB);
   return(NULL);
@@ -446,11 +455,13 @@ hash_t *Table_select_hash(const VSelf, hash_t *h) {
 typedef struct {
   const char *name;
 } Table;
+
 Table *Table_new(const char *name) {
-    Table *self = malloc(sizeof *self);
-    assert(self);
-    self->name = name;
-    return self;
+  Table *self = malloc(sizeof *self);
+
+  assert(self);
+  self->name = name;
+  return(self);
 }
 implExtern(DB, Table);
 
