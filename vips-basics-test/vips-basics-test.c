@@ -1,4 +1,3 @@
-
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -22,14 +21,14 @@
 #include "incbin/incbin.h"
 INCBIN(communist_goals, "assets/communist-goals.png");
 INCBIN(kitty_icon, "assets/kitty_icon.png");
-INCBIN(spinner, "assets/spinner.gif");
-INCBIN(kitty_icon_gif, "assets/kitty_icon.gif");
+INCBIN(spinner0, "assets/spinner0.gif");
+INCBIN(spinner1, "assets/spinner1.gif");
 #define PROGRESS    false
 #define QTY(X)    (sizeof(X) / sizeof(X[0]))
 static const char
 *gifs[] = {
-  "/tmp/spinner.gif",
-  "/tmp/kitty_icon.gif",
+  "/tmp/spinner1.gif",
+  "/tmp/spinner0.gif",
 },
 *frame_exts[] = { "qoi", "png", "gif", "jpg", "webp", },
 *files[]      = {
@@ -89,18 +88,18 @@ TEST t_vips_gif_frames(){
   size_t        qty = 0, total_bytes = 0;
   unsigned long ts = timestamp();
 
-  for (size_t i = 0; i < gifs_qty; i++)
+  for (size_t i = 0; i < gifs_qty; i++){
+    infile  = gifs[i];
+    if (!(image = vips_image_new_from_file(infile, "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
+      FAILm("Failed to load file");
     for (size_t o = 0; o < QTY(frame_exts); o++) {
-      infile  = gifs[i];
-      context = VIPS_OBJECT(vips_image_new());
-      if (!(image = vips_image_new_from_file(infile, "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
-        FAILm("Failed to load file");
       if (vips_image_get_n_pages(image) > 1)
         for (int f = 0; f < vips_image_get_n_pages(image); f++) {
+          asprintf(&outfile, "/tmp/gif-%s-%lu-%lu-frame-%d.%s", basename(stringfn_substring(infile, 0, strlen(infile) - 4)), i, TEST_INDEX, f, frame_exts[o]);
+          if(fsio_file_exists(outfile))fsio_remove(outfile);
           unsigned long ts = timestamp();
           if (!(frames = vips_image_new_from_file(infile, "access", VIPS_ACCESS_SEQUENTIAL, "page", f, NULL)))
             FAIL();
-          asprintf(&outfile, "/tmp/gif-%s-%lu-%lu-frame-%d.%s", basename(stringfn_substring(infile, 0, strlen(infile) - 4)), i, TEST_INDEX, f, frame_exts[o]);
           if (vips_image_write_to_file(frames, outfile, NULL))
             FAIL();
           if (greatest_get_verbosity() > 0)
@@ -111,11 +110,12 @@ TEST t_vips_gif_frames(){
                       );
           total_bytes += fsio_file_size(outfile);
           qty++;
-          KITTY_PRINT_PATH(outfile);
+          if(fsio_file_size(outfile)>0)
+            KITTY_PRINT_PATH(outfile);
+      g_object_unref(frames);
         }
-
+    }
       g_object_unref(image);
-      g_object_unref(context);
     }
   log_debug(AC_BLUE "Wrote %lu %s Images in %s", qty,
             bytes_to_string(total_bytes),
@@ -234,39 +234,6 @@ TEST t_vips_annotate(){
   PASSm(msg);
 } /* t_vips_basics_test2 */
 
-TEST t_vips_basics_test1(){
-  size_t UNUSED TEST_INDEX = 1;
-
-  for (size_t i = 0; i < files_qty; i++) {
-    char      *infile = files[i];
-    VipsImage *image;
-    void      *new_buf;
-    size_t    new_len;
-    gchar     *buf;
-    gsize     len;
-
-    if (!g_file_get_contents(infile, &buf, &len, NULL))
-      FAIL();
-    if (!(image = vips_image_new_from_buffer(buf, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
-      FAIL();
-
-    if (vips_image_write_to_buffer(image, ".jpg", &new_buf, &new_len, "Q", 95, NULL))
-      FAIL();
-    log_debug(AC_YELLOW "%s [%dx%d] (%d) : %s -> %s" AC_RESETALL,
-              infile,
-              vips_image_get_width(image),
-              vips_image_get_height(image),
-              vips_image_get_format(image),
-              bytes_to_string(len), bytes_to_string(new_len)
-              );
-
-    g_object_unref(image);
-    g_free(new_buf);
-    g_free(buf);
-  }
-
-  PASS();
-} /* t_vips_basics_test1 */
 
 SUITE(s_vips_annotate) {
   RUN_TEST(t_vips_annotate);
@@ -284,8 +251,8 @@ int main(int argc, char **argv) {
   VIPS_INIT(argv);
   fsio_write_binary_file(files[0], gcommunist_goalsData, gcommunist_goalsSize);
   fsio_write_binary_file(files[1], gkitty_iconData, gkitty_iconSize);
-  fsio_write_binary_file(gifs[0], gspinnerData, gspinnerSize);
-  fsio_write_binary_file(gifs[1], gkitty_icon_gifData, gkitty_icon_gifSize);
+  fsio_write_binary_file(gifs[1], gspinner0Data, gspinner0Size);
+  fsio_write_binary_file(gifs[0], gspinner1Data, gspinner1Size);
   GREATEST_MAIN_BEGIN();
   RUN_SUITE(s_vips_annotate);
   RUN_SUITE(s_vips_resize);
