@@ -49,7 +49,7 @@ darwin_ls_include_dirs = [
 darwin_ls_deps = [
   curses_dep,
   c_pick_dep,
-  frameworks_dep,tp_dep,
+  frameworks_dep,tp_dep,color_dep,
   metalang99_dep,
   interface99_dep,
   core_dep,

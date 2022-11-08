@@ -204,7 +204,8 @@ enum db_loader_t {
 };
 typedef bool (*db_loader_fxn)(struct sqldbal_db *db);
 bool db_test(void);
-bool db_rows(char *table);
+size_t db_rows(char *table);
+size_t db_table_size(char *table);
 bool db_table(char *table);
 struct Vector *db_table_ids_v(char *table);
 struct Vector *db_tables_v(void);

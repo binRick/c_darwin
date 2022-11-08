@@ -4,9 +4,9 @@
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100
 #define MIN_STREAM_WIDTH           100
-#define MAX_STREAM_WIDTH           3000
+#define MAX_STREAM_WIDTH           6000
 #define MIN_STREAM_HEIGHT          100
-#define MAX_STREAM_HEIGHT          3000
+#define MAX_STREAM_HEIGHT          6000
 static bool DEBUG_STREAM_UPDATES = false;
 static bool WINDOW_UTILS_DEBUG_MODE = false, WINDOW_UTILS_VERBOSE_DEBUG_MODE = false;
 static char *get_axerror_name(AXError err);
@@ -234,6 +234,11 @@ int wu_stream_display(void *L){
         size_t                 updatedRectsCount = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), offset_beg = 0, copy_len = 0, seed = IOSurfaceGetSeed(frame);
         struct stream_update_t *u;
         IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
+        int h = IOSurfaceGetHeight(frame);
+        int w = IOSurfaceGetWidth(frame);
+        CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+
+
 
         updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
         for (size_t i = 0; i < updatedRectsCount; i++) {
@@ -247,122 +252,22 @@ int wu_stream_display(void *L){
           u->seed       = seed;
           u->id         = id;
           copy_len      = u->rect.size.width * 4;
-          u->width      = width;
-          u->height     = height;
+          u->width      = IOSurfaceGetWidth(frame);
+          u->height     = IOSurfaceGetHeight(frame);
           u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
-          u->mem        = VIPS_ARRAY(NULL, 4 * u->rect.size.width * u->rect.size.height, VipsPel);
           u->buf        = calloc(1, len);
           u->buf_len    = 0;
-          if (!last_buf) {
-            last_rect       = u->rect;
-            last_buf_width  = u->width;
-            last_buf_height = u->height;
-            last_stride     = stride;
-            last_buf_len    = last_buf_width * last_buf_height * 4;
-            last_buf        = calloc(1, last_buf_len);
-            total_buf       = calloc(1, last_buf_len);
-            //           Dbg(vips_image_get_width(last_image),%d);
-//            Dbg(vips_image_get_height(last_image),%d);
-          }
-          for (size_t I = 0; I < u->rect.size.height; I++) {
-          }
+          u->stride=stride;
           u->buf_len = 0;
-          //(last_buf_len - u->buf_len);
           size_t offset = 0;
-          //(u->rect.origin.x)*4;
-//          offset += (u->rect.origin.x + (last_rect.size.width - u->rect.size.width)) * 4;
-          for (size_t I = 0; I < u->rect.size.height; I++) {
-//              offset += ((4 * (last_rect.size.height - (u->rect.origin.y + I))) + (last_rect.size.width - u->rect.size.width + u->rect.origin.x*4) * 1);
-//            offset += stride * (u->rect.origin.y +I);
-          }
-//          offset = (stride * (u->rect.origin.y + (last_buf_height - u->height)*4) + ((last_buf_width - u->rect.origin.x) * 4));
-          //(last_buf_height - u->height * last_stride) * last_buf_;
-//          offset = 4*(u->rect.width*u->rect.height);
-//VipsImage imgs[10], *img;
-//img = vips_image_new_from_buffer(u->png, u->png_len, "", NULL);
           for (size_t I = 0; I < u->rect.size.height; I++) {
             offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
             void *dst = (u->buf + (copy_len * I));
             void *src = (frame_addr + offset_beg);
             if (copy_len > 0 && dst && src)
               memcpy(dst, src, copy_len);
-//            Dbg(,%lu);
-// if(!(           last_image = vips_image_new_from_memory(dst, copy_len, u->rect.size.width,u->rect.size.height/u->rect.origin.y,4,VIPS_FORMAT_UCHAR))){
-//   log_error("vips err dst");
-//exit(EXIT_FAILURE);
-            // }else{
-//log_info("vips ok");
-//   }
-
-//            aif (vips_embed (&img, &(imgs[I]), u->rect.origin.x, u->rect.origin.y, u->rect.size.width, u->rect.size.height, NULL))
-//              log_error("embed failed");
-
-//          offset += u->rect.origin.y * (I+1);
-//            memcpy(total_buf + (last_buf_len - (int)u->rect.size.height*copy_len) + u->buf_len, u->buf + u->buf_len, copy_len);
-//            memcpy(last_buf + u->buf_len + (stride*((int)u->rect.origin.y+I) +(int)u->rect.origin.x*4) , frame_addr + offset_beg, copy_len);
             u->buf_len += copy_len;
           }
-          for (size_t I = 0; I < u->rect.size.height; I++) {
-          }
-//          offset = ((4 * u->rect.origin.x + (last_rect.size.width - u->rect.size.width)) + (4 * (last_rect.size.height - u->rect.size.height) + u->rect.origin.y) * last_stride);
-          for (size_t I = 0; I < u->rect.size.height; I++) {
-//            offset += u->rect.origin.x
-//       memcpy(total_buf + offset + u->buf_len, u->buf+u->buf_len,copy_len);
-          }
-#if 0
-          if (CGRectIntersectsRect(last_rect, u->rect)) {
-            CGPoint _p1 = GetOffsetBetweenFrames(last_rect, u->rect), *p1 = &_p1;
-            CGRect  _f1 = CGRectOffset(u->rect, p1->x, p1->y), *f1 = &_f1;
-            char    *msg;
-
-            asprintf(&msg, "Copying %d/%d Pixels from %dx%d %s to %s (%s) from %s Buffer to %s Buffer",
-                     (int)(u->rect.size.width * u->rect.size.height),
-                     (int)(last_rect.size.width * last_rect.size.height),
-                     (int)(u->rect.origin.x), (int)(u->rect.origin.y),
-                     bytes_to_string(123),
-                     bytes_to_string(123),
-                     bytes_to_string(123),
-                     bytes_to_string(123),
-                     bytes_to_string(123)
-                     );
-            log_info("offset p1=%dx%d, f1=%dx%d @ %dx%d, last %dx%d, frame %dx%d @ %dx%d, %s",
-                     (int)(p1->x),
-                     (int)(p1->y),
-                     (int)(f1->size.width),
-                     (int)(f1->size.height),
-                     (int)(f1->origin.x),
-                     (int)(f1->origin.y),
-                     (int)(last_rect.size.width),
-                     (int)(last_rect.size.height),
-                     (int)(u->rect.size.width),
-                     (int)(u->rect.size.height),
-                     (int)(u->rect.origin.x),
-                     (int)(u->rect.origin.y),
-                     msg
-
-                     );
-          }
-          log_debug("ffset:%s|buf len:%s|last len:%s",
-                    bytes_to_string(offset),
-                    bytes_to_string(u->buf_len),
-                    bytes_to_string(last_buf_len)
-                    );
-          if (total_buf && last_buf_len) {
-            if (!(u->image = vips_image_new_from_memory(total_buf, 1 * last_buf_len, 1 * (int)last_rect.size.width, 1 * (int)last_rect.size.height, 4, VIPS_FORMAT_UCHAR))) {
-              log_error("Failed to decode memory");
-              //exit(EXIT_FAILURE);
-            }
-            if (vips_pngsave_buffer(u->image, &u->png, &u->png_len, NULL)) {
-              log_error("Failed to save buffer");
-              //exit(EXIT_FAILURE);
-            }
-            asprintf(&u->png_file, "%sdisplay-%lu-%.2lu.png", gettempdir(), u->id, wrote_files_qty);
-            if (wrote_files_qty < MAX_WRITE_FILES_QTY) {
-              fsio_write_binary_file(u->png_file, u->png, u->png_len);
-              wrote_files_qty++;
-            }
-          }
-#endif
           pthread_mutex_unlock(&last_mutex);
 
           u->pixels_percent = (float)u->pixels_qty / ((float)u->width * (float)u->height) * (float)100;

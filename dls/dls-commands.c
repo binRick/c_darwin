@@ -397,6 +397,7 @@ COMMAND_PROTOTYPE(icon_info)
 COMMAND_PROTOTYPE(image_conversions)
 COMMAND_PROTOTYPE(list_alacritty)
 COMMAND_PROTOTYPE(list_app)
+COMMAND_PROTOTYPE(list_icons)
 COMMAND_PROTOTYPE(list_display)
 COMMAND_PROTOTYPE(list_font)
 COMMAND_PROTOTYPE(list_hotkey)
@@ -1272,6 +1273,7 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   /*************************************/
   COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)
   COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app)
+  COMMAND(ICON_LIST, APP_ICONS, "icons", COLOR_LIST, "List Icons", *_command_list_icons)
   COMMAND(ICON_SERVER, HOTKEYS, "hotkey", COLOR_SERVER, "Hotkey", 0)
   COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkey Server", *_command_hotkeys_server)
   COMMAND(ICON_SERVER, HOTKEYS_FORK_SERVER, "fork-server", COLOR_SERVER, "Hotkey Fork Server", *_command_hotkeys_fork_server)
@@ -2511,9 +2513,11 @@ static void _command_db_table_ids(){
   COMMAND_DB_COMMON();
   struct Vector *v;
   for (size_t i = 0; i < args->db_tables_qty; i++) {
-    if ((v = db_table_ids_v(args->db_tables[i])))
-      printf("Table %s has %lu rows\n", args->db_tables[i], vector_size(v));
-    else{
+    if ((v = db_table_ids_v(args->db_tables[i]))) {
+      printf("%s\n", args->db_tables[i]);
+      for (size_t x = 0; x < vector_size(v); x++)
+        printf("- %ld\n", (size_t)vector_get(v, x));
+    }else{
       log_error("Failed to List Table %s IDs", args->db_tables[i]);
       exit(EXIT_FAILURE);
     }
@@ -2524,10 +2528,16 @@ static void _command_db_table_ids(){
 static void _command_db_tables(){
   COMMAND_DB_COMMON();
   struct Vector *v;
+  char          *tbl;
+  size_t        rows, size;
   if ((v = db_tables_v())) {
-    printf("Database has %lu tables\n", vector_size(v));
-    for (size_t i = 0; i < vector_size(v); i++)
-      printf(" - %s\n", (char *)vector_get(v, i));
+    fprintf(stdout, "Database has %lu tables\n", vector_size(v));
+    for (size_t i = 0; i < vector_size(v); i++) {
+      tbl  = (char *)vector_get(v, i);
+      rows = db_rows(tbl);
+      size = db_table_size(tbl);
+      printf(" - %s: %lu rows %s\n", tbl, rows, bytes_to_string(size));
+    }
   }else{
     log_error("Failed to List Tables");
     exit(EXIT_FAILURE);
@@ -2611,7 +2621,7 @@ static void _command_db_insert_app_icon(){
   hash_t *H = hash_new();
   hash_set(H, "created_ts", (void *)(size_t)timestamp());
   hash_set(H, "binary_path", (void *)"xxxxxxxxx");
-  BIND_FIELDS_INSERT_STATEMENT_APP_ICONS(H)
+  //BIND_FIELDS_INSERT_STATEMENT_APP_ICONS(H)
   exit(EXIT_SUCCESS);
 }
 
@@ -2622,8 +2632,6 @@ static void _command_db_init(){
 #undef COMMAND_DB_COMMON
 
 static void _command_prompt_bestline(){
-  //printf(AC_SAVE_PALETTE);
-//  printf(AC_ALT_SCREEN_ON);
   printf(AC_SHOW_CURSOR);
   fflush(stdout);
   dls_bestline_loop();
@@ -2924,5 +2932,10 @@ char *get_command_about(enum command_type_t COMMAND_ID){
            cmds[COMMAND_ID].description
            );
   return(about);
+}
+
+void _command_list_icons(){
+  log_info("icons");
+  exit(0);
 }
 #endif

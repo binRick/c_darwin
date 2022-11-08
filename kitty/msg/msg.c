@@ -290,7 +290,7 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
 static VipsImage *image_path_to_vips_image(char *image_path){
   VipsImage *image;
 
-  if (stringfn_equal(fsio_file_extension(image_path), ".qoi")) {
+  if (false&&stringfn_equal(fsio_file_extension(image_path), ".qoi")) {
     char       *qoi_file;
     errno = 0;
     QOIDecoder *qoi = QOIDecoder_New();
@@ -307,7 +307,6 @@ static VipsImage *image_path_to_vips_image(char *image_path){
       log_error("QOI Decoder failed");
       return(NULL);
     }
-    Dbg(len, %d);
     asprintf(&qoi_file, "%s.png", stringfn_substring(image_path, 0, strlen(image_path) - 4));
     QOIDecoder_Delete(qoi);
 

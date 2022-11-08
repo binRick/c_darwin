@@ -26,6 +26,19 @@ typedef union {
 struct iterator_t {
   iterator_cb cb;
 };
+typedef struct {
+  struct Vector *items, *results;
+} AsyncCommon;
+typedef struct {
+  AsyncCommon common;
+  size_t      concurrency;
+} AsyncMap;
+typedef struct {
+  AsyncCommon common;
+} AsyncSeries;
+typedef struct {
+  AsyncCommon common;
+} AsyncWaterfall;
 
 #define Iterator_IFACE    vfunc(bool, iterate, VSelf, struct Vector *, iterator_cb *)
 interface(Iterator);
@@ -45,25 +58,15 @@ typedef void *(^wi_async_iterator)(size_t index, size_t qty, void *item, void *r
   vfunc(bool, iterate, VSelf, async_iterator iterator) \
   vfunc(bool, load, VSelf, struct Vector *items)
 interface(ASYNC);
-typedef struct {
-  struct Vector *items, *results;
-} AsyncCommon;
-typedef struct {
-  AsyncCommon common;
-  size_t      concurrency;
-} AsyncMap;
-typedef struct {
-  AsyncCommon common;
-} AsyncSeries;
-typedef struct {
-  AsyncCommon common;
-} AsyncWaterfall;
+
 AsyncMap *AsyncMap_load(struct Vector *items);
 AsyncSeries *AsyncSeries_load(struct Vector *items);
 AsyncWaterfall *AsyncWaterfall_load(struct Vector *items);
+
 struct Vector *AsyncMap_iterate(VSelf, async_iterator iterator, size_t concurrency);
 struct Vector *AsyncSeries_iterate(VSelf, async_iterator iterator);
 void          *AsyncWaterfall_iterate(VSelf, wi_async_iterator iterator);
+
 declImplExtern(ASYNC, AsyncMap);
 declImplExtern(ASYNC, AsyncSeries);
 declImplExtern(ASYNC, AsyncWaterfall);

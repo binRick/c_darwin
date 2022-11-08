@@ -35,6 +35,7 @@ static void __at_exit(void){
   common_options_b[COMMON_OPTION_VERBOSE_MODE](args), \
   common_options_b[COMMON_OPTION_DEBUG_MODE](args),   \
   common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
+#define COMMON_OPTIONS_ICON_LIST
 #define COMMON_OPTIONS_APP_LIST                 \
   common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
@@ -76,8 +77,10 @@ static void __at_exit(void){
   CREATE_SUBCOMMAND(DB_TABLE_IDS, ),           \
   CREATE_SUBCOMMAND(DB, ),
 #define SUBCOMMANDS_APP_LIST
-#define SUBCOMMANDS_APP \
-  CREATE_SUBCOMMAND(APP_LIST, ),
+#define SUBCOMMANDS_ICON_LIST
+#define SUBCOMMANDS_APP          \
+  CREATE_SUBCOMMAND(APP_LIST, ), \
+  CREATE_SUBCOMMAND(ICON_LIST, ),
 #define SUBCOMMANDS_PROCESS_LIST
 #define SUBCOMMANDS_PROCESS \
   CREATE_SUBCOMMAND(PROCESS_LIST, ),

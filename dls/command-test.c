@@ -11,6 +11,8 @@
 #include "dls/dls.h"
 #include "submodules/c_deps/submodules/c_greatest/greatest/greatest.h"
 #include "window/utils/utils.h"
+#include "color/color.h"
+#include "kitty/msg/msg.h"
 extern int  DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 
@@ -21,6 +23,14 @@ int _command_test_terminal(){
   tc_get_cursor(&x, &y);
   Dbg(x, %d);
   Dbg(y, %d);
+  exit(EXIT_SUCCESS);
+}
+
+void _command_test_csv(){
+  struct Vector *colors_v = color_csv_load(color_csv_read(COLOR_TYPE_BEST),COLOR_FILTER_DARK);
+  Dbg(vector_size(colors_v),%lu);
+  colors_v = color_csv_load(color_csv_read(COLOR_TYPE_ALL),0);
+  Dbg(vector_size(colors_v),%lu);
   exit(EXIT_SUCCESS);
 }
 
@@ -119,63 +129,69 @@ int crop_animation(VipsObject *context, VipsImage *image, VipsImage **out,
   vips_image_set_int(*out, "page-height", height);
   return(0);
 }
-
+#define WU_DISPLAY_TERMINAL_IMAGE true
+#define        WU_DISPLAY_TERMINAL_SCALE_FACTOR (0.25)
+#define        WU_DISPLAY_TERMINAL_WIDTH 550
+typedef void(^wu_cb)(void);
 int wu_receive_stream(void *L){
-  //wu_save_png_file(L);
+  struct winsize        *ws;
   struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool                  ended;
-  struct winsize        *ws = get_terminal_size();
   void                  **msg;
   CGRect                rect;
-  int                   width = ws->ws_col, height = ws->ws_row, w, h;
+  int                   width = 0,height=0,w,h;
   size_t                qty = 0, copied = 0;
   char                  *s;
 
   pthread_mutex_lock(l->mutex);
+  ws = get_terminal_size();
+  ws->ws_col, height = ws->ws_row;
   ended = l->ended;
-  pthread_mutex_unlock(l->mutex);
   unsigned long started = timestamp(), last_ts = timestamp();
-
-  pthread_mutex_lock(l->mutex);
   struct Vector *history = vector_new_with_options(MAX_HISTORY_SIZE, false);
-
   pthread_mutex_unlock(l->mutex);
+  VipsImage *image;
+  VipsImage *resized,*tracked;
+  VipsImage *tracker=NULL,*out,*img_overlay,*img_show,*joined;
   while (!ended && chan_recv(l->chan, &msg) == 0) {
+    unsigned long ts = timestamp(), durs[10] = { 0 };
     pthread_mutex_lock(l->mutex);
     struct stream_update_t *u = (struct stream_update_t *)msg;
     pthread_mutex_unlock(l->mutex);
     if (!u) continue;
+    if(chan_size(l->chan)>10 && qty > 10)continue;
+    if(u->seed<qty)continue;
     qty++;
-    pthread_mutex_lock(l->mutex);
     copied += u->buf_len;
-    pthread_mutex_unlock(l->mutex);
-    pthread_mutex_lock(l->mutex);
-//    if(u->width && u->height)
-//      wu_analyze_buf((void*)u);
-    pthread_mutex_unlock(l->mutex);
-#if 0
-    if (!wu_analyze_buf((void *)u)) {
-#else
-    if (false) {
-#endif
-      //   log_error("analyze err");
-    }else{
-      /*
-         log_debug("analze ok");
-         Dbg(u->height,%lu);
-         Dbg(u->width,%lu);
-         Dbg(u->pixels_qty,%lu);
-         Dbg(u->buf_len,%lu);
-       */
-      //   vips_image_new_from_memory(l->png,l->png_len,l->width,l->height,4,VIPS_FORMAT_UCHAR);
-//      u->img = vips_image_new_from_memory(u->buf,u->buf_len,u->width,u->height,4,VIPS_FORMAT_UCHAR);
-//      u->png_img =
-      //vips_image_write_to_buffer(u->img,".png",&(u->png_buf),&(u->png_buf_len),NULL);
-//      Dbg(vips_image_get_width(u->img),%d);
-//  i->img=vips_image_new_from_memory(u->png,u->png_len,u->width,u->height,4,VIPS_FORMAT_UCHAR)) && (vips_image_write_to_buffer(u->img,".png",&(u->png), &(u->png_len), NULL) && u->png_len && u->png));
-      //Dbg(l->png_len,%lu);
-//    Dbg(l->png_file,%s);
+    if(true||qty==1||qty%2==0){
+      char *show_file;
+      float factor = WU_DISPLAY_TERMINAL_SCALE_FACTOR;
+      int ox=(int)(factor*(float)(u->width-u->rect.size.width)),
+              oy= (int)(factor*(float)(u->height-u->rect.size.height));
+      asprintf(&show_file,"/tmp/t2-%lu.qoi",qty);
+      if(fsio_file_exists(show_file))fsio_remove(show_file);
+      if((image = vips_image_new_from_memory(u->buf,u->buf_len,(int)(u->rect.size.width),(int)(u->rect.size.height),4,VIPS_FORMAT_UCHAR))){
+          if(
+              (vips_resize(image,&resized,factor,NULL)||true && resized)
+              && (tracker = (tracker) ? tracker : vips_image_copy_memory(resized))
+              && (vips_insert(tracker,resized,&joined,ox,oy,NULL)==0)
+              && WU_DISPLAY_TERMINAL_IMAGE 
+              && (qty%5==0)
+              && (chan_size(l->chan)<10)
+              && (joined&&vips_image_write_to_file(joined, show_file,NULL)||true)
+              && fsio_file_exists(show_file)&&fsio_file_size(show_file)>1024
+             ){
+              printf(AC_CLS);
+              durs[0]=timestamp()-ts;
+              if(kitty_display_image_path_resized_height(show_file,WU_DISPLAY_TERMINAL_WIDTH)){
+                printf("\n");
+              }
+            }
+      }
     }
+    image=NULL;
+    resized=NULL;
+    joined=NULL;
     while (vector_size(history) > 0 && (size_t)vector_get(history, vector_size(history) - 1) < timestamp() - HISTORY_MS + 1000)
       vector_pop(history);
     while (vector_size(history) >= vector_capacity(history))
@@ -184,15 +200,6 @@ int wu_receive_stream(void *L){
     if (DO_LOG && (timestamp() - last_ts) > LOG_INTERVAL) {
       last_ts = timestamp();
       struct StringFNStrings split;
-//      if( vips_pngsave( u->png, "/tmp/d.png", NULL ) )
-//        log_error("Failed to save png file");
-      /*
-         vips_error_exit( NULL );
-         g_object_unref( u->image );
-         g_free( u->mem );
-       */
-//      if(false)
-//       ringbuf_memcpy_into(rb,u->buf,u->buf_len);
       asprintf(&s,
                AC_YELLOW  "#%lu> " AC_RESETALL
                "\n|%lu|ID:%lu"
@@ -212,6 +219,8 @@ int wu_receive_stream(void *L){
                "\n|"AC_RESETALL "History  : "AC_GREEN "%lu" AC_RESETALL "/%lu"
                "\n|"AC_RESETALL "Newest   : "AC_GREEN "%s" AC_RESETALL
                "\n|"AC_RESETALL "Oldest   : "AC_GREEN "%s/%s" AC_RESETALL
+               "\n|"AC_RESETALL "- Dur    : "AC_GREEN "%s" AC_RESETALL
+               "\n|"AC_RESETALL "- Chan   : "AC_GREEN "%lu" AC_RESETALL
                "%s\n"
                ,
                u->seed,
@@ -229,20 +238,18 @@ int wu_receive_stream(void *L){
                "yyyyyyyy",
                "zzzzzzzz",
                "", "", (float)0,
-               //    bytes_to_string(ringbuf_bytes_used(u->rb)),
-               //      bytes_to_string(ringbuf_capacity(u->rb)),
-//        (float)ringbuf_bytes_used(u->rb)/(float)ringbuf_capacity(u->rb),
                vector_size(history),
                vector_capacity(history),
                milliseconds_to_string(timestamp() - (size_t)(vector_get(history, 0))),
                milliseconds_to_string(timestamp() - (size_t)(vector_get(history, vector_size(history) - 1))),
                milliseconds_to_string(HISTORY_MS),
+               milliseconds_to_string(durs[0]),chan_size(l->chan),
                ""
                );
       split = stringfn_split_lines(s);
       w     = 0; h = ws->ws_row - (int)split.count;
-      fprintf(stdout,
-              AC_CLS
+      if(true)
+        fprintf(stdout,
               "\0337"
               "\033[s\033[%d;%dH"
               "%s"
@@ -253,18 +260,10 @@ int wu_receive_stream(void *L){
               );
       if (s) free(s);
       stringfn_release_strings_struct(split);
-//      VipsImage *image;
-//      if(!(image = vips_image_new_from_memory(u->buf,u->buf_len,u->width,u->height,4,VIPS_FORMAT_UCHAR))){
-//        log_error("Failed to decode buffer");
-//      }
-//      Dbg(vips_image_get_width(image),%d);
-//      Dbg(vips_image_get_height(image),%d);
     }
     pthread_mutex_lock(l->mutex);
     if (u->buf) free(u->buf);
     if (u) free(u);
-//    if(!u->rb)
-//      u->rb = ringbuf_new(1024*1024*128);
     ended = l->ended;
     pthread_mutex_unlock(l->mutex);
   }

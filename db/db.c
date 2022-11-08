@@ -29,6 +29,7 @@
 #include "timestamp/timestamp.h"
 #include "whereami/src/whereami.h"
 #include "window/utils/utils.h"
+#include <sqlite3.h>
 static bool DB_DEBUG_MODE = false;
 static int                          DB_FLAGS = (SQLDBAL_FLAG_SQLITE_OPEN_CREATE | SQLDBAL_FLAG_SQLITE_OPEN_READWRITE);
 static bool db_create_tables(void);
@@ -314,35 +315,6 @@ size_t db_table_rows(char *table){
   return(size);
 }
 
-size_t db_table_size(char *table){
-  struct sqldbal_stmt *stmt;
-  size_t              size = 0;
-  int64_t             i64;
-  int                 rc;
-  char                *sql;
-
-  return(123);
-
-  assert(db);
-  asprintf(&sql, "SELECT SUM(\"pgsize\") FROM \"dbstat\" WHERE name=\"%s\"", table);
-  errno = 0;
-  rc    = sqldbal_stmt_prepare(db, sql, -1, &stmt);
-  if (rc != SQLDBAL_STATUS_OK) {
-    log_error("Failed to prepare statement");
-    exit(1);
-  }
-  rc = sqldbal_stmt_execute(stmt);
-  assert(rc == SQLDBAL_STATUS_OK);
-  for (size_t i = 0; (sqldbal_stmt_fetch(stmt) == SQLDBAL_FETCH_ROW); i++) {
-    rc = sqldbal_stmt_column_int64(stmt, 0, &i64);
-    assert(rc == SQLDBAL_STATUS_OK);
-    size += i64;
-  }
-  rc = sqldbal_stmt_close(stmt);
-  assert(rc == SQLDBAL_STATUS_OK);
-  return(size);
-}
-
 struct Vector *db_tables_v(){
   struct Vector       *v = vector_new();
   struct sqldbal_stmt *stmt;
@@ -382,9 +354,34 @@ bool db_table(char *table){
   return(true);
 }
 
-bool db_rows(char *table){
-  log_info("Loading table %s Rows", table);
-  return(true);
+sqldbal_exec_callback_fp cb(void *u, size_t qty, char **r, size_t l){
+  Dbg(qty, %u);
+  Dbg(l, %u);
+}
+
+size_t db_table_size(char *table){
+  char                *sql; size_t size = 0;
+  struct sqldbal_stmt *stmt;
+
+  return(size);
+}
+
+size_t db_rows(char *table){
+  struct sqldbal_stmt *stmt;
+  char                *sql;
+  size_t              rows;
+
+  asprintf(&sql, "SELECT COUNT(*) from %s", table);
+  int rc = sqldbal_stmt_prepare(db, sql, -1, &stmt);
+
+  assert(rc == SQLDBAL_STATUS_OK);
+  rc = sqldbal_stmt_execute(stmt);
+  assert(rc == SQLDBAL_STATUS_OK);
+  for (size_t i = 0; (sqldbal_stmt_fetch(stmt) == SQLDBAL_FETCH_ROW); i++) {
+    rc = sqldbal_stmt_column_int64(stmt, 0, &rows);
+    assert(rc == SQLDBAL_STATUS_OK);
+  }
+  return(rows);
 }
 
 static void __attribute__((constructor)) __constructor__db(void){
