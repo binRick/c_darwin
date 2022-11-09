@@ -159,8 +159,6 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
       qoir_decode_result dec = qoir_decode(rgb,                     rgb_len, &decopts);
       size_t bpp             = qoir_pixel_format__bytes_per_pixel(dec.dst_pixbuf.pixcfg.pixfmt);
       size_t stride          = dec.dst_pixbuf.stride_in_bytes;
-      Dbg(bpp, %u);
-      Dbg(stride, %u);
       return(dec.dst_pixbuf.data);
     },
     .get_dimensions_from_buffer   = ^ bool (unsigned char *buf,          size_t len, int *width, int *height){
@@ -169,8 +167,6 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
       qoir_decode_result dec      = qoir_decode(buf,                     len, &decopts);
       *width  = dec.dst_pixbuf.pixcfg.width_in_pixels;
       *height = dec.dst_pixbuf.pixcfg.height_in_pixels;
-      Dbg(*width, %d);
-      Dbg(*height, %d);
       return(true);
     },
   },
@@ -323,6 +319,7 @@ char *image_type_name(enum image_type_id_t type){
   case IMAGE_TYPE_JPEG: return("JPEG"); break;
   case IMAGE_TYPE_WEBP: return("WEBP"); break;
   case IMAGE_TYPE_QOI: return("QOI"); break;
+  case IMAGE_TYPE_QOIR: return("QOIR"); break;
   default: return("UNKNOWN"); break;
   }
 }
@@ -485,7 +482,31 @@ unsigned char *save_cgref_to_webp_memory(CGImageRef image, size_t *len){
 }
 
 unsigned char *save_cgref_to_qoir_memory(CGImageRef image_ref, size_t *qoir_len){
-  log_info("xxxxxxxx");
+  unsigned char *buf;
+  size_t        len  = 0;
+  unsigned char *rgb = NULL;
+
+  if(!(rgb    = save_cgref_to_rgb_memory(image_ref, &len)) || !len){
+    log_error("Failed to acquire rgb");
+    return(NULL);
+  }
+  qoir_pixel_buffer   pixbuf = {
+    .data = (uint8_t*)rgb,
+    .stride_in_bytes = (CGImageGetBitsPerPixel(image_ref)/8) * CGImageGetWidth(image_ref),
+    .pixcfg = {
+      .pixfmt = CGImageGetBitsPerPixel(image_ref) == 24 ? QOIR_PIXEL_FORMAT__RGB : QOIR_PIXEL_FORMAT__RGBA_NONPREMUL,
+      .height_in_pixels = CGImageGetHeight(image_ref),
+      .width_in_pixels = CGImageGetWidth(image_ref),
+    },
+  };
+  qoir_encode_result  enc            = qoir_encode(&pixbuf, &(qoir_encode_options){0});
+  if (!enc.dst_ptr){
+    log_error("Failed to qoir encode");
+    return(NULL);
+  }
+  *qoir_len = enc.dst_len;
+  free(rgb);
+  return(enc.dst_ptr);
 }
 
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
@@ -497,14 +518,6 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
   _ts[0] = timestamp();
   rgb    = save_cgref_to_rgb_memory(image_ref, &len);
   _ts[1] = timestamp() - _ts[0];
-  if (IMAGE_UTILS_DEBUG_MODE)
-    log_debug("[cgref to rgb] decoded %dx%d RGB (rgb len: %s/%lu) in %s",
-              w, h,
-              bytes_to_string(len),
-              len,
-              milliseconds_to_string(_ts[1])
-              );
-
   qoi_desc *desc = &(qoi_desc){
     .width      = w,
     .height     = h,
@@ -518,17 +531,6 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
 
   if (!qoi_pixels)
     log_error("Failed to qoi encode");
-  else{
-    _ts[1] = timestamp() - _ts[0];
-    if (IMAGE_UTILS_DEBUG_MODE)
-      log_debug("encoded %dx%d CGImage to %s %dx%d GIF and to to %s %dx%d qoi in %s",
-                w, h,
-                bytes_to_string(len), w, h,
-                bytes_to_string(*qoi_len),
-                desc->width, desc->height,
-                milliseconds_to_string(_ts[1])
-                );
-  }
   if (rgb)
     free(rgb);
   return(qoi_pixels);
@@ -536,8 +538,6 @@ unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len){
 
 ///////////////////////////////////////////////////////////////////////////////
 CGImageRef resize_cgimage_factor(CGImageRef imageRef, double resize_factor){
-//  if(resize_factor>
-  //     Dbg(resize_factor,%f);
   return(resize_cgimage(imageRef, CGImageGetWidth(imageRef) * resize_factor / 100, CGImageGetHeight(imageRef) * resize_factor / 100));
 }
 

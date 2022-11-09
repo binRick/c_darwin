@@ -34,6 +34,8 @@ static const image_target_file_saver_t image_target_file_savers[] = {
   [IMAGE_TYPE_JPEG] = vips_jpegsave,
   [IMAGE_TYPE_TIFF] = vips_tiffsave,
   [IMAGE_TYPE_WEBP] = vips_webpsave,
+//  [IMAGE_TYPE_QOI] = vips_qoisave,
+//  [IMAGE_TYPE_QOIR] = vips_qoirsave,
 };
 /*
  * vips_csvsave

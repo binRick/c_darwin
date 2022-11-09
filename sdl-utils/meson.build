@@ -13,6 +13,7 @@ sdl_utils_deps = [
   ansi_codes_dep,
   c_vector_dep,
   c_fsio_dep,qoir_dep,space_utils_dep,
+  frameworks_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
   timestamp_dep,

@@ -2,7 +2,6 @@
 #ifndef KITTY_MSG_C
 #define KITTY_MSG_C
 #include "kitty/msg/msg.h"
-//#include "qoi_ci/QOI-stdio.h"
 #include "qoi/qoi.h"
 #include "qoi_ci/transpiled/QOI.h"
 #include "vips/vips.h"
@@ -12,14 +11,10 @@
 #define KITTY_DELETE_IMAGE_ID                              "\x1b_Ga=d=Z,i=%lu\x1b\\"
 #define LOCAL_DEBUG_MODE                                   KITTY_MSG_DEBUG_MODE
 #define KITTYQUERY                                         "\x1b_Gi=1,a=q;\x1b\\"
-// request kitty keyboard protocol features 1, 2, and 8, first pushing current.
-// see https://sw.kovidgoyal.net/kitty/keyboard-protocol/#progressive-enhancement
 #define KKBDSUPPORT                                        "\x1b[=11u"
-// the kitty keyboard protocol allows unambiguous, complete identification of
-// input events. this queries for the level of support. we want to do this
-// because the "keyboard pop" control code is mishandled by kitty < 0.20.0.
 #define KKBDQUERY    "\x1b[?u"
 ////////////////////////////////////////////
+struct pos { int x, y; };
 static bool KITTY_MSG_DEBUG_MODE = false;
 static char *kitty_msg_get_vips_image_msg(VipsImage *image);
 static bool kitty_msg_resize_image(VipsImage **image, enum kitty_msg_resize_type_t resize_type, size_t resize_value);
@@ -29,13 +24,11 @@ static char *save_restore_msg(char *msg, int row, int col);
 static bool kitty_write_msg(char *msg);
 
 static int kitty_fprintf(FILE *fd, char *fmt, char *msg, ...){
+  int len;
   va_list vargs;
-
   va_start(vargs, msg);
   va_end(vargs);
-  int len = fprintf(fd, fmt, msg, vargs);
-
-  //fflush(fd);
+  len = fprintf(fd, fmt, msg, vargs);
   return(len);
 }
 
@@ -49,19 +42,14 @@ static bool kitty_write_msg(char *msg){
 static void kitty_set_position(int x, int y){
   printf("\x1B[%d;%dH", y, x);
 }
-struct pos { int x, y; };
 
 static struct pos kitty_get_position(){
   struct pos p;
-
-  // line l = kitty_send_term("\x1B[6n");
-  // int r = sscanf(l.buf+1, "[%d;%dR", &p.y, &p.x);
   return(p);
 }
 
 static struct winsize *kitty_get_terminal_size(void){
   struct winsize *sz = calloc(1, sizeof(struct winsize));
-
   ioctl(STDOUT_FILENO, TIOCGWINSZ, sz);
   return(sz);
 }
@@ -267,62 +255,58 @@ static void __attribute__((constructor)) __constructor__kitty_msg(void){
     log_debug("Enabling kitty_msg Debug Mode");
     KITTY_MSG_DEBUG_MODE = true;
   }
-  /*
-   * struct winsize *ws = kitty_get_terminal_size();
-   * log_info("%dpxx%dpx",
-   *  ws->ws_xpixel,
-   *  ws->ws_ypixel
-   *  );
-   */
 }
+  /*
+     char **s= vips_foreign_get_suffixes(),*tmp=s;
+     size_t qty=0;
+     while(s[qty])
+     qty++;
+     hash_t *c=hash_new();
+     for(size_t i = 0; i <qty;i++)
+     if(!hash_has(c,s[i]))
+      hash_set(c,stringfn_trim(stringfn_replace(s[i],'.',' ')),NULL);
+
+     hash_each(c,{Dbg(key,%s);});
+     hash_each(c,{
+     char *tf;
+     asprintf(&tf,"%s%lld.%s",gettempdir(),timestamp(),key);
+     if(fsio_write_binary_file(tf,buf,len)){
+      if(!(image=vips_image_new_from_file(tf,NULL))){
+        log_info("new from file");
+      }
+     }
+     });
+   */
 
 static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
   VipsImage *image;
-
   errno = 0;
-  if (!(image = vips_image_new_from_buffer(buf, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
-    log_error("Failed to read image buffer");
-    return(NULL);
+  char *tf, *loader;
+
+  loader = vips_foreign_find_load_buffer(buf, len);
+
+  if (!loader || !(image = vips_image_new_from_buffer(buf, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
+    asprintf(&tf, "%s%lld.%s", gettempdir(), timestamp(), "qoir");
+    if (fsio_write_binary_file(tf, buf, len)) {
+      loader = vips_foreign_find_load(tf);
+      if (!loader || !(image = vips_image_new_from_file(tf, NULL))) {
+        log_error("Failed to read image buffer or file");
+        return(NULL);
+      }
+      fsio_remove(tf);
+    }
+    free(tf);
   }
   return(image);
 }
 
 static VipsImage *image_path_to_vips_image(char *image_path){
   VipsImage *image;
-
-  if (false&&stringfn_equal(fsio_file_extension(image_path), ".qoi")) {
-    char       *qoi_file;
-    errno = 0;
-    QOIDecoder *qoi = QOIDecoder_New();
-    if (!QOIDecoder_Decode(qoi, fsio_read_binary_file(image_path), fsio_file_size(image_path))) {
-      log_error("QOI Loader failed");
-      return(NULL);
-    }
-    errno = 0;
-    unsigned char *rgb = QOIDecoder_GetPixels(qoi);
-    int           bands = QOIDecoder_HasAlpha(qoi) ? 4 : 3;
-    int           width = QOIDecoder_GetWidth(qoi), height = QOIDecoder_GetHeight(qoi);
-    int           len = width * height * bands;
-    if (!rgb || len < 1) {
-      log_error("QOI Decoder failed");
-      return(NULL);
-    }
-    asprintf(&qoi_file, "%s.png", stringfn_substring(image_path, 0, strlen(image_path) - 4));
-    QOIDecoder_Delete(qoi);
-
-    errno = 0;
-    if (!(image = vips_image_new_from_memory(rgb, len, width, height, bands, VIPS_FORMAT_UCHAR))) {
-      log_error("Failed to read file %s", image_path); \
-      return(NULL);
-    }
-  }else{
-    errno = 0;
-    if (!(image = vips_image_new_from_file(image_path, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) { \
-      log_error("Failed to read file %s", image_path);                                             \
-      return(NULL);
-    }
+  errno = 0;
+  if (!(image = vips_image_new_from_file(image_path, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) { \
+    log_error("Failed to read file %s", image_path);                                             \
+    return(NULL);
   }
-
   return(image);
 } /* image_path_to_vips_image */
 

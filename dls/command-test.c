@@ -6,13 +6,13 @@
 #define MAX_STREAM_MS      600000
 #include "capture/type/type.h"
 #include "capture/utils/utils.h"
+#include "color/color.h"
 #include "core/core.h"
 #include "dls/command-test.h"
 #include "dls/dls.h"
+#include "kitty/msg/msg.h"
 #include "submodules/c_deps/submodules/c_greatest/greatest/greatest.h"
 #include "window/utils/utils.h"
-#include "color/color.h"
-#include "kitty/msg/msg.h"
 extern int  DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 
@@ -27,10 +27,11 @@ int _command_test_terminal(){
 }
 
 void _command_test_csv(){
-  struct Vector *colors_v = color_csv_load(color_csv_read(COLOR_TYPE_BEST),COLOR_FILTER_DARK);
-  Dbg(vector_size(colors_v),%lu);
-  colors_v = color_csv_load(color_csv_read(COLOR_TYPE_ALL),0);
-  Dbg(vector_size(colors_v),%lu);
+  struct Vector *colors_v = color_csv_load(color_csv_read(COLOR_TYPE_BEST), COLOR_FILTER_DARK);
+
+  Dbg(vector_size(colors_v), %u);
+  colors_v = color_csv_load(color_csv_read(COLOR_TYPE_ALL), 0);
+  Dbg(vector_size(colors_v), %u);
   exit(EXIT_SUCCESS);
 }
 
@@ -129,69 +130,70 @@ int crop_animation(VipsObject *context, VipsImage *image, VipsImage **out,
   vips_image_set_int(*out, "page-height", height);
   return(0);
 }
-#define WU_DISPLAY_TERMINAL_IMAGE true
-#define        WU_DISPLAY_TERMINAL_SCALE_FACTOR (0.25)
-#define        WU_DISPLAY_TERMINAL_WIDTH 550
-typedef void(^wu_cb)(void);
+#define WU_DISPLAY_TERMINAL_IMAGE                  true
+#define        WU_DISPLAY_TERMINAL_SCALE_FACTOR    (0.25)
+#define        WU_DISPLAY_TERMINAL_WIDTH           550
+typedef void (^wu_cb)(void);
+
 int wu_receive_stream(void *L){
   struct winsize        *ws;
   struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool                  ended;
   void                  **msg;
   CGRect                rect;
-  int                   width = 0,height=0,w,h;
+  int                   width = 0, height = 0, w, h;
   size_t                qty = 0, copied = 0;
   char                  *s;
 
   pthread_mutex_lock(l->mutex);
-  ws = get_terminal_size();
+  ws                 = get_terminal_size();
   ws->ws_col, height = ws->ws_row;
-  ended = l->ended;
+  ended              = l->ended;
   unsigned long started = timestamp(), last_ts = timestamp();
   struct Vector *history = vector_new_with_options(MAX_HISTORY_SIZE, false);
+
   pthread_mutex_unlock(l->mutex);
   VipsImage *image;
-  VipsImage *resized,*tracked;
-  VipsImage *tracker=NULL,*out,*img_overlay,*img_show,*joined;
+  VipsImage *resized, *tracked;
+  VipsImage *tracker = NULL, *out, *img_overlay, *img_show, *joined;
+
   while (!ended && chan_recv(l->chan, &msg) == 0) {
-    unsigned long ts = timestamp(), durs[10] = { 0 };
+    unsigned long          ts = timestamp(), durs[10] = { 0 };
     pthread_mutex_lock(l->mutex);
     struct stream_update_t *u = (struct stream_update_t *)msg;
     pthread_mutex_unlock(l->mutex);
     if (!u) continue;
-    if(chan_size(l->chan)>10 && qty > 10)continue;
-    if(u->seed<qty)continue;
+    if (chan_size(l->chan) > 10 && qty > 10) continue;
+    if (u->seed < qty) continue;
     qty++;
     copied += u->buf_len;
-    if(true||qty==1||qty%2==0){
-      char *show_file;
+    if (true || qty == 1 || qty % 2 == 0) {
+      char  *show_file;
       float factor = WU_DISPLAY_TERMINAL_SCALE_FACTOR;
-      int ox=(int)(factor*(float)(u->width-u->rect.size.width)),
-              oy= (int)(factor*(float)(u->height-u->rect.size.height));
-      asprintf(&show_file,"/tmp/t2-%lu.qoi",qty);
-      if(fsio_file_exists(show_file))fsio_remove(show_file);
-      if((image = vips_image_new_from_memory(u->buf,u->buf_len,(int)(u->rect.size.width),(int)(u->rect.size.height),4,VIPS_FORMAT_UCHAR))){
-          if(
-              (vips_resize(image,&resized,factor,NULL)||true && resized)
-              && (tracker = (tracker) ? tracker : vips_image_copy_memory(resized))
-              && (vips_insert(tracker,resized,&joined,ox,oy,NULL)==0)
-              && WU_DISPLAY_TERMINAL_IMAGE 
-              && (qty%5==0)
-              && (chan_size(l->chan)<10)
-              && (joined&&vips_image_write_to_file(joined, show_file,NULL)||true)
-              && fsio_file_exists(show_file)&&fsio_file_size(show_file)>1024
-             ){
-              printf(AC_CLS);
-              durs[0]=timestamp()-ts;
-              if(kitty_display_image_path_resized_height(show_file,WU_DISPLAY_TERMINAL_WIDTH)){
-                printf("\n");
-              }
-            }
-      }
+      int   ox     = (int)(factor * (float)(u->width - u->rect.size.width)),
+            oy     = (int)(factor * (float)(u->height - u->rect.size.height));
+      asprintf(&show_file, "/tmp/t2-%lu.qoi", qty);
+      if (fsio_file_exists(show_file)) fsio_remove(show_file);
+      if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR)))
+        if (
+          (vips_resize(image, &resized, factor, NULL) || true && resized)
+          && (tracker = (tracker) ? tracker : vips_image_copy_memory(resized))
+          && (vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0)
+          && WU_DISPLAY_TERMINAL_IMAGE
+          && (qty % 5 == 0)
+          && (chan_size(l->chan) < 10)
+          && (joined && vips_image_write_to_file(joined, show_file, NULL) || true)
+          && fsio_file_exists(show_file) && fsio_file_size(show_file) > 1024
+          ) {
+          printf(AC_CLS);
+          durs[0] = timestamp() - ts;
+          if (kitty_display_image_path_resized_height(show_file, WU_DISPLAY_TERMINAL_WIDTH))
+            printf("\n");
+        }
     }
-    image=NULL;
-    resized=NULL;
-    joined=NULL;
+    image   = NULL;
+    resized = NULL;
+    joined  = NULL;
     while (vector_size(history) > 0 && (size_t)vector_get(history, vector_size(history) - 1) < timestamp() - HISTORY_MS + 1000)
       vector_pop(history);
     while (vector_size(history) >= vector_capacity(history))
@@ -243,21 +245,21 @@ int wu_receive_stream(void *L){
                milliseconds_to_string(timestamp() - (size_t)(vector_get(history, 0))),
                milliseconds_to_string(timestamp() - (size_t)(vector_get(history, vector_size(history) - 1))),
                milliseconds_to_string(HISTORY_MS),
-               milliseconds_to_string(durs[0]),chan_size(l->chan),
+               milliseconds_to_string(durs[0]), chan_size(l->chan),
                ""
                );
       split = stringfn_split_lines(s);
       w     = 0; h = ws->ws_row - (int)split.count;
-      if(true)
+      if (true)
         fprintf(stdout,
-              "\0337"
-              "\033[s\033[%d;%dH"
-              "%s"
-              "\0338",
-              h,
-              w,
-              s
-              );
+                "\0337"
+                "\033[s\033[%d;%dH"
+                "%s"
+                "\0338",
+                h,
+                w,
+                s
+                );
       if (s) free(s);
       stringfn_release_strings_struct(split);
     }

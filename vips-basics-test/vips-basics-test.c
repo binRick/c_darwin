@@ -1,3 +1,7 @@
+//#define CONCURRENCY 30
+#define DEFAULT_RESIZE_RATIO    0.90
+#define CONCURRENCY             1
+//#define CONCURRENCY 2
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
@@ -8,6 +12,7 @@
 #include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
+#include "fancy-progress/src/fancy-progress.h"
 #include "kitty/msg/msg.h"
 #include "log/log.h"
 #include "ms/ms.h"
@@ -29,21 +34,36 @@ INCBIN(spinner1, "assets/spinner1.gif");
 #define PROGRESS    false
 #define QTY(X)    (sizeof(X) / sizeof(X[0]))
 static float factors[] = {
-  0.10,
-  0.50,
+  DEFAULT_RESIZE_RATIO,
+  3.50,
   1.50,
+  0.50,
+  0.05,
+  0.08,
+  0.09,
+  0.10,
 };
 static const char
 *gifs[] = {
   "/tmp/spinner1.gif",
   "/tmp/spinner0.gif",
 },
-*frame_exts[] = { "qoi", "png", "gif", "jpg", "webp", },
-*files[]      = {
+*frame_exts[] = {
+  "png",
+  "qoi",
+  "qoir",
+  "gif", "jpg", "webp",
+},
+*files[] = {
   "/tmp/communist-goals.png",
   "/tmp/kitty_icon.png",
 },
-*exts[] = { "qoi", "png", "gif", "jpg", "tif", "webp", };
+*exts[] = {
+  "png",
+  "qoi",
+  "qoir",
+  "gif", "jpg", "tif", "webp",
+};
 static size_t
   gifs_qty    = QTY(gifs),
   files_qty   = QTY(files),
@@ -112,6 +132,9 @@ struct work_t {
       char          *format;
       float         factor;
       chan_t        *bufs;
+      size_t        id;
+      unsigned long dur, started;
+      char          *dur_s, *path;
     }      image;
     size_t id;
     chan_t *results;
@@ -122,14 +145,22 @@ struct work_t {
 };
 
 void recv_fxn(void *RECV){
-  struct recv_t *r  = (struct rect_t *)RECV;
+  struct recv_t *r  = (struct recv_t *)RECV;
   size_t        qty = 0;
-  void          *msg;
+  struct work_t *w;
 
-  while (qty < r->qty && chan_recv(r->chan, &msg) == 0) {
-    log_info("result #%lu/%lu", ++qty, r->qty);
+  while (qty < r->qty && chan_recv(r->chan, &w) == 0) {
+    qty++;
     pthread_mutex_lock(&(r->mutex));
-    vector_push(r->recvd, (void *)msg);
+    vector_push(r->recvd, (void *)w);
+    struct work_done_t *R;
+    //Dbg(vector_size(r->recvd),%lu);
+//  struct recv_t *
+    char *msg;
+    Dbg(w->args.id, %u);
+    Dbg(w->dur, %u);
+    //fancy_progress_step((float)((float)qty / (float)(r->qty)) * 100);
+
     pthread_mutex_unlock(&(r->mutex));
   }
   log_info("results done");
@@ -141,25 +172,31 @@ void work_fxn(void *WORK){
   w->started = timestamp();
   w->cb((void *)&(w->args));
   w->dur = timestamp() - w->started;
+//  w->args.image.buf_out_len=w->args.results
   chan_send(w->args.results, (void *)w);
 }
 
-struct Vector *run_queues(size_t concurrency, struct Vector *items, worker_cb cb){
+struct Vector *run_queues(size_t concurrency, struct Vector *items, worker_cb cb, worker_cb item_done_cb){
   size_t           items_qty = vector_size(items), id = 0;
   struct Vector    *results_v = vector_new();
   struct WorkQueue *queues[concurrency], *recv;
+  struct recv_t    *r;
   chan_t           *results;
 
-  results = chan_init(items_qty);
-  recv    = workqueue_new();
-  struct recv_t *r = calloc(1, sizeof(struct recv_t));
-
+  results  = chan_init(items_qty);
+  recv     = workqueue_new();
+  r        = calloc(1, sizeof(struct recv_t));
   r->chan  = results;
   r->qty   = items_qty;
   r->recvd = results_v;
-  workqueue_push(recv, recv_fxn, (void *)r);
   for (size_t i = 0; i < concurrency; i++)
     queues[i] = workqueue_new();
+
+  workqueue_push(recv, recv_fxn, (void *)r);
+
+  //fancy_progress_start();
+  printf(AC_CLS);
+
   for (size_t ii = 0; ii < items_qty; ii++) {
     struct work_t *w = calloc(1, sizeof(struct work_t));
     w->cb           = cb;
@@ -172,16 +209,20 @@ struct Vector *run_queues(size_t concurrency, struct Vector *items, worker_cb cb
     workqueue_drain(queues[i]);
   for (size_t i = 0; i < concurrency; i++)
     workqueue_release(queues[i]);
+
   chan_close(recv);
   workqueue_drain(recv);
   workqueue_release(recv);
+
+  //fancy_progress_stop();
+
   log_info("%lu results", vector_size(results_v));
   return(results_v);
-}
+} /* run_queues */
 
 TEST t_vips_resize_queued(){
   struct  chan_t *bufs = chan_init(1000);
-  size_t         concurrency = 5;
+  size_t         concurrency = getenv("CONCURRENCY") ? atoi(getenv("CONCURRENCY")) : CONCURRENCY;
   size_t         TEST_INDEX = 5;
   worker_cb      worker = ^ void (void *W){
     struct worker_args_t *w = (struct worker_args_t *)W;
@@ -209,6 +250,7 @@ TEST t_vips_resize_queued(){
   size_t        total_len = 0, qty = 0;
   struct Vector *items_v = vector_new();
 
+#define MAX_ITEMS_QTY    10
   for (size_t i = 0; i < files_qty; i++)
     for (size_t o = 0; o < exts_qty; o++)
       for (size_t f = 0; f < factors_qty; f++) {
@@ -223,14 +265,26 @@ TEST t_vips_resize_queued(){
         a->buf_out_len = 0;
         asprintf(&a->format, ".%s", exts[o]);
         a->bufs = bufs;
-        vector_push(items_v, (void *)a);
+        if (vector_size(items_v) < MAX_ITEMS_QTY)
+          vector_push(items_v, (void *)a);
       }
-  struct Vector *results_v = run_queues(concurrency, items_v, worker);
+  worker_cb item_done_cb = ^ void (void *W){
+    struct work_done_t *d;
+    char               *m;
+    d = (struct work_done_t *)W;
+    asprintf(&m, "Result [%lu] <%s> |%s| ",
+             d->id, bytes_to_string(d->len), d->format
+             );
+    fprintf(stdout, "%s\n", m);
+  };
+  struct Vector *results_v = run_queues(concurrency, items_v, worker, item_done_cb);
   struct work_t *w;
 
   for (size_t i = 0; i < vector_size(results_v); i++) {
     w = (struct work_t *)vector_get(results_v, i);
-    log_info("%lu> %s", w->args.id + 1, milliseconds_to_string(w->dur));
+    log_info("%lu> %s",
+             w->args.id + 1, milliseconds_to_string(w->dur)
+             );
   }
   void *msg;
 
@@ -239,7 +293,7 @@ TEST t_vips_resize_queued(){
 
   while (chan_recv(bufs, &msg) == 0) {
     d = (struct work_done_t *)msg;
-    log_info("buf %lu %s %s", d->id, bytes_to_string(d->len), d->format);
+    //log_info("buf %lu %s %s", d->id, bytes_to_string(d->len), d->format);
   }
 } /* t_vips_resize_queued */
 
@@ -295,7 +349,7 @@ TEST t_vips_gif_frames(){
   VipsImage     *image, *annotated, *resized, *frames;
   VipsObject    *context = NULL;
   char          *outfile, *infile, *frameoutfile;
-  float         resize = 0.10;
+  float         resize = factors[0];
   int           n_pages;
   size_t        qty = 0, total_bytes = 0;
   unsigned long ts = timestamp();
@@ -345,7 +399,7 @@ TEST t_vips_resize(){
   for (size_t i = 0; i < files_qty; i++)
     for (size_t o = 0; o < exts_qty; o++) {
       char  *outfile;
-      float resize = 0.10;
+      float resize = factors[0];
       asprintf(&outfile, "/tmp/output-resized-%.0f-percent-%lu-%lu-%lu.%s", resize * 100, i, o, TEST_INDEX, exts[o]);
 
       if (!(image = vips_image_new_from_file(files[i], "access", VIPS_ACCESS_SEQUENTIAL, NULL)))

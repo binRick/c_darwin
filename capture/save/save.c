@@ -41,60 +41,21 @@ static int receive_save_request_handler(void *R){
   struct save_result_t *r = (struct save_result_t *)R;
   void                 *msg;
   size_t               qty                = 0;
-  char                 *image_loader_name = NULL;
-  VipsImage            *image             = NULL;
+  struct capture_image_result_t *res;
 
-  while (chan_recv(r->recv_chan, &msg) == 0) {
+  while (chan_recv(r->recv_chan, &res) == 0) {
     qty++;
-    struct capture_image_result_t *res = (struct capture_image_result_t *)msg;
-    save_started = timestamp();
-    switch (res->format) {
-    case IMAGE_TYPE_QOI:
-      if (!fsio_write_binary_file(res->file, res->pixels, res->len))
-        log_error("Failed to save QOI file %s with %lu Pixels", res->file, res->len);
-      break;
-    default:
-      image_loader_name = vips_foreign_find_load_buffer(res->pixels, res->len);
-      image             = vips_image_new_from_buffer(res->pixels, res->len, "", NULL);
-      debug("Loaded %s %s Pixels to %dx%d %s File %s PNG VIPImage in %s using loader %s",
-            bytes_to_string(res->len),
-            image_type_name(res->format),
-            vips_image_get_width(image), vips_image_get_height(image),
-            bytes_to_string(VIPS_IMAGE_SIZEOF_IMAGE(image)),
-            res->file,
-            milliseconds_to_string(dur),
-            image_loader_name
-            );
-
-      if (!image_loader_name || !image || image_target_file_savers[res->format](image, res->file, NULL))
-        log_error("Failed to save file %s with loader %s", res->file, image_loader_name);
-      if (image)
-        g_object_unref(image);
-    }
-    dur = timestamp() - save_started;
-
-    debug("Thread #%lu>"
-          "\n\tReceived %s %s Save Capture Request #%lu to %s"
-          "%s",
-          r->index + 1,
-          bytes_to_string(res->len),
-          image_type_name(res->format),
-          qty,
-          res->file,
-          ""
-          );
+    if(!res->pixels || !res->len || !res->file)
+      log_error("Failed to receive valid save object");
+    else if(!fsio_write_binary_file(res->file, res->pixels, res->len))
+      log_error("Failed to save file %s with %lu Pixels", res->file, res->len);
     r->bytes = fsio_file_size(res->file);
+    r->file=res->file;
+    r->format=res->format;
+    r->bytes=res->len;
     chan_send(r->done_chan, (void *)r);
   }
   chan_close(r->done_chan);
-  debug(
-    "%lu> Save Handler complete. Processed %lu items in %s"
-    "%s",
-    r->index,
-    qty,
-    milliseconds_to_string(timestamp() - started),
-    ""
-    );
   return(EXIT_SUCCESS);
 } /* receive_save_request_handler */
 

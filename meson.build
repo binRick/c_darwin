@@ -1,5 +1,5 @@
 project('c_darwin', ['c'],default_options: [
-  'warning_level=0',
+  'warning_level=1',
   'c_std=gnu99',
   'gpp_processor=false',
 ],
@@ -129,3 +129,4 @@ subdir('sdl-utils-test')
 subdir('db-test')
 subdir('tp-test')
 subdir('roscha-test')
+subdir('kc')

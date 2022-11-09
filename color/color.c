@@ -9,31 +9,32 @@
 #include "ansi-utils/ansi-utils.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
-#include "string-utils/string-utils.h"
-#include "hsluv-c/src/hsluv.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "csv_parser/csv.h"
+#include "hsluv-c/src/hsluv.h"
+#include "incbin/incbin.h"
 #include "log/log.h"
 #include "ms/ms.h"
-#include "timestamp/timestamp.h"
-#include "csv_parser/csv.h"
 #include "rgba/src/rgba.h"
-#include "incbin/incbin.h"
+#include "string-utils/string-utils.h"
+#include "timestamp/timestamp.h"
 #include <math.h>
-INCBIN(bestcolors_csv,"assets/colornames.bestof.csv");
-INCBIN(colors_csv,"assets/colornames.csv");
+INCBIN(bestcolors_csv, "assets/colornames.bestof.csv");
+INCBIN(colors_csv, "assets/colornames.csv");
 static const char *color_types[] = {
   [COLOR_TYPE_BEST] = gbestcolors_csvData,
-  [COLOR_TYPE_ALL] = gcolors_csvData,
+  [COLOR_TYPE_ALL]  = gcolors_csvData,
 };
-static bool COLOR_DEBUG_MODE = false;
+static bool       COLOR_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__color(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_color") != NULL) {
     log_debug("Enabling color Debug Mode");
     COLOR_DEBUG_MODE = true;
   }
 }
+
 static void rgb2lab(float r1, float g1, float b1, float *l2, float *a2, float *b2) {
   float x, y, z;
 
@@ -41,23 +42,20 @@ static void rgb2lab(float r1, float g1, float b1, float *l2, float *a2, float *b
   g1 /= 255.0;
   b1 /= 255.0;
 
-  if (r1 > 0.04045) {
+  if (r1 > 0.04045)
     r1 = powf((r1 + 0.055) / 1.055, 2.4);
-  }else{
+  else
     r1 /= 12.92;
-  }
 
-  if (g1 > 0.04045) {
+  if (g1 > 0.04045)
     g1 = powf((g1 + 0.055) / 1.055, 2.4);
-  }else{
+  else
     g1 /= 12.92;
-  }
 
-  if (b1 > 0.04045) {
+  if (b1 > 0.04045)
     b1 = powf((b1 + 0.055) / 1.055, 2.4);
-  }else{
+  else
     b1 /= 12.92;
-  }
 
   r1 *= 100.0;
   g1 *= 100.0;
@@ -71,32 +69,30 @@ static void rgb2lab(float r1, float g1, float b1, float *l2, float *a2, float *b
   y /= 100.000;
   z /= 108.883;
 
-  if (x > 0.008856) {
+  if (x > 0.008856)
     x = powf(x, 0.3333);
-  }else{
+  else
     x = (7.787 * x) + 0.1379;
-  }
 
-  if (y > 0.008856) {
+  if (y > 0.008856)
     y = powf(y, 0.3333);
-  }else{
+  else
     y = (7.787 * y) + 0.1379;
-  }
 
-  if (z > 0.008856) {
+  if (z > 0.008856)
     z = powf(z, 0.3333);
-  }else{
+  else
     z = (7.787 * z) + 0.1379;
-  }
 
   *l2 = (116.0 * y) - 16.0;
   *a2 = 500.0 * (x - y);
   *b2 = 200.0 * (y - z);
 } /* rgb2lab */
 
-#define DELTA_E_K_L             2
-#define DELTA_E_K_1             0.048
-#define DELTA_E_K_2             0.014
+#define DELTA_E_K_L    2
+#define DELTA_E_K_1    0.048
+#define DELTA_E_K_2    0.014
+
 static float delta_e(float l1, float a1, float b1, float l2, float a2, float b2) {
   float deltaL, c1, c2, deltaC, deltaA, deltaB, deltaHSquared, deltaH;
   float q1, q2, q3, deltaE;
@@ -109,11 +105,10 @@ static float delta_e(float l1, float a1, float b1, float l2, float a2, float b2)
   deltaB        = b1 - b2;
   deltaHSquared = deltaA * deltaA + deltaB * deltaB - deltaC * deltaC;
 
-  if (deltaHSquared > 0) {
+  if (deltaHSquared > 0)
     deltaH = sqrtf(deltaHSquared);
-  }else{
+  else
     deltaH = 0;
-  }
 
   q1     = deltaL / DELTA_E_K_L;
   q2     = deltaC / (1 + DELTA_E_K_1 * c1);
@@ -365,6 +360,7 @@ static uint32_t set[] = {
   0xe4e4e4,
   0xeeeeee,
 };
+
 static int hex_to_closest_ansi_code(const uint32_t trp) {
   float l1, a1, b1;
   float l2, a2, b2;
@@ -395,65 +391,65 @@ static int hex_to_256_color_ansicode(char *HEX){
 
   colp = HEX;
 
-  if (*colp == '#') {
+  if (*colp == '#')
     *colp++;
-  }
   return(hex_to_closest_ansi_code((const uint32_t)(size_t)colp));
 }
 
 const char *color_csv_read(enum color_type_t type){
   return(color_types[type]);
 }
-struct Vector *color_csv_load(const char *csv_data,enum color_filter_t filter){
-  struct Vector *v=vector_new();
+struct Vector *color_csv_load(const char *csv_data, enum color_filter_t filter){
+  struct Vector          *v = vector_new();
   struct StringFNStrings lines = stringfn_split_lines_and_trim(csv_data);
-  char *line, **csv_line,**buf;
-  size_t cols;
-  short ok;
-  int r;
-  double hsluv[3];
-  for(size_t i=0;i<lines.count;i++){
-    cols=0;
-    line=lines.strings[i];
-    csv_line=parse_csv(line);
-    buf       = csv_line;
+  char                   *line, **csv_line, **buf;
+  size_t                 cols;
+  short                  ok;
+  int                    r;
+  double                 hsluv[3];
+
+  for (size_t i = 0; i < lines.count; i++) {
+    cols     = 0;
+    line     = lines.strings[i];
+    csv_line = parse_csv(line);
+    buf      = csv_line;
     while (*buf++)
       cols++;
-    if(cols!=2)goto next;
-    r = (uint32_t)rgba_from_string(csv_line[1],&ok);
-    if(!ok)goto next;
+    if (cols != 2) goto next;
+    r = (uint32_t)rgba_from_string(csv_line[1], &ok);
+    if (!ok) goto next;
     struct parsed_color_t c = {
-      .name=csv_line[0],
-      .hex=stringfn_trim(stringfn_replace(stringfn_to_uppercase(csv_line[1]),'#',' ')),
-      .red = r>>24&0xff,
-      .green = r>>16&0xff,
-      .blue = r>>8&0xff,
-      .alpha = r&0xff,
+      .name  = csv_line[0],
+      .hex   = stringfn_trim(stringfn_replace(stringfn_to_uppercase(csv_line[1]), '#', ' ')),
+      .red   = r >> 24 & 0xff,
+      .green = r >> 16 & 0xff,
+      .blue  = r >> 8 & 0xff,
+      .alpha = r & 0xff,
     };
-    asprintf(&c.ansi_fg,"\x1b[38;2;%d;%d;%dm",c.red,c.green,c.blue);
-    asprintf(&c.ansi_bg,"\x1b[48;2;%d;%d;%dm",c.red,c.green,c.blue);
-    c.slug=strip_non_ascii(stringfn_replace(stringfn_trim(stringfn_to_uppercase(c.name)),' ','_'));
+    asprintf(&c.ansi_fg, "\x1b[38;2;%d;%d;%dm", c.red, c.green, c.blue);
+    asprintf(&c.ansi_bg, "\x1b[48;2;%d;%d;%dm", c.red, c.green, c.blue);
+    c.slug = strip_non_ascii(stringfn_replace(stringfn_trim(stringfn_to_uppercase(c.name)), ' ', '_'));
     rgb2hsluv(c.red, c.green, c.blue, &hsluv[0], &hsluv[1], &hsluv[2]);
-    c.hue=hsluv[0];
-    c.brightness=hsluv[2]/100;
-    c.very_dark = (hsluv[2] / 100 < 10)?true:false;
-    c.dark = (hsluv[2] / 100 < 30)?true:false;
-    c.bright = (hsluv[2] / 100 > 50)?true:false;
-    c.very_bright = (hsluv[2] / 100 > 80)?true:false;
-    c.ansi_fg_escaped=strdup_escaped(c.ansi_fg);
-    c.ansi_bg_escaped=strdup_escaped(c.ansi_bg);
-  if(c.very_dark && filter && !(filter & COLOR_FILTER_VERY_DARK))goto next;
-  if(c.very_bright && filter && !(filter & COLOR_FILTER_VERY_BRIGHT))goto next;
-  if(c.bright && filter && !(filter & COLOR_FILTER_BRIGHT))goto next;
-  if(c.dark && filter && !(filter & COLOR_FILTER_DARK))goto next;
-    vector_push(v,(void*)&c);
+    c.hue             = hsluv[0];
+    c.brightness      = hsluv[2] / 100;
+    c.very_dark       = (hsluv[2] / 100 < 10)?true:false;
+    c.dark            = (hsluv[2] / 100 < 30)?true:false;
+    c.bright          = (hsluv[2] / 100 > 50)?true:false;
+    c.very_bright     = (hsluv[2] / 100 > 80)?true:false;
+    c.ansi_fg_escaped = strdup_escaped(c.ansi_fg);
+    c.ansi_bg_escaped = strdup_escaped(c.ansi_bg);
+    if (c.very_dark && filter && !(filter & COLOR_FILTER_VERY_DARK)) goto next;
+    if (c.very_bright && filter && !(filter & COLOR_FILTER_VERY_BRIGHT)) goto next;
+    if (c.bright && filter && !(filter & COLOR_FILTER_BRIGHT)) goto next;
+    if (c.dark && filter && !(filter & COLOR_FILTER_DARK)) goto next;
+    vector_push(v, (void *)&c);
 next:
     free_csv_line(csv_line);
   }
   stringfn_release_strings_struct(lines);
   //COLOR_FILTER_BRIGHT;
   return(v);
-}
+} /* color_csv_load */
 ////////////////////////////////////////////
 #undef LOCAL_DEBUG_MODE
 #endif

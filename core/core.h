@@ -2,7 +2,6 @@
 #ifndef CORE_H
 #define CORE_H
 //////////////////////////////////////
-#include "qoir/src/qoir.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -43,6 +42,7 @@
 #include "optparse99/optparse99.h"
 #include "parson/parson.h"
 #include "path_module/src/path.h"
+#include "qoir/src/qoir.h"
 #include "sha256.c/sha256.h"
 #include "sqldbal/src/sqldbal.h"
 #include "string-utils/string-utils.h"

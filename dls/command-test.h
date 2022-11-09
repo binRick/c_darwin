@@ -20,7 +20,7 @@ struct stream_update_t {
   unsigned char *png_buf;
   VipsPel       *mem;
   ringbuf_t     rb;
-  int bpp,stride;
+  int           bpp, stride;
 };
 struct stream_setup_t {
   CFRunLoopRef    *loop;
@@ -42,7 +42,7 @@ struct stream_setup_t {
 #define ADD_DB_COMMAND_PROTOTYPES()
 ////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMAND_PROTOTYPES()       \
-  COMMAND_PROTOTYPE(test_csv)         \
+  COMMAND_PROTOTYPE(test_csv)               \
   COMMAND_PROTOTYPE(test_test_hash)         \
   COMMAND_PROTOTYPE(test_test_clipboard)    \
   COMMAND_PROTOTYPE(test_test_vector)       \
@@ -85,7 +85,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #undef COMMAND_TEST_ADD_TEST_PROTOTYPES
 #define COLOR_CMD            "\x1b[38;2;50;252;50m"
 #define COLOR_TERMPAINT      "\x1b[38;2;50;252;50m"
-#define COLOR_CSV      "\x1b[38;2;50;252;50m"
+#define COLOR_CSV            "\x1b[38;2;50;252;50m"
 #define COLOR_TEST           "\x1b[38;2;243;233;217m"
 #define COLOR_CAP            "\x1b[38;2;151;252;50m"
 #define COLOR_HASH           "\x1b[38;2;151;50;252m"
@@ -102,7 +102,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define ICON_DROID           "👽"
 #define ICON_CLIPBOARD       "👽"
 #define ICON_VECTOR          "👽"
-#define ICON_CSV          "👽"
+#define ICON_CSV             "👽"
 #define ICON_WINDOWS         "🍍"
 #define ICON_SHAPE           "💠"
 #define ICON_FROG            "🐸"
@@ -227,7 +227,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   COMMAND(ICON_CMD, TEST_CMD, "cmd", COLOR_CMD, "Test Command Parser", 0)                                                              \
   COMMAND(ICON_STREAM, TEST_STREAM, "stream", COLOR_STREAM, "Test Stream", 0)                                                          \
   COMMAND(ICON_CAP, TEST_CAP, "cap", COLOR_CAP, "Test Capture", 0)                                                                     \
-  COMMAND(ICON_CSV, TEST_CSV, "csv", COLOR_CSV, "CSV", _command_test_csv)                                                                     \
+  COMMAND(ICON_CSV, TEST_CSV, "csv", COLOR_CSV, "CSV", _command_test_csv)                                                              \
   COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
   COMMAND(ICON_WINDOW, TEST_STREAM_WINDOW, "window", COLOR_WINDOW, "Test Window Stream", *_command_test_stream_window)                 \
   COMMAND(ICON_DISPLAY, TEST_STREAM_DISPLAY, "display", COLOR_DISPLAY, "Test Display Stream", *_command_test_stream_display)           \

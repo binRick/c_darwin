@@ -160,6 +160,39 @@ static const struct cap_t *__caps[] = {
       return((void *)r);
     },
   },
+  [CAPTURE_CHAN_TYPE_QOIR] = &(struct cap_t)              {
+    .name          = "CGImage To QOIR Pixels",
+    .enabled       = true, .format = IMAGE_TYPE_QOIR,
+    .debug         = true,
+    .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
+    .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
+    .recv_msg      = ^ void *(void *MSG)                 {
+      struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
+      r->format           = IMAGE_TYPE_QOIR;
+      r->msg              = (struct cgimage_recv_t *)MSG;
+      r->time.captured_ts = r->msg->time.captured_ts;
+      debug("Converting %lux%lu CGImageref to QOIR", r->msg->width, r->msg->height);
+      r->len          = 0;
+      r->time.started = timestamp();
+      r->pixels       = save_cgref_to_qoir_memory(r->msg->img_ref, &(r->len));
+      r->time.dur     = timestamp() - r->time.started;
+      r->analyze      = false;
+      errno           = 0;
+      if (!analyze_image_pixels(r))                      {
+        log_error("Failed to analyze QOIR");
+        goto error;
+      }
+      debug("Converted CGImageRef to %lux%lu %s QOIR Pixels in %s",
+            r->width, r->height,
+            bytes_to_string(r->len),
+            milliseconds_to_string(r->time.dur)
+            );
+      return((void *)r);
+
+      error :
+      return((void *)0);
+    },
+  },
   [CAPTURE_CHAN_TYPE_QOI] = &(struct cap_t)              {
     .name          = "CGImage To QOI Pixels",
     .enabled       = true, .format = IMAGE_TYPE_QOI,
@@ -1054,7 +1087,6 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       size_t bar_msg_len = strlen(bar_msg);
       term_width = clamp(get_terminal_width(), 40, 160);
       asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
-//    bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
       *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
       cbar_hide_cursor();
       req->bar->progress = 0.00;
@@ -1106,7 +1138,7 @@ struct Vector *db_tables_images(enum capture_type_id_t type, struct Vector *ids)
   req->height            = 0;
   req->time.dur          = 0;
   req->time.started      = timestamp();
-  Dbg(vector_size(req->ids), %u);
+  Dbg(vector_size(req->ids), %lu);
   return(capture_image(req));
 }
 

@@ -1,12 +1,18 @@
 #pragma once
 #ifndef SDL_UTILS_C
 #define SDL_UTILS_C
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define SU_BYTEORDER            0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
+#else
+#define SU_BYTEORDER            0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
+#endif
 #define QOIR_IMPLEMENTATION
-#define LOCAL_DEBUG_MODE     SDL_UTILS_DEBUG_MODE
-#define WINDOW_TITLE         "my title"
+#define LOCAL_DEBUG_MODE        SDL_UTILS_DEBUG_MODE
+#define SU_CG_TO_VIPS_FORMAT    IMAGE_TYPE_GIF
+#define WINDOW_TITLE            "my title"
 //#include "qoir/src/qoir.h"
-#define WINDOW_POSITION_X    200
-#define WINDOW_POSITION_Y    100
+#define WINDOW_POSITION_X       200
+#define WINDOW_POSITION_Y       100
 #define SDL_ERROR(MSG, CODE)              \
   SDL_Log("%s: %s", MSG, SDL_GetError()); \
   return(CODE);
@@ -16,6 +22,7 @@
 #include "core/core.h"
 #include "core/core.h"
 #include "display/utils/utils.h"
+#include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
 #include "module/def.h"
 #include "module/module.h"
@@ -24,6 +31,7 @@
 #include "string-utils/string-utils.h"
 #include "vips/vips.h"
 #include "window/utils/utils.h"
+#include <Carbon/Carbon.h>
 #include <pthread.h>
 #include <SDL2/SDL.h>
 ////////////////////////////////////////////
@@ -49,13 +57,19 @@
 #include "ms/ms.h"
 #include "tempdir.c/tempdir.h"
 #include "timestamp/timestamp.h"
+
+#define INC(NAME, PATH)                                      \
+  INCBIN(NAME, PATH);                                        \
+  size_t NAME ## _length(void){ return(g ## NAME ## Size); } \
+  size_t NAME ## _data(void){ return(g ## NAME ## Data); }
+#define END_INCS
+
 INCBIN(qoi_file1, "assets/file1.qoi");
 INCBIN(qoi_file2, "assets/file2.qoi");
 INCBIN(qoi_file3, "assets/file3.qoi");
 INCBIN(qoi_file4, "assets/file4.qoi");
 INCBIN(qoi_file5, "assets/file5.qoi");
 INCBIN(qoi_file6, "assets/file6.qoi");
-////////////////////////////////////////////
 static unsigned char *bufs[] = {
   gqoi_file1Data,
   gqoi_file2Data,
@@ -63,6 +77,142 @@ static unsigned char *bufs[] = {
   gqoi_file4Data,
   gqoi_file5Data,
   gqoi_file6Data,
+};
+////////////////////////////////////////////
+typedef VipsImage *(^su_image_source_provider)(void *dat);
+enum su_image_source_type_t {
+  SU_SOURCE_EMBEDDED,
+  SU_SOURCE_WINDOW_ID,
+  SU_SOURCE_SPACE,
+  SU_SOURCE_DISPLAY,
+  SU_SOURCE_BUFFER,
+  SU_SOURCE_PATH,
+  SU_SOURCE_URL,
+  SU_SOURCE_CALLBACK,
+  SU_SOURCES_QTY,
+};
+struct su_rgb_t {
+  unsigned char *buf;
+  size_t        len;
+  int           width, height, bytes_per_row,
+                depth, //32
+                pitch; //stride
+};
+
+void xxxxxxx(){
+  size_t             len;
+  void               *ptr;
+  qoir_decode_result decode;
+
+  decode = qoir_decode(ptr, len, &(qoir_decode_options){ .pixfmt = QOIR_PIXEL_FORMAT__BGRA_PREMUL });
+}
+
+void su_window_from_rgb(struct su_rgb_t *rgb, SDL_Window *window);
+
+void su_window_from_qoir(qoir_decode_result *qoir, SDL_Window *window){
+  return(su_window_from_rgb(&((struct su_rgb_t){
+    .buf = qoir->dst_pixbuf.data,
+    .width = qoir->dst_pixbuf.pixcfg.width_in_pixels,
+    .height = qoir->dst_pixbuf.pixcfg.height_in_pixels,
+    .depth = 32,
+    .pitch = qoir->dst_pixbuf.stride_in_bytes,
+  }), window));
+}
+
+void su_window_from_file(char *path, SDL_Window *window){
+  size_t    len;
+  void      *ptr;
+  size_t    n;
+  SDL_RWops *rw = SDL_RWFromFile(path, "rb");
+
+  len = rw->size(rw);
+  ptr = malloc(len);
+  n   = rw->read(rw, ptr, 1, len);
+  rw->close(rw);
+}
+
+void su_window_from_rgb(struct su_rgb_t *rgb, SDL_Window *window){
+  SDL_Surface *ws = SDL_GetWindowSurface(window);
+
+  SDL_FillRect(ws, NULL, SDL_MapRGB(ws->format, 0x00, 0x00, 0x00));
+//  SDL_BlitSurface(surface, NULL, ws, NULL);
+  SDL_UpdateWindowSurface(window);
+  return(SDL_CreateRGBSurfaceFrom(rgb->buf, rgb->width, rgb->height, rgb->depth, rgb->pitch, SU_BYTEORDER));
+}
+su_image_source_provider su_image_source_providers[] = {
+  [SU_SOURCE_CALLBACK] = ^ VipsImage *(void *dat) { VipsImage *V;
+                                                    su_image_source_provider cb = (su_image_source_provider)dat;
+                                                    if (!(V = cb(dat)))
+                                                      goto FAILED_FILE_TO_VIPS;
+
+                                                    FAILED_FILE_TO_VIPS :
+                                                    return(NULL); },
+  [SU_SOURCE_PATH] = ^ VipsImage *(void *dat)     { VipsImage *V;
+                                                    char *p, *image_loader_name;
+
+                                                    p = (char *)dat;
+                                                    if (!(image_loader_name = vips_foreign_find_load(p)))
+                                                      goto FAILED_MISSING_LOADER;
+                                                    if (!(V = vips_image_new_from_file(p, "", NULL)))
+                                                      goto FAILED_FILE_TO_VIPS;
+
+                                                    FAILED_MISSING_LOADER :
+                                                    FAILED_FILE_NOT_PRESENT :
+                                                    FAILED_FILE_TO_VIPS :
+                                                    return(NULL); },
+  [SU_SOURCE_EMBEDDED] = ^ VipsImage *(void *dat) {
+    size_t i;
+    VipsImage *V;
+
+    i = (size_t)dat;
+
+    if (!bufs[i])
+      goto FAILED_BUFFER_INDEX_NOT_PRESENT;
+//    if(!(image_loader_name = vips_foreign_find_load_buffer(bufs[i],buf_lens[i])))
+//      goto FAILED_MISSING_LOADER;
+//    if(!(i=vips_image_new_from_buffer(buf,buf_len,"",NULL)))
+//      goto FAILED_BUFFER_TO_VIPS;
+    return(V);
+
+    FAILED_BUFFER_INDEX_NOT_PRESENT :
+    return(NULL);
+  },
+  [SU_SOURCE_WINDOW_ID] = ^ VipsImage *(void *dat){
+    CGImageRef cg;
+    VipsImage *i;
+    unsigned long durs[10];
+    size_t id, width, height, buf_len;
+    unsigned char *buf;
+    char *image_loader_name = NULL;
+
+    id = (size_t)dat;
+
+    errno = 0;
+    if (!id)
+      goto FAILED_INVALID_ID;
+    if (!(cg = capture_type_width(CAPTURE_TYPE_WINDOW, id, width)))
+      goto FAILED_CAPTURE;
+    if (!(buf = save_cgref_to_image_type_memory(SU_CG_TO_VIPS_FORMAT, cg, &buf_len)) || !buf_len || !buf)
+      goto FAILED_CG_TO_BUFFER;
+    if (!(image_loader_name = vips_foreign_find_load_buffer(buf, buf_len)))
+      goto FAILED_MISSING_LOADER;
+    if (!(i = vips_image_new_from_buffer(buf, buf_len, "", NULL)))
+      goto FAILED_BUFFER_TO_VIPS;
+    return(i);
+
+    FAILED_CAPTURE :
+    log_error("INVALID ID> Failed to acquire Window");
+    FAILED_CG_TO_BUFFER :
+    log_error("INVALID ID> Failed to acquire Window");
+    FAILED_BUFFER_TO_VIPS :
+    log_error("INVALID ID> Failed to acquire Window");
+    FAILED_INVALID_ID :
+    log_error("INVALID ID> Failed to acquire Window");
+    FAILED_MISSING_LOADER :
+    log_error("LOADER> Failed to acquire Window");
+
+    return(NULL);
+  },
 };
 typedef size_t (^qty_fxn)(void);
 typedef size_t (^tp_bufs_qty_fxn)(void);

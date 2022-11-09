@@ -234,11 +234,9 @@ int wu_stream_display(void *L){
         size_t                 updatedRectsCount = 0, updated_pixels = 0, len = IOSurfaceGetAllocSize(frame), stride = IOSurfaceGetBytesPerRow(frame), offset_beg = 0, copy_len = 0, seed = IOSurfaceGetSeed(frame);
         struct stream_update_t *u;
         IOSurfaceLock(frame, kIOSurfaceLockReadOnly, NULL);
-        int h = IOSurfaceGetHeight(frame);
-        int w = IOSurfaceGetWidth(frame);
-        CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-
-
+        int                    h          = IOSurfaceGetHeight(frame);
+        int                    w          = IOSurfaceGetWidth(frame);
+        CGColorSpaceRef        colorSpace = CGColorSpaceCreateDeviceRGB();
 
         updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
         for (size_t i = 0; i < updatedRectsCount; i++) {
@@ -257,8 +255,8 @@ int wu_stream_display(void *L){
           u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
           u->buf        = calloc(1, len);
           u->buf_len    = 0;
-          u->stride=stride;
-          u->buf_len = 0;
+          u->stride     = stride;
+          u->buf_len    = 0;
           size_t offset = 0;
           for (size_t I = 0; I < u->rect.size.height; I++) {
             offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
