@@ -11,12 +11,13 @@ async_include_dirs = [
 
 async_deps = [
   c_workqueue_dep,
-  chan_dep,interface99_dep,
+  chan_dep,interface99_dep,clamp_dep,
   ansi_codes_dep,
   c_vector_dep,
   c_fsio_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
+  c_workqueue_dep,chan_dep,
   timestamp_dep,
   log_dep,
   ms_dep,

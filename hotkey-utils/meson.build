@@ -11,12 +11,14 @@ hotkey_utils_include_dirs = [
 
 hotkey_utils_deps = [
   core_dep,
+  reproc_dep,which_dep,
   keylogger_dep,layout_utils_dep,
   display_utils_dep,
   path_module_dep,window_utils_dep,app_utils_dep,vips_dep,
   capture_utils_dep,capture_type_dep,capture_dep,image_utils_dep,
   hash_dep,c_exception_dep,container_of_dep,
   levenshtein_dep,menu_bar_utils_dep,dock_utils_dep,
+  exec_fzf_dep,
 ]
 
 hotkey_utils_c_args = [

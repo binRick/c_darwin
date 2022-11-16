@@ -5,7 +5,6 @@
 #include "core/core.h"
 #include "dls/meta.h"
 #include "layout/utils/utils.h"
-void _command_capture_dev(void);
 typedef void (^capture_command_type_b)(enum capture_type_id_t type);
 typedef void (^capture_command_b)(capture_command_type_b);
 static capture_command_b capture_commands[] = {
@@ -71,6 +70,7 @@ declImplExtern(CommandCapture, CaptureDisplay);
   common_options_b[COMMON_OPTION_CURRENT_DISPLAY](args),     \
   common_options_b[COMMON_OPTION_NOT_CURRENT_DISPLAY](args), \
   common_options_b[COMMON_OPTION_SPACE_ID](args),            \
+  common_options_b[COMMON_OPTION_CURRENT_ID_MODE](args),            \
   common_options_b[COMMON_OPTION_PID](args),                 \
   common_options_b[COMMON_OPTION_APPLICATION_NAME](args),    \
   common_options_b[COMMON_OPTION_DISPLAY_ID](args),          \
@@ -97,6 +97,7 @@ declImplExtern(CommandCapture, CaptureDisplay);
   common_options_b[COMMON_OPTION_GRAYSCALE_MODE](args), \
   common_options_b[COMMON_OPTION_IMAGE_FORMATS](args),
 #define COMMON_OPTIONS_CAPTURE_OPTIONS                 \
+  common_options_b[COMMON_OPTION_CURRENT_ID_MODE](args),            \
   common_options_b[COMMON_OPTION_COMPRESS](args),      \
   common_options_b[COMMON_OPTION_QUANTIZE_MODE](args), \
   common_options_b[COMMON_OPTION_CONCURRENCY](args),   \
@@ -104,7 +105,6 @@ declImplExtern(CommandCapture, CaptureDisplay);
   COMMON_OPTIONS_IMAGE_CAPTURE_OPTIONS
 #define COMMON_OPTIONS_CAPTURE_WINDOW \
   COMMON_OPTIONS_CAPTURE_COMMON
-#define COMMON_OPTIONS_CAPTURE_DEV
 #define COMMON_OPTIONS_CAPTURE_SPACE \
   COMMON_OPTIONS_CAPTURE_COMMON
 #define COMMON_OPTIONS_CAPTURE_DISPLAY_SIZE_PERCENTAGE \
@@ -114,8 +114,7 @@ declImplExtern(CommandCapture, CaptureDisplay);
 #define SUBCOMMANDS_CAPTURE             \
   CREATE_SUBCOMMAND(CAPTURE_WINDOW, ),  \
   CREATE_SUBCOMMAND(CAPTURE_DISPLAY, ), \
-  CREATE_SUBCOMMAND(CAPTURE_SPACE, ),   \
-  CREATE_SUBCOMMAND(CAPTURE_DEV, ),
+  CREATE_SUBCOMMAND(CAPTURE_SPACE, ),   
 #define ADD_CAPTURE_COMMAND_OPTIONS()                                                                                 \
   CREATE_FLOAT_COMMAND_OPTION(DISPLAY_SIZE_PERCENTAGE, 0, "size", "display size percentage", display_size_percentage) \
   CREATE_BOOLEAN_COMMAND_OPTION(FULLSCREEN_MODE, 0, "full", "Full", fullscreen_mode)
@@ -127,6 +126,5 @@ declImplExtern(CommandCapture, CaptureDisplay);
   COMMAND(ICON_WINDOW, CAPTURE_WINDOW, "window", COLOR_WINDOW, "Capture Window", *_command_capture_window)      \
   COMMAND(ICON_DISPLAY, CAPTURE_DISPLAY, "display", COLOR_WINDOW, "Capture Display", *_command_capture_display) \
   COMMAND(ICON_SPACE, CAPTURE_SPACE, "space", COLOR_SPACE, "Capture Space", *_command_capture_space)            \
-  COMMAND(ICON_SPACE, CAPTURE_DEV, "dev", COLOR_SPACE, "Capture Dev", *_command_capture_dev)                    \
 
 #endif

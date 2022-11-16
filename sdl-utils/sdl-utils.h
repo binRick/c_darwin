@@ -11,6 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <SDL2/SDL.h>
 //////////////////////////////////////
+typedef struct _VipsImage VipsImage;
 int sdl_utils_main(void);
+int su_vi(VipsImage *vi);
+
+SDL_Surface *vips_to_surface(VipsImage *vi);
+
 #endif

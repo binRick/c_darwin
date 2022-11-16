@@ -10,6 +10,7 @@ process_utils_dirs = [
   ]
 process_utils_deps = [
   core_dep,
+  async_dep,
 ]
 
 

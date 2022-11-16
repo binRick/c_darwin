@@ -458,7 +458,8 @@ struct Vector *tesseract_extract_memory(unsigned char *img_data, size_t img_data
     api = TessBaseAPICreate();
     assert(api != NULL);
     assert(TessBaseAPIInit3(api, NULL, tess_lang) == EXIT_SUCCESS);
-    img = pixReadMem(img_data, img_data_len);
+    if(!(img = pixReadMem(img_data, img_data_len))){
+    }
     assert(img != NULL);
     TessBaseAPISetImage2(api, img);
     assert(TessBaseAPIGetInputImage(api) != NULL);

@@ -18,8 +18,12 @@ sdl_utils_test_deps = [
   log_dep,
   ms_dep,
   bytes_dep,
+  glib_dep,
+  vips_dep,
+  incbin_dep,
 ]
 sdl_utils_test_c_args = [
+  '-DINCBIN_SILENCE_BITCODE_WARNING="1"',
 ]
 sdl_utils_test_link_args = [
 ]

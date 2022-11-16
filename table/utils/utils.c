@@ -659,13 +659,16 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
 #define INIT_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)                                                          \
   struct list_table_t *args = (struct list_table_t *)ARGS;                                                 \
   FILE                *TABLE_FD = args->fd;                                                                \
-  struct Vector       *items_v = tables[TABLE_TYPE_ ## TYPE]->query_items(), *sorted_items = vector_new(); \
+  struct Vector       *items_v;\
+  struct Vector *sorted_items = vector_new(); \
   struct STRUCT_TYPE  *item, *_item;                                                                       \
   ft_table_t          *table;                                                                              \
   size_t              filtered_qty = 0;                                                                    \
   struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];
 #define SETUP_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)           { do {                                                                                   \
-                                                                 durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = 0;                                            \
+                                            durs[TABLE_DUR_TYPE_QUERY_ITEMS].started = timestamp();\
+                                            items_v = tables[TABLE_TYPE_ ## TYPE]->query_items();\
+                                            durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = timestamp() - durs[TABLE_DUR_TYPE_QUERY_ITEMS].started;\
                                                                  durs[TABLE_DUR_TYPE_TOTAL].started   = timestamp();                                  \
                                                                  durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                            \
                                                                  durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                            \

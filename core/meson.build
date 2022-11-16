@@ -15,10 +15,12 @@ core_include_dirs = [
 
 core_deps = [
   csplit_dep,is_number_dep,roscha_dep,
-  optparse99_dep,metalang99_dep,interface99_dep,reproc_dep,variation_ui_dep,
-  libspinner_dep,
+  optparse99_dep,metalang99_dep,interface99_dep,reproc_dep,
+  libspinner_dep,ck_dep,
   core_utils_dep,core_image_dep,core_debug_dep,incbin_dep,
   leptonica_dep,
+  match_dep,
+  async_dep,
   ansi_codes_dep,
   c_vector_dep,
   c_fsio_dep,

@@ -15,11 +15,15 @@
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
 INCBIN(animation_1, "assets/animation_1.png");
+INCBIN(communist_goals_qoi, "assets/communist_goals.qoi");
+INCBIN(communist_goals_qoir, "assets/communist_goals.qoir");
 INCBIN(communist_goals_jpeg, "assets/communist_goals.jpeg");
 INCBIN(communist_goals_png, "assets/communist_goals.png");
 INCBIN(communist_goals_tiff, "assets/communist_goals.tiff");
 INCBIN(communist_goals_bmp, "assets/communist_goals.bmp");
 INCBIN(communist_goals_gif, "assets/communist_goals.gif");
+INCBIN(kitty_icon_qoi, "assets/kitty_icon.qoi");
+INCBIN(kitty_icon_qoir, "assets/kitty_icon.qoir");
 INCBIN(kitty_icon_jpeg, "assets/kitty_icon.jpeg");
 INCBIN(kitty_icon_png, "assets/kitty_icon.png");
 INCBIN(kitty_icon_tiff, "assets/kitty_icon.tiff");
@@ -39,6 +43,10 @@ static char   *files[] = {
   "/tmp/communist_goals.gif",
   "/tmp/communist_goals.png",
   "/tmp/animation_1.png",
+  "/tmp/communist_goals.qoir",
+  "/tmp/communist_goals.qoi",
+  "/tmp/kitty_icon.qoi",
+  "/tmp/kitty_icon.qoir",
 };
 static size_t sizes[] = { 25, 50, 100, 250, }, files_qty = QTY(files), sizes_qty = QTY(sizes);
 
@@ -47,16 +55,35 @@ void __init(){
   term_width  = term_width == 0 ? 120 : term_width;
   term_height = term_height == 0 ? 40 : term_height;
   fsio_write_binary_file(files[0], gkitty_icon_tiffData, gkitty_icon_tiffSize);
+  printf("\n");
   fsio_write_binary_file(files[1], gkitty_icon_bmpData, gkitty_icon_bmpSize);
+  printf("\n");
   fsio_write_binary_file(files[2], gkitty_icon_jpegData, gkitty_icon_jpegSize);
+  printf("\n");
   fsio_write_binary_file(files[3], gkitty_icon_gifData, gkitty_icon_gifSize);
+  printf("\n");
   fsio_write_binary_file(files[4], gkitty_icon_pngData, gkitty_icon_pngSize);
+  printf("\n");
   fsio_write_binary_file(files[5], gcommunist_goals_tiffData, gcommunist_goals_tiffSize);
+  printf("\n");
   fsio_write_binary_file(files[6], gcommunist_goals_bmpData, gcommunist_goals_bmpSize);
+  printf("\n");
   fsio_write_binary_file(files[7], gcommunist_goals_jpegData, gcommunist_goals_jpegSize);
+  printf("\n");
   fsio_write_binary_file(files[8], gcommunist_goals_gifData, gcommunist_goals_gifSize);
+  printf("\n");
   fsio_write_binary_file(files[9], gcommunist_goals_pngData, gcommunist_goals_pngSize);
+  printf("\n");
   fsio_write_binary_file(files[10], ganimation_1Data, ganimation_1Size);
+  printf("\n");
+  fsio_write_binary_file(files[11], gcommunist_goals_qoirData, gcommunist_goals_qoirSize);
+  printf("\n");
+  fsio_write_binary_file(files[12], gcommunist_goals_qoiData, gcommunist_goals_qoiSize);
+  printf("\n");
+  fsio_write_binary_file(files[13], gkitty_icon_qoiData, gkitty_icon_qoiSize);
+  printf("\n");
+  fsio_write_binary_file(files[14], gkitty_icon_qoirData, gkitty_icon_qoirSize);
+  printf("\n");
 }
 
 #define MSGS_QTY    2
@@ -68,7 +95,9 @@ TEST t_kitty_msg_image_buffers_resized(){
     for (size_t s = 0; s < sizes_qty; s++) {
       Info(">Buffer Size:%s|Resized to:%lupx Width & Height|", bytes_to_string(fsio_file_size(files[i])), sizes[s]);
       msgs[0] = kitty_msg_display_image_buffer_resized_width(fsio_read_binary_file(files[i]), fsio_file_size(files[i]), sizes[s]);
+  printf("\n");
       msgs[1] = kitty_msg_display_image_buffer_resized_height(fsio_read_binary_file(files[i]), fsio_file_size(files[i]), sizes[s]);
+  printf("\n");
       for (size_t m = 0; m < MSGS_QTY; m++) {
         ASSERT_GT(strlen(msgs[m]), 0);
         fprintf(stdout, "%s\n", msgs[m]);
@@ -85,7 +114,9 @@ TEST t_kitty_msg_image_files_resized(){
     for (size_t s = 0; s < sizes_qty; s++) {
       Info(">File:%s|Resized to:%lupx Width & Height|", files[i], sizes[s]);
       msgs[0] = kitty_msg_display_image_path_resized_width(files[i], sizes[s]);
+  printf("\n");
       msgs[1] = kitty_msg_display_image_path_resized_height(files[i], sizes[s]);
+  printf("\n");
       for (size_t m = 0; m < MSGS_QTY; m++) {
         ASSERT_GT(strlen(msgs[m]), 0);
         fprintf(stdout, "%s\n", msgs[m]);
@@ -100,6 +131,7 @@ TEST t_kitty_msg_image_buffers(){
 
   for (size_t i = 0; i < files_qty; i++) {
     msg = kitty_msg_display_image_buffer(fsio_read_binary_file(files[i]), fsio_file_size(files[i]));
+  printf("\n");
     ASSERT_GT(strlen(msg), 0);
     log_info("%s", files[i]);
     fprintf(stdout, "%s\n", msg);
@@ -139,6 +171,7 @@ TEST t_kitty_msg_cursor(){
 TEST t_kitty_image_buffers(){
   for (size_t i = 0; i < files_qty; i++) {
     bool ok = kitty_display_image_buffer(fsio_read_binary_file(files[i]), fsio_file_size(files[i]));
+  printf("\n");
     ASSERT_EQ(ok, true);
   }
   PASS();
@@ -147,6 +180,7 @@ TEST t_kitty_image_buffers(){
 TEST t_kitty_image_files(){
   for (size_t i = 0; i < files_qty; i++) {
     bool ok = kitty_display_image_path(files[i]);
+  printf("\n");
     ASSERT_EQ(ok, true);
   }
   PASS();
@@ -157,6 +191,7 @@ TEST t_kitty_msg_image_files(){
 
   for (size_t i = 0; i < files_qty; i++) {
     msg = kitty_msg_display_image_path(files[i]);
+  printf("\n");
     ASSERT_GT(strlen(msg), 0);
     fprintf(stdout, AC_YELLOW "%s (%s)\n" AC_RESETALL, files[i], bytes_to_string(fsio_file_size(files[i])));
     fprintf(stdout, "%s\n", msg);

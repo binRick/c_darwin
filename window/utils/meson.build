@@ -13,7 +13,7 @@ window_utils_dirs = [
 window_utils_deps = [
   core_dep,
   frameworks_dep,
-  sqldbal_dep,whereami_dep,core_utils_dep,
+  sqldbal_dep,whereami_dep,core_utils_dep,exec_fzf_dep,
   parson_dep,
   space_utils_dep,
   log_dep,image_utils_dep,glib_dep,vips_dep,

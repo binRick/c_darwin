@@ -10,6 +10,7 @@ vips_basics_test_deps = [
   c_greatest_dep,kitty_msg_dep,c_workqueue_dep,chan_dep,fancy_progress_dep,
   ansi_codes_dep,
   c_vector_dep,
+  match_dep,
   c_fsio_dep,
   c_stringfn_dep,
   c_string_buffer_dep,
@@ -18,6 +19,7 @@ vips_basics_test_deps = [
   ms_dep,
   bytes_dep,
   vips_dep,
+  async_dep,
 ]
 vips_basics_test_c_args = [
   '-DINCBIN_SILENCE_BITCODE_WARNING',

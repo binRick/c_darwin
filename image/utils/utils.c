@@ -757,3 +757,8 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
   if (isatty(STDOUT_FILENO))
     FANCY_PROGRESS_ENABLED = true;
 }
+char *iu_qoir_buffer_rect_hash(void *ptr, size_t ptr_len, qoir_rectangle rect){
+  char *s="xxxxxxxxx";
+
+  return(s);
+}

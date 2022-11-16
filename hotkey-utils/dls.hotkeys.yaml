@@ -118,134 +118,204 @@ keys:
     action: CURRENT
     action_type: ToggleLayout
     enabled: yes
+    absent_handler: |
+      xxyx
+      123
+    post_handler: |
+      xxxx
+      yyy
+      zzz
+
   - name: Display Right 50%
     key: ctrl+shift+'
     action: CURRENT
     action_type: MoveWindowToNextDisplayRight50Percent
     enabled: yes
+    absent_handler: ""
+    post_handler: |
+      xxxx
+      yyy
+      zzz
+
   - name: Prev Display
     key: ctrl+,
     action: CURRENT
     action_type: MoveWindowToPrevDisplay
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
   - name: Next Display
     key: ctrl+.
     action: CURRENT
     action_type: MoveWindowToNextDisplay
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Normalize Layout
     key: ctrl+;
     action: Standard
     action_type: NormalizeLayout
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Activate iTerm
     key: ctrl+'
     action: iTerm
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Activate Kitty
     key: ctrl+[
     action: kitty
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Activate Right
     key: ctrl+]
     action: right
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Activate Google Chrome
     key: ctrl+=
     action: Google Chrome
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Activate Alacritty
     key: ctrl+p
     action: Alacritty
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
   - name: Activate Main
     key: ctrl+[del]
     action: main
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
+
+  - name: Activate Wow
+    key: ctrl+g
+    action: wow
+    action_type: ActivateApplication
+    enabled: yes
+    post_handler: ""
+    absent_handler: |
+      open ~/repos/kitty-wow/wow.app
 
   - name: Activate Richard
     key: ctrl+[return]
     action: richard
     action_type: ActivateApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: |
+      open ~/repos/kitty-richard/richard.app
 
-  - name: Focused App Width +5%
+  - name: App Width +5%
     key: alt+ctrl+=
     action: null
     action_type: IncreaseFocusedApplicationWidthFivePercent
     enabled: yes
-  - name: Focused App Width -5%
+    post_handler: ""
+    absent_handler: ""
+
+  - name: App Width -5%
     key: alt+ctrl+-
     action: null
     action_type: DecreaseFocusedApplicationWidthFivePercent
     enabled: yes
-  - name: Focused App Height +5%
+    post_handler: ""
+    absent_handler: ""
+  - name: App Height +5%
     key: alt+ctrl+'
     action: null
     action_type: IncreaseFocusedApplicationHeightFivePercent
     enabled: yes
-  - name: Focused App Height -5%
+    post_handler: ""
+    absent_handler: ""
+  - name: App Height -5%
     key: alt+ctrl+;
     action: null
     action_type: DecreaseFocusedApplicationHeightFivePercent
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
-  - name: Focused App Left 50%
+  - name: App Left 50%
     key: ctrl+shift+j
     action: null
     action_type: LeftFiftyPercentFocusedApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
-  - name: Focused App Right 50%
+  - name: App Right 50%
     key: ctrl+shift+k
     action: null
     action_type: RightFiftyPercentFocusedApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
-  - name: Focused App Left 25%
+  - name: App Left 25%
     key: alt+ctrl+m
     action: null
     action_type: LeftTwentyFivePercentFocusedApplication
     enabled: yes
-  - name: Focused App Right 25%
+    post_handler: ""
+    absent_handler: ""
+  - name: App Right 25%
     key: alt+ctrl+,
     action: null
     action_type: RightTwentyFivePercentFocusedApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
     
-  - name: Focused App Left 75%
+  - name: App Left 75%
     key: alt+ctrl+k
     action: null
     action_type: LeftSeventyFivePercentFocusedApplication
     enabled: yes
-  - name: Focused App Right 75%
+    post_handler: ""
+    absent_handler: ""
+  - name: App Right 75%
     key: alt+ctrl+l
     action: null
     action_type: RightSeventyFivePercentFocusedApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
 
-  - name: Focused App Top 50%
+  - name: App Top 50%
     key: alt+shift+n
     action: null
     action_type: TopFiftyPercentFocusedApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
 
-  - name: Focused App Bottom 50%
+  - name: App Bottom 50%
     key: alt+shift+b
     action: null
     action_type: BottomFiftyPercentFocusedApplication
     enabled: yes
+    post_handler: ""
+    absent_handler: ""
+

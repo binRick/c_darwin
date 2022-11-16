@@ -39,6 +39,7 @@ char *get_my_cwd();
 int get_process_ppid(int pid);
 struct Vector *get_process_ppids(int pid);
 struct Vector *get_child_pids(int PID);
+int get_pid_by_env_key_val(const char *key, const char *val);
 char *get_pid_cwd(pid_t pid);
 bool darwin_set_process_title(const char *title);
 ///////////////////////////////////////////////////

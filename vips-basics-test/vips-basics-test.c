@@ -1,13 +1,16 @@
 //#define CONCURRENCY 30
 #define DEFAULT_RESIZE_RATIO    0.90
 #define CONCURRENCY             1
+#define MAX_FRAMES 10
 //#define CONCURRENCY 2
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
+#include "async/async.h"
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
+#include "match/match.h"
 #include "c_vector/vector/vector.h"
 #include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
@@ -70,6 +73,23 @@ static size_t
   exts_qty    = QTY(exts),
   factors_qty = QTY(factors);
 
+TEST t_vips_resize_async(void *VOID){
+  size_t concurrency = (size_t)VOID;
+  log_info("Resizing with concurrency %lu", concurrency);
+  async_worker_cb cb = ^void*(void*VOID){
+    size_t r = (size_t)VOID * 2;
+    return((void*)r);
+  };
+  struct Vector *items_v = vector_new();
+  vector_push(items_v,(void*)100);
+  vector_push(items_v,(void*)200);
+
+  unsigned long ts = timestamp();
+  struct Vector *res_v = async_items_v(concurrency,items_v,cb);
+  log_info("Received %lu results in %s",vector_size(res_v),milliseconds_to_string(timestamp() - ts));
+  Dbg((size_t)vector_get(res_v,0),%lu);
+  PASS();
+}
 static int annotate_image(VipsObject *context, VipsImage *image, VipsImage **out) {
   int       page_height = vips_image_get_page_height(image);
   int       n_pages     = image->Ysize / page_height;
@@ -157,8 +177,6 @@ void recv_fxn(void *RECV){
     //Dbg(vector_size(r->recvd),%lu);
 //  struct recv_t *
     char *msg;
-    Dbg(w->args.id, %u);
-    Dbg(w->dur, %u);
     //fancy_progress_step((float)((float)qty / (float)(r->qty)) * 100);
 
     pthread_mutex_unlock(&(r->mutex));
@@ -299,7 +317,7 @@ TEST t_vips_resize_queued(){
 
 TEST t_vips_queued(){
   size_t        id = 0;
-  size_t        concurrency = 200, items = 10000;
+  size_t        concurrency = 20, items = 100;
   struct Vector *results_v = vector_new();
   struct WorkQueue
                 *queues[concurrency],
@@ -353,14 +371,13 @@ TEST t_vips_gif_frames(){
   int           n_pages;
   size_t        qty = 0, total_bytes = 0;
   unsigned long ts = timestamp();
-
   for (size_t i = 0; i < gifs_qty; i++) {
     infile = gifs[i];
     if (!(image = vips_image_new_from_file(infile, "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
       FAILm("Failed to load file");
     for (size_t o = 0; o < QTY(frame_exts); o++)
       if (vips_image_get_n_pages(image) > 1)
-        for (int f = 0; f < vips_image_get_n_pages(image); f++) {
+        for (int f = 0; f<MAX_FRAMES&& f < vips_image_get_n_pages(image); f++) {
           asprintf(&outfile, "/tmp/gif-%s-%lu-%lu-frame-%d.%s", basename(stringfn_substring(infile, 0, strlen(infile) - 4)), i, TEST_INDEX, f, frame_exts[o]);
           if (fsio_file_exists(outfile)) fsio_remove(outfile);
           unsigned long ts = timestamp();
@@ -454,6 +471,29 @@ TEST t_vips_resize(){
   PASSm(msg);
 } /* t_vips_resize */
 
+TEST t_vips_match(void *VOID){
+  char *format=(char*)(VOID),*path,*glob,*msg,*f;
+  int png_files_qty=0, total_bytes=0;
+  asprintf(&path,"%s%s",gettempdir(),"png");
+  asprintf(&glob,"*.%s",format);
+
+  char **png_files = __MATCH__GET_FILES_FROM_PATH(path,glob,&png_files_qty);
+  Dbg(png_files_qty,%d);
+  unsigned long ts = timestamp();
+  for(int i=0;i<png_files_qty;i++){
+    asprintf(&f,"%s/%s",path,png_files[i]);
+    total_bytes+= fsio_file_size(f);
+  }
+  asprintf(&msg,"%s from %d %s files in %s using %s matching %s",bytes_to_string(total_bytes),png_files_qty,format,milliseconds_to_string(timestamp() - ts), path, glob);
+  Ds(msg);
+  PASS();
+}
+TEST t_vips_dbg(){
+  Dbg("ok",%s);
+  Ds("ok");
+  Dbg((size_t)123,%lu);
+  PASS();
+}
 TEST t_vips_annotate(){
   size_t        TEST_INDEX = 2;
   unsigned long ts = timestamp();
@@ -508,6 +548,18 @@ SUITE(s_vips_annotate) {
 SUITE(s_vips_gif_frames) {
   RUN_TEST(t_vips_gif_frames);
 }
+SUITE(s_vips_match) {
+  RUN_TESTp(t_vips_match,(void*)("png"));
+  RUN_TESTp(t_vips_match,(void*)("qoi"));
+  RUN_TESTp(t_vips_match,(void*)("qoir"));
+}
+SUITE(s_vips_dbg) {
+  RUN_TEST(t_vips_dbg);
+}
+SUITE(s_vips_resize_async) {
+  RUN_TESTp(t_vips_resize_async, (void*)1);
+  RUN_TESTp(t_vips_resize_async, (void*)10);
+}
 SUITE(s_vips_resize) {
   RUN_TEST(t_vips_resize);
   RUN_TEST(t_vips_resize_queued);
@@ -516,6 +568,7 @@ SUITE(s_vips_resize) {
 GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
+  setenv("TMPDIR","/tmp/",1);
   VIPS_INIT(argv);
   fsio_write_binary_file(files[0], gcommunist_goalsData, gcommunist_goalsSize);
   fsio_write_binary_file(files[1], gkitty_iconData, gkitty_iconSize);
@@ -525,7 +578,10 @@ int main(int argc, char **argv) {
   RUN_SUITE(s_vips_queued);
   RUN_SUITE(s_vips_annotate);
   RUN_SUITE(s_vips_resize);
+  RUN_SUITE(s_vips_resize_async);
   RUN_SUITE(s_vips_gif_frames);
+  RUN_SUITE(s_vips_dbg);
+  RUN_SUITE(s_vips_match);
   GREATEST_MAIN_END();
   vips_shutdown();
 }

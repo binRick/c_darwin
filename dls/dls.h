@@ -18,6 +18,7 @@
 #include "dls/vars.h"
 #include "optparse/optparse.h"
 #include "tp/tp.h"
+#include "murmurhash.c/murmurhash.h"
 //////////////////////////////////////
 int handle_main(int argc, char *argv[]);
 #endif

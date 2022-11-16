@@ -52,7 +52,8 @@ const cyaml_schema_field_t key_fields_schema[] = {
   CYAML_FIELD_STRING_PTR("action", CYAML_FLAG_POINTER, struct key_t, action,      0,                   CYAML_UNLIMITED),
   CYAML_FIELD_ENUM("action_type",  CYAML_FLAG_DEFAULT, struct key_t, action_type, action_type_strings, CYAML_ARRAY_LEN(action_type_strings)),
   CYAML_FIELD_BOOL("enabled",      CYAML_FLAG_DEFAULT, struct key_t, enabled),
-//  CYAML_FIELD_BOOL("reposition",   CYAML_FLAG_DEFAULT, struct key_t, reposition),
+  CYAML_FIELD_STRING_PTR("post_handler",CYAML_FLAG_POINTER,struct key_t,post_handler,0,CYAML_UNLIMITED),
+  CYAML_FIELD_STRING_PTR("absent_handler",CYAML_FLAG_POINTER,struct key_t,absent_handler,0,CYAML_UNLIMITED),
   CYAML_FIELD_END,
 };
 const cyaml_schema_value_t key_schema = {

@@ -36,6 +36,7 @@
 #include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
+#include "async/async.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
@@ -272,21 +273,19 @@ void process_info_release(struct process_info_t *I){
     }
   }
 }
-
+#define PU_CONCURRENCY 30
 struct Vector *get_all_process_infos_v(){
+  unsigned long ts;
   struct Vector *pids_v = get_all_processes();
-  struct Vector *PI     = vector_new();
-
-  for (size_t i = 0; i < vector_size(pids_v); i++) {
-    struct process_info_t *I = get_process_info((int)(size_t)vector_get(pids_v, i));
-    if (I)
-      vector_push(PI, (void *)I);
-  }
-  return(PI);
+  async_worker_cb cb = ^void*(void*item){
+    return((void*)(get_process_info((int)(size_t)item)));
+  };
+  return(async_items_v(PU_CONCURRENCY,pids_v,cb));
 }
 
 struct process_info_t *get_process_info(int pid){
   struct process_info_t *I = calloc(1, sizeof(struct process_info_t));
+  unsigned long ts;
 
   I->pid = pid;
   if (I->pid == 0) {
@@ -949,12 +948,6 @@ finish:
     log_info("ran osascript with result %d in %s", r, milliseconds_to_string(timestamp() - ts));
   return(ok);
 } /* run_osascript */
-static void __attribute__((constructor)) __constructor__process_utils(void){
-  if (getenv("DEBUG") != NULL || getenv("DEBUG_PROCESS_UTILS") != NULL) {
-    log_debug("Enabling Process Utils Debug Mode");
-    PROCESS_UTILS_DEBUG_MODE = true;
-  }
-}
 
 static bool PROCESS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__process(void){
@@ -1404,6 +1397,22 @@ finish:
     fprintf(stderr, AC_RED "%s" AC_RESETALL "\n", reproc_strerror(r));
 
   return(ok);
+}
+int get_pid_by_env_key_val(const char *key, const char *val){
+  int pid=-1;
+  struct Vector *v = get_all_process_infos_v();
+  struct process_info_t *I;
+  process_env_t *e;
+  for(size_t i = 0; pid==-1 && i <vector_size(v);i++){
+    I = (struct process_info_t*)vector_get(v, i);
+    for(size_t ii=0;pid==-1 && ii<vector_size(I->env_v);ii++){
+      e = (process_env_t*)vector_get(I->env_v,ii);
+      if(strcmp(e->key,key)==0 && strcmp(e->val,val)==0){
+        pid=I->pid;
+      }
+    }
+  }
+  return(pid);
 }
 
 #endif

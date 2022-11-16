@@ -325,11 +325,6 @@ void Frog_free(Frog *self) {
 static void Frog_croak(VSelf) {
   VSELF(Frog);
   self->ncroaks++;
-  struct vn_init vn;
-  vn.width  = 60;
-  vn.height = 5;
-  vn.pos_x  = 2;
-  vn.pos_y  = 2;
 
   printf("%s: croak! #%d\n", self->name, self->ncroaks);
 }

@@ -123,6 +123,8 @@ struct hk_appposition_t {
 struct key_t {
   const char         *name, *key, *action;
   const char         **actions;
+  const char         *post_handler;
+  const char         *absent_handler;
   bool               enabled;
   //, reposition;
   enum action_type_t action_type;
@@ -217,7 +219,6 @@ static const char __attribute__((unused)) * action_type_descriptions[ACTION_TYPE
 };
 #undef GENERATE_ACTION_TYPE_RESIZE_PERCENT_DESCRIPTION
 ////////////////////////////////////////////////////////////
-//////////////////////////////////////
 char *get_yaml_config_file_path(char **argv);
 char *get_homedir_yaml_config_file_path(void);
 struct hotkeys_config_t *load_yaml_config_file_path(char *config_file_path);
@@ -327,7 +328,9 @@ static struct action_type_handler_t __attribute__((unused)) action_type_handlers
 };
 char *get_hotkey_type_action_name(enum action_type_t action);
 struct Vector *get_config_keys_v();
+struct key_t *get_config_key(int id);
 bool hk_list_layouts();
+bool hk_print_key_names(void);
 bool hk_print_layout_names();
 bool hk_show_layout(char *name);
 bool hk_show_rendered_layout_name(char *name);

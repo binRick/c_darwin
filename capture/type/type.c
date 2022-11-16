@@ -1,7 +1,11 @@
 #pragma once
+#ifndef CAPTURE_TYPE_C
+#define CAPTURE_TYPE_C
 #include "db/db.h"
 #include "qoir/src/qoir.h"
-#ifndef CAPTURE_TYPE_C
+#include "core/core.h"
+#include <pthread.h>
+extern pthread_mutex_t     *core_stdout_mutex;
 #define CAPTURE_TYPE_C
 #define LOCAL_DEBUG_MODE                     CAPTURE_TYPE_DEBUG_MODE
 #define THUMBNAIL_WIDTH                      150
@@ -176,7 +180,7 @@ static const struct cap_t *__caps[] = {
       r->time.started = timestamp();
       r->pixels       = save_cgref_to_qoir_memory(r->msg->img_ref, &(r->len));
       r->time.dur     = timestamp() - r->time.started;
-      r->analyze      = false;
+      r->analyze      = true;
       errno           = 0;
       if (!analyze_image_pixels(r))                      {
         log_error("Failed to analyze QOIR");
@@ -551,7 +555,7 @@ static int record_db_capture_handler(void *VOID){
       hash_free(maps[1]);
       hash_free(maps[2]);
       hash_free(db_map);
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       debug("Saved %s %s %s Capture to DB Row #%d in %s!",
             bytes_to_string(r->len),
             image_type_name(r->format),
@@ -560,7 +564,7 @@ static int record_db_capture_handler(void *VOID){
             milliseconds_to_string(timestamp() - _s)
             );
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
     }
   }
   chan_send(db_done_chan, (void *)0);
@@ -583,10 +587,10 @@ static int receive_requests_handler(void *CAP){
     }
     if (cap->bar) {
       cap->bar->progress += (float)((float)1 / (float)(cap->total_qty));
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       cbar_display_bar(cap->bar);
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
     }
     chan_send(cap->send_chan, m);
   }
@@ -618,10 +622,10 @@ static int wait_recv_compress_done(void __attribute__((unused)) *REQ){
     qty++;
     if (req->bar) {
       req->bar->progress += (float)((float)1 / (float)(vector_size(req->ids)));
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       cbar_display_bar(req->bar);
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
     }
     vector_push(compressed_results, msg);
   }
@@ -747,13 +751,13 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
                bytes_to_string(blen),
                milliseconds_to_string(timestamp() - c->started)
                );
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       printf(
         "%s",
         m
         );
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
       c->pixels = buf;
       c->len    = blen;
     }
@@ -761,7 +765,7 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
       g_object_unref(v);
     c->dur = timestamp() - c->started;
     chan_send(compression_wait_chan, (void *)c);
-    pthread_mutex_lock(core_stdout_mutex);
+//    pthread_mutex_lock(core_stdout_mutex);
     debug("Compressed #%lu from %s to %s in %s",
           c->id,
           bytes_to_string(c->prev_len),
@@ -769,7 +773,7 @@ static int run_compress_recv(void __attribute__((unused)) *CHAN){
           milliseconds_to_string(c->dur)
           );
     fflush(stdout);
-    pthread_mutex_unlock(core_stdout_mutex);
+//    pthread_mutex_unlock(core_stdout_mutex);
   }
   chan_send(compression_done_chan, (void *)0);
   return(EXIT_SUCCESS);
@@ -805,7 +809,31 @@ static bool issue_capture_image_request(struct capture_image_request_t *req, str
 static bool analyze_image_pixels(struct capture_image_result_t *r){
   r->id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
   if (r->analyze) {
-    if (r->format == IMAGE_TYPE_QOI) {
+    if (r->format == IMAGE_TYPE_QOIR) {
+  qoir_decode_result result = {0};
+  qoir_decode_pixel_configuration_result cfg =
+      qoir_decode_pixel_configuration(r->pixels, r->len);
+  if (cfg.status_message) {
+    result.status_message = cfg.status_message;
+    exit(1);
+  }
+  qoir_decode_options decopts = {0};
+  decopts.pixfmt = (cfg.dst_pixcfg.pixfmt == QOIR_PIXEL_FORMAT__BGRX)
+                       ? QOIR_PIXEL_FORMAT__RGB
+                       : QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+  qoir_decode_result dec = qoir_decode(r->pixels, r->len, &decopts);
+  if (dec.status_message) {
+    free(dec.owned_memory);
+    result.status_message = dec.status_message;
+  }
+r->width = dec.dst_pixbuf.pixcfg.width_in_pixels;
+r->height = dec.dst_pixbuf.pixcfg.height_in_pixels;
+r->has_alpha = dec.dst_pixbuf.pixcfg.pixfmt;
+r->linear_colorspace = false;
+
+
+
+    }else  if (r->format == IMAGE_TYPE_QOI) {
       QOIDecoder *qoi = QOIDecoder_New();
       if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
         r->width             = QOIDecoder_GetWidth(qoi);
@@ -819,7 +847,7 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
       VipsImage *image = NULL;
       errno = 0;
       if (!(image = vips_image_new_from_buffer(r->pixels, r->len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL))) {
-        log_error("Failed to decode pixels for Item #%lu", r->id);
+        log_error("Failed to decode pixels for Item #%lu with len %lu", r->id, r->len);
         return(false);
       }
       r->width             = vips_image_get_width(image);
@@ -866,10 +894,10 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     req->bar = &(cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg));
     cbar_hide_cursor();
     req->bar->progress = 0.00;
-    pthread_mutex_lock(core_stdout_mutex);
+//    pthread_mutex_lock(core_stdout_mutex);
     cbar_display_bar(req->bar);
     fflush(stdout);
-    pthread_mutex_unlock(core_stdout_mutex);
+//    pthread_mutex_unlock(core_stdout_mutex);
   }
 
   struct Vector *providers = get_cap_providers(req->format);
@@ -954,14 +982,14 @@ struct Vector *capture_image(struct capture_image_request_t *req){
   results_chan = NULL;
   if (req->progress_bar_mode) {
     req->bar->progress = (float)1.00;
-    pthread_mutex_lock(core_stdout_mutex);
+//    pthread_mutex_lock(core_stdout_mutex);
     cbar_display_bar(req->bar);
     cbar_show_cursor();
     printf(
       "\n"
       );
     fflush(stdout);
-    pthread_mutex_unlock(core_stdout_mutex);
+//    pthread_mutex_unlock(core_stdout_mutex);
     if (req->bar) {
       //free(req->bar);
     }
@@ -982,12 +1010,12 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       term_width  = clamp(get_terminal_width(), 40, 160);
       bar_len     = term_width * BAR_TERMINAL_WIDTH_PERCENTAGE - bar_msg_len;
       *(req->bar) = cbar(clamp(bar_len, BAR_MIN_WIDTH, term_width * BAR_MAX_WIDTH_TERMINAL_PERCENTAGE), bar_msg);
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       cbar_hide_cursor();
       req->bar->progress = 0.00;
       cbar_display_bar(req->bar);
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
     }
     req->comp = calloc(1, sizeof(struct compress_req_t));
     for (int i = 0; i < req->concurrency; i++) {
@@ -1057,14 +1085,14 @@ struct Vector *capture_image(struct capture_image_request_t *req){
     debug("compressions done");
     if (req->progress_bar_mode) {
       req->bar->progress = (float)1.00;
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       cbar_display_bar(req->bar);
       cbar_show_cursor();
       printf(
         "\n"
         );
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
       if (req->bar) {
         //free(req->bar);
       }
@@ -1083,7 +1111,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
                get_capture_type_name(((struct capture_image_result_t *)(vector_get(capture_results_v, 0)))->type),
                bytes_to_string(total)
                );
-      pthread_mutex_lock(core_stdout_mutex);
+//      pthread_mutex_lock(core_stdout_mutex);
       size_t bar_msg_len = strlen(bar_msg);
       term_width = clamp(get_terminal_width(), 40, 160);
       asprintf(&bar_msg, BAR_MESSAGE_TEMPLATE, bar_msg);
@@ -1092,7 +1120,7 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       req->bar->progress = 0.00;
       cbar_display_bar(req->bar);
       fflush(stdout);
-      pthread_mutex_unlock(core_stdout_mutex);
+//      pthread_mutex_unlock(core_stdout_mutex);
     }
     for (size_t i = 0; i < vector_size(capture_results_v); i++)
       chan_send(db_chan, (void *)(vector_get(capture_results_v, i)));
@@ -1101,24 +1129,24 @@ struct Vector *capture_image(struct capture_image_request_t *req){
       chan_recv(db_done_chan, (void *)0);
       if (req->progress_bar_mode) {
         req->bar->progress += (float)((float)1 / (float)(vector_size(capture_results_v)));
-        pthread_mutex_lock(core_stdout_mutex);
+//        pthread_mutex_lock(core_stdout_mutex);
         cbar_display_bar(req->bar);
         fflush(stdout);
-        pthread_mutex_unlock(core_stdout_mutex);
+//        pthread_mutex_unlock(core_stdout_mutex);
       }
     }
     chan_close(db_done_chan);
   }
   if (req->progress_bar_mode) {
     req->bar->progress = (float)1.00;
-    pthread_mutex_lock(core_stdout_mutex);
+//    pthread_mutex_lock(core_stdout_mutex);
     cbar_display_bar(req->bar);
     cbar_show_cursor();
     printf(
       "\n"
       );
     fflush(stdout);
-    pthread_mutex_unlock(core_stdout_mutex);
+//    pthread_mutex_unlock(core_stdout_mutex);
   }
 done:
   caps = NULL;

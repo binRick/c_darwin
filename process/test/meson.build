@@ -1,30 +1,42 @@
 process_test_srcs = [
-  'process-test.c',
-  'process-test.h',
+  'test.c',
 ]
-process_include_dirs = [
+inc = get_variable('inc', join_paths(meson.current_source_dir(),'..'))
+process_test_include_dirs = [
   '.',
   inc,
 ]
-process_include_cargs = [
-  '-Wno-unused-parameter',
-  '-Wno-unused-function',
-  ]
 process_test_deps = [
-  core_dep,
   c_greatest_dep,
-  process_dep,
-  kitty_dep,
-  process_utils_dep,window_info_dep,app_utils_dep,
-  window_utils_dep,app_utils_dep,core_utils_dep,window_utils_dep,
+  ansi_codes_dep,
+  c_vector_dep,
+  c_fsio_dep,
+  c_stringfn_dep,
+  c_string_buffer_dep,
+  timestamp_dep,
+  log_dep,
+  ms_dep,
+  bytes_dep,
+  process_utils_dep,
 ]
+process_test_c_args = [
+]
+process_test_link_args = [
+]
+
+process_test_dir = join_paths(meson.current_source_dir(), '..')
+
 if get_option('enable-binaries')
   process_test_exec = executable('process-test',
      process_test_srcs,
      dependencies: process_test_deps,
-     include_directories: process_include_dirs,
-     c_args: process_include_cargs,
-     link_args: osx_ldflags,
+     include_directories: process_test_include_dirs,
+     link_args: process_test_link_args,
+     c_args: process_test_c_args,
+     install: false,
   )
-  test('process-test', passh_program, args: [process_test_exec])
+  test('process-test', 
+    process_test_exec, args: ['-v','-a'],
+    workdir: process_test_dir,
+  )
 endif

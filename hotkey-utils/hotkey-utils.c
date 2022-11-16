@@ -10,8 +10,12 @@
 #include "capture/capture.h"
 #include "hash/hash.h"
 #include "dls/dls.h"
+#include "which/src/which.h"
 #include "container_of/container_of.h"
 #include "submodules/levenshtein/deps/levenshtein.c/levenshtein.h"
+#include "reproc/reproc/include/reproc/export.h"
+#include "reproc/reproc/include/reproc/reproc.h"
+#include "exec-fzf/exec-fzf.h"
 ////////////////////////////////////////////
 #define HOTKEY_MODE_NAME(ID) hk_layout_mode_names[ID]
 #define HOTKEY_UTILS_HASH_SEED    212136436
@@ -1251,6 +1255,14 @@ hash_t *hk_get_layouts(){
   return(h);
 }
 
+bool hk_print_key_names(){
+  struct hotkeys_config_t *cfg         = hk_get_config();
+  for(size_t i = 0; i < cfg->keys_count;i++){
+    printf("%s\n",cfg->keys[i].name);
+  }
+  free(cfg);
+  return(true);
+}
 bool hk_print_layout_names(){
   struct hotkeys_config_t *cfg         = hk_get_config();
   for(size_t i = 0; i < cfg->layouts_count;i++){
@@ -1375,6 +1387,49 @@ int normalize_layout(void *LAYOUT){
   return(EXIT_SUCCESS);
 }
 
+static void wait_for_pid_env(int ms, const char *KEY,const char *VAL){
+  unsigned long now=timestamp(), started = now, end = started+ms,interval=100;
+  while(now < end){
+    usleep(1000*interval);
+  }
+}
+
+int execute_handler(const char *shell){  
+  reproc_t      *process = NULL;
+  int           exited        = REPROC_ENOMEM;
+  const char    *sh;
+
+  if(!(sh = which("sh"))){
+    log_error("Failed to find sh binary");
+    goto finish;
+  }
+
+  const char *cmd[] = { sh, "-c", shell, NULL };
+
+  if ((process=reproc_new()) == NULL) {
+    log_error("reproc new failed");
+    goto finish;
+  }
+
+  if((exited = reproc_start(process, cmd, (reproc_options){ .redirect.err.type = REPROC_REDIRECT_STDOUT, .deadline = 1000 }))<0){
+    log_error("reproc start failed with code %d", exited);
+    goto finish;
+  }
+  if(!(exited = reproc_close(process, REPROC_STREAM_IN))){
+    log_error("reproc close failed with code %d", exited);
+    goto finish;
+  }
+  if((exited = reproc_wait(process, REPROC_INFINITE))<0){
+    log_error("reproc wait failed with code %d", exited);
+    goto finish;
+  }
+
+  return(exited);
+finish:
+  if(process)
+    reproc_destroy(process);
+  return(exited);
+}
 int activate_application(void *KEY){  
   struct key_t *key = (struct key_t*)KEY;
   stringfn_mut_to_lowercase(key->action);
@@ -1403,6 +1458,18 @@ int activate_application(void *KEY){
   int64_t lowest_score = -1;
   int64_t score;
   char *closest_name = NULL;
+  if (window_id == 0) {
+    if(key->absent_handler){
+      log_info("Trying absent handler...\n"AC_YELLOW"%s"AC_RESETALL,key->absent_handler);
+      int rc;
+      if((rc= execute_handler(key->absent_handler))==EXIT_SUCCESS){
+        log_info("absent handler OK");
+      }else{
+        log_warn("absent handler FAILED");
+      }
+      exit(0);
+    }
+  }
   if (window_id == 0) {
       hash_t *matches_h = app_utils_get_closes_app_name_matches(APPLICATION_NAME, 10);
       hash_t *hm;
@@ -1461,6 +1528,11 @@ int deactivate_application(void *KEY){
 
 int handle_action(enum action_type_t action_type, void *action){
   return(action_type_handlers[action_type].fxn(action));
+}
+
+struct key_t *get_config_key(int id){
+  struct hotkeys_config_t *cfg = load_yaml_config_file_path(get_homedir_yaml_config_file_path());
+  return(&(cfg->keys[id]));
 }
 
 struct Vector *get_config_keys_v(){

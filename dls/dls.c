@@ -161,6 +161,12 @@ static void __at_exit(void){
 #define COMMON_OPTIONS_WINDOW_IDS               \
   common_options_b[COMMON_OPTION_OFFSET](args), \
   common_options_b[COMMON_OPTION_LIMIT](args),
+#define COMMON_OPTIONS_WINDOW_SLIDE\
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
+  common_options_b[COMMON_OPTION_ID](args), \
+  common_options_b[COMMON_OPTION_SLIDE_DIRECTION_NAME](args), \
+  common_options_b[COMMON_OPTION_SLIDE_DURATION](args), \
+  common_options_b[COMMON_OPTION_SLIDE_PERCENTAGE](args), 
 #define COMMON_OPTIONS_WINDOW_STICKY
 #define COMMON_OPTIONS_WINDOW_UNSTICKY
 #define COMMON_OPTIONS_WINDOW_ALL_SPACES
@@ -208,6 +214,7 @@ static void __at_exit(void){
   CREATE_SUBCOMMAND(WINDOW_MINIMIZE, ),       \
   CREATE_SUBCOMMAND(WINDOW_UNMINIMIZE, ),     \
   CREATE_SUBCOMMAND(WINDOW_STICKY, ),         \
+  CREATE_SUBCOMMAND(WINDOW_SLIDE, ),         \
   CREATE_SUBCOMMAND(WINDOW_UNSTICKY, ),       \
   CREATE_SUBCOMMAND(WINDOW_ALL_SPACES, ),     \
   CREATE_SUBCOMMAND(WINDOW_NOT_ALL_SPACES, ), \
@@ -237,6 +244,7 @@ struct args_t *args = &(struct args_t){
   .sort_direction                     = "asc",
   .current_space_only                 = false,
   .dls_clear_screen                   = false,
+  .slide_duration = 5.0,
   .minimized_only                     = false,
   .application_name                   = NULL,
   .width_greater                      = -1, .width_less = -1,

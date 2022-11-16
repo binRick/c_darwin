@@ -53,7 +53,17 @@
 #include "tempdir.c/tempdir.h"
 #include "timelib/timelib.h"
 #include "timestamp/timestamp.h"
-#include "variation-ui/vn_ui.h"
+
+#include "ck/include/ck_pr.h"
+#include "ck/include/ck_cohort.h"
+#include "ck/include/ck_backoff.h"
+#include "ck/include/ck_bitmap.h"
+#include "ck/include/ck_epoch.h"
+#include "ck/include/ck_array.h"
+#include "ck/include/ck_malloc.h"
+#include "ck/include/ck_hs.h"
+#include "ck/include/ck_ht.h"
+#include "ck/include/ck_hp.h"
 //////////////////////////////////////
 #include "module/def.h"
 #include "module/module.h"
@@ -80,6 +90,8 @@
 #include "space/space.h"
 #include "systemprofiler/systemprofiler.h"
 #include "window/window.h"
+#include "match/match.h"
+#include "async/async.h"
 #include <pthread.h>
 //////////////////////////////////////
 //#include "capture/capture.h"
@@ -93,22 +105,4 @@ extern struct optparse_opt __optparse_opt[];
 extern struct optparse_cmd *dls_cmd;
 extern char                *DLS_RE_EXEC_CMD;
 extern pthread_mutex_t     *core_stdout_mutex;
-/*
- * struct dls_conn_t {
- * char *stdout_mutex,*cmd,**option_names;
- * struct optparse_opt *options;
- * };
- * struct dls_conn_t *__core_conn__ = NULL;
- * struct dls_conn_t *core_get_conn(){
- #define c __core_conn__
- * c->stdout_mutex = core_stdout_mutex;
- * c->cmd = DLS_RE_EXEC_CMD;
- * c->options = &(__optparse_opt);
- * c->option_names = __option_names;
- * return(c);
- #undef c
- * }
- */
-/*
- */
 #endif

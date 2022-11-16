@@ -1,6 +1,7 @@
 #pragma once
 #include "core/core.h"
 #include "dls/command-test.h"
+#include "exec-fzf/exec-fzf.h"
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100
 #define MIN_STREAM_WIDTH           100

@@ -5,6 +5,7 @@
 #define MIN_STREAM_MS      1000
 #define MAX_STREAM_MS      600000
 #include "capture/type/type.h"
+#include "sha256.c/sha256.h"
 #include "capture/utils/utils.h"
 #include "color/color.h"
 #include "core/core.h"
@@ -13,6 +14,9 @@
 #include "kitty/msg/msg.h"
 #include "submodules/c_deps/submodules/c_greatest/greatest/greatest.h"
 #include "window/utils/utils.h"
+#include "match/match.h"
+#include "qoir/src/qoir.h"
+#include "qoir/util/pixbufs_are_equal.h"
 extern int  DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 
@@ -29,9 +33,9 @@ int _command_test_terminal(){
 void _command_test_csv(){
   struct Vector *colors_v = color_csv_load(color_csv_read(COLOR_TYPE_BEST), COLOR_FILTER_DARK);
 
-  Dbg(vector_size(colors_v), %u);
+  Dbg(vector_size(colors_v), %lu);
   colors_v = color_csv_load(color_csv_read(COLOR_TYPE_ALL), 0);
-  Dbg(vector_size(colors_v), %u);
+  Dbg(vector_size(colors_v), %lu);
   exit(EXIT_SUCCESS);
 }
 
@@ -131,11 +135,12 @@ int crop_animation(VipsObject *context, VipsImage *image, VipsImage **out,
   return(0);
 }
 #define WU_DISPLAY_TERMINAL_IMAGE                  true
-#define        WU_DISPLAY_TERMINAL_SCALE_FACTOR    (0.25)
+#define        WU_DISPLAY_TERMINAL_SCALE_FACTOR    (0.15)
 #define        WU_DISPLAY_TERMINAL_WIDTH           550
 typedef void (^wu_cb)(void);
-
+#define WU_SAVE_QOIR_FILE true
 int wu_receive_stream(void *L){
+  float factor = WU_DISPLAY_TERMINAL_SCALE_FACTOR;
   struct winsize        *ws;
   struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool                  ended;
@@ -167,29 +172,60 @@ int wu_receive_stream(void *L){
     if (u->seed < qty) continue;
     qty++;
     copied += u->buf_len;
+    if((u->seed%10)==0)
+        printf(AC_CLS);
+    if(chan_size(l->chan)<5)
+        factor = clamp((factor + 0.05), .10, 1.00);
+    if(chan_size(l->chan)>30)
+        factor = clamp((factor - 0.05), .10, 1.00);
     if (true || qty == 1 || qty % 2 == 0) {
-      char  *show_file;
-      float factor = WU_DISPLAY_TERMINAL_SCALE_FACTOR;
+      char  *show_file, *stats_file,*stats_text;
+
       int   ox     = (int)(factor * (float)(u->width - u->rect.size.width)),
             oy     = (int)(factor * (float)(u->height - u->rect.size.height));
-      asprintf(&show_file, "/tmp/t2-%lu.qoi", qty);
+      asprintf(&show_file, "/tmp/display-stream-%lu.qoir", qty);
+      asprintf(&stats_file, "/tmp/display-stream-%lu.json", qty);
+      asprintf(&stats_text, "{"
+          "\"timestamp\":%lld"
+          ",\"x\":%d"
+          ",\"y\":%d"
+          ",\"w\":%d"
+          ",\"h\":%d"
+          ",\"factor\":%.2f"
+          ",\"len\":%lu"
+          "}%s",
+          timestamp(),
+          (int)(u->rect.origin.x),
+          (int)(u->rect.origin.y),
+          (int)(u->rect.size.width),
+          (int)(u->rect.size.height),
+          factor,
+          (size_t)(u->buf_len),
+          "\n"
+          );
       if (fsio_file_exists(show_file)) fsio_remove(show_file);
+      if (fsio_file_exists(stats_file)) fsio_remove(stats_file);
+
+      if(WU_SAVE_QOIR_FILE){
       if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR)))
         if (
           (vips_resize(image, &resized, factor, NULL) || true && resized)
           && (tracker = (tracker) ? tracker : vips_image_copy_memory(resized))
           && (vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0)
           && WU_DISPLAY_TERMINAL_IMAGE
-          && (qty % 5 == 0)
           && (chan_size(l->chan) < 10)
           && (joined && vips_image_write_to_file(joined, show_file, NULL) || true)
+          && (fsio_write_text_file(stats_file,stats_text))
           && fsio_file_exists(show_file) && fsio_file_size(show_file) > 1024
           ) {
-          printf(AC_CLS);
+          if(true)
+            printf(AC_CLS);
           durs[0] = timestamp() - ts;
-          if (kitty_display_image_path_resized_height(show_file, WU_DISPLAY_TERMINAL_WIDTH))
-            printf("\n");
+          if(false)
+            if (kitty_display_image_path_resized_height(show_file, WU_DISPLAY_TERMINAL_WIDTH))
+              printf("\n");
         }
+      }
     }
     image   = NULL;
     resized = NULL;
@@ -222,7 +258,8 @@ int wu_receive_stream(void *L){
                "\n|"AC_RESETALL "Newest   : "AC_GREEN "%s" AC_RESETALL
                "\n|"AC_RESETALL "Oldest   : "AC_GREEN "%s/%s" AC_RESETALL
                "\n|"AC_RESETALL "- Dur    : "AC_GREEN "%s" AC_RESETALL
-               "\n|"AC_RESETALL "- Chan   : "AC_GREEN "%lu" AC_RESETALL
+               "\n|"AC_RESETALL "- Chan   : "AC_GREEN "%d" AC_RESETALL
+               "\n|"AC_RESETALL "- Resize : "AC_GREEN "%.2f" AC_RESETALL
                "%s\n"
                ,
                u->seed,
@@ -246,6 +283,7 @@ int wu_receive_stream(void *L){
                milliseconds_to_string(timestamp() - (size_t)(vector_get(history, vector_size(history) - 1))),
                milliseconds_to_string(HISTORY_MS),
                milliseconds_to_string(durs[0]), chan_size(l->chan),
+               factor,
                ""
                );
       split = stringfn_split_lines(s);
@@ -337,33 +375,80 @@ void _command_test_stream_window(){
 }
 
 void _command_test_cap_display(){
+  uint32_t seed = 12345;
+  char *buf,*last_buf; size_t len,last_len;
+  size_t qty=0;char *path="/tmp/qoir",*f,bufs_qty=0,paths_qty=0;
+  char **files = match_files(path,"*.qoir",&qty);
+  char *paths[qty];
+  for(size_t i = 0; i <qty;i++)
+    asprintf(&(paths[i]),"%s/%s",path,(char*)files[i]);
+  for(size_t i = 0; i <paths_qty;i++)
+    Ds(paths[i]);
+  qoir_decode_result **decoded = (qoir_decode_result**)async_each(20,paths,qty,&bufs_qty,^void*(void*VOID){
+    char *f=(char*)VOID;
+    qoir_decode_options decopts ={ 0 };
+    decopts.pixfmt              = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+    qoir_decode_result *_d=calloc(1,sizeof(qoir_decode_result));
+    qoir_decode_result d = qoir_decode(fsio_read_binary_file(f),fsio_file_size(f),&decopts);
+    memcpy(_d,&d,sizeof(qoir_decode_result));
+    return((void*)_d);
+  });
+  size_t total=0;
+  for(size_t i = 0; i <bufs_qty;i++){
+    char buf[32];
+    total+=(decoded[i]->dst_pixbuf.pixcfg.height_in_pixels*decoded[i]->dst_pixbuf.stride_in_bytes);
+    size_t l = decoded[i]->dst_pixbuf.pixcfg.height_in_pixels*decoded[i]->dst_pixbuf.stride_in_bytes;
+    Dn(l);
+//    sha256_hash((unsigned char*)(decoded[i]->dst_pixbuf.data), &buf, decoded[i]->dst_pixbuf.pixcfg.height_in_pixels*decoded[i]->dst_pixbuf.stride_in_bytes);
+//    log_info("buf:%s",buf);
+    Di(decoded[i]->dst_pixbuf.pixcfg.width_in_pixels);
+    Di(decoded[i]->dst_pixbuf.pixcfg.height_in_pixels);
+    Dn(decoded[i]->dst_pixbuf.stride_in_bytes);
+  }
+
+  Dn(total);
+  Di(bufs_qty);
+  exit(0);
+  for(size_t i=0;i<qty;i++){
+  }
+  for(size_t i=0;i<qty;i++){
+    Dn(i);
+    Di(decoded[i]->dst_pixbuf.pixcfg.height_in_pixels);
+    Di(decoded[i]->dst_pixbuf.pixcfg.width_in_pixels);
+  }
+  if(false){
+
+  for(size_t i=0;i<qty;i++){
+    asprintf(&f,"%s/%s",path,files[i]);
+    buf=fsio_read_binary_file(f);
+    len=fsio_file_size(f);
+    if(buf && last_buf){
+      unsigned long ts=timestamp();
+      bool match;
+      qoir_decode_options decopts ={ 0 };
+      decopts.pixfmt              = QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
+      qoir_decode_result dec[2];
+      dec[0] = qoir_decode(buf,len,&decopts);
+      dec[1] = qoir_decode(last_buf,last_len,&decopts);
+      match = pixbufs_are_equal(&(dec[0].dst_pixbuf),&(dec[1].dst_pixbuf));
+      unsigned long dur=timestamp() - ts;
+      Di(match);
+      log_info("Compared %s and %s buffers in %s",bytes_to_string(len),bytes_to_string(last_len),milliseconds_to_string(dur));
+    }
+    Ds(f);
+    last_buf=buf;
+  }
+  }
+  Dn(qty);
+
+  log_info("ccc");
+  exit(EXIT_SUCCESS);
 }
 
 void _command_test_cap_window(){
 }
 
 TEST t_clipboard(){
-  struct vn_init vn;  /* FIRST OF ALL DEFINE WINDOW NAME */
-
-  vn.width  = 20;
-  vn.height = 2;
-  vn.pos_x  = 2;
-  vn.pos_y  = 2;
-
-  struct vnc_color white;
-
-  white.is_fore = 0;
-  white.color   = vn_hex_color("ffffff", white.is_fore);
-
-  struct vnc_color black;
-
-  black.is_fore = 1;  /* FOR BACKGROUND */
-  black.color   = vn_rgb_color(0, 0, 0, black.is_fore);
-
-//   vn_clear(); /* CLEAR THE TERMINAL SCREEN */
-  vn_gotoxy(vn.pos_x, vn.pos_y);  /* GO TO CERTAIN POSITION */
-  vn_print("Hey is this text with color?", white.color, black.color, text_bold);
-  vn_end(vn);
   PASSm("Clipboard Tests OK");
 }
 
@@ -379,6 +464,37 @@ TEST t_hash_each(){
   }
   h[2] = vector_to_hash_values(v[0]);
   log_info("hash 2 has %d items", hash_size(h[2]));
+  async_worker_cb cb = ^void*(void*VOID){
+    char *s;
+    hash_t *h_in = (hash_t*)VOID;
+    int in = atoi(hash_get(h_in,"in"));
+    Di(in);
+    hash_t *h = hash_new();
+    hash_set(h,"out","out");
+    asprintf(&s,"%lu",(size_t)(in*2));
+    hash_set(h,"in",s);
+    return((void*)h);
+  };
+  Di(hash_size(h[2]));
+  size_t len = hash_size(h[2]),qty=0;
+  size_t i=0;
+  hash_t *items[10];
+  for(size_t i = 0; i <10;i++)
+    items[i]=hash_new();
+  for(size_t i = 0; i <10;i++){
+    char *s;
+    asprintf(&s,"%ld",i);
+    hash_set(items[i],"in",s);
+  }
+
+
+  void **iterated_items = async_each(20, items, len, &qty,cb);
+  Dn(qty);
+  for(size_t i = 0; i <qty;i++){
+    hash_t *h = (hash_t*)iterated_items[i];
+    Ds((char*)hash_get(h,"in"));
+    Ds((char*)hash_get(h,"out"));
+  }
   hash_each(h[2], {
     //Dbg(key, %s);
   });

@@ -11,6 +11,7 @@
 #include "capture/type/type.h"
 #include "capture/utils/utils.h"
 #include "clamp/clamp.h"
+#include "space/utils/utils.h"
 #include "db/db.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
@@ -34,6 +35,8 @@
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
 //#include "libpick/libpick.h"
+#define MSF_GIF_IMPL
+#include "msf_gif/msf_gif.h"
 #define MAX_CONCURRENCY                        25
 #define MAX_FRAME_RATE                         30
 #define MAX_LIMIT                              999
@@ -280,7 +283,26 @@ bool initialize_args(struct args_t *ARGS){
   ARGS->width            = CLAMP_ARG_TYPE(ARGS, width, ARG_CLAMP_TYPE_WINDOW_SIZE);
   ARGS->height           = CLAMP_ARG_TYPE(ARGS, height, ARG_CLAMP_TYPE_WINDOW_SIZE);
   ARGS->limit            = CLAMP_ARG_TYPE(ARGS, limit, ARG_CLAMP_TYPE_LIMIT);
-  ARGS->concurrency      = clamp(args->concurrency, 1, args->limit);
+  ARGS->concurrency      = clamp(ARGS->concurrency, 4, ARGS->limit);
+  ARGS->slide_direction=-1;
+  if(ARGS->slide_direction_name)
+    for(int i=0;i<DLS_WINDOW_SLIDES_QTY;i++)
+      if(stringfn_equal(stringfn_to_lowercase(dls_window_slide_direction_names[i]),stringfn_to_lowercase(ARGS->slide_direction_name)))
+        ARGS->slide_direction = i;
+
+  if(args->slide_direction>=0){
+    //log_info("slide direction %s | %d", args->slide_direction_name,args->slide_direction);
+
+  }
+  if(ARGS->current_id_mode){
+    args->all_mode = false;
+    args->pid = get_focused_pid();
+    args->window_id = get_focused_window_id();
+    args->id=args->window_id;
+//    args->space_id = get_current_space_ig();
+
+    log_info("current ID MODE");
+  }
   if (args->db_tables_qty == 1 && strcmp(args->db_tables[0], "all") == 0) {
     struct Vector *tbls = db_tables_v();
     if (args->db_tables)
@@ -350,6 +372,7 @@ void debug_dls_arguments(){
 ////////////////////////////////////////////
 static void _command_print_ids_v(struct Vector *ids);
 static void _command_print_qty(size_t qty);
+static void _command_layout_load_dir(int argc,char **argv);
 static void _command_print_strings_v(struct Vector *strings);
 COMMAND_PROTOTYPE(layout_list)
 COMMAND_PROTOTYPE(layout_test)
@@ -362,6 +385,7 @@ COMMAND_PROTOTYPE(window_names)
 COMMAND_PROTOTYPE(window_props)
 COMMAND_PROTOTYPE(window_qty)
 COMMAND_PROTOTYPE(window_sticky)
+COMMAND_PROTOTYPE(window_slide)
 COMMAND_PROTOTYPE(window_unsticky)
 COMMAND_PROTOTYPE(window_all_spaces)
 COMMAND_PROTOTYPE(window_not_all_spaces)
@@ -503,6 +527,7 @@ common_option_b common_options_b[] = {
   CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,                                                  'Q',       "quantize",           "Enable Quantized Compression",                                            quantize_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,                                                       'A',       "all",                "All IDs",                                                                 all_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,                                                  0,         "not-minimized",      "Show Non Minimized Only",                                                 not_minimized_only)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_ID_MODE,                                                      'E',         "current-id",          "Current ID Mode",                                                     current_id_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,                                                      0,         "minimized",          "Show Minimized Only",                                                     minimized_only)
   CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,                                              0,         "clear-icons-cache",  "Clear Icons Cache",                                                       clear_icons_cache)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,                                                  0,         "non-duplicate",      "Show Non Duplicate Fonts",                                                non_duplicate)
@@ -927,6 +952,16 @@ common_option_b common_options_b[] = {
       .arg_dest = &(args->x),
     });
   },
+  [COMMON_OPTION_DIRECTORY] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'd',
+      .long_name = "directory",
+      .description = "Directory",
+      .arg_name = "DIRECTORY",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->directory),
+    });
+  },
   [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args) {
     return((struct optparse_opt)                                                                            {
       .short_name = 't',
@@ -965,6 +1000,36 @@ common_option_b common_options_b[] = {
       .arg_name = "FONT-NAME",
       .arg_data_type = DATA_TYPE_STR,
       .arg_dest = &(args->font_name),
+    });
+  },
+  [COMMON_OPTION_SLIDE_DURATION] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 's',
+      .long_name = "duration",
+      .description = "Slide Duration",
+      .arg_name = "SLIDE-Duration",
+      .arg_data_type = DATA_TYPE_FLT,
+      .arg_dest = &(args->slide_duration),
+    });
+  },
+  [COMMON_OPTION_SLIDE_PERCENTAGE] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'S',
+      .long_name = "percentage",
+      .description = "Slide Percentage",
+      .arg_name = "SLIDE-PERCENTAGE",
+      .arg_data_type = DATA_TYPE_FLT,
+      .arg_dest = &(args->slide_percentage),
+    });
+  },
+  [COMMON_OPTION_SLIDE_DIRECTION_NAME] = ^ struct optparse_opt (struct args_t *args) {
+    return((struct optparse_opt)                                                                            {
+      .short_name = 'D',
+      .long_name = "direction",
+      .description = "Slide Direction",
+      .arg_name = "DIRECTION-NAME",
+      .arg_data_type = DATA_TYPE_STR,
+      .arg_dest = &(args->slide_direction_name),
     });
   },
   [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args) {
@@ -1287,6 +1352,7 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_NAME, WINDOW_PROPS, "props", COLOR_PROP, "List Windows Properties", *_command_window_props)
   COMMAND(ICON_MOVE, WINDOW_MOVE, "move", AC_RED, "Move Window", *_command_move_window)
   COMMAND(ICON_STICKY, WINDOW_STICKY, "sticky", AC_RED, "Set Window Sticky", *_command_window_sticky)
+  COMMAND(ICON_SLIDE, WINDOW_SLIDE, "slide", AC_RED, "Slide Window", *_command_window_slide)
   COMMAND(ICON_STICKY, WINDOW_UNSTICKY, "unsticky", AC_RED, "Unset Window Sticky", *_command_window_unsticky)
   COMMAND(ICON_RESIZE, WINDOW_RESIZE, "resize", AC_RED, "Resize Window", *_command_resize_window)
   COMMAND(ICON_ALL, WINDOW_ALL_SPACES, "all-spaces", AC_RED, "Window All Spaces", *_command_window_all_spaces)
@@ -1856,8 +1922,64 @@ static void _command_animate(){
   initialize_args(args);
   debug_dls_arguments();
   unsigned long end_ts = 0;
+  Di(args->id);
+  Di(args->duration_seconds);
   unsigned long interval_ms = (unsigned long)(1000 * (float)(((float)1) / (float)(args->frame_rate))), expected_frames_qty = args->duration_seconds * args->frame_rate;
+  Di(args->frame_rate);
+  Dn(interval_ms);
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
+  CGImageRef *img;
+  unsigned long s=timestamp(),dur=0;
+  if(!(img= capture_type_capture(args->capture_type,args->id)))
+      log_error("failed to capture");
+  dur=timestamp() -s;
+  Ds(milliseconds_to_string(dur));
+  size_t len=0;
+  unsigned char *rgb=save_cgref_to_rgb_memory(img,&len);
+  assert(len>0);
+  Ds(bytes_to_string(len));
+  dur=timestamp() -s;
+  Ds(milliseconds_to_string(dur));
+  VipsImage *vi[10];
+  vi[0]=vips_image_new_from_buffer(rgb, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL);
+
+  int bpp=0;
+int width = 480, height = 320, frame_cs = 5, bit_depth = 16,pitch_bytes=width*bpp;
+
+MsfGifState gifState = {};
+// msf_gif_bgra_flag = true; //optionally, set this flag if your pixels are in BGRA format instead of RGBA
+// msf_gif_alpha_threshold = 128; //optionally, enable transparency (see documentation in header for details)
+msf_gif_begin(&gifState, width, height);
+//msf_gif_frame(&gifState, ..., centisecondsPerFrame, bitDepth, width * 4); //frame 1
+//msf_gif_frame(&gifState, ..., centisecondsPerFrame, bitDepth, width * 4); //frame 2
+//msf_gif_frame(&gifState, ..., centisecondsPerFrame, bitDepth, width * 4); //frame 3, etc...
+//while ((unsigned long)timestamp() < (unsigned long)end_ts) {
+while(true){
+  msf_gif_frame(&gifState,rgb,frame_cs,bit_depth,pitch_bytes);
+  log_info("xxx");
+}
+
+MsfGifResult result = msf_gif_end(&gifState);
+if (result.data) {
+    FILE * fp = fopen("MyGif.gif", "wb");
+    fwrite(result.data, result.dataSize, 1, fp);
+    fclose(fp);
+}
+msf_gif_free(result);
+
+  dur=timestamp() -s;
+  Ds(milliseconds_to_string(dur));
+  exit(0);
+  size_t gif_len=0;
+  unsigned char *gif;
+  vips_image_write_to_buffer(vi[0],".gif",&gif,&gif_len,NULL);
+  dur=timestamp() -s;
+  Ds(milliseconds_to_string(dur));
+  log_info("%ld",CGImageGetWidth(img));
+  log_info("%ld",CGImageGetHeight(img));
+  /*
+
+
   for (size_t x = 0; x < vector_size(ids); x++) {
     struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
     unsigned long                  prev_ts = 0, last_ts = 0, delta_ms = 0;
@@ -1878,7 +2000,11 @@ static void _command_animate(){
     acap->expected_frames_qty = expected_frames_qty;
     size_t                            qty = vector_size(acap->frames_v);
     end_ts = timestamp() + (args->duration_seconds * 1000);
-    while ((unsigned long)timestamp() < (unsigned long)end_ts) {// || expected_frames_qty > qty) {
+
+
+//exit(1);
+
+    while ((unsigned long)timestamp() < (unsigned long)end_ts) {
       unsigned long s = timestamp();
       req->progress_bar_mode = args->progress_bar_mode;
       results                = capture_image(req);
@@ -1917,6 +2043,12 @@ static void _command_animate(){
     pthread_join(acap->thread, NULL);
     assert(end_animation(acap) == true);
     assert(fsio_file_exists(acap->file));
+    Ds(args->output_file);
+    Ds(acap->file);
+    Di(acap->gif->framesSubmitted);
+    Di(acap->gif->width);
+    Di(acap->gif->height);
+    exit(0);
     if (args->output_file)
       fsio_copy_file(acap->file, args->output_file);
     if (args->display_mode) {
@@ -1924,6 +2056,7 @@ static void _command_animate(){
       printf("\n");
     }
   }
+*/
 
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
@@ -2245,11 +2378,112 @@ static void _command_menu_bar(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_window_slide(){
+  initialize_args(args);
+  pid_t pid=get_window_id_pid(args->id);
+  char *title=get_window_id_title(args->id);
+  int space_id,display_id;
+  struct window_info_t *info;
+
+  space_id=get_window_id_space_id(args->id);
+  display_id=get_window_display_id(args->id);
+  info=get_window_id_info(args->id);
+
+  int display_width=get_display_id_width(display_id);
+  int display_height=get_display_id_height(display_id);
+
+int start_x=0,start_y=0,end_x=0,end_y=0,start_w=0,start_h=0;
+switch(args->slide_direction){
+  case DLS_WINDOW_SLIDE_TOP:
+    start_x=0;
+    start_w=display_width;
+    start_h=clamp((display_height * args->slide_percentage), display_height*.10, display_height);
+    start_y=0;
+    end_x=start_x;
+    end_y=0;
+    break;
+  case DLS_WINDOW_SLIDE_BOTTOM:
+    start_y=clamp((display_height * args->slide_percentage), display_height*.10, display_height);
+    start_x=0;
+    start_w=display_width;
+    start_h=display_height/2;
+    end_x=start_x;
+    end_y=display_height;
+    break;
+  case DLS_WINDOW_SLIDE_RIGHT:
+    start_x=clamp((display_width * args->slide_percentage), display_width*.10, display_width);
+    start_y=0;
+    start_w=display_width/2;
+    start_h=display_height;
+    end_x=display_width;
+    end_y=start_y;
+    break;
+  case DLS_WINDOW_SLIDE_LEFT:
+    start_x=clamp((display_width * args->slide_percentage), display_width*.10, display_width);
+    start_y=0;
+    start_w=display_width/2;
+    start_h=display_height;
+    end_x=0;
+    end_y=start_y;
+    break;
+  default:break;
+}
+  log_info(
+      "slide %s,%d,%.2f,%d"
+      ",pid=%d,title=%s"
+      ",display=%d"
+      ",space=%d"
+      ",name=%s"
+      ",cur pos=%dx%d"
+      ",cur size=%dx%d"
+      ",duration=%.2f"
+      ",direction=%s"
+      ",start pos=%dx%d"
+      ",start size=%dx%d"
+      ",end pos=%dx%d"
+
+      ,args->slide_direction_name,args->slide_direction,args->slide_percentage, args->id,pid,title,
+      display_id,space_id,
+      info->name,
+      (int)(info->rect.origin.x),
+      (int)(info->rect.origin.y),
+      (int)(info->rect.size.width),
+      (int)(info->rect.size.height),
+      args->slide_duration,
+      args->slide_direction_name,
+      start_x,start_y,
+      start_w,start_h,
+      end_x,end_y
+      );
+  bool ok;
+  struct window_info_t *w;
+  if(minimize_window_id(args->id))
+   if(move_window_id(args->id, start_x, start_y))
+    if((w= get_window_id_info(args->id)))
+     resize_window_info(w, start_w, start_h);
+  unminimize_window_id(args->id);
+  unsigned long now = timestamp(), end = now + (args->duration_seconds * 1000);
+  while(timestamp()<end){
+    start_y--;
+    if(start_y<=0){
+     start_h--;
+     start_y++;
+     resize_window_info(w, start_w, start_h);
+    }
+    move_window_id(args->id,start_x,start_y);
+    log_info("%d",start_y);
+    usleep(1000*100);
+  }
+  move_window_id(args->id,end_x,end_y);
+  exit(EXIT_SUCCESS);
+}
 static void _command_window_sticky(){
+  initialize_args(args);
   exit(EXIT_SUCCESS);
 }
 
 static void _command_window_unsticky(){
+  initialize_args(args);
   exit(EXIT_SUCCESS);
 }
 
@@ -2890,6 +3124,43 @@ static void _command_layout_names(){
   exit(hk_print_layout_names()?EXIT_SUCCESS:EXIT_FAILURE);
 }
 
+struct dls_qoir_file_rect_t {
+  const char *file;
+  int w, h, stride;
+  unsigned char *buf;
+  size_t len;
+};
+
+static void _command_layout_load_dir(int argc,char **argv){
+  char *f,*format="qoir",*glob,**files;
+  unsigned char *buf;
+  unsigned long started=timestamp();
+  size_t total_bytes=0,total_pixels=0;
+  int qty=0;
+  asprintf(&(args->layout_name),"/tmp/%s",format);
+  asprintf(&glob,"*.%s",format);
+  if(fsio_dir_exists(args->layout_name)){
+    files =__MATCH__GET_FILES_FROM_PATH(args->layout_name,glob,&qty);
+  }
+  if(qty){
+    qoir_decode_pixel_configuration_result cfg;
+    for(int i=0;i<qty;i++){
+      asprintf(&f,"%s/%s",args->layout_name,files[i]);
+      if(fsio_file_exists(f)){
+        total_bytes+=fsio_file_size(f);
+        buf=fsio_read_binary_file(f);
+        if(buf){
+          cfg = qoir_decode_pixel_configuration(buf, fsio_file_size(f));
+          total_pixels += (cfg.dst_pixcfg.width_in_pixels*cfg.dst_pixcfg.height_in_pixels);
+          free(buf);
+        }
+      }
+    }
+  }
+  log_info("%luM Pixels and %s from %d Files in %s", total_pixels/1024/1024,bytes_to_string(total_bytes),qty,milliseconds_to_string(timestamp()-started));
+  exit(EXIT_SUCCESS);
+  exit(EXIT_FAILURE);
+}
 static void _command_layout_list(){
   exit(hk_list_layouts()?EXIT_SUCCESS:EXIT_FAILURE);
 }

@@ -23,3 +23,4 @@ process_dep = declare_dependency(
   link_whole: process_lib,
   link_args: process_link_flags,
 )
+subdir('test')

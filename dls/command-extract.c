@@ -1,6 +1,7 @@
 #pragma once
 #ifndef DLS_EXTRACT_COMMANDS_C
 #define DLS_EXTRACT_COMMANDS_C
+#define EXTRACT_HASH_KEY 2386237528
 #include "core/core.h"
 #include "dls/dls.h"
 #include "tesseract/utils/utils.h"
@@ -8,9 +9,21 @@
 #define DEP_LIBSPINNER
 #include "libspinner/spinner.h"
 #endif
+#define EXTRACT_IMPORT_FORMAT "png"
 
-//extern struct args_t *args;
+struct extract_cached_result_t {
+  const char *path;
+  uint32_t hash;
+  unsigned char *buf;
+  size_t buf_len;
+  size_t qty;
+  unsigned long dur,ts;
+  int mode;
+  struct Vector *results_v;
+};
+
 void _command_extract_image(void){
+  size_t import_len;
   initialize_args(args);
   debug_dls_arguments();
   if (!fsio_file_exists(args->input_file)) {
@@ -37,6 +50,12 @@ void _command_extract_image(void){
       log_error("Failed to decode file %s", args->input_file);
       exit(EXIT_FAILURE);
     }
+    char *import_file;
+    asprintf(&import_file,"%s.%d%lld.%s",gettempdir(),getpid(),timestamp(),EXTRACT_IMPORT_FORMAT);
+    vips_image_write_to_file(v,import_file,NULL);
+    unsigned char *import_buf = fsio_read_binary_file(import_file);
+    import_len = fsio_file_size(import_file);
+
     spinner_t *spinner;
     spinner        = spinner_new(1);
     spinner->delay = 100000;
@@ -55,10 +74,61 @@ void _command_extract_image(void){
     spinner->prefix = s;
     spinner->suffix = AC_RESETALL "" AC_RESETALL;
     spinner_start(spinner);
-    items = tesseract_extract_memory(
-      fsio_read_binary_file(args->input_file), fsio_file_size(args->input_file),
-      RIL_TEXTLINE
-      );
+    log_info("Working with %s Buffer",bytes_to_string(import_len));
+    char *hash_key;
+    char *enc = b64_encode(import_buf,import_len);
+    Dn(strlen(enc));
+unsigned long started=timestamp();
+int MODE=RIL_TEXTLINE;
+struct extract_cached_result_t *cr = calloc(1,sizeof(struct extract_cached_result_t));
+cr->hash = murmurhash(enc,strlen(enc),EXTRACT_HASH_KEY);
+asprintf(&cr->path,"%sextract-result-%d.enc",gettempdir(),cr->hash);
+cr->ts=timestamp();
+if(fsio_file_exists(cr->path)){
+  log_info("cached exists ! %s",cr->path);
+  struct tesseract_extract_result_t **d = (struct tesseract_extract_result_t**)fsio_read_binary_file(cr->path);
+  size_t dlen = fsio_file_size(cr->path);
+  size_t dqty = dlen / sizeof(struct tesseract_extract_result_t);
+  Dn(dqty);
+  Dn(dlen);
+  vector_clear(items);
+  struct tesseract_extract_result_t *r;
+  for(size_t i = 0; i <dqty;i++){
+    r=d[i];
+    Ds(r->file);
+    Ds(r->text);
+  }
+  for(size_t i = 0; i <dqty;i++)
+    vector_push(items,(void*)&(d[i]));
+  Dn(vector_size(items));
+
+  exit(0);
+}else{
+  items = tesseract_extract_memory(import_buf,import_len,MODE);
+}
+cr->dur=timestamp()-started;
+cr->mode=MODE;
+cr->buf_len=import_len;
+cr->buf=calloc(1,cr->buf_len);
+cr->qty=vector_size(items);
+cr->results_v=items;
+cr->buf=import_buf;
+
+
+
+if(!fsio_file_exists(cr->path)){
+  log_info("Saving %s Buffer to %s",bytes_to_string(cr->buf_len),cr->path);
+
+  unsigned char *save_buf = vector_to_array(items);
+  size_t save_len = vector_size(items)*sizeof(struct tesseract_extract_result_t);
+  fsio_write_binary_file(cr->path,save_buf,save_len);
+}
+
+
+
+
+
+
     spinner_stop(spinner);
     spinner_free(spinner);
     free(s);
@@ -115,7 +185,7 @@ void _command_extract_image(void){
   fprintf(stderr, "Matched %lu/%lu Results from %s %dx%d %s File in %s\n",
           matched_qty,
           vector_size(items),
-          bytes_to_string(fsio_file_size(args->input_file)),
+          bytes_to_string(import_len),
           vips_image_get_width(v), vips_image_get_height(v),
           extension,
           milliseconds_to_string(timestamp() - started)

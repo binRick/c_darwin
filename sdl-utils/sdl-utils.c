@@ -24,6 +24,7 @@
 #include "display/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "image/utils/utils.h"
+#include "match/match.h"
 #include "module/def.h"
 #include "module/module.h"
 #include "module/require.h"
@@ -556,15 +557,11 @@ static int sdl_utils_setup(void){
           WINDOW_POSITION_X,
           WINDOW_POSITION_Y,
           200, 400,
-//      su_main.qoi_get_width(), su_main.qoi_get_height(),
           su_main.window_options
           ))) {
     SDL_Log("Unable to create window: %s", SDL_GetError());
     return(1);
   }
-
-//  SDL_EnableUNICODE(1);
-//  SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
   if (!(TP_REN = SDL_CreateRenderer(TP_WIN, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC))) {
     SDL_Log("Unable to create renderer: %s", SDL_GetError());
@@ -861,5 +858,80 @@ static void __attribute__((constructor)) __constructor__sdl_utils(void){
    */
 }
 
+int su_vi(VipsImage *vi){
+  log_info("su vi....");
+  if (sdl_utils_setup() != EXIT_SUCCESS)
+    goto err;
+  SDL_SetWindowResizable(TP_WIN, SDL_TRUE);
+  SDL_RenderSetLogicalSize(TP_REN, 
+      vips_image_get_width(vi),
+      vips_image_get_height(vi)
+      );
+  unsigned char *buf;
+  size_t buf_len;
+  char *tf;
+  asprintf(&tf,"/tmp/a.qoi");
+  if(vips_image_write_to_file(vi,tf,NULL)){
+    log_error("Failed to convert vips image to qoir");
+    return(1);
+  }
+  Dbg(fsio_file_size(tf),%lu);
+  SDL_RenderSetLogicalSize(TP_REN, vips_image_get_width(vi), vips_image_get_height(vi));
+  SDL_SetWindowSize(TP_WIN, vips_image_get_width(vi), vips_image_get_height(vi));
+  if (!(TP_TEX = SDL_LoadQOI_Texture(TP_REN, tf))) {
+      SDL_Log("Unable to load file: %s", SDL_GetError());
+      return(1);
+    }
+  log_info("loading qoir.....");
+  int shouldQuit = 0;
+  SDL_Event event;
+  while (!shouldQuit) {
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+      case SDL_QUIT: shouldQuit = 1; break;
+      case SDLK_q: shouldQuit = 1; break;
+      }
+    }
+    SDL_RenderClear(TP_REN);
+    SDL_RenderCopy(TP_REN, TP_TEX, NULL, NULL);
+    SDL_RenderPresent(TP_REN);
+  }
+
+
+
+  SDL_DestroyTexture(TP_TEX);
+  SDL_DestroyRenderer(TP_REN);
+  SDL_DestroyWindow(TP_WIN);
+  SDL_Quit();
+
+  log_info("polling.....");
+  return(EXIT_SUCCESS);
+
+err:
+  if (su_main.quit)
+    return(EXIT_SUCCESS);
+}
+SDL_Surface *vips_to_surface(VipsImage *vi){
+  unsigned char *buf;
+  size_t len,stride;
+  if(vips_image_write_to_buffer(vi,".qoi",&buf,&len,NULL)){
+    log_error("Failed to convert vips image to qoir");
+    return(NULL);
+  }
+  SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
+      buf,
+      vips_image_get_width(vi),
+      vips_image_get_height(vi),
+      32,
+      stride,
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+      0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
+#else
+      0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
+#endif
+  );
+  free(buf);
+  return(surface);
+}
 #undef LOCAL_DEBUG_MODE
 #endif

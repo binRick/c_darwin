@@ -11,16 +11,6 @@
 #define NewCaptureWindow(ID) \
   ((CommandCapture)(DYN_LIT(CaptureWindow, CommandCapture, { .req.id = ID })))
 
-void _command_capture_dev(){
-  log_info("Capturing dev");
-  CommandCapture w = NewCaptureWindow(666);
-  CommandCapture d = NewCaptureDisplay(1);
-  CommandCapture s = NewCaptureSpace(1);
-  log_info("capturing id #%d", VCALL_OBJ(w, id));
-  log_info("capturing id #%d", VCALL_OBJ(s, id));
-  log_info("capturing id #%d", VCALL_OBJ(d, id));
-  exit(EXIT_SUCCESS);
-}
 
 bool CaptureDisplay_capture(const VSelf){
   VSELF(CaptureDisplay);

@@ -90,6 +90,7 @@ bool save_cgref_to_qoi_file(CGImageRef image_ref, char *image_file);
 bool save_cgref_to_qoir_file(CGImageRef image_ref, char *image_file);
 unsigned char *save_cgref_to_qoi_memory(CGImageRef image_ref, size_t *qoi_len);
 unsigned char *save_cgref_to_qoir_memory(CGImageRef image_ref, size_t *qoir_len);
+char *iu_qoir_buffer_rect_hash(void *ptr, size_t ptr_len, qoir_rectangle rect);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int imagequant_encode_rgb_pixels_to_png_file(unsigned char *raw_rgba_pixels, int width, int height, char *png_file, int min_quality, int max_quality);
 CGImageRef png_fp_to_cgimage(FILE *fp);

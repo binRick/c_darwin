@@ -14,6 +14,7 @@ darwin_ls_srcs = [
   'command-display.c',
   'command-keylogger.c',
   'command-terminal.c',
+  'command-bat.c',
 ]
 if get_option('gpp_processor')
   message('GPP Processor Enabled')
@@ -60,8 +61,10 @@ darwin_ls_deps = [
   font_utils_dep,
   kitty_dep,alacritty_dep,
   db_dep,
+  msf_gif_dep,
   window_utils_dep,
-  app_utils_dep,font_utils_dep,
+  app_utils_dep,font_utils_dep,murmurhash_dep,sha256_c_dep,
+  space_utils_dep,
   capture_type_dep,
   focused_dep,
   space_utils_dep,system_utils_dep,
@@ -70,7 +73,7 @@ darwin_ls_deps = [
   menu_bar_utils_dep, table_utils_dep,process_utils_dep,window_info_dep,app_utils_dep,
   usbdevs_utils_dep,monitor_utils_dep,
   icon_utils_dep,exec_fzf_dep,
-  c_greatest_dep,optparse_dep,variation_ui_dep,
+  c_greatest_dep,optparse_dep,
   libspinner_dep,
   capture_utils_dep,libforks_dep,
   process_dep,keylogger_dep,hotkey_utils_dep,
@@ -84,7 +87,9 @@ darwin_ls_deps = [
   capture_save_dep,
   layout_utils_dep,
   window_dep,
-  variation_ui_dep,
+  clua_dep,luaautoc_dep,lua_dep,
+  exec_fzf_dep,
+  window_qoir_dep,
 ]
 
 darwin_ls_c_args = [
@@ -132,10 +137,10 @@ CaptureCommands = [
   { 'name':'Display','command':'display','plural':'Displays'},
   { 'name':'Space','command':'space','plural':'Spaces'},
   ]
-CaptureFormats = ['png','gif','webp','jpeg','qoi','tiff','all']
+CaptureFormats = ['png','gif','webp','jpeg','qoi','qoir','tiff','all']
 CaptureWidths = [
   {'name': '200 Pixels Wide','arg':'--width','value':'200','slug':'200x'},
-  {'name': '1000 Pixels Wide','arg':'--width','value':'1000','slug':'1000x'},
+  #  {'name': '1000 Pixels Wide','arg':'--width','value':'1000','slug':'1000x'},
   ]
 CaptureModes = [
   { 'name': 'Uncompressed', 'flags': [], },
