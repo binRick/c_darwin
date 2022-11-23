@@ -486,21 +486,22 @@ unsigned char *save_cgref_to_qoir_memory(CGImageRef image_ref, size_t *qoir_len)
   size_t        len  = 0;
   unsigned char *rgb = NULL;
 
-  if(!(rgb    = save_cgref_to_rgb_memory(image_ref, &len)) || !len){
+  if (!(rgb = save_cgref_to_rgb_memory(image_ref, &len)) || !len) {
     log_error("Failed to acquire rgb");
     return(NULL);
   }
-  qoir_pixel_buffer   pixbuf = {
-    .data = (uint8_t*)rgb,
-    .stride_in_bytes = (CGImageGetBitsPerPixel(image_ref)/8) * CGImageGetWidth(image_ref),
-    .pixcfg = {
-      .pixfmt = CGImageGetBitsPerPixel(image_ref) == 24 ? QOIR_PIXEL_FORMAT__RGB : QOIR_PIXEL_FORMAT__RGBA_NONPREMUL,
+  qoir_pixel_buffer  pixbuf = {
+    .data            = (uint8_t *)rgb,
+    .stride_in_bytes = (CGImageGetBitsPerPixel(image_ref) / 8) * CGImageGetWidth(image_ref),
+    .pixcfg          = {
+      .pixfmt           = CGImageGetBitsPerPixel(image_ref) == 24 ? QOIR_PIXEL_FORMAT__RGB : QOIR_PIXEL_FORMAT__RGBA_NONPREMUL,
       .height_in_pixels = CGImageGetHeight(image_ref),
-      .width_in_pixels = CGImageGetWidth(image_ref),
+      .width_in_pixels  = CGImageGetWidth(image_ref),
     },
   };
-  qoir_encode_result  enc            = qoir_encode(&pixbuf, &(qoir_encode_options){0});
-  if (!enc.dst_ptr){
+  qoir_encode_result enc = qoir_encode(&pixbuf, &(qoir_encode_options){ 0 });
+
+  if (!enc.dst_ptr) {
     log_error("Failed to qoir encode");
     return(NULL);
   }
@@ -757,8 +758,9 @@ static void __attribute__((constructor)) __constructor__image_utils(void){
   if (isatty(STDOUT_FILENO))
     FANCY_PROGRESS_ENABLED = true;
 }
+
 char *iu_qoir_buffer_rect_hash(void *ptr, size_t ptr_len, qoir_rectangle rect){
-  char *s="xxxxxxxxx";
+  char *s = "xxxxxxxxx";
 
   return(s);
 }

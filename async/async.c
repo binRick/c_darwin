@@ -7,14 +7,14 @@
 ////////////////////////////////////////////
 #include "ansi-codes/ansi-codes.h"
 #include "bytes/bytes.h"
-#include "clamp/clamp.h"
 #include "c_fsio/include/fsio.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
-#include "c_workqueue/include/workqueue.h"
+#include "clamp/clamp.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
@@ -24,13 +24,13 @@ static void __attribute__((constructor)) __constructor__async(void);
 ////////////////////////////////////////////
 struct async_chan_work_t {
   async_worker_cb cb;
-  void *args;
-  chan_t *done,*work;
+  void            *args;
+  chan_t          *done, *work;
 };
 struct async_work_t {
   async_worker_cb cb;
-  void *args;
-  struct Vector *results_v;
+  void            *args;
+  struct Vector   *results_v;
   pthread_mutex_t mutex;
 };
 struct async_recv_t {
@@ -45,87 +45,95 @@ struct async_work_chans_t {
 };
 
 void async_chan_work_fxn(void *VOID){
-  struct async_work_chans_t *chans=(struct async_work_chan_t*)VOID;
-  struct async_chan_work_t *w;
-  while(chan_recv(chans->work,&w)==0){
+  struct async_work_chans_t *chans = (struct async_work_chan_t *)VOID;
+  struct async_chan_work_t  *w;
+
+  while (chan_recv(chans->work, &w) == 0) {
     void *result;
-    if(w->cb && w->args && (result=w->cb((void*)(w->args)))){
-      chan_send(chans->done,(void*)(result));
-    }
+    if (w->cb && w->args && (result = w->cb((void *)(w->args))))
+      chan_send(chans->done, (void *)(result));
     free(w);
   }
 }
 
 void async_work_fxn(void *WORK){
   struct async_work_t *w = (struct async_work_t *)WORK;
-  void *result;
+  void                *result;
 
   result = w->cb((void *)(w->args));
   pthread_mutex_lock(&(w->mutex));
-  vector_push(w->results_v,(void*)result);
+  vector_push(w->results_v, (void *)result);
   pthread_mutex_unlock(&(w->mutex));
 }
 
 void **async_chan_bufs(size_t concurrency, void **items, size_t item_len, int in_qty, int *out_qty, async_worker_cb cb){
-  chan_t *done = chan_init(vector_size(items));
-  struct Vector    *results_v = vector_new();
+  chan_t                    *done      = chan_init(vector_size(items));
+  struct Vector             *results_v = vector_new();
   struct async_work_chans_t *chans[concurrency];
-  concurrency = clamp(concurrency,1,vector_size(items));
+
+  concurrency = clamp(concurrency, 1, vector_size(items));
   pthread_t threads[concurrency];
-  for (size_t i = 0; i < concurrency; i++){
-    chans[i] = calloc(1,sizeof(struct async_work_chans_t));
+
+  for (size_t i = 0; i < concurrency; i++) {
+    chans[i]       = calloc(1, sizeof(struct async_work_chans_t));
     chans[i]->work = chan_init(concurrency);
     chans[i]->done = done;
-    pthread_create(&(threads[i]),0,async_chan_work_fxn,(void*)(chans[i]));
+    pthread_create(&(threads[i]), 0, async_chan_work_fxn, (void *)(chans[i]));
   }
-  int idx;
+  int  idx;
   void *r;
+
   for (size_t ii = 0; ii < vector_size(items); ii++) {
     struct async_chan_work_t *w = calloc(1, sizeof(struct async_chan_work_t));
-    w->cb       = cb;
-    w->args     = (void *)(vector_get(items,ii));
-    chan_send_buf(chans[ii%concurrency]->work,(void*)(items[ii]), item_len);
+    w->cb   = cb;
+    w->args = (void *)(vector_get(items, ii));
+    chan_send_buf(chans[ii % concurrency]->work, (void *)(items[ii]), item_len);
   }
 }
+
 void **async_chan_items(size_t concurrency, void **items, int in_qty, int *out_qty, async_worker_cb cb){
-  size_t qty=0;
-  struct Vector    *v = vector_new(), *r;
-  for(int i=0;i<in_qty;i++)
-    vector_push(v,items[i]);
-  r = async_chan_items_v(concurrency,v,cb);
-  *out_qty=vector_size(r);
+  size_t        qty = 0;
+  struct Vector *v = vector_new(), *r;
+
+  for (int i = 0; i < in_qty; i++)
+    vector_push(v, items[i]);
+  r        = async_chan_items_v(concurrency, v, cb);
+  *out_qty = vector_size(r);
   return(vector_to_array(v));
 }
 struct Vector *async_chan_items_v(size_t concurrency, struct Vector *items, async_worker_cb cb){
-  chan_t *done = chan_init(vector_size(items));
-  struct Vector    *results_v = vector_new();
+  chan_t                    *done      = chan_init(vector_size(items));
+  struct Vector             *results_v = vector_new();
   struct async_work_chans_t *chans[concurrency];
-  concurrency = clamp(concurrency,1,vector_size(items));
+
+  concurrency = clamp(concurrency, 1, vector_size(items));
   pthread_t threads[concurrency];
-  for (size_t i = 0; i < concurrency; i++){
-    chans[i] = calloc(1,sizeof(struct async_work_chans_t));
+
+  for (size_t i = 0; i < concurrency; i++) {
+    chans[i]       = calloc(1, sizeof(struct async_work_chans_t));
     chans[i]->work = chan_init(concurrency);
     chans[i]->done = done;
-    pthread_create(&(threads[i]),0,async_chan_work_fxn,(void*)(chans[i]));
+    pthread_create(&(threads[i]), 0, async_chan_work_fxn, (void *)(chans[i]));
   }
-  int idx;
+  int  idx;
   void *r;
+
   for (size_t ii = 0; ii < vector_size(items); ii++) {
     struct async_chan_work_t *w = calloc(1, sizeof(struct async_chan_work_t));
-    w->cb       = cb;
-    w->args     = (void *)(vector_get(items,ii));
-    chan_send(chans[ii%concurrency]->work,(void*)w);
+    w->cb   = cb;
+    w->args = (void *)(vector_get(items, ii));
+    chan_send(chans[ii % concurrency]->work, (void *)w);
   }
   for (size_t i = 0; i < concurrency; i++)
     chan_close(chans[i]->work);
   for (size_t i = 0; i < concurrency; i++)
-    pthread_join(&(threads[i]),0);
-  while(vector_size(results_v) < vector_size(items) && chan_recv(done,&r)==0)
-    vector_push(results_v,(void*)r);
+    pthread_join(&(threads[i]), 0);
+  while (vector_size(results_v) < vector_size(items) && chan_recv(done, &r) == 0)
+    vector_push(results_v, (void *)r);
 
   chan_close(done);
   chan_dispose(done);
-  for (size_t i = 0; i < concurrency; i++){
+  for (size_t i = 0; i < concurrency; i++) {
     chan_dispose(chans[i]->work);
     free(chans[i]);
   }
@@ -141,9 +149,9 @@ struct Vector *async_items_v(size_t concurrency, struct Vector *items, async_wor
 
   for (size_t ii = 0; ii < vector_size(items); ii++) {
     struct async_work_t *w = calloc(1, sizeof(struct async_work_t));
-    w->cb           = cb;
+    w->cb        = cb;
     w->results_v = results_v;
-    w->args     = (void *)vector_get(items,ii);
+    w->args      = (void *)vector_get(items, ii);
     workqueue_push(queues[ii % concurrency], async_work_fxn, (void *)w);
   }
   for (size_t i = 0; i < concurrency; i++)

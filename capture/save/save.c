@@ -37,22 +37,22 @@ struct save_result_t {
 };
 
 static int receive_save_request_handler(void *R){
-  unsigned long        started = timestamp(), dur = 0, save_started = 0;
-  struct save_result_t *r = (struct save_result_t *)R;
-  void                 *msg;
-  size_t               qty                = 0;
+  unsigned long                 started = timestamp(), dur = 0, save_started = 0;
+  struct save_result_t          *r = (struct save_result_t *)R;
+  void                          *msg;
+  size_t                        qty = 0;
   struct capture_image_result_t *res;
 
   while (chan_recv(r->recv_chan, &res) == 0) {
     qty++;
-    if(!res->pixels || !res->len || !res->file)
+    if (!res->pixels || !res->len || !res->file)
       log_error("Failed to receive valid save object");
-    else if(!fsio_write_binary_file(res->file, res->pixels, res->len))
+    else if (!fsio_write_binary_file(res->file, res->pixels, res->len))
       log_error("Failed to save file %s with %lu Pixels", res->file, res->len);
-    r->bytes = fsio_file_size(res->file);
-    r->file=res->file;
-    r->format=res->format;
-    r->bytes=res->len;
+    r->bytes  = fsio_file_size(res->file);
+    r->file   = res->file;
+    r->format = res->format;
+    r->bytes  = res->len;
     chan_send(r->done_chan, (void *)r);
   }
   chan_close(r->done_chan);

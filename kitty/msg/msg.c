@@ -12,7 +12,7 @@
 #define LOCAL_DEBUG_MODE                                   KITTY_MSG_DEBUG_MODE
 #define KITTYQUERY                                         "\x1b_Gi=1,a=q;\x1b\\"
 #define KKBDSUPPORT                                        "\x1b[=11u"
-#define KKBDQUERY    "\x1b[?u"
+#define KKBDQUERY                                          "\x1b[?u"
 ////////////////////////////////////////////
 struct pos { int x, y; };
 static bool KITTY_MSG_DEBUG_MODE = false;
@@ -24,8 +24,9 @@ static char *save_restore_msg(char *msg, int row, int col);
 static bool kitty_write_msg(char *msg);
 
 static int kitty_fprintf(FILE *fd, char *fmt, char *msg, ...){
-  int len;
+  int     len;
   va_list vargs;
+
   va_start(vargs, msg);
   va_end(vargs);
   len = fprintf(fd, fmt, msg, vargs);
@@ -45,11 +46,13 @@ static void kitty_set_position(int x, int y){
 
 static struct pos kitty_get_position(){
   struct pos p;
+
   return(p);
 }
 
 static struct winsize *kitty_get_terminal_size(void){
   struct winsize *sz = calloc(1, sizeof(struct winsize));
+
   ioctl(STDOUT_FILENO, TIOCGWINSZ, sz);
   return(sz);
 }
@@ -256,30 +259,31 @@ static void __attribute__((constructor)) __constructor__kitty_msg(void){
     KITTY_MSG_DEBUG_MODE = true;
   }
 }
-  /*
-     char **s= vips_foreign_get_suffixes(),*tmp=s;
-     size_t qty=0;
-     while(s[qty])
-     qty++;
-     hash_t *c=hash_new();
-     for(size_t i = 0; i <qty;i++)
-     if(!hash_has(c,s[i]))
-      hash_set(c,stringfn_trim(stringfn_replace(s[i],'.',' ')),NULL);
+/*
+   char **s= vips_foreign_get_suffixes(),*tmp=s;
+   size_t qty=0;
+   while(s[qty])
+   qty++;
+   hash_t *c=hash_new();
+   for(size_t i = 0; i <qty;i++)
+   if(!hash_has(c,s[i]))
+    hash_set(c,stringfn_trim(stringfn_replace(s[i],'.',' ')),NULL);
 
-     hash_each(c,{Dbg(key,%s);});
-     hash_each(c,{
-     char *tf;
-     asprintf(&tf,"%s%lld.%s",gettempdir(),timestamp(),key);
-     if(fsio_write_binary_file(tf,buf,len)){
-      if(!(image=vips_image_new_from_file(tf,NULL))){
-        log_info("new from file");
-      }
-     }
-     });
-   */
+   hash_each(c,{Dbg(key,%s);});
+   hash_each(c,{
+   char *tf;
+   asprintf(&tf,"%s%lld.%s",gettempdir(),timestamp(),key);
+   if(fsio_write_binary_file(tf,buf,len)){
+    if(!(image=vips_image_new_from_file(tf,NULL))){
+      log_info("new from file");
+    }
+   }
+   });
+ */
 
 static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
   VipsImage *image;
+
   errno = 0;
   char *tf, *loader;
 
@@ -302,6 +306,7 @@ static VipsImage *image_buffer_to_vips_image(unsigned char *buf, size_t len){
 
 static VipsImage *image_path_to_vips_image(char *image_path){
   VipsImage *image;
+
   errno = 0;
   if (!(image = vips_image_new_from_file(image_path, "access", VIPS_ACCESS_SEQUENTIAL, NULL))) { \
     log_error("Failed to read file %s", image_path);                                             \

@@ -29,7 +29,7 @@ GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
   GREATEST_MAIN_BEGIN();
-  if(isatty(STDOUT_FILENO))
+  if (isatty(STDOUT_FILENO))
     RUN_SUITE(s_tp_test);
   GREATEST_MAIN_END();
 }

@@ -27,7 +27,7 @@ const char *dls_command_names[];
 #define ICON_WINDOW                   "🏠"
 #define ICON_MOVE                     "🍭"
 #define ICON_STICKY                   "🍔"
-#define ICON_SLIDE                   "🍔"
+#define ICON_SLIDE                    "🍔"
 #define ICON_UNSTICKY                 "🍯"
 #define ICON_RESIZE                   "🍖"
 #define ICON_INFO                     "🌿"

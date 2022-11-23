@@ -5,7 +5,7 @@ struct list_args_t {
 };
 struct args_t {
   bool               verbose_mode, debug_mode;
-  char *file;
+  char               *file;
   struct list_args_t *list;
 };
 static struct args_t *args = &(struct args_t){
@@ -18,14 +18,14 @@ static struct args_t *args = &(struct args_t){
 };
 
 static void _command_cat(int argc, char **argv){
-  if(argc==1){
-    fprintf(stderr,AC_RED"No file path arguments provided\n"AC_RESETALL);
-    optparse_print_help_subcmd(argc,argv);
+  if (argc == 1) {
+    fprintf(stderr, AC_RED "No file path arguments provided\n"AC_RESETALL);
+    optparse_print_help_subcmd(argc, argv);
     exit(EXIT_FAILURE);
   }
-  for(size_t i = 1; i < argc;i++)
-    if(fsio_file_exists(argv[i]))
-      if(kitty_display_image_path(argv[i]))
+  for (size_t i = 1; i < argc; i++)
+    if (fsio_file_exists(argv[i]))
+      if (kitty_display_image_path(argv[i]))
         printf("\n");
 
   exit(EXIT_SUCCESS);

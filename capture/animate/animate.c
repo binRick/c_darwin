@@ -59,6 +59,7 @@ static bool CAPTURE_ANIMATE_DEBUG_MODE = false;
 
 bool end_animation(struct capture_animation_result_t *acap){
   char *msg;
+
   errno = 0;
   fprintf(stdout, "%s", kitty_msg_delete_images());
   fflush(stdout);
@@ -102,12 +103,13 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
   n->len    = r->len;
   n->ts     = r->time.captured_ts;
   VipsImage *vi;
-  if(!(vi=vips_image_new_from_buffer(r->pixels,r->len,"","access",VIPS_ACCESS_SEQUENTIAL, NULL)))
+
+  if (!(vi = vips_image_new_from_buffer(r->pixels, r->len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL)))
     log_error("Failed to parse buffer");
   else
     log_info("parsed buffer");
 /*
-  if (r->type == IMAGE_TYPE_QOI) {
+   if (r->type == IMAGE_TYPE_QOI) {
     s = timestamp();
     QOIDecoder *qoi = QOIDecoder_New();
     if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
@@ -129,23 +131,23 @@ bool new_animated_frame(struct capture_animation_result_t *acap, struct capture_
       }
     }
     QOIDecoder_Delete(qoi);
-  }else if (r->type == IMAGE_TYPE_BMP)
+   }else if (r->type == IMAGE_TYPE_BMP)
     rgb_pixels = r->pixels;
-  else{
-  */
+   else{
+ */
 //  acap->rgb = vips_i
-    s          = timestamp();
-    stbi_fp    = fmemopen(r->pixels, r->len, "rb");
-    rgb_pixels = stbi_load_from_file(stbi_fp, &w, &h, &f, STBI_rgb_alpha);
-    fclose(stbi_fp);
-    debug("\nSTBI Decoded: %dx%d|%d %s\n", w, h, f, milliseconds_to_string(timestamp() - s));
-    acap->max_bit_depth = (int)((f == 4) ?  32 : 24);
-    acap->pitch_bytes   = (int)((f == 4) ? (4 * w) : (3 * w));
+  s          = timestamp();
+  stbi_fp    = fmemopen(r->pixels, r->len, "rb");
+  rgb_pixels = stbi_load_from_file(stbi_fp, &w, &h, &f, STBI_rgb_alpha);
+  fclose(stbi_fp);
+  debug("\nSTBI Decoded: %dx%d|%d %s\n", w, h, f, milliseconds_to_string(timestamp() - s));
+  acap->max_bit_depth = (int)((f == 4) ?  32 : 24);
+  acap->pitch_bytes   = (int)((f == 4) ? (4 * w) : (3 * w));
   //}
-Dbg(acap->pitch_bytes,%d);
-Dbg(acap->max_bit_depth,%d);
-Dbg(w,%d);
-Dbg(h,%d);
+  Dbg(acap->pitch_bytes, %d);
+  Dbg(acap->max_bit_depth, %d);
+  Dbg(w, %d);
+  Dbg(h, %d);
   if (vector_size(acap->frames_v) == 0) {
     acap->width   = n->width;
     acap->height  = n->width;

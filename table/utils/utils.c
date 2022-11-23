@@ -656,35 +656,35 @@ static bool string_compare_skip_row(char *s0, char *s1, bool exact_match, bool c
   return(skip_row);
 }
 
-#define INIT_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)                                                          \
-  struct list_table_t *args = (struct list_table_t *)ARGS;                                                 \
-  FILE                *TABLE_FD = args->fd;                                                                \
-  struct Vector       *items_v;\
-  struct Vector *sorted_items = vector_new(); \
-  struct STRUCT_TYPE  *item, *_item;                                                                       \
-  ft_table_t          *table;                                                                              \
-  size_t              filtered_qty = 0;                                                                    \
+#define INIT_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)              \
+  struct list_table_t *args     = (struct list_table_t *)ARGS; \
+  FILE                *TABLE_FD = args->fd;                    \
+  struct Vector       *items_v;                                \
+  struct Vector       *sorted_items = vector_new();            \
+  struct STRUCT_TYPE  *item, *_item;                           \
+  ft_table_t          *table;                                  \
+  size_t              filtered_qty = 0;                        \
   struct table_dur_t  durs[TABLE_DUR_TYPES_QTY];
-#define SETUP_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)           { do {                                                                                   \
-                                            durs[TABLE_DUR_TYPE_QUERY_ITEMS].started = timestamp();\
-                                            items_v = tables[TABLE_TYPE_ ## TYPE]->query_items();\
-                                            durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur = timestamp() - durs[TABLE_DUR_TYPE_QUERY_ITEMS].started;\
-                                                                 durs[TABLE_DUR_TYPE_TOTAL].started   = timestamp();                                  \
-                                                                 durs[TABLE_DUR_TYPE_TOTAL].dur       = 0;                                            \
-                                                                 durs[TABLE_DUR_TYPE_FILTER_ROWS].dur = 0;                                            \
-                                                                 TABLE                                = ft_create_table();                            \
-                                                                 ft_write_ln(TABLE, TYPE ## _COLUMNS);                                                \
-                                                                 ft_set_border_style(TABLE, FT_FRAME_STYLE);                                          \
-                                                                 ft_set_border_style(TABLE, FT_SOLID_ROUND_STYLE);                                    \
-                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_LEFT_MARGIN, 0);                                     \
-                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_RIGHT_MARGIN, 0);                                    \
-                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_TOP_MARGIN, 0);                                      \
-                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_BOTTOM_MARGIN, 0);                                   \
-                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);         \
-                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);   \
-                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD); \
-                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);   \
-                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);   \
+#define SETUP_TABLE_VARS(TABLE, TYPE, STRUCT_TYPE)           { do {                                                                                                 \
+                                                                 durs[TABLE_DUR_TYPE_QUERY_ITEMS].started = timestamp();                                            \
+                                                                 items_v                                  = tables[TABLE_TYPE_ ## TYPE]->query_items();             \
+                                                                 durs[TABLE_DUR_TYPE_QUERY_ITEMS].dur     = timestamp() - durs[TABLE_DUR_TYPE_QUERY_ITEMS].started; \
+                                                                 durs[TABLE_DUR_TYPE_TOTAL].started       = timestamp();                                            \
+                                                                 durs[TABLE_DUR_TYPE_TOTAL].dur           = 0;                                                      \
+                                                                 durs[TABLE_DUR_TYPE_FILTER_ROWS].dur     = 0;                                                      \
+                                                                 TABLE                                    = ft_create_table();                                      \
+                                                                 ft_write_ln(TABLE, TYPE ## _COLUMNS);                                                              \
+                                                                 ft_set_border_style(TABLE, FT_FRAME_STYLE);                                                        \
+                                                                 ft_set_border_style(TABLE, FT_SOLID_ROUND_STYLE);                                                  \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_LEFT_MARGIN, 0);                                                   \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_RIGHT_MARGIN, 0);                                                  \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_TOP_MARGIN, 0);                                                    \
+                                                                 ft_set_tbl_prop(TABLE, FT_TPROP_BOTTOM_MARGIN, 0);                                                 \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);                       \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_TEXT_ALIGN, FT_ALIGNED_CENTER);                 \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_TEXT_STYLE, FT_TSTYLE_BOLD);               \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_FG_COLOR, FT_COLOR_GREEN);                 \
+                                                                 ft_set_cell_prop(TABLE, 0, FT_ANY_COLUMN, FT_CPROP_CONT_BG_COLOR, FT_COLOR_BLACK);                 \
                                                                } while (0); }
 #define IF_SORT_FUNCTION_DO_SORT(NAME, TYPE, STRUCT_TYPE)    { do {                                                                                                                \
                                                                  if (TABLE_UTILS_DEBUG_MODE)                                                                                       \

@@ -31,8 +31,8 @@ struct animated_frame_t {
 struct capture_animation_result_t {
   MsfGifState            *gif;
   MsfGifResult           result;
-  unsigned char *rgb;
-  size_t rgb_len;
+  unsigned char          *rgb;
+  size_t                 rgb_len;
   cbar_t                 *bar;
   size_t                 expected_frames_qty;
   char                   *file;

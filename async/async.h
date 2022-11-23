@@ -13,14 +13,14 @@
 #include <unistd.h>
 //////////////////////////////////////
 #include "c_vector/vector/vector.h"
+#include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
-#include "c_workqueue/include/workqueue.h"
 #include "interface99/interface99.h"
-#define async_each async_chan_items
-#define async_each_v async_chan_items_v
+#define async_each      async_chan_items
+#define async_each_v    async_chan_items_v
 
-typedef void*(^async_worker_cb)(void *);
+typedef void *(^async_worker_cb)(void *);
 struct Vector *async_chan_items_v(size_t concurrency, struct Vector *items, async_worker_cb cb);
 void **async_chan_items(size_t concurrency, void **items, int in_qty, int *out_qty, async_worker_cb cb);
 void **async_chan_bufs(size_t concurrency, void **items, size_t item_len, int in_qty, int *out_qty, async_worker_cb cb);

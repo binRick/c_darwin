@@ -1,11 +1,11 @@
 #pragma once
 #ifndef CAPTURE_TYPE_C
 #define CAPTURE_TYPE_C
+#include "core/core.h"
 #include "db/db.h"
 #include "qoir/src/qoir.h"
-#include "core/core.h"
 #include <pthread.h>
-extern pthread_mutex_t     *core_stdout_mutex;
+extern pthread_mutex_t *core_stdout_mutex;
 #define CAPTURE_TYPE_C
 #define LOCAL_DEBUG_MODE                     CAPTURE_TYPE_DEBUG_MODE
 #define THUMBNAIL_WIDTH                      150
@@ -88,12 +88,12 @@ static int receive_requests_handler(void *CAP);
 static bool issue_capture_image_request(struct capture_image_request_t *req, struct cap_t *cap);
 static int record_db_capture_handler(void *CAP);
 static const struct cap_t *__caps[] = {
-  [CAPTURE_CHAN_TYPE_CGIMAGE] = &(struct cap_t)          {
+  [CAPTURE_CHAN_TYPE_CGIMAGE] = &(struct cap_t)           {
     .name          = "CGImage Capture",
     .enabled       = true, .format = IMAGE_TYPE_CGIMAGE,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_IDS,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct cgimage_recv_t *r = (struct cgimage_recv_t *)MSG;
       size_t id                = (size_t)vector_get(r->req->ids, (size_t)(r->index));
       debug("Capturing #%lu/%lu: (ID %lu)"
@@ -141,13 +141,13 @@ static const struct cap_t *__caps[] = {
       return((void *)r);
     },
   },
-  [CAPTURE_CHAN_TYPE_RGB] = &(struct cap_t)              {
+  [CAPTURE_CHAN_TYPE_RGB] = &(struct cap_t)               {
     .name          = "CGImage To RGB Pixels",
     .enabled       = true, .format = IMAGE_TYPE_RGB,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->msg              = (struct cgimage_recv_t *)MSG;
       r->len              = 0;
@@ -170,7 +170,7 @@ static const struct cap_t *__caps[] = {
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format           = IMAGE_TYPE_QOIR;
       r->msg              = (struct cgimage_recv_t *)MSG;
@@ -182,7 +182,7 @@ static const struct cap_t *__caps[] = {
       r->time.dur     = timestamp() - r->time.started;
       r->analyze      = true;
       errno           = 0;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze QOIR");
         goto error;
       }
@@ -197,13 +197,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_QOI] = &(struct cap_t)              {
+  [CAPTURE_CHAN_TYPE_QOI] = &(struct cap_t)               {
     .name          = "CGImage To QOI Pixels",
     .enabled       = true, .format = IMAGE_TYPE_QOI,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format           = IMAGE_TYPE_QOI;
       r->msg              = (struct cgimage_recv_t *)MSG;
@@ -215,7 +215,7 @@ static const struct cap_t *__caps[] = {
       r->time.dur     = timestamp() - r->time.started;
       r->analyze      = true;
       errno           = 0;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze QOI");
         goto error;
       }
@@ -230,13 +230,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_GIF] = &(struct cap_t)              {
+  [CAPTURE_CHAN_TYPE_GIF] = &(struct cap_t)               {
     .name          = "CGImage To GIF Pixels",
     .enabled       = true, .format = IMAGE_TYPE_GIF,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_GIF;
       r->msg    = (struct cgimage_recv_t *)MSG;
@@ -247,7 +247,7 @@ static const struct cap_t *__caps[] = {
       r->pixels           = save_cgref_to_gif_memory(r->msg->img_ref, &(r->len));
       r->time.dur         = timestamp() - r->time.started;
       r->analyze          = true;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze GIF");
         goto error;
       }
@@ -261,13 +261,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_TIFF] = &(struct cap_t)             {
+  [CAPTURE_CHAN_TYPE_TIFF] = &(struct cap_t)              {
     .name          = "CGImage To TIFF Pixels",
     .enabled       = true, .format = IMAGE_TYPE_TIFF,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_TIFF;
       r->msg    = (struct cgimage_recv_t *)MSG;
@@ -277,7 +277,7 @@ static const struct cap_t *__caps[] = {
       r->pixels       = save_cgref_to_tiff_memory(r->msg->img_ref, &(r->len));
       r->time.dur     = timestamp() - r->time.started;
       r->analyze      = true;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze TIFF");
         goto error;
       }
@@ -291,13 +291,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_BMP] = &(struct cap_t)              {
+  [CAPTURE_CHAN_TYPE_BMP] = &(struct cap_t)               {
     .name          = "CGImage To BMP Pixels",
     .enabled       = true, .format = IMAGE_TYPE_BMP,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_BMP;
       r->msg    = (struct cgimage_recv_t *)MSG;
@@ -309,7 +309,7 @@ static const struct cap_t *__caps[] = {
       r->pixels           = save_cgref_to_bmp_memory(r->msg->img_ref, &(r->len));
       r->time.dur         = timestamp() - r->time.started;
       r->analyze          = true;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze BMP");
         goto error;
       }
@@ -323,13 +323,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_WEBP] = &(struct cap_t)             {
+  [CAPTURE_CHAN_TYPE_WEBP] = &(struct cap_t)              {
     .name          = "CGImage To WEBP Pixels",
     .enabled       = true, .format = IMAGE_TYPE_WEBP,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_WEBP;
       r->msg    = (struct cgimage_recv_t *)MSG;
@@ -340,7 +340,7 @@ static const struct cap_t *__caps[] = {
       r->time.started     = timestamp();
       r->pixels           = save_cgref_to_webp_memory(r->msg->img_ref, &(r->len));
       r->time.dur         = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze WEBP");
         goto error;
       }
@@ -354,13 +354,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_JPEG] = &(struct cap_t)             {
+  [CAPTURE_CHAN_TYPE_JPEG] = &(struct cap_t)              {
     .name          = "CGImage To JPEG Pixels",
     .enabled       = true, .format = IMAGE_TYPE_JPEG,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->format = IMAGE_TYPE_JPEG;
       r->msg    = (struct cgimage_recv_t *)MSG;
@@ -371,7 +371,7 @@ static const struct cap_t *__caps[] = {
       r->time.started     = timestamp();
       r->pixels           = save_cgref_to_jpeg_memory(r->msg->img_ref, &(r->len));
       r->time.dur         = timestamp() - r->time.started;
-      if (!analyze_image_pixels(r))                      {
+      if (!analyze_image_pixels(r))                       {
         log_error("Failed to analyze JPEG");
         goto error;
       }
@@ -385,13 +385,13 @@ static const struct cap_t *__caps[] = {
       return((void *)0);
     },
   },
-  [CAPTURE_CHAN_TYPE_PNG] = &(struct cap_t)              {
+  [CAPTURE_CHAN_TYPE_PNG] = &(struct cap_t)               {
     .name          = "CGImage To PNG Pixels",
     .enabled       = true, .format = IMAGE_TYPE_PNG,
     .debug         = true,
     .provider_type = CAPTURE_PROVIDER_TYPE_CAP,
     .provider      = CAPTURE_CHAN_TYPE_CGIMAGE,
-    .recv_msg      = ^ void *(void *MSG)                 {
+    .recv_msg      = ^ void *(void *MSG)                  {
       struct capture_image_result_t *r = calloc(1, sizeof(struct capture_image_result_t));
       r->analyze          = true;
       r->format           = IMAGE_TYPE_PNG;
@@ -403,7 +403,7 @@ static const struct cap_t *__caps[] = {
       r->pixels           = save_cgref_to_png_memory(r->msg->img_ref, &(r->len));
       if (!r->pixels || r->len < 1)
         log_error("Failed to convert CGRef to PNG Pixels");
-      else                                               {
+      else                                                {
         errno = 0;
         if (!analyze_image_pixels(r))
           log_error("Failed to analyze PNG");
@@ -810,30 +810,27 @@ static bool analyze_image_pixels(struct capture_image_result_t *r){
   r->id = (size_t)vector_get(r->msg->req->ids, (size_t)(r->msg->index));
   if (r->analyze) {
     if (r->format == IMAGE_TYPE_QOIR) {
-  qoir_decode_result result = {0};
-  qoir_decode_pixel_configuration_result cfg =
-      qoir_decode_pixel_configuration(r->pixels, r->len);
-  if (cfg.status_message) {
-    result.status_message = cfg.status_message;
-    exit(1);
-  }
-  qoir_decode_options decopts = {0};
-  decopts.pixfmt = (cfg.dst_pixcfg.pixfmt == QOIR_PIXEL_FORMAT__BGRX)
+      qoir_decode_result                     result = { 0 };
+      qoir_decode_pixel_configuration_result cfg    =
+        qoir_decode_pixel_configuration(r->pixels, r->len);
+      if (cfg.status_message) {
+        result.status_message = cfg.status_message;
+        exit(1);
+      }
+      qoir_decode_options decopts = { 0 };
+      decopts.pixfmt = (cfg.dst_pixcfg.pixfmt == QOIR_PIXEL_FORMAT__BGRX)
                        ? QOIR_PIXEL_FORMAT__RGB
                        : QOIR_PIXEL_FORMAT__RGBA_NONPREMUL;
-  qoir_decode_result dec = qoir_decode(r->pixels, r->len, &decopts);
-  if (dec.status_message) {
-    free(dec.owned_memory);
-    result.status_message = dec.status_message;
-  }
-r->width = dec.dst_pixbuf.pixcfg.width_in_pixels;
-r->height = dec.dst_pixbuf.pixcfg.height_in_pixels;
-r->has_alpha = dec.dst_pixbuf.pixcfg.pixfmt;
-r->linear_colorspace = false;
-
-
-
-    }else  if (r->format == IMAGE_TYPE_QOI) {
+      qoir_decode_result dec = qoir_decode(r->pixels, r->len, &decopts);
+      if (dec.status_message) {
+        free(dec.owned_memory);
+        result.status_message = dec.status_message;
+      }
+      r->width             = dec.dst_pixbuf.pixcfg.width_in_pixels;
+      r->height            = dec.dst_pixbuf.pixcfg.height_in_pixels;
+      r->has_alpha         = dec.dst_pixbuf.pixcfg.pixfmt;
+      r->linear_colorspace = false;
+    }else if (r->format == IMAGE_TYPE_QOI) {
       QOIDecoder *qoi = QOIDecoder_New();
       if (QOIDecoder_Decode(qoi, r->pixels, r->len)) {
         r->width             = QOIDecoder_GetWidth(qoi);
@@ -1166,7 +1163,7 @@ struct Vector *db_tables_images(enum capture_type_id_t type, struct Vector *ids)
   req->height            = 0;
   req->time.dur          = 0;
   req->time.started      = timestamp();
-  Dbg(vector_size(req->ids), %lu);
+  Dbg(vector_size(req->ids), %u);
   return(capture_image(req));
 }
 

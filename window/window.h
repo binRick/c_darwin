@@ -5,23 +5,23 @@
 char *select_window_name(void);
 int get_window_id_from_name(char *NAME);
 //////////////////////////////////////
-#define MODULE_VAR_FUNCTIONS(FXN)                       \
-  FXN(window, id_from_name, get_window_id_from_name, int, char *)\
-  FXN(window, qoirs, qoirs_from_window_ids_v, struct Vector *, struct Vector *)\
+#define MODULE_VAR_FUNCTIONS(FXN)                                               \
+  FXN(window, id_from_name, get_window_id_from_name, int, char *)               \
+  FXN(window, qoirs, qoirs_from_window_ids_v, struct Vector *, struct Vector *) \
 //////////////////////////////////////
 #define MODULE_FUNCTIONS(FXN)                           \
   FXN(window, ids, get_window_ids, struct Vector *)     \
   FXN(window, qty, get_windows_qty, size_t)             \
   FXN(window, names, get_window_names, struct Vector *) \
   FXN(window, props, get_window_props, struct Vector *) \
-  FXN(window, select, select_window_name, char *) \
+  FXN(window, select, select_window_name, char *)       \
 //////////////////////////////////////
 
-#define MODULE_DEFINE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)       RETURN_TYPE (*SUFFIX)(void);
-#define MODULE_PROTOTYPE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)    RETURN_TYPE MODULE_NAME ## _module_ ## SUFFIX(module(MODULE_NAME) * exports);
+#define MODULE_DEFINE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)                         RETURN_TYPE (*SUFFIX)(void);
+#define MODULE_PROTOTYPE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)                      RETURN_TYPE MODULE_NAME ## _module_ ## SUFFIX(module(MODULE_NAME) * exports);
 #define MODULE_PROTOTYPE_FUNCTION_INPUT(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE, INPUT_TYPE)    RETURN_TYPE MODULE_NAME ## _module_ ## SUFFIX(module(MODULE_NAME) * exports, INPUT_TYPE);
-#define MODULE_EXPORT_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)       .SUFFIX = MODULE_NAME ## _module_ ## SUFFIX,
-#define MODULE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)              RETURN_TYPE MODULE_NAME ## _module_ ## SUFFIX(module(MODULE_NAME) * exports){ return(FUNCTION()); }
+#define MODULE_EXPORT_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)                         .SUFFIX = MODULE_NAME ## _module_ ## SUFFIX,
+#define MODULE_FUNCTION(MODULE_NAME, SUFFIX, FUNCTION, RETURN_TYPE)                                RETURN_TYPE MODULE_NAME ## _module_ ## SUFFIX(module(MODULE_NAME) * exports){ return(FUNCTION()); }
 //////////////////////////////////////
 #include "core/core.h"
 //////////////////////////////////////
@@ -58,7 +58,7 @@ exports(window) {
   .mode = WINDOW_NONE,
   .init = window_module_init,
   MODULE_FUNCTIONS(MODULE_EXPORT_FUNCTION)
-  .deinit = window_module_deinit,
+    .deinit = window_module_deinit,
 };
 #undef MODULE_EXPORT_FUNCTION
 #endif

@@ -11,7 +11,6 @@
 #define NewCaptureWindow(ID) \
   ((CommandCapture)(DYN_LIT(CaptureWindow, CommandCapture, { .req.id = ID })))
 
-
 bool CaptureDisplay_capture(const VSelf){
   VSELF(CaptureDisplay);
   log_info("Capturing display %d", self->req.id);

@@ -31,12 +31,12 @@
 /////////////////////////
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
+#include "async/async.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
 #include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
-#include "async/async.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
@@ -273,19 +273,20 @@ void process_info_release(struct process_info_t *I){
     }
   }
 }
-#define PU_CONCURRENCY 30
+#define PU_CONCURRENCY    30
 struct Vector *get_all_process_infos_v(){
-  unsigned long ts;
-  struct Vector *pids_v = get_all_processes();
-  async_worker_cb cb = ^void*(void*item){
-    return((void*)(get_process_info((int)(size_t)item)));
+  unsigned long   ts;
+  struct Vector   *pids_v = get_all_processes();
+  async_worker_cb cb = ^ void *(void *item){
+    return((void *)(get_process_info((int)(size_t)item)));
   };
-  return(async_items_v(PU_CONCURRENCY,pids_v,cb));
+
+  return(async_items_v(PU_CONCURRENCY, pids_v, cb));
 }
 
 struct process_info_t *get_process_info(int pid){
   struct process_info_t *I = calloc(1, sizeof(struct process_info_t));
-  unsigned long ts;
+  unsigned long         ts;
 
   I->pid = pid;
   if (I->pid == 0) {
@@ -1398,18 +1399,19 @@ finish:
 
   return(ok);
 }
+
 int get_pid_by_env_key_val(const char *key, const char *val){
-  int pid=-1;
-  struct Vector *v = get_all_process_infos_v();
+  int                   pid = -1;
+  struct Vector         *v  = get_all_process_infos_v();
   struct process_info_t *I;
-  process_env_t *e;
-  for(size_t i = 0; pid==-1 && i <vector_size(v);i++){
-    I = (struct process_info_t*)vector_get(v, i);
-    for(size_t ii=0;pid==-1 && ii<vector_size(I->env_v);ii++){
-      e = (process_env_t*)vector_get(I->env_v,ii);
-      if(strcmp(e->key,key)==0 && strcmp(e->val,val)==0){
-        pid=I->pid;
-      }
+  process_env_t         *e;
+
+  for (size_t i = 0; pid == -1 && i < vector_size(v); i++) {
+    I = (struct process_info_t *)vector_get(v, i);
+    for (size_t ii = 0; pid == -1 && ii < vector_size(I->env_v); ii++) {
+      e = (process_env_t *)vector_get(I->env_v, ii);
+      if (strcmp(e->key, key) == 0 && strcmp(e->val, val) == 0)
+        pid = I->pid;
     }
   }
   return(pid);

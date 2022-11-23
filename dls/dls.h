@@ -16,9 +16,9 @@
 #include "dls/commands.h"
 #include "dls/dls-bestline.h"
 #include "dls/vars.h"
+#include "murmurhash.c/murmurhash.h"
 #include "optparse/optparse.h"
 #include "tp/tp.h"
-#include "murmurhash.c/murmurhash.h"
 //////////////////////////////////////
 int handle_main(int argc, char *argv[]);
 #endif

@@ -47,6 +47,7 @@
 /*
  */
 #include "dls/command-animate.h"
+#include "dls/command-bat.h"
 #include "dls/command-capture.h"
 #include "dls/command-clipboard.h"
 #include "dls/command-display.h"
@@ -55,7 +56,6 @@
 #include "dls/command-prompt.h"
 #include "dls/command-terminal.h"
 #include "dls/command-test.h"
-#include "dls/command-bat.h"
 //////////////////////////////////////////////////////
 #define ADD_COMMAND_OPTIONS()   \
   ADD_CAPTURE_COMMAND_OPTIONS() \

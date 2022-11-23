@@ -95,9 +95,9 @@ TEST t_kitty_msg_image_buffers_resized(){
     for (size_t s = 0; s < sizes_qty; s++) {
       Info(">Buffer Size:%s|Resized to:%lupx Width & Height|", bytes_to_string(fsio_file_size(files[i])), sizes[s]);
       msgs[0] = kitty_msg_display_image_buffer_resized_width(fsio_read_binary_file(files[i]), fsio_file_size(files[i]), sizes[s]);
-  printf("\n");
+      printf("\n");
       msgs[1] = kitty_msg_display_image_buffer_resized_height(fsio_read_binary_file(files[i]), fsio_file_size(files[i]), sizes[s]);
-  printf("\n");
+      printf("\n");
       for (size_t m = 0; m < MSGS_QTY; m++) {
         ASSERT_GT(strlen(msgs[m]), 0);
         fprintf(stdout, "%s\n", msgs[m]);
@@ -114,9 +114,9 @@ TEST t_kitty_msg_image_files_resized(){
     for (size_t s = 0; s < sizes_qty; s++) {
       Info(">File:%s|Resized to:%lupx Width & Height|", files[i], sizes[s]);
       msgs[0] = kitty_msg_display_image_path_resized_width(files[i], sizes[s]);
-  printf("\n");
+      printf("\n");
       msgs[1] = kitty_msg_display_image_path_resized_height(files[i], sizes[s]);
-  printf("\n");
+      printf("\n");
       for (size_t m = 0; m < MSGS_QTY; m++) {
         ASSERT_GT(strlen(msgs[m]), 0);
         fprintf(stdout, "%s\n", msgs[m]);
@@ -131,7 +131,7 @@ TEST t_kitty_msg_image_buffers(){
 
   for (size_t i = 0; i < files_qty; i++) {
     msg = kitty_msg_display_image_buffer(fsio_read_binary_file(files[i]), fsio_file_size(files[i]));
-  printf("\n");
+    printf("\n");
     ASSERT_GT(strlen(msg), 0);
     log_info("%s", files[i]);
     fprintf(stdout, "%s\n", msg);
@@ -171,7 +171,7 @@ TEST t_kitty_msg_cursor(){
 TEST t_kitty_image_buffers(){
   for (size_t i = 0; i < files_qty; i++) {
     bool ok = kitty_display_image_buffer(fsio_read_binary_file(files[i]), fsio_file_size(files[i]));
-  printf("\n");
+    printf("\n");
     ASSERT_EQ(ok, true);
   }
   PASS();
@@ -180,7 +180,7 @@ TEST t_kitty_image_buffers(){
 TEST t_kitty_image_files(){
   for (size_t i = 0; i < files_qty; i++) {
     bool ok = kitty_display_image_path(files[i]);
-  printf("\n");
+    printf("\n");
     ASSERT_EQ(ok, true);
   }
   PASS();
@@ -191,7 +191,7 @@ TEST t_kitty_msg_image_files(){
 
   for (size_t i = 0; i < files_qty; i++) {
     msg = kitty_msg_display_image_path(files[i]);
-  printf("\n");
+    printf("\n");
     ASSERT_GT(strlen(msg), 0);
     fprintf(stdout, AC_YELLOW "%s (%s)\n" AC_RESETALL, files[i], bytes_to_string(fsio_file_size(files[i])));
     fprintf(stdout, "%s\n", msg);

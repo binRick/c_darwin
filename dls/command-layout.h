@@ -7,33 +7,33 @@
 #define COMMON_OPTIONS_LAYOUT_TEST
 #define COMMON_OPTIONS_LAYOUT_NAMES
 #define COMMON_OPTIONS_LAYOUT_TEST
-#define COMMON_OPTIONS_LAYOUT_LOAD_DIR\
-  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
-  common_options_b[COMMON_OPTION_IMAGE_FORMATS](args),\
+#define COMMON_OPTIONS_LAYOUT_LOAD_DIR                 \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),   \
+  common_options_b[COMMON_OPTION_IMAGE_FORMATS](args), \
   common_options_b[COMMON_OPTION_DIRECTORY](args),
-#define COMMON_OPTIONS_LAYOUT_LIST\
+#define COMMON_OPTIONS_LAYOUT_LIST \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
 #define COMMON_OPTIONS_LAYOUT_NAMES
-#define COMMON_OPTIONS_LAYOUT_SHOW \
-  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
+#define COMMON_OPTIONS_LAYOUT_SHOW                   \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
   common_options_b[COMMON_OPTION_LAYOUT_NAME](args),
-#define COMMON_OPTIONS_LAYOUT_RENDER \
-  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
+#define COMMON_OPTIONS_LAYOUT_RENDER                 \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
   common_options_b[COMMON_OPTION_LAYOUT_NAME](args),
-#define COMMON_OPTIONS_LAYOUT_APPLY \
-  common_options_b[COMMON_OPTION_HELP_SUBCMD](args),\
+#define COMMON_OPTIONS_LAYOUT_APPLY                  \
+  common_options_b[COMMON_OPTION_HELP_SUBCMD](args), \
   common_options_b[COMMON_OPTION_LAYOUT_NAME](args),
-#define SUBCOMMANDS_LAYOUT            \
-  CREATE_SUBCOMMAND(LAYOUT_NAMES, ),  \
-  CREATE_SUBCOMMAND(LAYOUT_LIST, ),   \
-  CREATE_SUBCOMMAND(LAYOUT_LOAD_DIR, ),   \
-  CREATE_SUBCOMMAND(LAYOUT_APPLY, ),  \
-  CREATE_SUBCOMMAND(LAYOUT_SHOW, ),   \
-  CREATE_SUBCOMMAND(LAYOUT_RENDER, ), \
+#define SUBCOMMANDS_LAYOUT              \
+  CREATE_SUBCOMMAND(LAYOUT_NAMES, ),    \
+  CREATE_SUBCOMMAND(LAYOUT_LIST, ),     \
+  CREATE_SUBCOMMAND(LAYOUT_LOAD_DIR, ), \
+  CREATE_SUBCOMMAND(LAYOUT_APPLY, ),    \
+  CREATE_SUBCOMMAND(LAYOUT_SHOW, ),     \
+  CREATE_SUBCOMMAND(LAYOUT_RENDER, ),   \
   CREATE_SUBCOMMAND(LAYOUT_TEST, ),
 #define ADD_LAYOUT_COMMANDS()                                                                        \
   COMMAND(ICON_LAYOUT, LAYOUT, "layout", COLOR_LAYOUT, "Layout Manager", 0)                          \
-  COMMAND(ICON_LIST, LAYOUT_LOAD_DIR, "dir", COLOR_LIST, "Load Dir", *_command_layout_load_dir)           \
+  COMMAND(ICON_LIST, LAYOUT_LOAD_DIR, "dir", COLOR_LIST, "Load Dir", *_command_layout_load_dir)      \
   COMMAND(ICON_LIST, LAYOUT_LIST, "ls", COLOR_LIST, "List Layouts", *_command_layout_list)           \
   COMMAND(ICON_NAME, LAYOUT_NAMES, "names", COLOR_NAME, "List Layout Names", *_command_layout_names) \
   COMMAND(ICON_TEST, LAYOUT_TEST, "test", COLOR_TEST, "Test Layout", *_command_layout_test)          \

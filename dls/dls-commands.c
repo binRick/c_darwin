@@ -11,7 +11,6 @@
 #include "capture/type/type.h"
 #include "capture/utils/utils.h"
 #include "clamp/clamp.h"
-#include "space/utils/utils.h"
 #include "db/db.h"
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
@@ -26,6 +25,7 @@
 #include "kitty/msg/msg.h"
 #include "pasteboard/pasteboard.h"
 #include "process/utils/utils.h"
+#include "space/utils/utils.h"
 #include "space/utils/utils.h"
 #include "system/utils/utils.h"
 #include "table/sort/sort.h"
@@ -284,21 +284,20 @@ bool initialize_args(struct args_t *ARGS){
   ARGS->height           = CLAMP_ARG_TYPE(ARGS, height, ARG_CLAMP_TYPE_WINDOW_SIZE);
   ARGS->limit            = CLAMP_ARG_TYPE(ARGS, limit, ARG_CLAMP_TYPE_LIMIT);
   ARGS->concurrency      = clamp(ARGS->concurrency, 4, ARGS->limit);
-  ARGS->slide_direction=-1;
-  if(ARGS->slide_direction_name)
-    for(int i=0;i<DLS_WINDOW_SLIDES_QTY;i++)
-      if(stringfn_equal(stringfn_to_lowercase(dls_window_slide_direction_names[i]),stringfn_to_lowercase(ARGS->slide_direction_name)))
+  ARGS->slide_direction  = -1;
+  if (ARGS->slide_direction_name)
+    for (int i = 0; i < DLS_WINDOW_SLIDES_QTY; i++)
+      if (stringfn_equal(stringfn_to_lowercase(dls_window_slide_direction_names[i]), stringfn_to_lowercase(ARGS->slide_direction_name)))
         ARGS->slide_direction = i;
 
-  if(args->slide_direction>=0){
+  if (args->slide_direction >= 0) {
     //log_info("slide direction %s | %d", args->slide_direction_name,args->slide_direction);
-
   }
-  if(ARGS->current_id_mode){
-    args->all_mode = false;
-    args->pid = get_focused_pid();
+  if (ARGS->current_id_mode) {
+    args->all_mode  = false;
+    args->pid       = get_focused_pid();
     args->window_id = get_focused_window_id();
-    args->id=args->window_id;
+    args->id        = args->window_id;
 //    args->space_id = get_current_space_ig();
 
     log_info("current ID MODE");
@@ -321,7 +320,7 @@ bool initialize_args(struct args_t *ARGS){
   if (vector_size(ARGS->format_ids_v) == 0)
     vector_push(ARGS->format_ids_v, (void *)(IMAGE_TYPE_PNG));
   return(true);
-}
+} /* initialize_args */
 struct Vector *get_all_capture_type_ids(enum capture_type_id_t id, size_t limit){
   struct Vector *structs = capture_type_getters[id].get_structs_v_function(), *ids = vector_new();
 
@@ -372,7 +371,7 @@ void debug_dls_arguments(){
 ////////////////////////////////////////////
 static void _command_print_ids_v(struct Vector *ids);
 static void _command_print_qty(size_t qty);
-static void _command_layout_load_dir(int argc,char **argv);
+static void _command_layout_load_dir(int argc, char **argv);
 static void _command_print_strings_v(struct Vector *strings);
 COMMAND_PROTOTYPE(layout_list)
 COMMAND_PROTOTYPE(layout_test)
@@ -527,7 +526,7 @@ common_option_b common_options_b[] = {
   CREATE_BOOLEAN_COMMAND_OPTION(QUANTIZE_MODE,                                                  'Q',       "quantize",           "Enable Quantized Compression",                                            quantize_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(ALL_MODE,                                                       'A',       "all",                "All IDs",                                                                 all_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_MINIMIZED,                                                  0,         "not-minimized",      "Show Non Minimized Only",                                                 not_minimized_only)
-  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_ID_MODE,                                                      'E',         "current-id",          "Current ID Mode",                                                     current_id_mode)
+  CREATE_BOOLEAN_COMMAND_OPTION(CURRENT_ID_MODE,                                                'E',       "current-id",         "Current ID Mode",                                                         current_id_mode)
   CREATE_BOOLEAN_COMMAND_OPTION(MINIMIZED,                                                      0,         "minimized",          "Show Minimized Only",                                                     minimized_only)
   CREATE_BOOLEAN_COMMAND_OPTION(CLEAR_ICONS_CACHE,                                              0,         "clear-icons-cache",  "Clear Icons Cache",                                                       clear_icons_cache)
   CREATE_BOOLEAN_COMMAND_OPTION(NOT_DUPLICATE,                                                  0,         "non-duplicate",      "Show Non Duplicate Fonts",                                                non_duplicate)
@@ -1928,83 +1927,83 @@ static void _command_animate(){
   Di(args->frame_rate);
   Dn(interval_ms);
   struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
-  CGImageRef *img;
-  unsigned long s=timestamp(),dur=0;
-  if(!(img= capture_type_capture(args->capture_type,args->id)))
-      log_error("failed to capture");
-  dur=timestamp() -s;
+  CGImageRef    *img;
+  unsigned long s = timestamp(), dur = 0;
+  if (!(img = capture_type_capture(args->capture_type, args->id)))
+    log_error("failed to capture");
+  dur = timestamp() - s;
   Ds(milliseconds_to_string(dur));
-  size_t len=0;
-  unsigned char *rgb=save_cgref_to_rgb_memory(img,&len);
-  assert(len>0);
+  size_t        len  = 0;
+  unsigned char *rgb = save_cgref_to_rgb_memory(img, &len);
+  assert(len > 0);
   Ds(bytes_to_string(len));
-  dur=timestamp() -s;
+  dur = timestamp() - s;
   Ds(milliseconds_to_string(dur));
   VipsImage *vi[10];
-  vi[0]=vips_image_new_from_buffer(rgb, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL);
+  vi[0] = vips_image_new_from_buffer(rgb, len, "", "access", VIPS_ACCESS_SEQUENTIAL, NULL);
 
-  int bpp=0;
-int width = 480, height = 320, frame_cs = 5, bit_depth = 16,pitch_bytes=width*bpp;
+  int         bpp = 0;
+  int         width = 480, height = 320, frame_cs = 5, bit_depth = 16, pitch_bytes = width * bpp;
 
-MsfGifState gifState = {};
+  MsfGifState gifState = {};
 // msf_gif_bgra_flag = true; //optionally, set this flag if your pixels are in BGRA format instead of RGBA
 // msf_gif_alpha_threshold = 128; //optionally, enable transparency (see documentation in header for details)
-msf_gif_begin(&gifState, width, height);
+  msf_gif_begin(&gifState, width, height);
 //msf_gif_frame(&gifState, ..., centisecondsPerFrame, bitDepth, width * 4); //frame 1
 //msf_gif_frame(&gifState, ..., centisecondsPerFrame, bitDepth, width * 4); //frame 2
 //msf_gif_frame(&gifState, ..., centisecondsPerFrame, bitDepth, width * 4); //frame 3, etc...
 //while ((unsigned long)timestamp() < (unsigned long)end_ts) {
-while(true){
-  msf_gif_frame(&gifState,rgb,frame_cs,bit_depth,pitch_bytes);
-  log_info("xxx");
-}
+  while (true) {
+    msf_gif_frame(&gifState, rgb, frame_cs, bit_depth, pitch_bytes);
+    log_info("xxx");
+  }
 
-MsfGifResult result = msf_gif_end(&gifState);
-if (result.data) {
-    FILE * fp = fopen("MyGif.gif", "wb");
+  MsfGifResult result = msf_gif_end(&gifState);
+  if (result.data) {
+    FILE *fp = fopen("MyGif.gif", "wb");
     fwrite(result.data, result.dataSize, 1, fp);
     fclose(fp);
-}
-msf_gif_free(result);
+  }
+  msf_gif_free(result);
 
-  dur=timestamp() -s;
+  dur = timestamp() - s;
   Ds(milliseconds_to_string(dur));
   exit(0);
-  size_t gif_len=0;
+  size_t        gif_len = 0;
   unsigned char *gif;
-  vips_image_write_to_buffer(vi[0],".gif",&gif,&gif_len,NULL);
-  dur=timestamp() -s;
+  vips_image_write_to_buffer(vi[0], ".gif", &gif, &gif_len, NULL);
+  dur = timestamp() - s;
   Ds(milliseconds_to_string(dur));
-  log_info("%ld",CGImageGetWidth(img));
-  log_info("%ld",CGImageGetHeight(img));
+  log_info("%ld", CGImageGetWidth(img));
+  log_info("%ld", CGImageGetHeight(img));
   /*
 
 
-  for (size_t x = 0; x < vector_size(ids); x++) {
-    struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
-    unsigned long                  prev_ts = 0, last_ts = 0, delta_ms = 0;
-    req->ids = vector_new();
-    args->id = (size_t)vector_get(ids, x);
-    vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
-    req->concurrency       = args->concurrency;
-    req->type              = args->capture_type;
-    req->progress_bar_mode = args->progress_bar_mode;
-    req->compress          = args->compress;
-    req->format            = IMAGE_TYPE_GIF;
-    req->width             = args->width;
-    req->height            = args->height;
-    req->db_save_mode      = args->db_save_mode;
-    req->time.dur          = 0;
-    req->time.started      = timestamp();
-    struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
-    acap->expected_frames_qty = expected_frames_qty;
-    size_t                            qty = vector_size(acap->frames_v);
-    end_ts = timestamp() + (args->duration_seconds * 1000);
+     for (size_t x = 0; x < vector_size(ids); x++) {
+     struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+     unsigned long                  prev_ts = 0, last_ts = 0, delta_ms = 0;
+     req->ids = vector_new();
+     args->id = (size_t)vector_get(ids, x);
+     vector_push(req->ids, (void *)(size_t)vector_get(ids, x));
+     req->concurrency       = args->concurrency;
+     req->type              = args->capture_type;
+     req->progress_bar_mode = args->progress_bar_mode;
+     req->compress          = args->compress;
+     req->format            = IMAGE_TYPE_GIF;
+     req->width             = args->width;
+     req->height            = args->height;
+     req->db_save_mode      = args->db_save_mode;
+     req->time.dur          = 0;
+     req->time.started      = timestamp();
+     struct capture_animation_result_t *acap = init_animated_capture(CAPTURE_TYPE_WINDOW, req->format, args->id, interval_ms, args->progress_bar_mode);
+     acap->expected_frames_qty = expected_frames_qty;
+     size_t                            qty = vector_size(acap->frames_v);
+     end_ts = timestamp() + (args->duration_seconds * 1000);
 
 
-//exit(1);
+     //exit(1);
 
-    while ((unsigned long)timestamp() < (unsigned long)end_ts) {
+     while ((unsigned long)timestamp() < (unsigned long)end_ts) {
       unsigned long s = timestamp();
       req->progress_bar_mode = args->progress_bar_mode;
       results                = capture_image(req);
@@ -2017,7 +2016,7 @@ msf_gif_free(result);
         r->delta_ms       = delta_ms;
         req->time.started = i == 0 ? timestamp() : req->time.started;
         chan_send(acap->chan, (void *)r);
-//        get_cputime();
+     //        get_cputime();
         if (DARWIN_LS_COMMANDS_DEBUG_MODE)
           log_info("Frame #%lu/%lu> Received %lu Results in %s"
                    "\n\tID:%lu|Size:%s|Delta ms:%s|Time left:%lldms|"
@@ -2037,26 +2036,26 @@ msf_gif_free(result);
       pthread_mutex_lock(acap->mutex);
       qty = vector_size(acap->frames_v);
       pthread_mutex_unlock(acap->mutex);
-    }
-    chan_close(acap->chan);
-    chan_recv(acap->done, NULL);
-    pthread_join(acap->thread, NULL);
-    assert(end_animation(acap) == true);
-    assert(fsio_file_exists(acap->file));
-    Ds(args->output_file);
-    Ds(acap->file);
-    Di(acap->gif->framesSubmitted);
-    Di(acap->gif->width);
-    Di(acap->gif->height);
-    exit(0);
-    if (args->output_file)
+     }
+     chan_close(acap->chan);
+     chan_recv(acap->done, NULL);
+     pthread_join(acap->thread, NULL);
+     assert(end_animation(acap) == true);
+     assert(fsio_file_exists(acap->file));
+     Ds(args->output_file);
+     Ds(acap->file);
+     Di(acap->gif->framesSubmitted);
+     Di(acap->gif->width);
+     Di(acap->gif->height);
+     exit(0);
+     if (args->output_file)
       fsio_copy_file(acap->file, args->output_file);
-    if (args->display_mode) {
+     if (args->display_mode) {
       kitty_display_image_path(acap->file);
       printf("\n");
-    }
-  }
-*/
+     }
+     }
+   */
 
   exit(EXIT_SUCCESS);
 } /* _command_animated_capture*/
@@ -2380,103 +2379,104 @@ static void _command_menu_bar(){
 
 static void _command_window_slide(){
   initialize_args(args);
-  pid_t pid=get_window_id_pid(args->id);
-  char *title=get_window_id_title(args->id);
-  int space_id,display_id;
+  pid_t                pid = get_window_id_pid(args->id);
+  char                 *title = get_window_id_title(args->id);
+  int                  space_id, display_id;
   struct window_info_t *info;
 
-  space_id=get_window_id_space_id(args->id);
-  display_id=get_window_display_id(args->id);
-  info=get_window_id_info(args->id);
+  space_id   = get_window_id_space_id(args->id);
+  display_id = get_window_display_id(args->id);
+  info       = get_window_id_info(args->id);
 
-  int display_width=get_display_id_width(display_id);
-  int display_height=get_display_id_height(display_id);
+  int display_width  = get_display_id_width(display_id);
+  int display_height = get_display_id_height(display_id);
 
-int start_x=0,start_y=0,end_x=0,end_y=0,start_w=0,start_h=0;
-switch(args->slide_direction){
+  int start_x = 0, start_y = 0, end_x = 0, end_y = 0, start_w = 0, start_h = 0;
+  switch (args->slide_direction) {
   case DLS_WINDOW_SLIDE_TOP:
-    start_x=0;
-    start_w=display_width;
-    start_h=clamp((display_height * args->slide_percentage), display_height*.10, display_height);
-    start_y=0;
-    end_x=start_x;
-    end_y=0;
+    start_x = 0;
+    start_w = display_width;
+    start_h = clamp((display_height * args->slide_percentage), display_height * .10, display_height);
+    start_y = 0;
+    end_x   = start_x;
+    end_y   = 0;
     break;
   case DLS_WINDOW_SLIDE_BOTTOM:
-    start_y=clamp((display_height * args->slide_percentage), display_height*.10, display_height);
-    start_x=0;
-    start_w=display_width;
-    start_h=display_height/2;
-    end_x=start_x;
-    end_y=display_height;
+    start_y = clamp((display_height * args->slide_percentage), display_height * .10, display_height);
+    start_x = 0;
+    start_w = display_width;
+    start_h = display_height / 2;
+    end_x   = start_x;
+    end_y   = display_height;
     break;
   case DLS_WINDOW_SLIDE_RIGHT:
-    start_x=clamp((display_width * args->slide_percentage), display_width*.10, display_width);
-    start_y=0;
-    start_w=display_width/2;
-    start_h=display_height;
-    end_x=display_width;
-    end_y=start_y;
+    start_x = clamp((display_width * args->slide_percentage), display_width * .10, display_width);
+    start_y = 0;
+    start_w = display_width / 2;
+    start_h = display_height;
+    end_x   = display_width;
+    end_y   = start_y;
     break;
   case DLS_WINDOW_SLIDE_LEFT:
-    start_x=clamp((display_width * args->slide_percentage), display_width*.10, display_width);
-    start_y=0;
-    start_w=display_width/2;
-    start_h=display_height;
-    end_x=0;
-    end_y=start_y;
+    start_x = clamp((display_width * args->slide_percentage), display_width * .10, display_width);
+    start_y = 0;
+    start_w = display_width / 2;
+    start_h = display_height;
+    end_x   = 0;
+    end_y   = start_y;
     break;
-  default:break;
-}
+  default: break;
+  }
   log_info(
-      "slide %s,%d,%.2f,%d"
-      ",pid=%d,title=%s"
-      ",display=%d"
-      ",space=%d"
-      ",name=%s"
-      ",cur pos=%dx%d"
-      ",cur size=%dx%d"
-      ",duration=%.2f"
-      ",direction=%s"
-      ",start pos=%dx%d"
-      ",start size=%dx%d"
-      ",end pos=%dx%d"
+    "slide %s,%d,%.2f,%d"
+    ",pid=%d,title=%s"
+    ",display=%d"
+    ",space=%d"
+    ",name=%s"
+    ",cur pos=%dx%d"
+    ",cur size=%dx%d"
+    ",duration=%.2f"
+    ",direction=%s"
+    ",start pos=%dx%d"
+    ",start size=%dx%d"
+    ",end pos=%dx%d"
 
-      ,args->slide_direction_name,args->slide_direction,args->slide_percentage, args->id,pid,title,
-      display_id,space_id,
-      info->name,
-      (int)(info->rect.origin.x),
-      (int)(info->rect.origin.y),
-      (int)(info->rect.size.width),
-      (int)(info->rect.size.height),
-      args->slide_duration,
-      args->slide_direction_name,
-      start_x,start_y,
-      start_w,start_h,
-      end_x,end_y
-      );
-  bool ok;
+    , args->slide_direction_name, args->slide_direction, args->slide_percentage, args->id, pid, title,
+    display_id, space_id,
+    info->name,
+    (int)(info->rect.origin.x),
+    (int)(info->rect.origin.y),
+    (int)(info->rect.size.width),
+    (int)(info->rect.size.height),
+    args->slide_duration,
+    args->slide_direction_name,
+    start_x, start_y,
+    start_w, start_h,
+    end_x, end_y
+    );
+  bool                 ok;
   struct window_info_t *w;
-  if(minimize_window_id(args->id))
-   if(move_window_id(args->id, start_x, start_y))
-    if((w= get_window_id_info(args->id)))
-     resize_window_info(w, start_w, start_h);
+  if (minimize_window_id(args->id))
+    if (move_window_id(args->id, start_x, start_y))
+      if ((w = get_window_id_info(args->id)))
+        resize_window_info(w, start_w, start_h);
   unminimize_window_id(args->id);
   unsigned long now = timestamp(), end = now + (args->duration_seconds * 1000);
-  while(timestamp()<end){
+  while (timestamp() < end) {
     start_y--;
-    if(start_y<=0){
-     start_h--;
-     start_y++;
-     resize_window_info(w, start_w, start_h);
+    if (start_y <= 0) {
+      start_h--;
+      start_y++;
+      resize_window_info(w, start_w, start_h);
     }
-    move_window_id(args->id,start_x,start_y);
-    log_info("%d",start_y);
-    usleep(1000*100);
+    move_window_id(args->id, start_x, start_y);
+    log_info("%d", start_y);
+    usleep(1000 * 100);
   }
-  move_window_id(args->id,end_x,end_y);
+  move_window_id(args->id, end_x, end_y);
   exit(EXIT_SUCCESS);
-}
+} /* _command_window_slide */
+
 static void _command_window_sticky(){
   initialize_args(args);
   exit(EXIT_SUCCESS);
@@ -3125,42 +3125,43 @@ static void _command_layout_names(){
 }
 
 struct dls_qoir_file_rect_t {
-  const char *file;
-  int w, h, stride;
+  const char    *file;
+  int           w, h, stride;
   unsigned char *buf;
-  size_t len;
+  size_t        len;
 };
 
-static void _command_layout_load_dir(int argc,char **argv){
-  char *f,*format="qoir",*glob,**files;
+static void _command_layout_load_dir(int argc, char **argv){
+  char          *f, *format = "qoir", *glob, **files;
   unsigned char *buf;
-  unsigned long started=timestamp();
-  size_t total_bytes=0,total_pixels=0;
-  int qty=0;
-  asprintf(&(args->layout_name),"/tmp/%s",format);
-  asprintf(&glob,"*.%s",format);
-  if(fsio_dir_exists(args->layout_name)){
-    files =__MATCH__GET_FILES_FROM_PATH(args->layout_name,glob,&qty);
-  }
-  if(qty){
+  unsigned long started = timestamp();
+  size_t        total_bytes = 0, total_pixels = 0;
+  int           qty = 0;
+
+  asprintf(&(args->layout_name), "/tmp/%s", format);
+  asprintf(&glob, "*.%s", format);
+  if (fsio_dir_exists(args->layout_name))
+    files = __MATCH__GET_FILES_FROM_PATH(args->layout_name, glob, &qty);
+  if (qty) {
     qoir_decode_pixel_configuration_result cfg;
-    for(int i=0;i<qty;i++){
-      asprintf(&f,"%s/%s",args->layout_name,files[i]);
-      if(fsio_file_exists(f)){
-        total_bytes+=fsio_file_size(f);
-        buf=fsio_read_binary_file(f);
-        if(buf){
-          cfg = qoir_decode_pixel_configuration(buf, fsio_file_size(f));
-          total_pixels += (cfg.dst_pixcfg.width_in_pixels*cfg.dst_pixcfg.height_in_pixels);
+    for (int i = 0; i < qty; i++) {
+      asprintf(&f, "%s/%s", args->layout_name, files[i]);
+      if (fsio_file_exists(f)) {
+        total_bytes += fsio_file_size(f);
+        buf          = fsio_read_binary_file(f);
+        if (buf) {
+          cfg           = qoir_decode_pixel_configuration(buf, fsio_file_size(f));
+          total_pixels += (cfg.dst_pixcfg.width_in_pixels * cfg.dst_pixcfg.height_in_pixels);
           free(buf);
         }
       }
     }
   }
-  log_info("%luM Pixels and %s from %d Files in %s", total_pixels/1024/1024,bytes_to_string(total_bytes),qty,milliseconds_to_string(timestamp()-started));
+  log_info("%luM Pixels and %s from %d Files in %s", total_pixels / 1024 / 1024, bytes_to_string(total_bytes), qty, milliseconds_to_string(timestamp() - started));
   exit(EXIT_SUCCESS);
   exit(EXIT_FAILURE);
 }
+
 static void _command_layout_list(){
   exit(hk_list_layouts()?EXIT_SUCCESS:EXIT_FAILURE);
 }
