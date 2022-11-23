@@ -3,6 +3,7 @@
 #define TESSERACT_UTILS_C
 #define CAPTURE_SCREEN_RECT             true
 #define TESSERACT_EXTRACT_IMAGE_TYPE    IMAGE_TYPE_PNG
+#define TESSERACT_UTILS_RIL RIL_SYMBOL
 #include "allheaders.h"
 #include "tesseract/capi.h"
 ////////////////////////////////////////////
@@ -338,7 +339,7 @@ struct tesseract_extract_result_t *tesseract_find_item_matching_word_locations(s
     log_debug("Captured %lux%lu %s Window Image", CGImageGetWidth(image_refs[0]), CGImageGetHeight(image_refs[0]), bytes_to_string(img_len));
   {
     unsigned long ts = timestamp();
-    extractions = tesseract_extract_memory(img, img_len, RIL_TEXTLINE);
+    extractions = tesseract_extract_memory(img, img_len, TESSERACT_UTILS_RIL);
     if (TESSERACT_UTILS_DEBUG_MODE)
       log_info("ran extract tess in %s and received %lu Extractions", milliseconds_to_string(timestamp() - ts), vector_size(extractions));
     for (size_t i = 0; i < vector_size(extractions); i++) {
@@ -388,7 +389,7 @@ static void __tesseract_extract_item(void *ARGS){
   if (TESSERACT_UTILS_DEBUG_MODE)
     log_info(AC_YELLOW "\tExtracting Item #%lu"AC_RESETALL, r->id);
 
-  r->results_v = tesseract_extract_memory(r->img, r->img_len, RIL_TEXTLINE);
+  r->results_v = tesseract_extract_memory(r->img, r->img_len, TESSERACT_UTILS_RIL);
   if (TESSERACT_UTILS_DEBUG_MODE)
     log_info(AC_GREEN "\tExtracted %lu items from %s Image in %s"AC_RESETALL,
              vector_size(r->results_v),

@@ -23,6 +23,7 @@
 typedef void*(^async_worker_cb)(void *);
 struct Vector *async_chan_items_v(size_t concurrency, struct Vector *items, async_worker_cb cb);
 void **async_chan_items(size_t concurrency, void **items, int in_qty, int *out_qty, async_worker_cb cb);
+void **async_chan_bufs(size_t concurrency, void **items, size_t item_len, int in_qty, int *out_qty, async_worker_cb cb);
 struct Vector *async_items_v(size_t concurrency, struct Vector *items, async_worker_cb cb);
 
 typedef struct MapIterator MapIterator;

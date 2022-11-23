@@ -66,6 +66,27 @@ void async_work_fxn(void *WORK){
   pthread_mutex_unlock(&(w->mutex));
 }
 
+void **async_chan_bufs(size_t concurrency, void **items, size_t item_len, int in_qty, int *out_qty, async_worker_cb cb){
+  chan_t *done = chan_init(vector_size(items));
+  struct Vector    *results_v = vector_new();
+  struct async_work_chans_t *chans[concurrency];
+  concurrency = clamp(concurrency,1,vector_size(items));
+  pthread_t threads[concurrency];
+  for (size_t i = 0; i < concurrency; i++){
+    chans[i] = calloc(1,sizeof(struct async_work_chans_t));
+    chans[i]->work = chan_init(concurrency);
+    chans[i]->done = done;
+    pthread_create(&(threads[i]),0,async_chan_work_fxn,(void*)(chans[i]));
+  }
+  int idx;
+  void *r;
+  for (size_t ii = 0; ii < vector_size(items); ii++) {
+    struct async_chan_work_t *w = calloc(1, sizeof(struct async_chan_work_t));
+    w->cb       = cb;
+    w->args     = (void *)(vector_get(items,ii));
+    chan_send_buf(chans[ii%concurrency]->work,(void*)(items[ii]), item_len);
+  }
+}
 void **async_chan_items(size_t concurrency, void **items, int in_qty, int *out_qty, async_worker_cb cb){
   size_t qty=0;
   struct Vector    *v = vector_new(), *r;
