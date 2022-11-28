@@ -2,6 +2,10 @@
 #ifndef DLS_TYPE_H
 #define DLS_TYPE_H
 #include "capture/type/type.h"
+enum dls_event_t {
+  DLS_EVENT_OK,
+  DLS_EVENTS_QTy,
+};
 enum common_option_capture_type_t {
   COMMON_OPTION_CAPTURE_TYPE_WINDOW = 0,
   COMMON_OPTION_CAPTURE_TYPE_DISPLAY,
@@ -63,5 +67,8 @@ struct args_t {
   char                                 *sort_key, *font_name, *font_family, *font_type, *font_style, *formats, *sort_direction, *application_name, *write_directory, *application_path, *output_icns_file, *input_icns_file, *output_png_file, *input_png_file, *input_file, *output_file, *output_mode_s, *xml_file_path, *content, *sizes, *input_gif_file, *layout_name;
 };
 //////////////////////////////////////
-
+struct normalized_argv_t {
+  char          *mode, *executable;
+  struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
+};
 #endif

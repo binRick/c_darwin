@@ -15,7 +15,6 @@
 #include "dls/dls-commands.h"
 #include "dls/dls.h"
 #include "dls/meta.h"
-#include "dls/meta.h"
 #include "fancy-progress/src/fancy-progress.h"
 #include "hotkey-utils/hotkey-utils.h"
 #include "httpserver-utils/httpserver-utils.h"
@@ -26,7 +25,6 @@
 #include "pasteboard/pasteboard.h"
 #include "process/utils/utils.h"
 #include "space/utils/utils.h"
-#include "space/utils/utils.h"
 #include "system/utils/utils.h"
 #include "table/sort/sort.h"
 #include "table/utils/utils.h"
@@ -34,7 +32,6 @@
 #include "vips/vips.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-//#include "libpick/libpick.h"
 #define MSF_GIF_IMPL
 #include "msf_gif/msf_gif.h"
 #define MAX_CONCURRENCY                        25

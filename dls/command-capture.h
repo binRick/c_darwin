@@ -124,7 +124,7 @@ declImplExtern(CommandCapture, CaptureDisplay);
 #define ADD_CAPTURE_COMMANDS()                                                                                  \
   COMMAND(ICON_CAPTURE, CAPTURE, "capture", COLOR_CAPTURE, "Capture Image", 0)                                  \
   COMMAND(ICON_WINDOW, CAPTURE_WINDOW, "window", COLOR_WINDOW, "Capture Window", *_command_capture_window)      \
-  COMMAND(ICON_DISPLAY, CAPTURE_DISPLAY, "display", COLOR_WINDOW, "Capture Display", *_command_capture_display) \
+  COMMAND(ICON_DISPLAY, CAPTURE_DISPLAY, "display", COLOR_DISPLAY, "Capture Display", *_command_capture_display) \
   COMMAND(ICON_SPACE, CAPTURE_SPACE, "space", COLOR_SPACE, "Capture Space", *_command_capture_space)            \
 
 #endif

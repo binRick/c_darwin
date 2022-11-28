@@ -1,20 +1,13 @@
 #include "dls/dls.h"
 static bool initialized;
+static struct EventEmitter *ee;
 static void __attribute__((constructor)) __constructor__dls(void);
 static void __attribute__((destructor)) __destructor__dls(void);
 static bool dls_normalize_arguments(int *argc, char *argv[]);
 static struct Vector *dls_argv_to_arg_v(int argc, char *argv[]);
 static void *dls_print_arg_v(char *title, char *color, int argc, char *argv[]);
-static bool                   DARWIN_LS_DEBUG_MODE = false;
-const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
+static bool DARWIN_LS_DEBUG_MODE = false;
 static void __at_exit(void);
-
-static void __at_exit(void){
-  fprintf(stdout, "%s", AC_SHOW_CURSOR);
-  fprintf(stdout, "%s", AC_RESTORE_PALETTE);
-  fflush(stdout);
-  return;
-}
 #define CREATE_SUBCOMMAND(NAME, SUBCOMMANDS)                                     \
   {                                                                              \
     .name        = cmds[COMMAND_ ## NAME].name,                                  \
@@ -65,7 +58,6 @@ static void __at_exit(void){
 #define COMMON_OPTIONS_SIZE                    \
   common_options_b[COMMON_OPTION_WIDTH](args), \
   common_options_b[COMMON_OPTION_HEIGHT](args),
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #define SUBCOMMANDS_DB                         \
   CREATE_SUBCOMMAND(DB_INIT, ),                \
   CREATE_SUBCOMMAND(DB_INSERT_ROW_APP_ICON, ), \
@@ -114,10 +106,6 @@ static void __at_exit(void){
   COMMON_OPTIONS_FOCUS
 #define COMMON_OPTIONS_MENU_BAR \
   common_options_b[COMMON_OPTION_HELP_SUBCMD](args),
-#define COMMON_OPTIONS_DB \
-  COMMON_OPTIONS_BASE     \
-  COMMON_OPTIONS_UI       \
-  common_options_b[COMMON_OPTION_CLEAR_SCREEN](args),
 #define COMMON_OPTIONS_DB_TABLES \
   COMMON_OPTIONS_DB
 #define COMMON_OPTIONS_DB_INFO \
@@ -194,7 +182,6 @@ static void __at_exit(void){
 #define COMMON_OPTIONS_ICON
 #define COMMON_OPTIONS_ICON_LIST
 #define COMMON_OPTIONS_DOCK
-//#########################################
 #define COMMON_OPTIONS_PASTE \
   common_options_b[COMMON_OPTION_OUTPUT_FILE](args),
 #define COMMON_OPTIONS_COPY                         \
@@ -225,11 +212,7 @@ static void __at_exit(void){
 #define SUBCOMMANDS_HOTKEYS          \
   CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
   CREATE_SUBCOMMAND(HOTKEYS_SERVER, ),
-//#########################################
-struct normalized_argv_t {
-  char          *mode, *executable;
-  struct Vector *pre_mode_arg_v, *post_mode_arg_v, *arg_v;
-};
+const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
 struct args_t *args = &(struct args_t){
   .limit                              = 999,
   .verbose_mode                       = false, .debug_mode = false,
@@ -268,27 +251,20 @@ struct args_t *args = &(struct args_t){
   .format_names_qty                   = 0,
   .hide_columns_qty                   = 0,
   .offset                             = 0,
-//  .fd = stdout,
 };
 char                *DLS_RE_EXEC_CMD = NULL;
 struct optparse_cmd *dls_cmd         = NULL;
-int                 dls_cmd_argc;
-
-////////////////////////////////////////////
-int main(int argc, char *argv[]) {
-  atexit(__at_exit);
-  return(handle_main(argc, argv));
-}
+int main(int argc, char *argv[]){ return(handle_main(argc, argv)); }
 
 int handle_main(int argc, char *argv[]) {
+  atexit(__at_exit);
+  VIPS_INIT(argv[0]);
   DLS_EXECUTABLE_ARGC = argc;
   char *_cmd = stringfn_join(argv, " ", 0, argc);
   DLS_EXECUTABLE_ARGV = stringfn_split(_cmd, ' ').strings;
+  free(_cmd);
 
-  VIPS_INIT(argv[0]);
-  asprintf(&DLS_EXECUTABLE, "%s/%s",
-           whereami->executable_directory,
-           whereami->executable_basename);
+  asprintf(&DLS_EXECUTABLE, "%s/%s",whereami->executable_directory,whereami->executable_basename);
   asprintf(&DLS_RE_EXEC_CMD, "%s/%s %s",
            whereami->executable_directory,
            whereami->executable_basename,
@@ -306,10 +282,10 @@ int handle_main(int argc, char *argv[]) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
   struct optparse_cmd cmd = {
-    .about       = "dls v1.00 - List Darwin Objects",
-    .description = "This program lists Darwin Objects",
-    .name        = "dls",
-    .operands    = "[COMMAND...]",
+    .about       = DLS_ABOUT,
+    .description = DLS_DESC,
+    .name        = DLS_NAME,
+    .operands    = DLS_OPERANDS,
     .options     = (struct optparse_opt[]) {
       common_options_b[COMMON_OPTION_HELP](args),
       common_options_b[COMMON_OPTION_VERBOSE_MODE](args),
@@ -327,19 +303,7 @@ int handle_main(int argc, char *argv[]) {
       },
       ADD_SUBCOMMANDS()
 #undef ADD_SUBCOMMANDS
-      CREATE_SUBCOMMAND(DB, SUBCOMMANDS_DB),
-      CREATE_SUBCOMMAND(DOCK, ),
-      CREATE_SUBCOMMAND(MENU_BAR, ),
-      CREATE_SUBCOMMAND(APP, SUBCOMMANDS_APP),
-      CREATE_SUBCOMMAND(WINDOW, SUBCOMMANDS_WINDOW),
-      CREATE_SUBCOMMAND(PROCESS, SUBCOMMANDS_PROCESS),
-      CREATE_SUBCOMMAND(HOTKEYS, SUBCOMMANDS_HOTKEYS),
-      CREATE_SUBCOMMAND(SPACE, SUBCOMMANDS_SPACE),
-      CREATE_SUBCOMMAND(ICON, SUBCOMMANDS_ICON),
-#undef CREATE_SUBCOMMAND
-      {
-        END_OF_SUBCOMMANDS
-      },
+      { END_OF_SUBCOMMANDS },
     },
   };
 #pragma GCC diagnostic pop
@@ -428,41 +392,21 @@ static void __attribute__((destructor)) __destructor__dls(void){
 }
 
 static void __attribute__((constructor)) __constructor__dls(void){
-  ee = eventemitter_new();
-  log_debug("%lu options", sizeof(__optparse_opt) / sizeof(__optparse_opt[0]));
-//^[\^[]4;1;#cc6666^[\^[]4;2;#66cc99^[\^[]4;3;#cc9966^[\^[]4;4;#6699cc^[\^[]4;5;#cc6699^[\^[]4;6;#66cccc^[\^[]4;7;#cccccc^[\^[]4;8;#999999^[\^[]4;9;#cc6666^[\^[]4;10;#66cc99^[\^[]4;11;#cc9966^[\^[]4;12;#6699cc^[\^[]4;13;#cc6699^[\^[]4;14;#66cccc^[\^[]4;15;#cccccc^[\^[[21D"
-  char *__ansi = ""                  \
-                 "\033]11;#000000"   \
-                 "\033]10;#ffffff"   \
-                 "\033]12;#ff9999"   \
-                 "\033]4;13;#cc6699" \
-                 "\033]4;14;#66cccc" \
-                 "\033]4;15;#cccccc" \
-                 "\033[?1049l"       \
-                 "\033[21D"          \
-                 "";
-  if (false)
-    printf(
-      "%s"
-      "%s"
-      "%s",
-      AC_SAVE_PALETTE,
-      AC_HIDE_CURSOR,
-      __ansi
-      );
-  initialized = true;
-//  fprintf(stdout, AC_SAVE_PALETTE);
-  fprintf(stdout, AC_HIDE_CURSOR);
-  fflush(stdout);
-
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS") != NULL)
     DARWIN_LS_DEBUG_MODE = true;
+  initialized = true;
+  fprintf(stdout, AC_HIDE_CURSOR);
+  fflush(stdout);
   errno    = 0;
-  whereami = core_utils_whereami_report();
-  if (DARWIN_LS_DEBUG_MODE)
-    log_debug("  >Whereami Report<\n\tExecutable:%s\n\tDirectory:%s\n\tBasename:%s\n",
-              whereami->executable, whereami->executable_directory, whereami->executable_basename
-              );
+  if(!(ee = eventemitter_new())){
+    log_error("Failed create event emitter");
+    exit(EXIT_FAILURE);
+  }
+  errno    = 0;
+  if(!(whereami = core_utils_whereami_report())){
+    log_error("Failed to execute whereami report");
+    exit(EXIT_FAILURE);
+  }
   errno = 0;
   if (is_authorized_for_accessibility() == false) {
     log_error("Not Authorized for Accessibility");
@@ -474,3 +418,7 @@ static void __attribute__((constructor)) __constructor__dls(void){
     exit(EXIT_FAILURE);
   }
 } /* __constructor__dls */
+static void __at_exit(void){
+  fprintf(stdout, "%s%s", AC_SHOW_CURSOR,AC_RESTORE_PALETTE);
+  fflush(stdout);
+}
