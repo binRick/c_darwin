@@ -368,6 +368,10 @@ void _command_test_stream_display(){
   exit(EXIT_SUCCESS);
 }
 
+void _command_test_ts(){
+  Ds("ts");
+  exit(EXIT_SUCCESS);
+}
 void _command_test_stream_window(){
   //wu_stream_window(args->width, args->height);
   //CFRunLoopRun();

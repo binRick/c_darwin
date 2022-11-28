@@ -9,6 +9,8 @@ vips_basics_test_include_dirs = [
 vips_basics_test_deps = [
   c_greatest_dep,kitty_msg_dep,c_workqueue_dep,chan_dep,fancy_progress_dep,
   ansi_codes_dep,
+  module_dep,
+  async_dep,str_dep,
   c_vector_dep,
   match_dep,
   c_fsio_dep,

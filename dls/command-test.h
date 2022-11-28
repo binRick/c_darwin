@@ -42,7 +42,6 @@ struct stream_setup_t {
 #define ADD_DB_COMMAND_PROTOTYPES()
 ////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMAND_PROTOTYPES()       \
-  COMMAND_PROTOTYPE(test_csv)               \
   COMMAND_PROTOTYPE(test_test_hash)         \
   COMMAND_PROTOTYPE(test_test_clipboard)    \
   COMMAND_PROTOTYPE(test_test_vector)       \
@@ -99,7 +98,9 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define COLOR_VECTOR         "\x1b[38;2;80;100;127m"
 #define COLOR_WINDOWS        "\x1b[38;2;80;100;50m"
 #define COLOR_CLIPBOARD      "\x1b[38;2;80;100;50m"
+#define COLOR_TS      "\x1b[38;2;80;100;50m"
 #define ICON_DROID           "👽"
+#define ICON_TS           "👽"
 #define ICON_CLIPBOARD       "👽"
 #define ICON_VECTOR          "👽"
 #define ICON_CSV             "👽"
@@ -126,6 +127,9 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   common_options_b[COMMON_OPTION_LIST_TESTS_MODE](args),  \
   common_options_b[COMMON_OPTION_LIST_SUITES_MODE](args), \
   common_options_b[COMMON_OPTION_ABORT_TESTS_MODE](args),
+#define COMMON_OPTIONS_TEST_TS_MS
+#define COMMON_OPTIONS_TEST_TS \
+  COMMON_OPTIONS_TEST_COMMON
 #define COMMON_OPTIONS_TEST_WINDOWS \
   COMMON_OPTIONS_TEST_COMMON
 #define COMMON_OPTIONS_TEST_VECTOR \
@@ -182,6 +186,8 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_LAYOUT_HORIZONTAL, ), \
   CREATE_SUBCOMMAND(TEST_LAYOUTS, ),           \
 ///////////////
+#define SUBCOMMANDS_TEST_TS             \
+  CREATE_SUBCOMMAND(TEST_TS_MS, ),
 #define SUBCOMMANDS_TEST_STREAM             \
   CREATE_SUBCOMMAND(TEST_STREAM_DISPLAY, ), \
   CREATE_SUBCOMMAND(TEST_STREAM_WINDOW, ),  \
@@ -211,12 +217,8 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 ////////////////
 #define ADD_DB_TYPES()
 ////////////////////////////////////////////////////////////
-#define ADD_TEST_TYPES() \
-  COMMAND_TEST_CMD,      \
-////////////////
 #define ADD_TEST_SUBCOMMANDS()               \
   CREATE_SUBCOMMAND(TEST, SUBCOMMANDS_TEST), \
-////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 #define ADD_DB_SUBCOMMANDS() \
 ////////////////////////////////////////////////////////////
@@ -224,12 +226,10 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 ////////////////////////////////////////////////////////////
 #define ADD_TEST_COMMANDS()                                                                                                            \
   COMMAND(ICON_TEST, TEST, "test", COLOR_LIST, "Test Commands", 0)                                                                     \
-  COMMAND(ICON_CMD, TEST_CMD, "cmd", COLOR_CMD, "Test Command Parser", 0)                                                              \
+  COMMAND(ICON_WINDOW, TEST_STREAM_WINDOW, "window", COLOR_WINDOW, "Test Window Stream", *_command_test_stream_window)                 \
+  COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
   COMMAND(ICON_STREAM, TEST_STREAM, "stream", COLOR_STREAM, "Test Stream", 0)                                                          \
   COMMAND(ICON_CAP, TEST_CAP, "cap", COLOR_CAP, "Test Capture", 0)                                                                     \
-  COMMAND(ICON_CSV, TEST_CSV, "csv", COLOR_CSV, "CSV", _command_test_csv)                                                              \
-  COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
-  COMMAND(ICON_WINDOW, TEST_STREAM_WINDOW, "window", COLOR_WINDOW, "Test Window Stream", *_command_test_stream_window)                 \
   COMMAND(ICON_DISPLAY, TEST_STREAM_DISPLAY, "display", COLOR_DISPLAY, "Test Display Stream", *_command_test_stream_display)           \
   COMMAND(ICON_WINDOW, TEST_CAP_WINDOW, "window", COLOR_WINDOW, "Test Window Capture", *_command_test_cap_window)                      \
   COMMAND(ICON_DISPLAY, TEST_CAP_DISPLAY, "display", COLOR_DISPLAY, "Test Display Capture", *_command_test_cap_display)                \

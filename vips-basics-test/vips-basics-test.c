@@ -4,13 +4,17 @@
 #define MAX_FRAMES              10
 //#define CONCURRENCY 2
 #include "ansi-codes/ansi-codes.h"
-#include "async/async.h"
+#include "c_ansi/async/async.h"
 #include "bytes/bytes.h"
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
+#include "module/require.h"
+#include "module/def.h"
+#include "module/module.h"
+#include "async/async.h"
 #include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
@@ -87,7 +91,7 @@ TEST t_vips_resize_async(void *VOID){
   vector_push(items_v, (void *)200);
 
   unsigned long ts     = timestamp();
-  struct Vector *res_v = async_items_v(concurrency, items_v, cb);
+  struct Vector *res_v = require(async)->each->vec(concurrency, items_v, cb);
 
   log_info("Received %lu results in %s", vector_size(res_v), milliseconds_to_string(timestamp() - ts));
   Dbg((size_t)vector_get(res_v, 0), %u);

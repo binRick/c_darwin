@@ -58,6 +58,7 @@ darwin_ls_deps = [
   core_image_dep,
   which_dep,
   levenshtein_dep,
+  c_eventemitter_dep,
   font_utils_dep,
   kitty_dep,alacritty_dep,
   db_dep,

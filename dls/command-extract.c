@@ -2,6 +2,7 @@
 #ifndef DLS_EXTRACT_COMMANDS_C
 #define DLS_EXTRACT_COMMANDS_C
 #define EXTRACT_HASH_KEY    2386237528
+#define EXTRACT_CACHE_ENABLED false 
 #include "core/core.h"
 #include "dls/dls.h"
 #include "tesseract/utils/utils.h"
@@ -85,7 +86,7 @@ void _command_extract_image(void){
     cr->hash = murmurhash(enc, strlen(enc), EXTRACT_HASH_KEY);
     asprintf(&cr->path, "%sextract-result-%d.enc", gettempdir(), cr->hash);
     cr->ts = timestamp();
-    if (fsio_file_exists(cr->path)) {
+    if (EXTRACT_CACHE_ENABLED && fsio_file_exists(cr->path)) {
       log_info("cached exists ! %s", cr->path);
       struct tesseract_extract_result_t **d  = (struct tesseract_extract_result_t **)fsio_read_binary_file(cr->path);
       size_t                            dlen = fsio_file_size(cr->path);
@@ -115,10 +116,9 @@ void _command_extract_image(void){
     cr->buf       = import_buf;
 
     if (!fsio_file_exists(cr->path)) {
-      log_info("Saving %s Buffer to %s", bytes_to_string(cr->buf_len), cr->path);
-
-      unsigned char *save_buf = vector_to_array(items);
-      size_t        save_len  = vector_size(items) * sizeof(struct tesseract_extract_result_t);
+     log_debug("Saving %s Buffer to %s", bytes_to_string(cr->buf_len), cr->path);
+     unsigned char *save_buf = vector_to_array(items);
+     size_t        save_len  = vector_size(items) * sizeof(struct tesseract_extract_result_t);
       fsio_write_binary_file(cr->path, save_buf, save_len);
     }
 

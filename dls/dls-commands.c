@@ -95,7 +95,7 @@
       .description = DESC,                                                  \
       .arg_name = NAME,                                                     \
       .arg_data_type = DATA_TYPE_STR,                                       \
-      .arg_dest = &(args->DEST),                                            \
+      .arg_storage = &(args->DEST),                                            \
     });                                                                     \
   },
 #define COMMON_OPTION_LIST(OPTION, SHORT, LONG, DESC, NAME, DEST, SIZE)     \
@@ -107,8 +107,8 @@
       .arg_name = NAME,                                                     \
       .arg_data_type = DATA_TYPE_STR,                                       \
       .arg_delim = ",",                                                     \
-      .arg_dest = &(args->DEST),                                            \
-      .arg_dest_size = &(args->SIZE),                                       \
+      .arg_storage = &(args->DEST),                                            \
+      .arg_storage_size = &(args->SIZE),                                       \
     });                                                                     \
   },
 #define CREATE_INT_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG_NAME, ARG)      \
@@ -119,7 +119,7 @@
       .description = DESC,                                                     \
       .arg_name = ARG_NAME,                                                    \
       .arg_data_type = DATA_TYPE_INT,                                          \
-      .arg_dest = &(args->ARG),                                                \
+      .arg_storage = &(args->ARG),                                                \
     });                                                                        \
   },
 #define CREATE_FLOAT_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)              \
@@ -130,7 +130,7 @@
       .description = DESC,                                                     \
       .arg_name = DESC,                                                        \
       .arg_data_type = DATA_TYPE_FLT,                                          \
-      .arg_dest = &(args->ARG),                                                \
+      .arg_storage = &(args->ARG),                                                \
     });                                                                        \
   },
 #define CREATE_BOOLEAN_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)            \
@@ -165,7 +165,20 @@
 /////////////////////////////////////////////////////////////////////////////////////
 #define ICON_COMMANDS()                                   \
   COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0) \
-  COMMAND(ICON_LIST, ICON_LIST, "ls", COLOR_LIST, "List Icons", *_command_icon_list)
+  COMMAND(ICON_LIST, ICON_LIST, "icons", COLOR_LIST, "List Icons", *_command_icon_list) \
+  COMMAND(ICON_CLEAR, CLEAR_ICONS_CACHE, "clear", COLOR_CLEAR, "Clear App Icons Cache", *_command_clear_icons_cache)\
+  COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)\
+  COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)\
+  COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)\
+  COMMAND(ICON_WRITE, SET_APP_ICON_ICNS, "icns", COLOR_ICNS, "Set App Icons from ICNS", *_command_write_app_icon_icns)\
+  COMMAND(ICON_INFO, ICON_INFO, "info", COLOR_INFO, "App Icons Info", *_command_icon_info)\
+  COMMAND(ICON_PATH, APP_ICNS_PATH, "path", COLOR_PATH, "App Icons Path", *_command_app_icns_path)\
+  COMMAND(ICON_XML, PARSE_XML_FILE, "parse", COLOR_XML, "Parse XML File", *_command_parse_xml_file)
+#define APP_COMMANDS()                                   \
+  COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)\
+  COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app)\
+  COMMAND(ICON_LIST, APP_ICONS, "icons", COLOR_LIST, "List Icons", *_command_list_icons)\
+  COMMAND(ICON_LIST, APP_ICONS1, "icons1", COLOR_LIST, "List Icons1", *_command_icon_list)
 /////////////////////////////////////////////////////////////////////////////////////
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void);
@@ -552,7 +565,7 @@ common_option_b common_options_b[] = {
       .arg_name = "HEIGHT",
       .arg_data_type = check_cmds[CHECK_COMMAND_HEIGHT_LESS].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_HEIGHT_LESS].fxn,
-      .arg_dest = &(args->height_less),
+      .arg_storage = &(args->height_less),
     });
   },
   [COMMON_OPTION_HEIGHT_GREATER] = ^ struct optparse_opt (struct args_t *args) {
@@ -562,7 +575,7 @@ common_option_b common_options_b[] = {
       .arg_name = "HEIGHT",
       .arg_data_type = check_cmds[CHECK_COMMAND_HEIGHT_GREATER].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_HEIGHT_GREATER].fxn,
-      .arg_dest = &(args->height_greater),
+      .arg_storage = &(args->height_greater),
     });
   },
   [COMMON_OPTION_CONCURRENCY] = ^ struct optparse_opt (struct args_t *args) {
@@ -573,7 +586,7 @@ common_option_b common_options_b[] = {
       .arg_name = "CONCURRENCY-LEVEL",
       .arg_data_type = check_cmds[CHECK_COMMAND_CONCURRENCY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_CONCURRENCY].fxn,
-      .arg_dest = &(args->concurrency),
+      .arg_storage = &(args->concurrency),
     });
   },
   [COMMON_OPTION_LAYOUT_QTY] = ^ struct optparse_opt (struct args_t *args) {
@@ -583,7 +596,7 @@ common_option_b common_options_b[] = {
       .description = "Layout Quantity",
       .arg_name = "QTY",
       .arg_data_type = DATA_TYPE_INT,
-      .arg_dest = &(args->layout_qty),
+      .arg_storage = &(args->layout_qty),
     });
   },
   [COMMON_OPTION_LAYOUT_SIZE] = ^ struct optparse_opt (struct args_t *args) {
@@ -593,7 +606,7 @@ common_option_b common_options_b[] = {
       .description = "Layout Size",
       .arg_name = "SIZE",
       .arg_data_type = DATA_TYPE_FLT,
-      .arg_dest = &(args->layout_size),
+      .arg_storage = &(args->layout_size),
     });
   },
   [COMMON_OPTION_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
@@ -603,7 +616,7 @@ common_option_b common_options_b[] = {
       .description = "Height",
       .arg_name = "HEIGHT",
       .arg_data_type = DATA_TYPE_INT,
-      .arg_dest = &(args->height),
+      .arg_storage = &(args->height),
     });
   },
   [COMMON_OPTION_WIDTH] = ^ struct optparse_opt (struct args_t *args) {
@@ -613,7 +626,7 @@ common_option_b common_options_b[] = {
       .description = "Width",
       .arg_name = "WIDTH",
       .arg_data_type = DATA_TYPE_INT,
-      .arg_dest = &(args->width),
+      .arg_storage = &(args->width),
     });
   },
   [COMMON_OPTION_WIDTH_LESS] = ^ struct optparse_opt (struct args_t *args) {
@@ -623,7 +636,7 @@ common_option_b common_options_b[] = {
       .arg_name = "WIDTH",
       .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH_LESS].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WIDTH_LESS].fxn,
-      .arg_dest = &(args->width_less),
+      .arg_storage = &(args->width_less),
     });
   },
   [COMMON_OPTION_WIDTH_GREATER] = ^ struct optparse_opt (struct args_t *args) {
@@ -633,7 +646,7 @@ common_option_b common_options_b[] = {
       .arg_name = "WIDTH",
       .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH_GREATER].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WIDTH_GREATER].fxn,
-      .arg_dest = &(args->width_greater),
+      .arg_storage = &(args->width_greater),
     });
   },
   [COMMON_OPTION_SORT_FONT_KEYS] = ^ struct optparse_opt (struct args_t *args) {
@@ -642,7 +655,7 @@ common_option_b common_options_b[] = {
       .long_name = "sort-by",
       .description = get_sort_type_by_description(SORT_TYPE_FONT),
       .arg_name = "SORT-BY",
-      .arg_dest = &(args->sort_key),
+      .arg_storage = &(args->sort_key),
       .arg_data_type = DATA_TYPE_STR,
     });
   },
@@ -652,7 +665,7 @@ common_option_b common_options_b[] = {
       .long_name = "sort-by",
       .description = get_sort_type_by_description(SORT_TYPE_APP),
       .arg_name = "SORT-BY",
-      .arg_dest = &(args->sort_key),
+      .arg_storage = &(args->sort_key),
       .arg_data_type = DATA_TYPE_STR,
     });
   },
@@ -664,7 +677,7 @@ common_option_b common_options_b[] = {
       .arg_name = "SORT-BY",
       .arg_data_type = check_cmds[CHECK_COMMAND_SORT_KEY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_SORT_KEY].fxn,
-      .arg_dest = &(args->sort_key),
+      .arg_storage = &(args->sort_key),
     });
   },
   [COMMON_OPTION_SORT_KEY] = ^ struct optparse_opt (struct args_t *args) {
@@ -673,7 +686,7 @@ common_option_b common_options_b[] = {
       .long_name = "sort-by",
       .description = "Sort By Key Name",
       .arg_name = "SORT-KEY-NAME",
-      .arg_dest = &(args->sort_key),
+      .arg_storage = &(args->sort_key),
       .arg_data_type = DATA_TYPE_STR,
     });
   },
@@ -715,7 +728,7 @@ common_option_b common_options_b[] = {
       .description = "PID",
       .arg_name = "PID",
       .arg_data_type = check_cmds[CHECK_COMMAND_PID].arg_data_type,
-      .arg_dest = &(args->pid),
+      .arg_storage = &(args->pid),
     });
   },
   [COMMON_OPTION_HELP] = ^ struct optparse_opt (__attribute__((unused)) struct args_t *args) {
@@ -733,7 +746,7 @@ common_option_b common_options_b[] = {
       .description = "Input GIF File",
       .arg_name = "INPUT-GIF-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_ICON_SIZES].arg_data_type,
-      .arg_dest = &(args->input_gif_file),
+      .arg_storage = &(args->input_gif_file),
     });
   },
   [COMMON_OPTION_ICON_SIZES] = ^ struct optparse_opt (struct args_t *args) {
@@ -744,7 +757,7 @@ common_option_b common_options_b[] = {
       .arg_name = "ICON-SIZES-CSV",
       .arg_data_type = check_cmds[CHECK_COMMAND_ICON_SIZES].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_ICON_SIZES].fxn,
-      .arg_dest = &(args->sizes),
+      .arg_storage = &(args->sizes),
     });
   },
   [COMMON_OPTION_WRITE_DIRECTORY] = ^ struct optparse_opt (struct args_t *args) {
@@ -754,7 +767,7 @@ common_option_b common_options_b[] = {
       .arg_name = "DIRECTORY",
       .arg_data_type = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WRITE_DIRECTORY].fxn,
-      .arg_dest = &(args->write_directory),
+      .arg_storage = &(args->write_directory),
     });
   },
   [COMMON_OPTION_APPLICATION_NAME] = ^ struct optparse_opt (struct args_t *args) {
@@ -765,7 +778,7 @@ common_option_b common_options_b[] = {
       .arg_name = "APPLICATION-NAME",
       .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_NAME].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_APPLICATION_NAME].fxn,
-      .arg_dest = &(args->application_name),
+      .arg_storage = &(args->application_name),
     });
   },
   [COMMON_OPTION_APPLICATION_PATH] = ^ struct optparse_opt (struct args_t *args) {
@@ -776,7 +789,7 @@ common_option_b common_options_b[] = {
       .arg_name = "APP-PATH",
       .arg_data_type = check_cmds[CHECK_COMMAND_APPLICATION_PATH].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_APPLICATION_PATH].fxn,
-      .arg_dest = &(args->application_path),
+      .arg_storage = &(args->application_path),
     });
   },
   [COMMON_OPTION_RESIZE_FACTOR] = ^ struct optparse_opt (struct args_t *args) {
@@ -787,7 +800,7 @@ common_option_b common_options_b[] = {
       .arg_name = "RESIZE-FACTOR",
       .arg_data_type = check_cmds[CHECK_COMMAND_RESIZE_FACTOR].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_RESIZE_FACTOR].fxn,
-      .arg_dest = &(args->resize_factor),
+      .arg_storage = &(args->resize_factor),
     });
   },
   [COMMON_OPTION_XML_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -798,7 +811,7 @@ common_option_b common_options_b[] = {
       .arg_name = "XML-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_XML_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_XML_FILE].fxn,
-      .arg_dest = &(args->xml_file_path),
+      .arg_storage = &(args->xml_file_path),
     });
   },
   [COMMON_OPTION_WINDOW_IDS] = ^ struct optparse_opt (struct args_t *args) {
@@ -809,7 +822,7 @@ common_option_b common_options_b[] = {
       .arg_name = "WINDOW-IDs",
       .arg_data_type = check_cmds[CHECK_COMMAND_WINDOW_IDS].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WINDOW_IDS].fxn,
-      .arg_dest = &(args->windowids),
+      .arg_storage = &(args->windowids),
     });
   },
   [COMMON_OPTION_INPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -820,7 +833,7 @@ common_option_b common_options_b[] = {
       .arg_name = "IN-PNG-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_PNG_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_INPUT_PNG_FILE].fxn,
-      .arg_dest = &(args->input_png_file),
+      .arg_storage = &(args->input_png_file),
     });
   },
   [COMMON_OPTION_OUTPUT_PNG_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -831,7 +844,7 @@ common_option_b common_options_b[] = {
       .arg_name = "OUT-PNG-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_PNG_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_PNG_FILE].fxn,
-      .arg_dest = &(args->output_png_file),
+      .arg_storage = &(args->output_png_file),
     });
   },
   [COMMON_OPTION_INPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -842,7 +855,7 @@ common_option_b common_options_b[] = {
       .arg_name = "OUT-ICNS-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_ICNS_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_INPUT_ICNS_FILE].fxn,
-      .arg_dest = &(args->input_icns_file),
+      .arg_storage = &(args->input_icns_file),
     });
   },
   [COMMON_OPTION_OUTPUT_ICNS_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -853,7 +866,7 @@ common_option_b common_options_b[] = {
       .arg_name = "OUT-ICNS-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_ICNS_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_ICNS_FILE].fxn,
-      .arg_dest = &(args->output_icns_file),
+      .arg_storage = &(args->output_icns_file),
     });
   },
   [COMMON_OPTION_INPUT_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -865,7 +878,7 @@ common_option_b common_options_b[] = {
       .group = COMMON_OPTION_GROUP_ID,
       .arg_data_type = check_cmds[CHECK_COMMAND_INPUT_FILE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_INPUT_FILE].fxn,
-      .arg_dest = &(args->input_file),
+      .arg_storage = &(args->input_file),
     });
   },
   [COMMON_OPTION_OUTPUT_FILE] = ^ struct optparse_opt (struct args_t *args) {
@@ -875,7 +888,7 @@ common_option_b common_options_b[] = {
       .description = "Output File",
       .arg_name = "OUTPUT-FILE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_FILE].arg_data_type,
-      .arg_dest = &(args->output_file),
+      .arg_storage = &(args->output_file),
     });
   },
   [COMMON_OPTION_IMAGE_FORMATS] = ^ struct optparse_opt (struct args_t *args) {
@@ -886,7 +899,7 @@ common_option_b common_options_b[] = {
       .arg_name = "IMAGE-FORMATS-CSV",
       .arg_data_type = check_cmds[CHECK_COMMAND_IMAGE_FORMATS].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_IMAGE_FORMATS].fxn,
-      .arg_dest = &(args->formats),
+      .arg_storage = &(args->formats),
     });
   },
   [COMMON_OPTION_OUTPUT_MODE] = ^ struct optparse_opt (struct args_t *args) {
@@ -898,7 +911,7 @@ common_option_b common_options_b[] = {
       .arg_name = "OUTPUT-MODE",
       .arg_data_type = check_cmds[CHECK_COMMAND_OUTPUT_MODE].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_OUTPUT_MODE].fxn,
-      .arg_dest = &(args->output_mode_s),
+      .arg_storage = &(args->output_mode_s),
     });
   },
   [COMMON_OPTION_OFFSET] = ^ struct optparse_opt (struct args_t *args) {
@@ -907,7 +920,7 @@ common_option_b common_options_b[] = {
       .long_name = "offset",
       .description = "Offset",
       .arg_name = "OFFSET",
-      .arg_dest = &(args->offset),
+      .arg_storage = &(args->offset),
       .arg_data_type = DATA_TYPE_UINT64,
     });
   },
@@ -917,7 +930,7 @@ common_option_b common_options_b[] = {
       .long_name = "limit",
       .description = "Limit",
       .arg_name = "LIMIT",
-      .arg_dest = &(args->limit),
+      .arg_storage = &(args->limit),
       .arg_data_type = DATA_TYPE_INT,
     });
   },
@@ -928,7 +941,7 @@ common_option_b common_options_b[] = {
       .description = "ID",
       .arg_name = "ID",
       .arg_data_type = DATA_TYPE_UINT64,
-      .arg_dest = &(args->id),
+      .arg_storage = &(args->id),
     });
   },
   [COMMON_OPTION_DURATION_SECONDS] = ^ struct optparse_opt (struct args_t *args) {
@@ -938,7 +951,7 @@ common_option_b common_options_b[] = {
       .description = "Duration (seconds)",
       .arg_name = "SECONDS",
       .arg_data_type = DATA_TYPE_UINT,
-      .arg_dest = &(args->duration_seconds),
+      .arg_storage = &(args->duration_seconds),
     });
   },
   [COMMON_OPTION_WINDOW_X] = ^ struct optparse_opt (struct args_t *args) {
@@ -948,7 +961,7 @@ common_option_b common_options_b[] = {
       .description = "Window X",
       .arg_name = "WINDOW-X",
       .arg_data_type = DATA_TYPE_UINT16,
-      .arg_dest = &(args->x),
+      .arg_storage = &(args->x),
     });
   },
   [COMMON_OPTION_DIRECTORY] = ^ struct optparse_opt (struct args_t *args) {
@@ -958,7 +971,7 @@ common_option_b common_options_b[] = {
       .description = "Directory",
       .arg_name = "DIRECTORY",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->directory),
+      .arg_storage = &(args->directory),
     });
   },
   [COMMON_OPTION_FONT_TYPE] = ^ struct optparse_opt (struct args_t *args) {
@@ -968,7 +981,7 @@ common_option_b common_options_b[] = {
       .description = "Font Type",
       .arg_name = "FONT-TYPE",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->font_type),
+      .arg_storage = &(args->font_type),
     });
   },
   [COMMON_OPTION_FONT_STYLE] = ^ struct optparse_opt (struct args_t *args) {
@@ -978,7 +991,7 @@ common_option_b common_options_b[] = {
       .description = "Font Style",
       .arg_name = "FONT-STYLE",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->font_style),
+      .arg_storage = &(args->font_style),
     });
   },
   [COMMON_OPTION_FONT_FAMILY] = ^ struct optparse_opt (struct args_t *args) {
@@ -988,7 +1001,7 @@ common_option_b common_options_b[] = {
       .description = "Font Family",
       .arg_name = "FONT-FAMILY",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->font_family),
+      .arg_storage = &(args->font_family),
     });
   },
   [COMMON_OPTION_FONT_NAME] = ^ struct optparse_opt (struct args_t *args) {
@@ -998,7 +1011,7 @@ common_option_b common_options_b[] = {
       .description = "Font Name",
       .arg_name = "FONT-NAME",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->font_name),
+      .arg_storage = &(args->font_name),
     });
   },
   [COMMON_OPTION_SLIDE_DURATION] = ^ struct optparse_opt (struct args_t *args) {
@@ -1008,7 +1021,7 @@ common_option_b common_options_b[] = {
       .description = "Slide Duration",
       .arg_name = "SLIDE-Duration",
       .arg_data_type = DATA_TYPE_FLT,
-      .arg_dest = &(args->slide_duration),
+      .arg_storage = &(args->slide_duration),
     });
   },
   [COMMON_OPTION_SLIDE_PERCENTAGE] = ^ struct optparse_opt (struct args_t *args) {
@@ -1018,7 +1031,7 @@ common_option_b common_options_b[] = {
       .description = "Slide Percentage",
       .arg_name = "SLIDE-PERCENTAGE",
       .arg_data_type = DATA_TYPE_FLT,
-      .arg_dest = &(args->slide_percentage),
+      .arg_storage = &(args->slide_percentage),
     });
   },
   [COMMON_OPTION_SLIDE_DIRECTION_NAME] = ^ struct optparse_opt (struct args_t *args) {
@@ -1028,7 +1041,7 @@ common_option_b common_options_b[] = {
       .description = "Slide Direction",
       .arg_name = "DIRECTION-NAME",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->slide_direction_name),
+      .arg_storage = &(args->slide_direction_name),
     });
   },
   [COMMON_OPTION_CONTENT] = ^ struct optparse_opt (struct args_t *args) {
@@ -1038,7 +1051,7 @@ common_option_b common_options_b[] = {
       .description = "Content",
       .arg_name = "CONTENT",
       .arg_data_type = DATA_TYPE_STR,
-      .arg_dest = &(args->content),
+      .arg_storage = &(args->content),
     });
   },
   [COMMON_OPTION_RETRIES] = ^ struct optparse_opt (struct args_t *args) {
@@ -1048,7 +1061,7 @@ common_option_b common_options_b[] = {
       .description = "Retries",
       .arg_name = "RETRIES",
       .arg_data_type = DATA_TYPE_INT,
-      .arg_dest = &(args->retries),
+      .arg_storage = &(args->retries),
     });
   },
   [COMMON_OPTION_WINDOW_Y] = ^ struct optparse_opt (struct args_t *args) {
@@ -1058,7 +1071,7 @@ common_option_b common_options_b[] = {
       .description = "Window y",
       .arg_name = "WINDOW-Y",
       .arg_data_type = DATA_TYPE_UINT16,
-      .arg_dest = &(args->y),
+      .arg_storage = &(args->y),
     });
   },
   [COMMON_OPTION_WINDOW_WIDTH] = ^ struct optparse_opt (struct args_t *args) {
@@ -1069,7 +1082,7 @@ common_option_b common_options_b[] = {
       .arg_name = "WINDOW-WIDTH",
       .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WIDTH].fxn,
-      .arg_dest = &(args->width),
+      .arg_storage = &(args->width),
     });
   },
   [COMMON_OPTION_WINDOW_HEIGHT] = ^ struct optparse_opt (struct args_t *args) {
@@ -1080,7 +1093,7 @@ common_option_b common_options_b[] = {
       .arg_name = "WINDOW-HEIGHT",
       .arg_data_type = DATA_TYPE_UINT16,
       .function = check_cmds[CHECK_COMMAND_HEIGHT].fxn,
-      .arg_dest = &(args->height),
+      .arg_storage = &(args->height),
     });
   },
 
@@ -1102,7 +1115,7 @@ common_option_b common_options_b[] = {
       .group = COMMON_OPTION_GROUP_WIDTH_OR_HEIGHT,
       .arg_data_type = check_cmds[CHECK_COMMAND_WIDTH_GROUP].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_WIDTH_GROUP].fxn,
-      .arg_dest = &(args->width_or_height_group),
+      .arg_storage = &(args->width_or_height_group),
     });
   },
   [COMMON_OPTION_FRAME_RATE] = ^ struct optparse_opt (struct args_t *args) {
@@ -1111,7 +1124,7 @@ common_option_b common_options_b[] = {
       .long_name = "frame-rate",
       .description = "Frame Rate",
       .arg_name = "FRAME-RATE",
-      .arg_dest = &(args->frame_rate),
+      .arg_storage = &(args->frame_rate),
       .arg_data_type = DATA_TYPE_INT,
     });
   },
@@ -1132,7 +1145,7 @@ common_option_b common_options_b[] = {
       .group = COMMON_OPTION_GROUP_WIDTH_OR_HEIGHT,
       .arg_data_type = check_cmds[CHECK_COMMAND_HEIGHT_GROUP].arg_data_type,
       .function = check_cmds[CHECK_COMMAND_HEIGHT_GROUP].fxn,
-      .arg_dest = &(args->width_or_height_group),
+      .arg_storage = &(args->width_or_height_group),
     });
   },
   [COMMON_OPTION_DISPLAY_ID] = ^ struct optparse_opt (struct args_t *args) {
@@ -1142,7 +1155,7 @@ common_option_b common_options_b[] = {
       .description = "Display ID",
       .arg_name = "DISPLAY-ID",
       .arg_data_type = DATA_TYPE_INT32,
-      .arg_dest = &(args->display_id),
+      .arg_storage = &(args->display_id),
     });
   },
   [COMMON_OPTION_SPACE_ID] = ^ struct optparse_opt (struct args_t *args) {
@@ -1152,7 +1165,7 @@ common_option_b common_options_b[] = {
       .description = "space id",
       .arg_name = "SPACE-ID",
       .arg_data_type = DATA_TYPE_UINT64,
-      .arg_dest = &(args->space_id),
+      .arg_storage = &(args->space_id),
     });
   },
 };
@@ -1318,6 +1331,8 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
     .description = "Window ID Info",
     .fxn         = (*_command_window_id_info),
   },
+  ICON_COMMANDS()
+  APP_COMMANDS()
   COMMAND(ICON_SECURITY, SECURITY, "security", COLOR_SECURITY, "Security Automation", *_command_open_security)
   COMMAND(ICON_HTTP, HTTPSERVER, "http", COLOR_HTTP, "HTTP Server", *_command_httpserver)
   COMMAND(ICON_MENU, MENU_BAR, "menu-bar", COLOR_MENU, "Menu Bar Info", *_command_menu_bar)
@@ -1335,13 +1350,11 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_ROW, DB_ROWS, "rows", COLOR_ROW, "Database Info", *_command_db_rows)
   COMMAND(ICON_ID, DB_TABLE_IDS, "ids", COLOR_ID, "Table IDs", *_command_db_table_ids)
   /*************************************/
-  COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)
-  COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app)
-  COMMAND(ICON_LIST, APP_ICONS, "icons", COLOR_LIST, "List Icons", *_command_list_icons)
   COMMAND(ICON_SERVER, HOTKEYS, "hotkey", COLOR_SERVER, "Hotkey", 0)
   COMMAND(ICON_SERVER, HOTKEYS_SERVER, "server", COLOR_SERVER, "Hotkey Server", *_command_hotkeys_server)
   COMMAND(ICON_SERVER, HOTKEYS_FORK_SERVER, "fork-server", COLOR_SERVER, "Hotkey Fork Server", *_command_hotkeys_fork_server)
   COMMAND(ICON_LIST, HOTKEYS_LIST, "ls", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
+//////////////////////////////////////////////////////////
   COMMAND(ICON_LIST, LIST, "ls", COLOR_LIST, "List", 0)
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
   COMMAND(ICON_LIST, WINDOW_LIST, "ls", AC_RED, "List Windows", *_command_list_window)
@@ -1358,35 +1371,29 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_NOT_ALL, WINDOW_NOT_ALL_SPACES, "not-all-spaces", AC_RED, "Window Not All Spaces", *_command_window_not_all_spaces)
   COMMAND(ICON_MINIMIZE, WINDOW_MINIMIZE, "minimize", AC_RED, "Minimize Window", *_command_minimize_window)
   COMMAND(ICON_UNMINIMIZE, WINDOW_UNMINIMIZE, "unminimize", AC_RED, "Unminimize Window", *_command_unminimize_window)
+//////////////////////////////////////////////////////////
   COMMAND(ICON_SPACE, WINDOW_SPACE, "space", AC_RED, "Set Window Space", *_command_set_window_space)
   COMMAND(ICON_SPACE, SPACE, "space", AC_RED, "Spaces", 0)
+//////////////////////////////////////////////////////////
   COMMAND(ICON_CREATE, SPACE_CREATE, "create", AC_RED, "Create Space", 0)
   COMMAND(ICON_LIST, SPACE_LIST, "ls", AC_RED, "List Spaces", *_command_list_space)
-  COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)
-  COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)
-  COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)
-  COMMAND(ICON_WRITE, SET_APP_ICON_ICNS, "icns", COLOR_ICNS, "Set App Icons from ICNS", *_command_write_app_icon_icns)
-  COMMAND(ICON_INFO, ICON_INFO, "info", COLOR_INFO, "App Icons Info", *_command_icon_info)
-  COMMAND(ICON_PATH, APP_ICNS_PATH, "path", COLOR_PATH, "App Icons Path", *_command_app_icns_path)
-  COMMAND(ICON_CLEAR, CLEAR_ICONS_CACHE, "clear", COLOR_CLEAR, "Clear App Icons Cache", *_command_clear_icons_cache)
-  COMMAND(ICON_XML, PARSE_XML_FILE, "parse", COLOR_XML, "Parse XML File", *_command_parse_xml_file)
   COMMAND(ICON_IMAGE, IMAGE_CONVERSIONS, "image-conversions", COLOR_IMAGE, "Image Conversions", *_command_image_conversions)
 #undef COMMAND
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-  LIST_SUBCOMMAND(SPACES, "space", "Space", _command_list_space),
+//  LIST_SUBCOMMAND(SPACES, "space", "Space", _command_list_space),
 //  LIST_SUBCOMMAND(DISPLAYS, "display", "Display", _command_list_display),
 //  LIST_SUBCOMMAND(APPS, "app", "Application", _command_list_app),
-  LIST_SUBCOMMAND(FONTS, "font", "Font", _command_list_font),
+//  LIST_SUBCOMMAND(FONTS, "font", "Font", _command_list_font),
 //  LIST_SUBCOMMAND(PROCESSES, "process", "Process", _command_list_process),
 //  LIST_SUBCOMMAND(KITTYS, "kittys", "Kittys", _command_list_kitty),
-  LIST_SUBCOMMAND(USBS, "usbs", "USB Devices", _command_list_usb),
-  LIST_SUBCOMMAND(MONITORS, "monitors", "Monitors", _command_list_monitor),
+//  LIST_SUBCOMMAND(USBS, "usbs", "USB Devices", _command_list_usb),
+//  LIST_SUBCOMMAND(MONITORS, "monitors", "Monitors", _command_list_monitor),
 //  LIST_SUBCOMMAND(HOTKEYS, "hotkey", "Hot Key", _command_list_hotkey),
-  LIST_SUBCOMMAND(WINDOWS, "window", "Window", _command_list_window),
+//  LIST_SUBCOMMAND(WINDOWS, "window", "Window", _command_list_window),
 //  LIST_SUBCOMMAND(ALACRITTYS, "alacrittys", "Alacrittys", _command_list_alacritty),
 #undef LIST_SUBCOMMAND
-  [COMMAND_TYPES_QTY] =           { 0},
+  [COMMAND_TYPES_QTY] =           {0},
 };
 
 ////////////////////////////////////////////

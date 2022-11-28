@@ -14,7 +14,7 @@
 
 #define ADD_DISPLAY_COMMANDS()                                           \
   COMMAND(ICON_DISPLAY, DISPLAY, "display", COLOR_DISPLAY, "Display", 0) \
-  COMMAND(ICON_LIST, DISPLAY_LIST, "ls", COLOR_LIST, "List", *_command_list_display)
+  COMMAND(ICON_LIST, DISPLAY_LIST, "ls", COLOR_LIST, "List Displays", *_command_list_display)
 
 #define ADD_DISPLAY_SUBCOMMANDS() \
   CREATE_SUBCOMMAND(DISPLAY, SUBCOMMANDS_DISPLAY),

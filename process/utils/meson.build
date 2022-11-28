@@ -11,9 +11,12 @@ process_utils_dirs = [
 process_utils_deps = [
   core_dep,
   async_dep,
+  module_dep,
 ]
 
 
+process_utils_link_whole = [
+]
 process_utils_link_flags = [
   osx_ldflags
   ]
@@ -26,6 +29,7 @@ process_utils_lib = static_library('process-utils',
   install: false,
   dependencies: process_utils_deps,
   c_args: process_utils_c_args,
+  link_whole: process_utils_link_whole,
   include_directories: process_utils_dirs,
 )
 

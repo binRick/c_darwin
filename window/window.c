@@ -1,7 +1,10 @@
 #pragma once
 #ifndef WINDOW_C
 #define WINDOW_C
-#include "async/async.h"
+#include "module/def.h"
+#include "module/module.h"
+#include "module/require.h"
+#include "c_ansi/async/async.h"
 #include "capture/capture.h"
 #include "capture/save/save.h"
 #include "capture/type/type.h"
@@ -20,17 +23,17 @@ MODULE_FUNCTIONS(MODULE_FUNCTION)
 
 struct Vector *qoirs_from_ids(struct Vector *ids);
 struct Vector *qoirs_from_ids(struct Vector *ids){
-  struct Vector   *v = vector_new();
+  struct Vector   *v;
   async_worker_cb cb = ^ void *(void *VOID){
     size_t len;
     //   save_cgref_to_qoir_memory(capture_type_capture(CAPTURE_TYPE_WINDOW,(size_t)VOID),&len);
-    Dbg(len, %u);
+    Dbg(len, %lu);
 //    save_cgref_to_qoir_memory(capture_type_capture(CAPTURE_TYPE_WINDOW,(size_t)(VOID)));
     void *r = NULL;
     return((void *)r);
   };
 
-  v = async_items_v(10, ids, cb);
+  v = require(async)->each->vec(10, ids, cb);
   return(v);
 }
 

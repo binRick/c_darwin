@@ -19,6 +19,12 @@
 #include "murmurhash.c/murmurhash.h"
 #include "optparse/optparse.h"
 #include "tp/tp.h"
+#include "c_eventemitter/include/eventemitter.h"
 //////////////////////////////////////
+enum dls_event_t {
+  DLS_EVENT_OK,
+  DLS_EVENTS_QTy,
+};
+static struct EventEmitter *ee;
 int handle_main(int argc, char *argv[]);
 #endif

@@ -6,6 +6,7 @@ process_link_flags = []
 process_c_args = []
 process_deps = [
   core_dep,
+  module_dep,
   process_utils_dep,
 ]
 process_dirs = [

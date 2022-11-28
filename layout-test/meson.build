@@ -39,8 +39,10 @@ if get_option('enable-binaries')
      c_args: layout_test_c_args,
      install: false,
   )
+  if false
   test('layout-test', 
     layout_test_exec, args: ['-v','-a'],
     workdir: layout_test_test_dir,
   )
+  endif
 endif

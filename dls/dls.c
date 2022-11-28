@@ -428,6 +428,7 @@ static void __attribute__((destructor)) __destructor__dls(void){
 }
 
 static void __attribute__((constructor)) __constructor__dls(void){
+  ee = eventemitter_new();
   log_debug("%lu options", sizeof(__optparse_opt) / sizeof(__optparse_opt[0]));
 //^[\^[]4;1;#cc6666^[\^[]4;2;#66cc99^[\^[]4;3;#cc9966^[\^[]4;4;#6699cc^[\^[]4;5;#cc6699^[\^[]4;6;#66cccc^[\^[]4;7;#cccccc^[\^[]4;8;#999999^[\^[]4;9;#cc6666^[\^[]4;10;#66cc99^[\^[]4;11;#cc9966^[\^[]4;12;#6699cc^[\^[]4;13;#cc6699^[\^[]4;14;#66cccc^[\^[]4;15;#cccccc^[\^[[21D"
   char *__ansi = ""                  \

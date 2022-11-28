@@ -29,14 +29,19 @@
 #include <time.h>
 #include <unistd.h>
 /////////////////////////
+#include "module/module.h"
+#include "module/require.h"
+#include "module/def.h"
 #include "active-app/active-app.h"
 #include "app/utils/utils.h"
 #include "async/async.h"
 #include "bytes/bytes.h"
 #include "c_vector/vector/vector.h"
+#include "core/core.h"
 #include "core/utils/utils.h"
 #include "frameworks/frameworks.h"
 #include "libfort/lib/fort.h"
+#include "async/async.h"
 #include "log/log.h"
 #include "ms/ms.h"
 #include "parson/parson.h"
@@ -51,7 +56,6 @@
 #include "which/src/which.h"
 #include "wildcardcmp/wildcardcmp.h"
 #include "window/utils/utils.h"
-//#include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CFBase.h>
 #include <CoreFoundation/CFString.h>
@@ -280,8 +284,8 @@ struct Vector *get_all_process_infos_v(){
   async_worker_cb cb = ^ void *(void *item){
     return((void *)(get_process_info((int)(size_t)item)));
   };
-
-  return(async_items_v(PU_CONCURRENCY, pids_v, cb));
+return(NULL);
+//  return(require(async)->each->vec(PU_CONCURRENCY, pids_v, cb));
 }
 
 struct process_info_t *get_process_info(int pid){

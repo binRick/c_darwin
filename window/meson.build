@@ -15,6 +15,7 @@ window_include_dirs = [
 window_deps = [
   core_dep,
   window_info_dep,window_utils_dep,
+  async_dep,module_dep,
   exec_fzf_dep,
   glib_dep,vips_dep,
   async_dep,
