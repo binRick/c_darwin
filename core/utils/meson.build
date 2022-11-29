@@ -10,7 +10,7 @@ core_utils_include_dirs = [
 ]
 
 core_utils_deps = [
-  ansi_codes_dep,clamp_dep,c_workqueue_dep,chan_dep,chan_utils_dep,
+  ansi_codes_dep,clamp_dep,c_workqueue_dep,chan_dep,
   cbars_dep,
   c_vector_dep,
   c_fsio_dep,
