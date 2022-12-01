@@ -1,5 +1,5 @@
 #include "dls/dls.h"
-static bool initialized;
+static bool                initialized;
 static struct EventEmitter *ee;
 static void __attribute__((constructor)) __constructor__dls(void);
 static void __attribute__((destructor)) __destructor__dls(void);
@@ -212,8 +212,8 @@ static void __at_exit(void);
 #define SUBCOMMANDS_HOTKEYS          \
   CREATE_SUBCOMMAND(HOTKEYS_LIST, ), \
   CREATE_SUBCOMMAND(HOTKEYS_SERVER, ),
-const enum output_mode_type_t DEFAULT_OUTPUT_MODE  = OUTPUT_MODE_TABLE;
-struct args_t *args = &(struct args_t){
+const enum output_mode_type_t DEFAULT_OUTPUT_MODE = OUTPUT_MODE_TABLE;
+struct args_t                 *args               = &(struct args_t){
   .limit                              = 999,
   .verbose_mode                       = false, .debug_mode = false,
   .space_id                           = -1,
@@ -254,7 +254,10 @@ struct args_t *args = &(struct args_t){
 };
 char                *DLS_RE_EXEC_CMD = NULL;
 struct optparse_cmd *dls_cmd         = NULL;
-int main(int argc, char *argv[]){ return(handle_main(argc, argv)); }
+
+int main(int argc, char *argv[]){
+  return(handle_main(argc, argv));
+}
 
 int handle_main(int argc, char *argv[]) {
   atexit(__at_exit);
@@ -264,7 +267,7 @@ int handle_main(int argc, char *argv[]) {
   DLS_EXECUTABLE_ARGV = stringfn_split(_cmd, ' ').strings;
   free(_cmd);
 
-  asprintf(&DLS_EXECUTABLE, "%s/%s",whereami->executable_directory,whereami->executable_basename);
+  asprintf(&DLS_EXECUTABLE, "%s/%s", whereami->executable_directory, whereami->executable_basename);
   asprintf(&DLS_RE_EXEC_CMD, "%s/%s %s",
            whereami->executable_directory,
            whereami->executable_basename,
@@ -303,7 +306,9 @@ int handle_main(int argc, char *argv[]) {
       },
       ADD_SUBCOMMANDS()
 #undef ADD_SUBCOMMANDS
-      { END_OF_SUBCOMMANDS },
+      {
+        END_OF_SUBCOMMANDS
+      },
     },
   };
 #pragma GCC diagnostic pop
@@ -397,13 +402,13 @@ static void __attribute__((constructor)) __constructor__dls(void){
   initialized = true;
   fprintf(stdout, AC_HIDE_CURSOR);
   fflush(stdout);
-  errno    = 0;
-  if(!(ee = eventemitter_new())){
+  errno = 0;
+  if (!(ee = eventemitter_new())) {
     log_error("Failed create event emitter");
     exit(EXIT_FAILURE);
   }
-  errno    = 0;
-  if(!(whereami = core_utils_whereami_report())){
+  errno = 0;
+  if (!(whereami = core_utils_whereami_report())) {
     log_error("Failed to execute whereami report");
     exit(EXIT_FAILURE);
   }
@@ -418,7 +423,8 @@ static void __attribute__((constructor)) __constructor__dls(void){
     exit(EXIT_FAILURE);
   }
 } /* __constructor__dls */
+
 static void __at_exit(void){
-  fprintf(stdout, "%s%s", AC_SHOW_CURSOR,AC_RESTORE_PALETTE);
+  fprintf(stdout, "%s%s", AC_SHOW_CURSOR, AC_RESTORE_PALETTE);
   fflush(stdout);
 }

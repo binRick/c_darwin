@@ -24,6 +24,9 @@ enum image_type_id_t {
   IMAGE_TYPE_RGB,
   IMAGE_TYPE_CGIMAGE,
   IMAGE_TYPE_WEBP,
+  IMAGE_TYPE_HEIF,
+  IMAGE_TYPE_PPM,
+  IMAGE_TYPE_SVG,
   IMAGE_TYPES_QTY,
 };
 struct VipsImage;
@@ -34,27 +37,8 @@ static const image_target_file_saver_t image_target_file_savers[] = {
   [IMAGE_TYPE_JPEG] = vips_jpegsave,
   [IMAGE_TYPE_TIFF] = vips_tiffsave,
   [IMAGE_TYPE_WEBP] = vips_webpsave,
+//  [IMAGE_TYPE_SVG]  = vips_svgsave,
 //  [IMAGE_TYPE_QOI] = vips_qoisave,
 //  [IMAGE_TYPE_QOIR] = vips_qoirsave,
 };
-/*
- * vips_csvsave
- * vips_fitssave
- * vips_foreign_save
- * vips_gifsave
- * vips_heifsave
- * vips_jp2ksave
- * vips_jpegsave
- * vips_jxlsave
- * vips_magicksave
- * vips_matrixsave
- * vips_niftisave
- * vips_pngsave
- * vips_ppmsave
- * vips_radsave
- * vips_rawsave
- * vips_tiffsave
- * vips_vipssave
- * vips_webpsave
- */
 #endif

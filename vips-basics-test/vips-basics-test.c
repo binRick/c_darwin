@@ -4,17 +4,14 @@
 #define MAX_FRAMES              10
 //#define CONCURRENCY 2
 #include "ansi-codes/ansi-codes.h"
-#include "c_ansi/async/async.h"
+#include "async/async.h"
 #include "bytes/bytes.h"
+#include "c_ansi/async/async.h"
 #include "c_fsio/include/fsio.h"
 #include "c_greatest/greatest/greatest.h"
 #include "c_string_buffer/include/stringbuffer.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
-#include "module/require.h"
-#include "module/def.h"
-#include "module/module.h"
-#include "async/async.h"
 #include "c_workqueue/include/workqueue.h"
 #include "chan/src/chan.h"
 #include "chan/src/queue.h"
@@ -22,6 +19,9 @@
 #include "kitty/msg/msg.h"
 #include "log/log.h"
 #include "match/match.h"
+#include "module/def.h"
+#include "module/module.h"
+#include "module/require.h"
 #include "ms/ms.h"
 #include "timestamp/timestamp.h"
 #include "vips-basics-test/vips-basics-test.h"
@@ -571,8 +571,8 @@ SUITE(s_vips_dbg) {
   RUN_TEST(t_vips_dbg);
 }
 SUITE(s_vips_resize_async) {
-  RUN_TESTp(t_vips_resize_async, (void *)1);
-  RUN_TESTp(t_vips_resize_async, (void *)10);
+//  RUN_TESTp(t_vips_resize_async, (void *)1);
+//  RUN_TESTp(t_vips_resize_async, (void *)10);
 }
 SUITE(s_vips_resize) {
   RUN_TEST(t_vips_resize);

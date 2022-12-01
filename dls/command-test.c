@@ -1,23 +1,27 @@
 #pragma once
 #ifndef DLS_TEST_COMMANDS_C
 #define DLS_TEST_COMMANDS_C
-#define TEST_VECTOR_QTY    5
-#define MIN_STREAM_MS      1000
-#define MAX_STREAM_MS      600000
+#define TEST_VECTOR_QTY              5
+#define MIN_STREAM_MS                1000
+#define MAX_STREAM_MS                600000
+#define DISPLAY_STREAM_IMAGE         false
+#define BUFFERED_STREAM_ITEMS_QTY    1000
 #include "capture/type/type.h"
 #include "capture/utils/utils.h"
 #include "color/color.h"
 #include "core/core.h"
 #include "dls/command-test.h"
 #include "dls/dls.h"
+#include "glib.h"
 #include "kitty/msg/msg.h"
 #include "match/match.h"
 #include "qoir/src/qoir.h"
 #include "qoir/util/pixbufs_are_equal.h"
 #include "sha256.c/sha256.h"
 #include "submodules/c_deps/submodules/c_greatest/greatest/greatest.h"
+#include "vips/vips.h"
 #include "window/utils/utils.h"
-extern int  DLS_EXECUTABLE_ARGC;
+extern int DLS_EXECUTABLE_ARGC;
 extern char **DLS_EXECUTABLE_ARGV;
 
 ///////////////////////////////////////////
@@ -31,11 +35,6 @@ int _command_test_terminal(){
 }
 
 void _command_test_csv(){
-  struct Vector *colors_v = color_csv_load(color_csv_read(COLOR_TYPE_BEST), COLOR_FILTER_DARK);
-
-  Dbg(vector_size(colors_v), %u);
-  colors_v = color_csv_load(color_csv_read(COLOR_TYPE_ALL), 0);
-  Dbg(vector_size(colors_v), %u);
   exit(EXIT_SUCCESS);
 }
 
@@ -92,15 +91,6 @@ bool wu_analyze_buf(void *L){
   return(ok);
 }
 
-bool wu_save_png_file(void *L){
-  struct stream_setup_t *u = (struct stream_update_t *)L;
-
-  if (vips_pngsave(u->png, u->png_file, NULL)) {
-    log_error("Failed to save png file");
-    return(false);
-  }
-  return(true);
-}
 static VipsImage **pre_images = NULL;
 
 int crop_animation(VipsObject *context, VipsImage *image, VipsImage **out,
@@ -134,16 +124,93 @@ int crop_animation(VipsObject *context, VipsImage *image, VipsImage **out,
   vips_image_set_int(*out, "page-height", height);
   return(0);
 }
-#define WU_DISPLAY_TERMINAL_IMAGE                  true
 #define        WU_DISPLAY_TERMINAL_SCALE_FACTOR    (0.15)
 #define        WU_DISPLAY_TERMINAL_WIDTH           550
 typedef void (^wu_cb)(void);
 #define WU_SAVE_QOIR_FILE                          true
+#define WU_PROCESS_STREAM_IMAGES_INTERVAL_MS       1000
+
+struct wu_receive_msg_t {
+  char      *json;
+  VipsImage *vips;
+  size_t    buf_len; unsigned char *buf;
+  int       width, height, x, y, bit_depth, cs, rect_width, rect_height;
+  float     factor;
+  FILE      *fd;
+};
+
+int wu_receive_images(void *L){
+  struct stream_setup_t *l = (struct stream_setup_t *)L;
+  bool                  ended;
+
+  pthread_mutex_lock(l->mutex);
+  ended = l->ended;
+  pthread_mutex_unlock(l->mutex);
+  struct wu_receive_msg_t *msg;
+  size_t                  qty = 0;
+  MsfGifState             gifState;
+  MsfGifResult            gif_res = { 0 };
+  int                     width, height, centisecondsPerFrame, bitDepth;
+  unsigned char           *buf;
+  size_t                  buf_len;
+  VipsImage               *image, *tracker, *joined, *resized;
+
+  while (!ended && chan_recv(l->images_chan, &msg) == 0) {
+    if (!msg) continue;
+    if (msg->json)
+      fprintf(stderr, "%s\n", stringfn_trim((char *)(msg->json)));
+    if (qty == 0)
+//      memcpy(&gifState,0,sizeof(MsfGifState));
+      msf_gif_begin(&gifState, msg->width, msg->height);
+    else if (!(gif_res.data) && qty > 100) {
+      gif_res = msf_gif_end(&gifState);
+      if (gif_res.data) {
+        FILE *fp = fopen("MyGif.gif", "wb");
+        fwrite(gif_res.data, gif_res.dataSize, 1, fp);
+        fclose(fp);
+      }
+    }else if (msg->buf) {
+      int ox, oy;
+      image = vips_image_new_from_memory(msg->buf, msg->buf_len, msg->rect_width, msg->rect_height, 4, VIPS_FORMAT_UCHAR);
+      ox    = (int)(msg->factor * (float)(msg->width - msg->rect_width));
+      oy    = (int)(msg->factor * (float)(msg->height - msg->rect_height));
+      vips_resize(image, &resized, msg->factor, NULL);
+      tracker = (tracker) ? (tracker) : vips_image_copy_memory(resized);
+      vips_insert(tracker, resized, &joined, ox, oy, NULL);
+      vips_image_write_to_buffer(joined, ".gif", &buf, &buf_len, "", NULL);
+
+      Dn(buf_len);
+      Di(vips_image_get_height(image));
+      Di(vips_image_get_height(resized));
+      Di(vips_image_get_height(tracker));
+      Di(vips_image_get_height(joined));
+      log_debug("%f", msg->factor);
+      Dn(msg->buf_len);
+      if (buf)
+        msf_gif_frame(&gifState, buf, msg->cs, msg->bit_depth, msg->width * 4);
+    }
+    pthread_mutex_lock(l->mutex);
+    ended = l->ended;
+    pthread_mutex_unlock(l->mutex);
+    free(msg);
+//    if(buf)
+//      free(buf);
+    Di(msg->width);
+    Di(msg->height);
+    Di(msg->rect_height);
+    Di(msg->rect_width);
+    Di(msg->x);
+    Di(msg->y);
+    Di(msg->cs);
+    Dn(qty);
+    qty++;
+  }
+} /* wu_receive_images */
 
 int wu_receive_stream(void *L){
+  struct stream_setup_t *l     = (struct stream_setup_t *)L;
   float                 factor = WU_DISPLAY_TERMINAL_SCALE_FACTOR;
   struct winsize        *ws;
-  struct stream_setup_t *l = (struct stream_setup_t *)L;
   bool                  ended;
   void                  **msg;
   CGRect                rect;
@@ -159,82 +226,160 @@ int wu_receive_stream(void *L){
   struct Vector *history = vector_new_with_options(MAX_HISTORY_SIZE, false);
 
   pthread_mutex_unlock(l->mutex);
-  VipsImage *image;
-  VipsImage *resized, *tracked;
-  VipsImage *tracker = NULL, *out, *img_overlay, *img_show, *joined;
+  VipsImage     *resized, *image, *tracker, *joined;
+
+  char          *show_file, *stats_text;
+  unsigned long write_file_started = 0, write_file_dur = 0;
+  size_t        skipped_frames = 0, received_frames = 0;
 
   while (!ended && chan_recv(l->chan, &msg) == 0) {
-    unsigned long          ts = timestamp(), durs[10] = { 0 };
+    received_frames++;
+    if (received_frames > 100 && (chan_size(l->chan) > (chan_size(l->chan) / 2)) && qty > 50) {
+      skipped_frames++;
+      continue;
+    }
+    unsigned long           ts = timestamp(), durs[10] = { 0 };
     pthread_mutex_lock(l->mutex);
-    struct stream_update_t *u = (struct stream_update_t *)msg;
+    struct stream_update_t  *u = (struct stream_update_t *)msg;
+    struct wu_receive_msg_t *m = calloc(1, sizeof(struct wu_receive_msg_t));
     pthread_mutex_unlock(l->mutex);
     if (!u) continue;
-    if (chan_size(l->chan) > 10 && qty > 10) continue;
     if (u->seed < qty) continue;
     qty++;
     copied += u->buf_len;
-    if ((u->seed % 10) == 0)
+    if ((u->seed % 10) == 0 || u->seed < 10)
       printf(AC_CLS);
     if (chan_size(l->chan) < 5)
       factor = clamp((factor + 0.05), .10, 1.00);
     if (chan_size(l->chan) > 30)
       factor = clamp((factor - 0.05), .10, 1.00);
-    if (true || qty == 1 || qty % 2 == 0) {
-      char *show_file, *stats_file, *stats_text;
-
-      int  ox = (int)(factor * (float)(u->width - u->rect.size.width)),
-           oy = (int)(factor * (float)(u->height - u->rect.size.height));
-      asprintf(&show_file, "/tmp/display-stream-%lu.qoir", qty);
-      asprintf(&stats_file, "/tmp/display-stream-%lu.json", qty);
-      asprintf(&stats_text, "{"
-               "\"timestamp\":%lld"
-               ",\"x\":%d"
-               ",\"y\":%d"
-               ",\"w\":%d"
-               ",\"h\":%d"
-               ",\"factor\":%.2f"
-               ",\"len\":%lu"
-               "}%s",
-               timestamp(),
-               (int)(u->rect.origin.x),
-               (int)(u->rect.origin.y),
-               (int)(u->rect.size.width),
-               (int)(u->rect.size.height),
-               factor,
-               (size_t)(u->buf_len),
-               "\n"
-               );
-      if (fsio_file_exists(show_file)) fsio_remove(show_file);
-      if (fsio_file_exists(stats_file)) fsio_remove(stats_file);
-
-      if (WU_SAVE_QOIR_FILE)
-        if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR)))
-          if (
-            (vips_resize(image, &resized, factor, NULL) || true && resized)
-            && (tracker = (tracker) ? tracker : vips_image_copy_memory(resized))
-            && (vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0)
-            && WU_DISPLAY_TERMINAL_IMAGE
-            && (chan_size(l->chan) < 10)
-            && (joined && vips_image_write_to_file(joined, show_file, NULL) || true)
-            && (fsio_write_text_file(stats_file, stats_text))
-            && fsio_file_exists(show_file) && fsio_file_size(show_file) > 1024
-            ) {
-            if (true)
-              printf(AC_CLS);
-            durs[0] = timestamp() - ts;
-            if (false)
-              if (kitty_display_image_path_resized_height(show_file, WU_DISPLAY_TERMINAL_WIDTH))
-                printf("\n");
-          }
-    }
-    image   = NULL;
-    resized = NULL;
-    joined  = NULL;
+    int ox = (int)(factor * (float)(u->width - u->rect.size.width)),
+        oy = (int)(factor * (float)(u->height - u->rect.size.height));
+    asprintf(&show_file, "/tmp/display-stream-%lu.qoir", qty);
+    if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR)))
+      if (
+        ((vips_resize(image, &resized, factor, NULL) == 0) && resized)
+        && ((tracker = (tracker) ? tracker : vips_image_copy_memory(resized)) && tracker)
+        && ((vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0))
+        ) {
+        durs[0] = timestamp() - ts;
+        if (DISPLAY_STREAM_IMAGE)
+          if (printf("%s", AC_CLS))
+            if (kitty_display_image_path_resized_height(show_file, WU_DISPLAY_TERMINAL_WIDTH))
+              printf("\n");
+      }
     while (vector_size(history) > 0 && (size_t)vector_get(history, vector_size(history) - 1) < timestamp() - HISTORY_MS + 1000)
       vector_pop(history);
     while (vector_size(history) >= vector_capacity(history))
       vector_pop(history);
-    vector_prepend(history, (void *)u->ts);
+    /*
+       vector_prepend(history, (void *)u->ts);
+       m->fd=fmemopen(m->buf,1024*1024*128,"b");
+     */
+    unsigned char *gif;
+    size_t        len = 0;
+    vips_image_write_to_buffer(joined, ".gif", &gif, &len, NULL);
+    int           w = vips_image_get_width(joined);
+    int           h = vips_image_get_height(joined);
+    Di(vips_image_get_height(image));
+    Di(vips_image_get_height(resized));
+    Di(w);
+    Di(h);
+    Dn(len);
+    VipsImage *g = vips_image_new_from_memory(gif, len, w, h, 4, VIPS_FORMAT_UCHAR);
+    if (g) {
+      Dn(len);
+      Di(vips_image_get_width(g));
+      Di(vips_image_get_height(g));
+    }
+
+//    vips_rawsave_fd(joined,fileno(m->fd),"",NULL);
+//    fclose(m->fd);
+//    m->vips=vips_image_copy_memory(joined);
+//    m->buf=calloc(u->buf_len,sizeof(unsigned char *)+1);
+//    memcpy((m->buf),u->buf,u->buf_len);
+//    if(m->buf)
+//      m->buf_len=u->buf_len;
+    m->bit_depth   = 16;
+    m->width       = (int)(u->orig_width);
+    m->height      = (int)(u->orig_height);
+    m->rect_width  = (int)(u->rect.size.width);
+    m->rect_height = (int)(u->rect.size.height);
+    m->x           = (int)(u->rect.origin.x);
+    m->y           = (int)(u->rect.origin.y);
+    m->factor      = factor;
+    m->cs          = u->last_received_stream_update_dur / 10;
+    asprintf(&stats_text, "{"
+             "\"ts\":%lld"
+             ",\"type\":\"%s\""
+             ",\"id\":%lu"
+             ",\"vips_w\":%d"
+             ",\"vips_h\":%d"
+             ",\"file\":\"%s\""
+             ",\"ts\":%lu"
+             ",\"seed\":%lu"
+             ",\"width\":%lu"
+             ",\"height\":%lu"
+             ",\"bytes\":%lu"
+             ",\"copied\":%lu"
+             ",\"write_file_dur\":%lu"
+             ",\"dropped\":%lu"
+             ",\"stride\":%d"
+             ",\"queued\":%d"
+             ",\"images\":%d"
+             ",\"dur\":%lld"
+             ",\"preprocess_dur\":%lu"
+             ",\"skipped_frames\":%lu"
+             ",\"last_received_stream_update_dur\":%lu"
+             ",\"received_srames\":%lu"
+             ",\"x\":%d"
+             ",\"y\":%d"
+             ",\"w\":%d"
+             ",\"h\":%d"
+             ",\"factor\":%.2f"
+             "}%s",
+             timestamp(),
+             l->type,
+             l->id,
+             vips_image_get_height(joined),
+             vips_image_get_width(joined),
+             show_file,
+             u->ts,
+             u->seed,
+             u->width,
+             u->height,
+             (size_t)(u->buf_len), copied,
+             write_file_dur,
+             u->dropped,
+             u->stride,
+             chan_size(l->chan),
+             chan_size(l->images_chan),
+             timestamp() - ts,
+             u->dur,
+             skipped_frames,
+             u->last_received_stream_update_dur,
+             received_frames,
+             (int)(u->rect.origin.x),
+             (int)(u->rect.origin.y),
+             (int)(u->rect.size.width),
+             (int)(u->rect.size.height),
+             factor,
+             "\n"
+             );
+    /*
+     */
+    m->json = stats_text;
+
+    chan_send(l->images_chan, (void *)m);
+
+    if (show_file)
+      free(show_file);
+    if (image)
+      g_object_unref(image);
+    image   = NULL;
+    resized = NULL;
+    joined  = NULL;
+
     if (DO_LOG && (timestamp() - last_ts) > LOG_INTERVAL) {
       last_ts = timestamp();
       struct StringFNStrings split;
@@ -298,67 +443,49 @@ int wu_receive_stream(void *L){
                 w,
                 s
                 );
-      if (s) free(s);
+      if (s)
+        free(s);
       stringfn_release_strings_struct(split);
     }
     pthread_mutex_lock(l->mutex);
-    if (u->buf) free(u->buf);
-    if (u) free(u);
+    if (joined)
+      g_object_unref(joined);
+    if (resized)
+      g_object_unref(resized);
+    if (tracker)
+      g_object_unref(tracker);
+    if (u->buf)
+      free(u->buf);
+    if (u)
+      free(u);
     ended = l->ended;
     pthread_mutex_unlock(l->mutex);
   }
   return(EXIT_SUCCESS);
 } /* wu_receive_stream */
 
-int wu_monitor_stream(void *L){
-  struct stream_setup_t *l = (struct stream_setup_t *)L;
-  bool                  ended;
-  size_t                interval, ts;
-
-  pthread_mutex_lock(l->mutex);
-  interval           = l->monitor_interval_ms;
-  ended              = l->ended;
-  l->last_monitor_ts = timestamp();
-  pthread_mutex_unlock(l->mutex);
-  while (!ended) {
-    usleep(1000 * interval);
-    pthread_mutex_lock(l->mutex);
-    log_debug("%lu Updates in %s (%.2f/sec)",
-              vector_size(l->heartbeat),
-              milliseconds_to_string(timestamp() - l->last_monitor_ts),
-              (float)((vector_size(l->heartbeat)) / ((float)(timestamp() - l->last_monitor_ts) / 1000))
-              );
-    for (size_t i = 0; i < vector_size(l->heartbeat); i++) {
-      ts = (size_t)vector_pop(l->heartbeat);
-      log_debug("Updates: %lu", ts);
-    }
-    l->last_monitor_ts = timestamp();
-    ended              = l->ended;
-    pthread_mutex_unlock(l->mutex);
-  }
-  return(EXIT_SUCCESS);
-}
-
 void _command_test_stream_display(){
   pthread_mutex_t       mutex;
   CFRunLoopRef          loop = CFRunLoopGetCurrent();
   struct stream_setup_t l    = {
+    .type                = "display",
+    .id                  = args->id > 0 ? args->id : get_display_index_id(args->index),
     .loop                = &loop,
-    .delay_ms            = clamp(args->duration_seconds * 1000,                        MIN_STREAM_MS,  MAX_STREAM_MS),
+    .delay_ms            = clamp(args->duration_seconds * 1000,                        MIN_STREAM_MS,MAX_STREAM_MS),
     .mutex               = &mutex,
     .width               = get_display_width(),
     .height              = get_display_height(),
     .monitor_interval_ms = 3000,
-    .chan                = chan_init(100),
+    .chan                = chan_init(BUFFERED_STREAM_ITEMS_QTY),
+    .images_chan         = chan_init(BUFFERED_STREAM_ITEMS_QTY),
     .heartbeat           = vector_new_with_options(10,                                 true),
-    .id                  = args->id > 0 ? args->id : get_display_index_id(args->index),
     .verbose_mode        = args->verbose_mode,
     .debug_mode          = args->debug_mode,
   };
 
   pthread_create(&(l.threads[0]), NULL, stop_loop, (void *)&l);
   pthread_create(&(l.threads[3]), NULL, wu_receive_stream, (void *)&l);
-//  pthread_create(&(l.threads[2]), NULL, wu_monitor_stream, (void *)&l);
+  pthread_create(&(l.threads[3]), NULL, wu_receive_images, (void *)&l);
   pthread_create(&(l.threads[1]), NULL, wu_stream_display, (void *)&l);
   CFRunLoopRun();
   pthread_join(&(l.threads[0]), NULL);
@@ -372,6 +499,7 @@ void _command_test_ts(){
   Ds("ts");
   exit(EXIT_SUCCESS);
 }
+
 void _command_test_stream_window(){
   //wu_stream_window(args->width, args->height);
   //CFRunLoopRun();

@@ -4,9 +4,9 @@
 #include "dls/commands.h"
 struct stream_update_t {
   CGRect        rect;
-  size_t        buf_len, png_len;
+  size_t        buf_len, png_len, dropped, last_received_stream_update_dur;
   unsigned char *buf, *png;
-  unsigned long ts;
+  unsigned long ts, dur;
   size_t        width, height, id, seed;
   size_t        start_x, start_y, end_x, end_y;
   size_t        bytes_per_pixel;
@@ -14,6 +14,7 @@ struct stream_update_t {
   float         pixels_percent;
   char          *png_file;
   VipsImage     *imgs[10];
+  int           orig_width, orig_height;
   VipsImage     *image;
   VipsImage     *img, *png_img;
   size_t        png_buf_len;
@@ -24,13 +25,14 @@ struct stream_update_t {
 };
 struct stream_setup_t {
   CFRunLoopRef    *loop;
-  size_t          delay_ms, width, height, id, monitor_interval_ms, last_monitor_ts;
+  const char      *type;
+  size_t          delay_ms, width, height, id, monitor_interval_ms, last_monitor_ts, dropped;
   bool            ended, debug_mode, verbose_mode;
   pthread_t       threads[5];
   pthread_mutex_t *mutex;
   void            **buffers;
   struct Vector   *heartbeat, *rectangles;
-  chan_t          *chan;
+  chan_t          *chan, *images_chan;
   unsigned long   ts;
   char            *png_file;
   unsigned char   *png; size_t png_len;
@@ -98,9 +100,9 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 #define COLOR_VECTOR         "\x1b[38;2;80;100;127m"
 #define COLOR_WINDOWS        "\x1b[38;2;80;100;50m"
 #define COLOR_CLIPBOARD      "\x1b[38;2;80;100;50m"
-#define COLOR_TS      "\x1b[38;2;80;100;50m"
+#define COLOR_TS             "\x1b[38;2;80;100;50m"
 #define ICON_DROID           "👽"
-#define ICON_TS           "👽"
+#define ICON_TS              "👽"
 #define ICON_CLIPBOARD       "👽"
 #define ICON_VECTOR          "👽"
 #define ICON_CSV             "👽"
@@ -186,7 +188,7 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_LAYOUT_HORIZONTAL, ), \
   CREATE_SUBCOMMAND(TEST_LAYOUTS, ),           \
 ///////////////
-#define SUBCOMMANDS_TEST_TS             \
+#define SUBCOMMANDS_TEST_TS \
   CREATE_SUBCOMMAND(TEST_TS_MS, ),
 #define SUBCOMMANDS_TEST_STREAM             \
   CREATE_SUBCOMMAND(TEST_STREAM_DISPLAY, ), \
@@ -197,21 +199,24 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
   CREATE_SUBCOMMAND(TEST_CAP_DISPLAY, ), \
   CREATE_SUBCOMMAND(TEST_CAP_WINDOW, ),  \
 ////////////////////////////////
+/*
+   CREATE_SUBCOMMAND(TEST_CMD, ),                           \
+   CREATE_SUBCOMMAND(TEST_CSV, ),                           \
+   CREATE_SUBCOMMAND(TEST_PICK, ),                          \
+   CREATE_SUBCOMMAND(TEST_HASH, ),                          \
+   CREATE_SUBCOMMAND(TEST_CLIPBOARD, ),                     \
+   CREATE_SUBCOMMAND(TEST_VECTOR, ),                        \
+   CREATE_SUBCOMMAND(TEST_WINDOWS, ),                       \
+   CREATE_SUBCOMMAND(TEST_FIND_WINDOW, ),                   \
+   CREATE_SUBCOMMAND(TEST_FILE_READER, ),                   \
+   CREATE_SUBCOMMAND(TEST_TERMINAL, ),                      \
+   CREATE_SUBCOMMAND(TEST_SHAPE, ),                         \
+   CREATE_SUBCOMMAND(TEST_LAYOUT, SUBCOMMANDS_TEST_LAYOUT), \
+ */
+////////////////////////////////
 #define SUBCOMMANDS_TEST                                   \
-  CREATE_SUBCOMMAND(TEST_CMD, ),                           \
-  CREATE_SUBCOMMAND(TEST_CSV, ),                           \
-  CREATE_SUBCOMMAND(TEST_PICK, ),                          \
-  CREATE_SUBCOMMAND(TEST_HASH, ),                          \
-  CREATE_SUBCOMMAND(TEST_CLIPBOARD, ),                     \
-  CREATE_SUBCOMMAND(TEST_VECTOR, ),                        \
-  CREATE_SUBCOMMAND(TEST_WINDOWS, ),                       \
-  CREATE_SUBCOMMAND(TEST_FIND_WINDOW, ),                   \
-  CREATE_SUBCOMMAND(TEST_DROID, ),                         \
-  CREATE_SUBCOMMAND(TEST_FILE_READER, ),                   \
   CREATE_SUBCOMMAND(TEST_FROG, ),                          \
-  CREATE_SUBCOMMAND(TEST_TERMINAL, ),                      \
-  CREATE_SUBCOMMAND(TEST_SHAPE, ),                         \
-  CREATE_SUBCOMMAND(TEST_LAYOUT, SUBCOMMANDS_TEST_LAYOUT), \
+  CREATE_SUBCOMMAND(TEST_DROID, ),                         \
   CREATE_SUBCOMMAND(TEST_CAP, SUBCOMMANDS_TEST_CAP),       \
   CREATE_SUBCOMMAND(TEST_STREAM, SUBCOMMANDS_TEST_STREAM), \
 ////////////////
@@ -224,28 +229,30 @@ COMMAND_TEST_ADD_TEST_PROTOTYPES()
 ////////////////////////////////////////////////////////////
 #define ADD_DB_COMMANDS() \
 ////////////////////////////////////////////////////////////
-#define ADD_TEST_COMMANDS()                                                                                                            \
-  COMMAND(ICON_TEST, TEST, "test", COLOR_LIST, "Test Commands", 0)                                                                     \
-  COMMAND(ICON_WINDOW, TEST_STREAM_WINDOW, "window", COLOR_WINDOW, "Test Window Stream", *_command_test_stream_window)                 \
-  COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
-  COMMAND(ICON_STREAM, TEST_STREAM, "stream", COLOR_STREAM, "Test Stream", 0)                                                          \
-  COMMAND(ICON_CAP, TEST_CAP, "cap", COLOR_CAP, "Test Capture", 0)                                                                     \
-  COMMAND(ICON_DISPLAY, TEST_STREAM_DISPLAY, "display", COLOR_DISPLAY, "Test Display Stream", *_command_test_stream_display)           \
-  COMMAND(ICON_WINDOW, TEST_CAP_WINDOW, "window", COLOR_WINDOW, "Test Window Capture", *_command_test_cap_window)                      \
-  COMMAND(ICON_DISPLAY, TEST_CAP_DISPLAY, "display", COLOR_DISPLAY, "Test Display Capture", *_command_test_cap_display)                \
-  COMMAND(ICON_HASH, TEST_HASH, "hash", COLOR_HASH, "Test Hash", *_command_test_test_hash)                                             \
-  COMMAND(ICON_CLIPBOARD, TEST_CLIPBOARD, "clipboard", COLOR_CLIPBOARD, "Test Clipboard", *_command_test_test_clipboard)               \
-  COMMAND(ICON_PICK, TEST_PICK, "pick", COLOR_PICK, "Test Pick", *_command_test_pick)                                                  \
-  COMMAND(ICON_VECTOR, TEST_VECTOR, "vector", COLOR_VECTOR, "Test Vector", *_command_test_test_vector)                                 \
-  COMMAND(ICON_WINDOWS, TEST_WINDOWS, "windows", COLOR_WINDOWS, "Test Windows", *_command_test_test_windows)                           \
-  COMMAND(ICON_SHAPE, TEST_SHAPE, "shape", COLOR_SHAPE, "Test Shape", *_command_test_shape)                                            \
-  COMMAND(ICON_DROID, TEST_DROID, "droid", COLOR_DROID, "Test Droid", *_command_test_droid)                                            \
-  COMMAND(ICON_FILE, TEST_FILE_READER, "file-reader", COLOR_FILE, "Test File Reader", *_command_test_file_reader)                      \
-  COMMAND(ICON_FROG, TEST_FROG, "frog", COLOR_FROG, "Test Frog", *_command_test_frog)                                                  \
-  COMMAND(ICON_LAYOUT, TEST_LAYOUTS, "all", COLOR_LAYOUT, "Test Layouts", *_command_test_layouts)                                      \
-  COMMAND(ICON_LAYOUT, TEST_LAYOUT_VERTICAL, "vertical", COLOR_LAYOUT, "Test Vertical Layout", *_command_test_layout_vertical)         \
-  COMMAND(ICON_TERMINAL, TEST_TERMINAL, "terminal", COLOR_TERMINAL, "Test Terminal", *_command_test_terminal)                          \
-  COMMAND(ICON_WINDOW, TEST_FIND_WINDOW, "find", COLOR_WINDOW, "Test Find Window", *_command_test_find_window)                         \
-  COMMAND(ICON_LAYOUT, TEST_LAYOUT_HORIZONTAL, "horizontal", COLOR_LAYOUT, "Test Horizontal Layout", *_command_test_layout_horizontal) \
+/*
+   COMMAND(ICON_LAYOUT, TEST_LAYOUT, "layout", COLOR_LAYOUT, "Test Layout", 0)                                                          \
+   COMMAND(ICON_WINDOW, TEST_CAP_WINDOW, "window", COLOR_WINDOW, "Test Window Capture", *_command_test_cap_window)                      \
+   COMMAND(ICON_DISPLAY, TEST_CAP_DISPLAY, "display", COLOR_DISPLAY, "Test Display Capture", *_command_test_cap_display)                \
+   COMMAND(ICON_HASH, TEST_HASH, "hash", COLOR_HASH, "Test Hash", *_command_test_test_hash)                                             \
+   COMMAND(ICON_CLIPBOARD, TEST_CLIPBOARD, "clipboard", COLOR_CLIPBOARD, "Test Clipboard", *_command_test_test_clipboard)               \
+   COMMAND(ICON_PICK, TEST_PICK, "pick", COLOR_PICK, "Test Pick", *_command_test_pick)                                                  \
+   COMMAND(ICON_VECTOR, TEST_VECTOR, "vector", COLOR_VECTOR, "Test Vector", *_command_test_test_vector)                                 \
+   COMMAND(ICON_WINDOWS, TEST_WINDOWS, "windows", COLOR_WINDOWS, "Test Windows", *_command_test_test_windows)                           \
+   COMMAND(ICON_SHAPE, TEST_SHAPE, "shape", COLOR_SHAPE, "Test Shape", *_command_test_shape)                                            \
+   COMMAND(ICON_FILE, TEST_FILE_READER, "file-reader", COLOR_FILE, "Test File Reader", *_command_test_file_reader)                      \
+   COMMAND(ICON_LAYOUT, TEST_LAYOUTS, "all", COLOR_LAYOUT, "Test Layouts", *_command_test_layouts)                                      \
+   COMMAND(ICON_LAYOUT, TEST_LAYOUT_VERTICAL, "vertical", COLOR_LAYOUT, "Test Vertical Layout", *_command_test_layout_vertical)         \
+   COMMAND(ICON_TERMINAL, TEST_TERMINAL, "terminal", COLOR_TERMINAL, "Test Terminal", *_command_test_terminal)                          \
+   COMMAND(ICON_WINDOW, TEST_FIND_WINDOW, "find", COLOR_WINDOW, "Test Find Window", *_command_test_find_window)                         \
+   COMMAND(ICON_LAYOUT, TEST_LAYOUT_HORIZONTAL, "horizontal", COLOR_LAYOUT, "Test Horizontal Layout", *_command_test_layout_horizontal) \
+ */
+#define ADD_TEST_COMMANDS()                                                                                                  \
+  COMMAND(ICON_TEST, TEST, "test", COLOR_LIST, "Test Commands", 0)                                                           \
+  COMMAND(ICON_FROG, TEST_FROG, "frog", COLOR_FROG, "Test Frog", *_command_test_frog)                                        \
+  COMMAND(ICON_DROID, TEST_DROID, "droid", COLOR_DROID, "Test Droid", *_command_test_droid)                                  \
+  COMMAND(ICON_CAP, TEST_CAP, "cap", COLOR_CAP, "Test Capture", 0)                                                           \
+  COMMAND(ICON_DISPLAY, TEST_STREAM_DISPLAY, "display", COLOR_DISPLAY, "Test Display Stream", *_command_test_stream_display) \
+  COMMAND(ICON_WINDOW, TEST_STREAM_WINDOW, "window", COLOR_WINDOW, "Test Window Stream", *_command_test_stream_window)       \
+  COMMAND(ICON_STREAM, TEST_STREAM, "stream", COLOR_STREAM, "Test Stream", 0)                                                \
 //////////////////////////////////////////////////
 #endif

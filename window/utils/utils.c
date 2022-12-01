@@ -2,6 +2,8 @@
 #include "core/core.h"
 #include "dls/command-test.h"
 #include "exec-fzf/exec-fzf.h"
+#include "msf_gif/msf_gif.h"
+#include <CoreFoundation/CoreFoundation.h>
 #define MIN_VALID_WINDOW_WIDTH     200
 #define MIN_VALID_WINDOW_HEIGHT    100
 #define MIN_STREAM_WIDTH           100
@@ -206,7 +208,8 @@ static CGPoint GetOffsetBetweenFrames(CGRect maxBounds, CGRect frame){
 
   return(offset);
 }
-#define MAX_WRITE_FILES_QTY    25
+#define STREAM_PROCESS_FRAME_MIN_INTERVAL_MS    250
+#define MAX_WRITE_FILES_QTY                     25
 static volatile unsigned char *last_buf = NULL, *total_buf = NULL;
 static volatile size_t        last_buf_len, last_buf_width, last_buf_height, wrote_files_qty = 0, last_stride;
 static volatile VipsImage     *last_image = NULL;
@@ -219,7 +222,15 @@ int wu_stream_display(void *L){
   size_t                width, height, id;
 
   width = l->width; height = l->height; id = l->id;
-  wu_stream_cb cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+  __block unsigned long last_received_stream_update_ts = timestamp(), last_received_stream_update_dur = 0;
+  __block size_t        qty = 0;
+  wu_stream_cb          cb = ^ (CGDisplayStreamFrameStatus status, uint64_t time, IOSurfaceRef frame, CGDisplayStreamUpdateRef ref) {
+    last_received_stream_update_dur = timestamp() - last_received_stream_update_ts;
+    if (qty > 50 && last_received_stream_update_dur < STREAM_PROCESS_FRAME_MIN_INTERVAL_MS)
+      return;
+
+    qty++;
+    last_received_stream_update_ts = timestamp();
     pthread_mutex_lock(l->mutex);
     bool ended = l->ended, debug_mode = l->debug_mode;
     pthread_mutex_unlock(l->mutex);
@@ -241,23 +252,27 @@ int wu_stream_display(void *L){
 
         updatedRects = CGDisplayStreamUpdateGetRects(ref, kCGDisplayStreamUpdateDirtyRects, &updatedRectsCount);
         for (size_t i = 0; i < updatedRectsCount; i++) {
-          u             = calloc(1, sizeof(struct stream_update_t));
-          u->ts         = stream_last_ts;
-          u->rect       = updatedRects[i];
-          u->start_x    = u->rect.origin.x;
-          u->start_y    = u->rect.origin.y;
-          u->end_x      = u->start_x + u->rect.size.width;
-          u->end_y      = u->start_y + u->rect.size.height;
-          u->seed       = seed;
-          u->id         = id;
-          copy_len      = u->rect.size.width * 4;
-          u->width      = IOSurfaceGetWidth(frame);
-          u->height     = IOSurfaceGetHeight(frame);
-          u->pixels_qty = (int)u->rect.size.width * (int)u->rect.size.height;
-          u->buf        = calloc(1, len);
-          u->buf_len    = 0;
-          u->stride     = stride;
-          u->buf_len    = 0;
+          u                                  = calloc(1, sizeof(struct stream_update_t));
+          u->ts                              = stream_last_ts;
+          u->rect                            = updatedRects[i];
+          u->orig_width                      = width;
+          u->orig_height                     = height;
+          u->start_x                         = u->rect.origin.x;
+          u->start_y                         = u->rect.origin.y;
+          u->end_x                           = u->start_x + u->rect.size.width;
+          u->end_y                           = u->start_y + u->rect.size.height;
+          u->seed                            = seed;
+          u->id                              = id;
+          copy_len                           = u->rect.size.width * 4;
+          u->width                           = w;
+          u->height                          = h;
+          u->pixels_qty                      = (int)u->rect.size.width * (int)u->rect.size.height;
+          u->buf                             = calloc(1, len);
+          u->last_received_stream_update_dur = last_received_stream_update_dur;
+          u->buf_len                         = 0;
+          u->stride                          = stride;
+          u->buf_len                         = 0;
+          u->dropped                         = CGDisplayStreamUpdateGetDropCount(ref);
           size_t offset = 0;
           for (size_t I = 0; I < u->rect.size.height; I++) {
             offset_beg = (stride * (u->rect.origin.y + I) + (u->rect.origin.x * 4));
@@ -270,6 +285,7 @@ int wu_stream_display(void *L){
           pthread_mutex_unlock(&last_mutex);
 
           u->pixels_percent = (float)u->pixels_qty / ((float)u->width * (float)u->height) * (float)100;
+          u->dur            = timestamp() - u->ts;
           chan_send(l->chan, (void *)u);
         }
         IOSurfaceUnlock(frame, kIOSurfaceLockReadOnly, NULL);
@@ -2724,4 +2740,37 @@ static void __attribute__((constructor)) __constructor__window_utils(void){
     WINDOW_UTILS_DEBUG_MODE = true;
   }
   DEBUG_STREAM_UPDATES = WINDOW_UTILS_DEBUG_MODE;
+}
+
+#define CFStringCreateWithUTF8String(string)                   \
+  ((string) == NULL ? NULL : CFStringCreateWithCString(NULL,   \
+                                                       string, \
+                                                       kCFStringEncodingUTF8))
+
+int __window_utils_show_alert(const char *title, const char *msg, const char *defaultButton, const char *cancelButton){
+  CFStringRef   alertHeader        = CFStringCreateWithUTF8String(title);
+  CFStringRef   alertMessage       = CFStringCreateWithUTF8String(msg);
+  CFStringRef   defaultButtonTitle = CFStringCreateWithUTF8String(defaultButton);
+  CFStringRef   cancelButtonTitle  = CFStringCreateWithUTF8String(cancelButton);
+  CFOptionFlags responseFlags;
+  SInt32        err = CFUserNotificationDisplayAlert(0.0,
+                                                     kCFUserNotificationNoteAlertLevel,
+                                                     NULL,
+                                                     NULL,
+                                                     NULL,
+                                                     alertHeader,
+                                                     alertMessage,
+                                                     defaultButtonTitle,
+                                                     cancelButtonTitle,
+                                                     NULL,
+                                                     &responseFlags);
+
+  if (alertHeader != NULL) CFRelease(alertHeader);
+  if (alertMessage != NULL) CFRelease(alertMessage);
+  if (defaultButtonTitle != NULL) CFRelease(defaultButtonTitle);
+  if (cancelButtonTitle != NULL) CFRelease(cancelButtonTitle);
+
+  if (err != 0) return(-1);
+
+  return((responseFlags == kCFUserNotificationDefaultResponse) ? 0 : 1);
 }

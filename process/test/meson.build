@@ -35,8 +35,8 @@ if get_option('enable-binaries')
      c_args: process_test_c_args,
      install: false,
   )
-  test('process-test', 
-    process_test_exec, args: ['-v','-a'],
-    workdir: process_test_dir,
-  )
+  #test('process-test', 
+  #  process_test_exec, args: ['-v','-a'],
+  #  workdir: process_test_dir,
+  #)
 endif

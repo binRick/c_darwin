@@ -1,9 +1,6 @@
 #pragma once
 #ifndef WINDOW_C
 #define WINDOW_C
-#include "module/def.h"
-#include "module/module.h"
-#include "module/require.h"
 #include "c_ansi/async/async.h"
 #include "capture/capture.h"
 #include "capture/save/save.h"
@@ -11,6 +8,9 @@
 #include "capture/utils/utils.h"
 #include "exec-fzf/exec-fzf.h"
 #include "glib.h"
+#include "module/def.h"
+#include "module/module.h"
+#include "module/require.h"
 #include "process/utils/utils.h"
 #include "qoir/src/qoir.h"
 #include "window/info/info.h"

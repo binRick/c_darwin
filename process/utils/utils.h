@@ -14,14 +14,14 @@
 #include <time.h>
 #include <unistd.h>
 ///////////////////////////////////////////////////
-#include "module/module.h"
-#include "module/require.h"
-#include "module/def.h"
 #include "ansi-codes/ansi-codes.h"
 #include "app/utils/utils.h"
 #include "c_stringfn/include/stringfn.h"
 #include "c_vector/vector/vector.h"
 #include "core/utils/utils.h"
+#include "module/def.h"
+#include "module/module.h"
+#include "module/require.h"
 #define DEBUG_PID_ENV    false
 #include <sys/sysctl.h>
 ////////////////////////////////////////////////////////

@@ -1,8 +1,8 @@
 #pragma once
 #ifndef DLS_EXTRACT_COMMANDS_C
 #define DLS_EXTRACT_COMMANDS_C
-#define EXTRACT_HASH_KEY    2386237528
-#define EXTRACT_CACHE_ENABLED false 
+#define EXTRACT_HASH_KEY         2386237528
+#define EXTRACT_CACHE_ENABLED    false
 #include "core/core.h"
 #include "dls/dls.h"
 #include "tesseract/utils/utils.h"
@@ -28,8 +28,9 @@ void _command_extract_image(void){
 
   initialize_args(args);
   debug_dls_arguments();
+  errno = 0;
   if (!fsio_file_exists(args->input_file)) {
-    log_error("Invalid Input Image File");
+    log_error("Absent Input File: %s", args->input_file);
     exit(EXIT_FAILURE);
   }
   VipsImage                         *v;
@@ -76,10 +77,8 @@ void _command_extract_image(void){
     spinner->prefix = s;
     spinner->suffix = AC_RESETALL "" AC_RESETALL;
     spinner_start(spinner);
-    log_info("Working with %s Buffer", bytes_to_string(import_len));
     char                           *hash_key;
-    char                           *enc = b64_encode(import_buf, import_len);
-    Dn(strlen(enc));
+    char                           *enc    = b64_encode(import_buf, import_len);
     unsigned long                  started = timestamp();
     int                            MODE    = RIL_TEXTLINE;
     struct extract_cached_result_t *cr     = calloc(1, sizeof(struct extract_cached_result_t));
@@ -116,9 +115,9 @@ void _command_extract_image(void){
     cr->buf       = import_buf;
 
     if (!fsio_file_exists(cr->path)) {
-     log_debug("Saving %s Buffer to %s", bytes_to_string(cr->buf_len), cr->path);
-     unsigned char *save_buf = vector_to_array(items);
-     size_t        save_len  = vector_size(items) * sizeof(struct tesseract_extract_result_t);
+      log_debug("Saving %s Buffer to %s", bytes_to_string(cr->buf_len), cr->path);
+      unsigned char *save_buf = vector_to_array(items);
+      size_t        save_len  = vector_size(items) * sizeof(struct tesseract_extract_result_t);
       fsio_write_binary_file(cr->path, save_buf, save_len);
     }
 

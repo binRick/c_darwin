@@ -5,6 +5,7 @@ window_utils_srcs = [
 window_utils_c_args = [
   '-Wno-address',
   '-Wno-int-to-pointer-cast',
+  '-DMSF_GIF_IMPL',
   ]
 window_utils_dirs = [
     '.',
@@ -13,6 +14,7 @@ window_utils_dirs = [
 window_utils_deps = [
   core_dep,
   frameworks_dep,
+  msf_gif_dep,
   sqldbal_dep,whereami_dep,core_utils_dep,exec_fzf_dep,
   parson_dep,
   space_utils_dep,

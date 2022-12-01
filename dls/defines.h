@@ -11,10 +11,10 @@
 #define DEFAULT_PROGRESS_BAR_ENABLED           true
 #define DEFAULT_CAPTURE_TYPE                   CAPTURE_TYPE_WINDOW
 #define MAX_SUBCOMMANDS                        1024
-#define DLS_NAME "dls"
-#define DLS_VERSION "1.00"
-#define DLS_DESC "This program lists Darwin Objects"
-#define DLS_ABOUT DLS_NAME "v" DLS_VERSION " - " DLS_DESC
-#define DLS_OPERANDS "[COMMAND...]"
+#define DLS_NAME                               "dls"
+#define DLS_VERSION                            "1.00"
+#define DLS_DESC                               "This program lists Darwin Objects"
+#define DLS_ABOUT                              DLS_NAME "v" DLS_VERSION " - " DLS_DESC
+#define DLS_OPERANDS                           "[COMMAND...]"
 
 #endif

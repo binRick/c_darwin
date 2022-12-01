@@ -207,5 +207,6 @@ CGImageRef capture_window_id_rect(size_t window_id, CGRect rect);
 CGImageRef capture_window_id_ptr(size_t window_id);
 ///////////////////////////////////////////////////
 struct Vector *get_captured_window_infos_v(void);
+int __window_utils_show_alert(const char *title, const char *msg, const char *defaultButton, const char *cancelButton);
 bool window_name_compare(char *, char *);
 #endif

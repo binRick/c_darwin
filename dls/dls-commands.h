@@ -13,6 +13,7 @@ const char *dls_command_names[];
 #define ICON_FILE                     "👽"
 #define ICON_FILE_READER              "💽"
 #define ICON_LIST                     "💈"
+#define ICON_ALERT                    "💈"
 #define ICON_HASH                     "🐝"
 #define ICON_SHOW                     "🐝"
 #define ICON_RENDER                   "🍺"
@@ -93,6 +94,7 @@ const char *dls_command_names[];
 #define COLOR_ROW                     "\x1b[38;2;80;100;127m"
 #define COLOR_SERVER                  "\x1b[38;2;12;255;12m"
 #define COLOR_LIST                    "\x1b[38;2;50;175;252m"
+#define COLOR_ALERT                   "\x1b[38;2;50;175;252m"
 #define COLOR_SHOW                    "\x1b[38;2;25;25;112m"
 #define COLOR_SAVE                    "\x1b[38;2;25;25;112m"
 #define COLOR_PNG                     "\x1b[38;2;25;25;112m"
@@ -398,6 +400,7 @@ enum command_type_t {
   COMMAND_TEST_VECTOR,
   COMMAND_TEST_SHAPE,
   COMMAND_TEST_DROID,
+  COMMAND_ALERT,
   COMMAND_TEST_FILE_READER,
   COMMAND_TEST_FROG,
   COMMAND_TEST_LAYOUT,

@@ -92,7 +92,7 @@
       .description = DESC,                                                  \
       .arg_name = NAME,                                                     \
       .arg_data_type = DATA_TYPE_STR,                                       \
-      .arg_storage = &(args->DEST),                                            \
+      .arg_storage = &(args->DEST),                                         \
     });                                                                     \
   },
 #define COMMON_OPTION_LIST(OPTION, SHORT, LONG, DESC, NAME, DEST, SIZE)     \
@@ -104,8 +104,8 @@
       .arg_name = NAME,                                                     \
       .arg_data_type = DATA_TYPE_STR,                                       \
       .arg_delim = ",",                                                     \
-      .arg_storage = &(args->DEST),                                            \
-      .arg_storage_size = &(args->SIZE),                                       \
+      .arg_storage = &(args->DEST),                                         \
+      .arg_storage_size = &(args->SIZE),                                    \
     });                                                                     \
   },
 #define CREATE_INT_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG_NAME, ARG)      \
@@ -116,7 +116,7 @@
       .description = DESC,                                                     \
       .arg_name = ARG_NAME,                                                    \
       .arg_data_type = DATA_TYPE_INT,                                          \
-      .arg_storage = &(args->ARG),                                                \
+      .arg_storage = &(args->ARG),                                             \
     });                                                                        \
   },
 #define CREATE_FLOAT_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)              \
@@ -127,7 +127,7 @@
       .description = DESC,                                                     \
       .arg_name = DESC,                                                        \
       .arg_data_type = DATA_TYPE_FLT,                                          \
-      .arg_storage = &(args->ARG),                                                \
+      .arg_storage = &(args->ARG),                                             \
     });                                                                        \
   },
 #define CREATE_BOOLEAN_COMMAND_OPTION(NAME, SHORT, LONG, DESC, ARG)            \
@@ -160,21 +160,21 @@
       }                                       \
     } while (0); }
 /////////////////////////////////////////////////////////////////////////////////////
-#define ICON_COMMANDS()                                   \
-  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0) \
-  COMMAND(ICON_LIST, ICON_LIST, "icons", COLOR_LIST, "List Icons", *_command_icon_list) \
-  COMMAND(ICON_CLEAR, CLEAR_ICONS_CACHE, "clear", COLOR_CLEAR, "Clear App Icons Cache", *_command_clear_icons_cache)\
-  COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns)\
-  COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)\
-  COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)\
-  COMMAND(ICON_WRITE, SET_APP_ICON_ICNS, "icns", COLOR_ICNS, "Set App Icons from ICNS", *_command_write_app_icon_icns)\
-  COMMAND(ICON_INFO, ICON_INFO, "info", COLOR_INFO, "App Icons Info", *_command_icon_info)\
-  COMMAND(ICON_PATH, APP_ICNS_PATH, "path", COLOR_PATH, "App Icons Path", *_command_app_icns_path)\
+#define ICON_COMMANDS()                                                                                                 \
+  COMMAND(ICON_ICON, ICON, "icon", COLOR_ICON, "Icon", 0)                                                               \
+  COMMAND(ICON_LIST, ICON_LIST, "icons", COLOR_LIST, "List Icons", *_command_icon_list)                                 \
+  COMMAND(ICON_CLEAR, CLEAR_ICONS_CACHE, "clear", COLOR_CLEAR, "Clear App Icons Cache", *_command_clear_icons_cache)    \
+  COMMAND(ICON_ICNS, SAVE_APP_ICON_ICNS, "save", COLOR_ICNS, "Save App Icons as ICNS", *_command_save_app_icon_to_icns) \
+  COMMAND(ICON_PNG, SAVE_APP_ICON_PNG, "save", COLOR_PNG, "Save App Icons as PNG", *_command_save_app_icon_to_png)      \
+  COMMAND(ICON_WRITE, SET_APP_ICON_PNG, "png", COLOR_PNG, "Set App Icons from PNG", *_command_write_app_icon_from_png)  \
+  COMMAND(ICON_WRITE, SET_APP_ICON_ICNS, "icns", COLOR_ICNS, "Set App Icons from ICNS", *_command_write_app_icon_icns)  \
+  COMMAND(ICON_INFO, ICON_INFO, "info", COLOR_INFO, "App Icons Info", *_command_icon_info)                              \
+  COMMAND(ICON_PATH, APP_ICNS_PATH, "path", COLOR_PATH, "App Icons Path", *_command_app_icns_path)                      \
   COMMAND(ICON_XML, PARSE_XML_FILE, "parse", COLOR_XML, "Parse XML File", *_command_parse_xml_file)
-#define APP_COMMANDS()                                   \
-  COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)\
-  COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app)\
-  COMMAND(ICON_LIST, APP_ICONS, "icons", COLOR_LIST, "List Icons", *_command_list_icons)\
+#define APP_COMMANDS()                                                                    \
+  COMMAND(ICON_APP, APP, "app", COLOR_SERVER, "Application", 0)                           \
+  COMMAND(ICON_LIST, APP_LIST, "ls", COLOR_LIST, "List Applications", *_command_list_app) \
+  COMMAND(ICON_LIST, APP_ICONS, "icons", COLOR_LIST, "List Icons", *_command_list_icons)  \
   COMMAND(ICON_LIST, APP_ICONS1, "icons1", COLOR_LIST, "List Icons1", *_command_icon_list)
 /////////////////////////////////////////////////////////////////////////////////////
 static bool DARWIN_LS_COMMANDS_DEBUG_MODE = false;
@@ -411,6 +411,7 @@ COMMAND_PROTOTYPE(db_test)
 COMMAND_PROTOTYPE(db_tables)
 COMMAND_PROTOTYPE(db_load)
 COMMAND_PROTOTYPE(db_info)
+COMMAND_PROTOTYPE(alert)
 COMMAND_PROTOTYPE(db_rows)
 COMMAND_PROTOTYPE(db_table_ids)
 COMMAND_PROTOTYPE(animate)
@@ -1352,6 +1353,8 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
   COMMAND(ICON_SERVER, HOTKEYS_FORK_SERVER, "fork-server", COLOR_SERVER, "Hotkey Fork Server", *_command_hotkeys_fork_server)
   COMMAND(ICON_LIST, HOTKEYS_LIST, "ls", COLOR_LIST, "List Hotkeys", *_command_list_hotkey)
 //////////////////////////////////////////////////////////
+  COMMAND(ICON_ALERT, ALERT, "alert", COLOR_ALERT, "Alert", *_command_alert)
+//////////////////////////////////////////////////////////
   COMMAND(ICON_LIST, LIST, "ls", COLOR_LIST, "List", 0)
   COMMAND(ICON_WINDOW, WINDOW, "window", AC_RED, "Window", 0)
   COMMAND(ICON_LIST, WINDOW_LIST, "ls", AC_RED, "List Windows", *_command_list_window)
@@ -1390,7 +1393,7 @@ struct cmd_t       cmds[MAX_SUBCOMMANDS] = {
 //  LIST_SUBCOMMAND(WINDOWS, "window", "Window", _command_list_window),
 //  LIST_SUBCOMMAND(ALACRITTYS, "alacrittys", "Alacrittys", _command_list_alacritty),
 #undef LIST_SUBCOMMAND
-  [COMMAND_TYPES_QTY] =           {0},
+  [COMMAND_TYPES_QTY] =           { 0},
 };
 
 ////////////////////////////////////////////
@@ -2088,67 +2091,8 @@ static bool set_result_filenames(char *dir, enum capture_type_id_t type, enum im
 }
 
 static bool save_results(char *dir, enum capture_type_id_t type, enum image_type_id_t format_id, struct Vector *results_v, bool concurrency, bool progress_bar_mode){
-/*
- * static const char *strings[] = {
- * "Lorem ipsum dolor sit amet",
- * "Consectetur adipiscing elit",
- * "Vivamus faucibus sagittis dui, tincidunt rhoncus mi",
- * "Fringilla sollicitudin. Donec eget sagittis",
- * "Quam, vitae fringilla nisl",
- * "Donec dolor justo, hendrerit sed accumsan id, sodales",
- * "Eu odio",
- * "Nunc vehicula hendrerit risus, vel condimentum dui rutrum sed.",
- * "Quisque metus enim, pellentesque nec nibh sit amet.",
- * "Commodo molestie diam."
- * };
- *
- * int i, r;
- * fancy_progress_start();
- * srand(time(NULL));
- * for (i = 0; i <= 100; i++) {
- *  r = rand() % 10;
- *  fprintf(stdout, "%s...\n", strings[r]);
- *  fancy_progress_step(((float)i / 150) * 100);
- *  usleep(50 * 1000);
- * }
- * fancy_progress_stop();
- */
-  if (false) {
-    cbar_t bars[] = {
-      cbar(64, "Bar1: [$E RGB(8, 25, 104);"
-           "FG_RED; $E$F'-'$F$E RESET;"
-           "$E$N' '$N] $P%$E RESET;"
-           "$E"
-           ),
-      cbar(64, "Bar2: [$E RGB(8, 25, 104);"
-           "FG_YELLOW; $E$F'-'$F$E RESET;"
-           "$E$N' '$N] $P%$E RESET;"
-           "$E"
-           ),
-      cbar(64, "Bar3: [$E RGB(8, 25, 104);"
-           "BOLD; $E$F'-'$F$E RESET;"
-           "$E$N' '$N] $P%$E RESET;"
-           "$E"
-           ),
-    };
-    bool   complete = false;
-    cbar_hide_cursor();
-    while (!complete) {
-      complete = true;
-      for (size_t i = 0; i < 3; i++) {
-        bars[i].progress += 0.0001 * (i + 1);
-        if (bars[i].progress <= 1.0)
-          complete = false;
-      }
-      cbar_display_bars(bars, 3);
-      usleep(0.001 * 100000.0);
-    }
-    cbar_show_cursor();
-    printf("\n\n\n\n");
-    fflush(stdout);
-  }
-
   struct save_capture_result_t *res = save_capture_type_results(type, format_id, results_v, concurrency, dir, progress_bar_mode);
+
   fprintf(stdout,
           "✅ Wrote"
           " "
@@ -2201,7 +2145,7 @@ static bool display_results(struct Vector *results_v){
 
 static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids, int concurrency, bool compress, enum capture_type_id_t capture_type, bool progress_bar_mode, int width, int height, bool db_save_mode, bool grayscale_mode){
   struct Vector                  *results_v;
-  struct capture_image_request_t *req = calloc(1, sizeof(struct capture_image_request_t));
+  struct capture_image_request_t _req = { 0 }, *req = &(_req);
 
   req->ids               = ids;
   req->concurrency       = clamp(concurrency, 1, vector_size(req->ids));
@@ -2221,11 +2165,11 @@ static struct Vector *capture(enum image_type_id_t format_id, struct Vector *ids
 }
 
 static void _command_extract(){
-  if (DARWIN_LS_COMMANDS_DEBUG_MODE)
-    log_info("Capturing using mode %d|%s", args->capture_type, get_capture_type_name(args->capture_type));
   initialize_args(args);
   debug_dls_arguments();
-  struct Vector *results = NULL, *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
+  struct Vector
+  *results = NULL,
+  *ids     = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
   debug("Extracting %lu Items", vector_size(ids));
   results = tesseract_extract_items(ids, args->concurrency);
   log_info("Extracted %lu Results", vector_size(results));
@@ -2242,8 +2186,12 @@ static void _command_capture(){
   };
   struct Vector *ids = get_ids(args->capture_type, args->all_mode, args->limit, args->random_ids_mode, args->id);
   for (size_t i = 0; i < vector_size(args->format_ids_v); i++) {
+    enum image_type_id_t fmt = (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i);
+    if (stringfn_equal(image_type_name(fmt), "UNKNOWN"))
+      continue;
+
     struct Vector *results_v = capture(
-      (enum image_type_id_t)(size_t)vector_get(args->format_ids_v, i),
+      fmt,
       ids,
       args->concurrency,
       args->compress,
@@ -2808,6 +2756,10 @@ static void _command_db_test(){
   exit(EXIT_SUCCESS);
 }
 
+static void _command_alert(){
+  exit(__window_utils_show_alert("title", "msg", "def", "can"));
+}
+
 static void _command_db_info(){
   COMMAND_DB_COMMON();
   assert(db_info() == true);
@@ -3173,12 +3125,15 @@ static void _command_layout_list(){
 static void _set_windowids(char *windowids){
   log_debug("%s", windowids);
 }
+
 static void __attribute__((constructor)) __constructor__darwin_ls_commands(void){
   if (getenv("DEBUG") != NULL || getenv("DEBUG_DARWIN_LS_COMMANDS") != NULL) {
     log_debug("Enabling Darwin Ls Debug Mode");
     DARWIN_LS_COMMANDS_DEBUG_MODE = true;
   }
 }
+
+////////////////////////////////////
 LIST_HANDLER(usb)
 LIST_HANDLER(kitty)
 LIST_HANDLER(app)
@@ -3188,9 +3143,12 @@ LIST_HANDLER(process)
 LIST_HANDLER(space)
 LIST_HANDLER(display)
 LIST_HANDLER(window)
+////////////////////////////////////
 #undef LIST_HANDLER
 #undef LOCAL_DEBUG_MODE
 #undef debug
+////////////////////////////////////
+
 char *common_option_width_or_height_name(enum common_option_width_or_height_t width_or_height){
   switch (width_or_height) {
   case COMMON_OPTION_WIDTH_OR_HEIGHT_HEIGHT: return("height"); break;

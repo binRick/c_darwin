@@ -51,20 +51,8 @@ enum image_conversion_test_type_t {
   IMAGE_CONVERSION_BMP,
   IMAGE_CONVERSIONS_QTY,
 };
-int image_conversion_compressions[] = { 8 };
-int image_conversion_qualities[]    = { 100 };
-/*
- * vips_jpegsave_buffer(
- * vips_webpsave_buffer(
- * vips_tiffsave_buffer(
- * vips_magicksave_buffer(
- * vips_pngsave_buffer(
- * vips_radsave_buffer(
- * vips_gifsave_buffer(
- * vips_jp2ksave_buffer(
- * vips_jxlsave_buffer(
- * vips_dzsave_buffer(
- */
+int                 image_conversion_compressions[]  = { 8 };
+int                 image_conversion_qualities[]     = { 100 };
 struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
   [IMAGE_TYPE_PNG] =  {
     .file_extension             = "png",                         .name = "PNG",
@@ -167,6 +155,36 @@ struct image_type_t image_types[IMAGE_TYPES_QTY + 1] = {
       qoir_decode_result dec      = qoir_decode(buf,                     len, &decopts);
       *width  = dec.dst_pixbuf.pixcfg.width_in_pixels;
       *height = dec.dst_pixbuf.pixcfg.height_in_pixels;
+      return(true);
+    },
+  },
+  [IMAGE_TYPE_PPM] =  {
+    .file_extension             = "ppm",
+    .name                       = "PPM",
+    .save_buffer_fxn            = 0,
+    .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
+      return(true);
+    },
+  },
+  [IMAGE_TYPE_HEIF] = {
+    .file_extension             = "heif",
+    .name                       = "HEIF",
+    .save_buffer_fxn            = vips_heifsave_buffer,
+    .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
+      return(true);
+    },
+  },
+  [IMAGE_TYPE_SVG] =  {
+    .file_extension             = "svg",
+    .name                       = "SVG",
+    .save_buffer_fxn            = 0,
+    .get_format                 = ^ CFStringRef (void){ return(NULL);                                               },
+    .validate_header            = ^ bool (unsigned char *image_buf){ return((image_buf != NULL) ? true : false);    },
+    .get_dimensions_from_buffer = ^ bool (unsigned char *buf,size_t len,  int *width, int *height){
       return(true);
     },
   },
@@ -311,6 +329,7 @@ enum image_type_id_t get_format_name(char *format){
 char *image_type_name(enum image_type_id_t type){
   switch (type) {
   case IMAGE_TYPE_PNG: return("PNG"); break;
+//  case IMAGE_TYPE_SVG: return("SVG"); break;
   case IMAGE_TYPE_TIFF: return("TIFF"); break;
   case IMAGE_TYPE_CGIMAGE: return("CGIMAGE"); break;
   case IMAGE_TYPE_GIF: return("GIF"); break;
@@ -391,6 +410,10 @@ unsigned char *save_cgref_to_image_type_memory(enum image_type_id_t image_type, 
   return(buf);
 }
 
+unsigned char *save_cgref_to_svg_memory(CGImageRef image, size_t *len){
+  return(save_cgref_to_image_type_memory(IMAGE_TYPE_SVG, image, len));
+}
+
 unsigned char *save_cgref_to_tiff_memory(CGImageRef image, size_t *len){
   return(save_cgref_to_image_type_memory(IMAGE_TYPE_TIFF, image, len));
 }
@@ -429,6 +452,10 @@ bool save_cgref_to_webp_file(CGImageRef image, char *image_file) {
 
 bool save_cgref_to_jpeg_file(CGImageRef image, char *image_file) {
   return(save_cgref_to_image_type_file(IMAGE_TYPE_JPEG, image, image_file));
+}
+
+bool save_cgref_to_svg_file(CGImageRef image, char *image_file) {
+  return(save_cgref_to_image_type_file(IMAGE_TYPE_SVG, image, image_file));
 }
 
 bool save_cgref_to_tiff_file(CGImageRef image, char *image_file) {

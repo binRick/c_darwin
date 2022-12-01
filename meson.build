@@ -1,4 +1,4 @@
-project('c_darwin', ['c'],default_options: [
+project('c_darwin', ['c','cpp','objc','objcpp'],default_options: [
   'warning_level=1',
   'c_std=gnu99',
   'gpp_processor=false',
@@ -120,7 +120,7 @@ subdir('cache-utils-test')
 subdir('hotkey-utils-test')
 subdir('keylogger-test')
 subdir('layout-test')
-subdir('vips-basics-test')
+#subdir('vips-basics-test')
 subdir('sqldbal-test')
 subdir('kitty-msg-test')
 subdir('mt')

@@ -8,5 +8,5 @@ struct args_t                 *args;
 struct whereami_report_t      *whereami;
 char                          *DLS_EXECUTABLE, **DLS_EXECUTABLE_ARGV; int DLS_EXECUTABLE_ARGC;
 char                          **dls_cmd_argv;
-int                 dls_cmd_argc;
+int                           dls_cmd_argc;
 #endif
