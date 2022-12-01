@@ -131,20 +131,20 @@ typedef void (^wu_cb)(void);
 #define WU_PROCESS_STREAM_IMAGES_INTERVAL_MS       1000
 
 struct wu_receive_msg_t {
-  char      *json;
+  char        *json;
   struct {
     VipsImage *buf;
-  } vips;
-  size_t    buf_len; unsigned char *buf;
-  int       width, height, x, y, bit_depth, cs, rect_width, rect_height;
-  float     factor;
-  FILE      *fd;
+  }           vips;
+  size_t      buf_len; unsigned char *buf;
+  int         width, height, x, y, bit_depth, cs, rect_width, rect_height;
+  float       factor;
+  FILE        *fd;
   MsfGifState gifState;
   struct {
     unsigned char *buf;
-    size_t len;
-    int width, height, bands, fmt;
-    char *path;
+    size_t        len;
+    int           width, height, bands, fmt;
+    char          *path;
   } png;
 };
 
@@ -169,19 +169,18 @@ int wu_receive_images(void *L){
     if (msg->json)
       fprintf(stderr, "%s\n", stringfn_trim((char *)(msg->json)));
     char *tf;
-    asprintf(&tf,"%s%s.gif","/tmp/",msg->png.path);
+    asprintf(&tf, "%s%s.gif", "/tmp/", msg->png.path);
     Di(vips_image_get_width(msg->vips.buf));
     Di(vips_image_get_height(msg->vips.buf));
-    vips_image_write_to_file(msg->vips.buf,tf,NULL);
-    size_t ll=fsio_file_size(tf);
+    vips_image_write_to_file(msg->vips.buf, tf, NULL);
+    size_t ll = fsio_file_size(tf);
     Dn(ll);
     Ds(tf);
     VipsImage *i;
-    if((i=vips_image_new_from_memory(fsio_read_binary_file(tf), fsio_file_size(tf), vips_image_get_width(msg->vips.buf), vips_image_get_height(msg->vips.buf),vips_image_get_bands(msg->vips.buf),VIPS_FORMAT_UCHAR))){
+    if ((i = vips_image_new_from_memory(fsio_read_binary_file(tf), fsio_file_size(tf), vips_image_get_width(msg->vips.buf), vips_image_get_height(msg->vips.buf), vips_image_get_bands(msg->vips.buf), VIPS_FORMAT_UCHAR)))
       Di(vips_image_get_width(i));
-    }else{
-      log_warn("Failed to decode %s %dx%d %d %d GIF Buffer",bytes_to_string(fsio_file_size(tf)),vips_image_get_width(msg->vips.buf), vips_image_get_height(msg->vips.buf),vips_image_get_bands(msg->vips.buf),VIPS_FORMAT_UCHAR);
-    }
+    else
+      log_warn("Failed to decode %s %dx%d %d %d GIF Buffer", bytes_to_string(fsio_file_size(tf)), vips_image_get_width(msg->vips.buf), vips_image_get_height(msg->vips.buf), vips_image_get_bands(msg->vips.buf), VIPS_FORMAT_UCHAR);
     fsio_remove(tf);
     g_object_unref(i);
     pthread_mutex_lock(l->mutex);
@@ -224,9 +223,10 @@ int wu_receive_stream(void *L){
   unsigned long write_file_started = 0, write_file_dur = 0;
   size_t        skipped_frames = 0, received_frames = 0;
 
-  char *raw_file;
+  char          *raw_file;
+
   while (!ended && chan_recv(l->chan, &msg) == 0) {
-  VipsImage     *resized, *image, *tracker, *joined;
+    VipsImage               *resized, *image, *tracker, *joined;
     received_frames++;
     unsigned long           ts = timestamp(), durs[10] = { 0 };
     pthread_mutex_lock(l->mutex);
@@ -247,12 +247,12 @@ int wu_receive_stream(void *L){
     int ox = (int)(factor * (float)(u->width - u->rect.size.width)),
         oy = (int)(factor * (float)(u->height - u->rect.size.height));
 
-    m->png.buf=NULL;
-    m->png.len=0;
-    m->png.width=m->width;
-    m->png.height=m->height;
-    m->png.fmt=VIPS_FORMAT_UCHAR;
-    m->png.bands=4;
+    m->png.buf     = NULL;
+    m->png.len     = 0;
+    m->png.width   = m->width;
+    m->png.height  = m->height;
+    m->png.fmt     = VIPS_FORMAT_UCHAR;
+    m->png.bands   = 4;
     m->bit_depth   = 16;
     m->width       = (int)(u->orig_width);
     m->height      = (int)(u->orig_height);
@@ -263,24 +263,22 @@ int wu_receive_stream(void *L){
     m->factor      = factor;
     m->cs          = u->last_received_stream_update_dur / 10;
 
-
-    if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR))){
-        unsigned char *b;size_t b_len=0;
-        ((vips_resize(image, &resized, factor, NULL) == 0) && resized);
-        ((tracker = (tracker) ? tracker : vips_image_copy_memory(resized)) && tracker);
-        ((vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0));
-        if(joined){
-          if(((m->vips.buf)=vips_image_copy_memory(joined))){
-              m->png.path=vips_image_get_filename(joined);
-              m->png.width=vips_image_get_width(joined);
-              m->png.height=vips_image_get_height(joined);
-              m->png.fmt=VIPS_FORMAT_UCHAR;
-              m->png.bands=vips_image_get_bands(joined);
-              Di(vips_image_get_width(m->vips.buf));
-              Di(vips_image_get_height(m->vips.buf));
-          }
+    if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR))) {
+      unsigned char *b; size_t b_len = 0;
+      ((vips_resize(image, &resized, factor, NULL) == 0) && resized);
+      ((tracker = (tracker) ? tracker : vips_image_copy_memory(resized)) && tracker);
+      ((vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0));
+      if (joined)
+        if (((m->vips.buf) = vips_image_copy_memory(joined))) {
+          m->png.path   = vips_image_get_filename(joined);
+          m->png.width  = vips_image_get_width(joined);
+          m->png.height = vips_image_get_height(joined);
+          m->png.fmt    = VIPS_FORMAT_UCHAR;
+          m->png.bands  = vips_image_get_bands(joined);
+          Di(vips_image_get_width(m->vips.buf));
+          Di(vips_image_get_height(m->vips.buf));
         }
-      }
+    }
     while (vector_size(history) > 0 && (size_t)vector_get(history, vector_size(history) - 1) < timestamp() - HISTORY_MS + 1000)
       vector_pop(history);
     while (vector_size(history) >= vector_capacity(history))
