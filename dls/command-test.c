@@ -132,11 +132,20 @@ typedef void (^wu_cb)(void);
 
 struct wu_receive_msg_t {
   char      *json;
-  VipsImage *vips;
+  struct {
+    VipsImage *buf;
+  } vips;
   size_t    buf_len; unsigned char *buf;
   int       width, height, x, y, bit_depth, cs, rect_width, rect_height;
   float     factor;
   FILE      *fd;
+  MsfGifState gifState;
+  struct {
+    unsigned char *buf;
+    size_t len;
+    int width, height, bands, fmt;
+    char *path;
+  } png;
 };
 
 int wu_receive_images(void *L){
@@ -159,42 +168,26 @@ int wu_receive_images(void *L){
     if (!msg) continue;
     if (msg->json)
       fprintf(stderr, "%s\n", stringfn_trim((char *)(msg->json)));
-    if (qty == 0)
-//      memcpy(&gifState,0,sizeof(MsfGifState));
-      msf_gif_begin(&gifState, msg->width, msg->height);
-    else if (!(gif_res.data) && qty > 100) {
-      gif_res = msf_gif_end(&gifState);
-      if (gif_res.data) {
-        FILE *fp = fopen("MyGif.gif", "wb");
-        fwrite(gif_res.data, gif_res.dataSize, 1, fp);
-        fclose(fp);
-      }
-    }else if (msg->buf) {
-      int ox, oy;
-      image = vips_image_new_from_memory(msg->buf, msg->buf_len, msg->rect_width, msg->rect_height, 4, VIPS_FORMAT_UCHAR);
-      ox    = (int)(msg->factor * (float)(msg->width - msg->rect_width));
-      oy    = (int)(msg->factor * (float)(msg->height - msg->rect_height));
-      vips_resize(image, &resized, msg->factor, NULL);
-      tracker = (tracker) ? (tracker) : vips_image_copy_memory(resized);
-      vips_insert(tracker, resized, &joined, ox, oy, NULL);
-      vips_image_write_to_buffer(joined, ".gif", &buf, &buf_len, "", NULL);
-
-      Dn(buf_len);
-      Di(vips_image_get_height(image));
-      Di(vips_image_get_height(resized));
-      Di(vips_image_get_height(tracker));
-      Di(vips_image_get_height(joined));
-      log_debug("%f", msg->factor);
-      Dn(msg->buf_len);
-      if (buf)
-        msf_gif_frame(&gifState, buf, msg->cs, msg->bit_depth, msg->width * 4);
+    char *tf;
+    asprintf(&tf,"%s%s.gif","/tmp/",msg->png.path);
+    Di(vips_image_get_width(msg->vips.buf));
+    Di(vips_image_get_height(msg->vips.buf));
+    vips_image_write_to_file(msg->vips.buf,tf,NULL);
+    size_t ll=fsio_file_size(tf);
+    Dn(ll);
+    Ds(tf);
+    VipsImage *i;
+    if((i=vips_image_new_from_memory(fsio_read_binary_file(tf), fsio_file_size(tf), vips_image_get_width(msg->vips.buf), vips_image_get_height(msg->vips.buf),vips_image_get_bands(msg->vips.buf),VIPS_FORMAT_UCHAR))){
+      Di(vips_image_get_width(i));
+    }else{
+      log_warn("Failed to decode %s %dx%d %d %d GIF Buffer",bytes_to_string(fsio_file_size(tf)),vips_image_get_width(msg->vips.buf), vips_image_get_height(msg->vips.buf),vips_image_get_bands(msg->vips.buf),VIPS_FORMAT_UCHAR);
     }
+    fsio_remove(tf);
+    g_object_unref(i);
     pthread_mutex_lock(l->mutex);
     ended = l->ended;
     pthread_mutex_unlock(l->mutex);
     free(msg);
-//    if(buf)
-//      free(buf);
     Di(msg->width);
     Di(msg->height);
     Di(msg->rect_height);
@@ -226,18 +219,15 @@ int wu_receive_stream(void *L){
   struct Vector *history = vector_new_with_options(MAX_HISTORY_SIZE, false);
 
   pthread_mutex_unlock(l->mutex);
-  VipsImage     *resized, *image, *tracker, *joined;
 
   char          *show_file, *stats_text;
   unsigned long write_file_started = 0, write_file_dur = 0;
   size_t        skipped_frames = 0, received_frames = 0;
 
+  char *raw_file;
   while (!ended && chan_recv(l->chan, &msg) == 0) {
+  VipsImage     *resized, *image, *tracker, *joined;
     received_frames++;
-    if (received_frames > 100 && (chan_size(l->chan) > (chan_size(l->chan) / 2)) && qty > 50) {
-      skipped_frames++;
-      continue;
-    }
     unsigned long           ts = timestamp(), durs[10] = { 0 };
     pthread_mutex_lock(l->mutex);
     struct stream_update_t  *u = (struct stream_update_t *)msg;
@@ -246,6 +236,7 @@ int wu_receive_stream(void *L){
     if (!u) continue;
     if (u->seed < qty) continue;
     qty++;
+    pthread_mutex_lock(l->mutex);
     copied += u->buf_len;
     if ((u->seed % 10) == 0 || u->seed < 10)
       printf(AC_CLS);
@@ -255,51 +246,13 @@ int wu_receive_stream(void *L){
       factor = clamp((factor - 0.05), .10, 1.00);
     int ox = (int)(factor * (float)(u->width - u->rect.size.width)),
         oy = (int)(factor * (float)(u->height - u->rect.size.height));
-    asprintf(&show_file, "/tmp/display-stream-%lu.qoir", qty);
-    if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR)))
-      if (
-        ((vips_resize(image, &resized, factor, NULL) == 0) && resized)
-        && ((tracker = (tracker) ? tracker : vips_image_copy_memory(resized)) && tracker)
-        && ((vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0))
-        ) {
-        durs[0] = timestamp() - ts;
-        if (DISPLAY_STREAM_IMAGE)
-          if (printf("%s", AC_CLS))
-            if (kitty_display_image_path_resized_height(show_file, WU_DISPLAY_TERMINAL_WIDTH))
-              printf("\n");
-      }
-    while (vector_size(history) > 0 && (size_t)vector_get(history, vector_size(history) - 1) < timestamp() - HISTORY_MS + 1000)
-      vector_pop(history);
-    while (vector_size(history) >= vector_capacity(history))
-      vector_pop(history);
-    /*
-       vector_prepend(history, (void *)u->ts);
-       m->fd=fmemopen(m->buf,1024*1024*128,"b");
-     */
-    unsigned char *gif;
-    size_t        len = 0;
-    vips_image_write_to_buffer(joined, ".gif", &gif, &len, NULL);
-    int           w = vips_image_get_width(joined);
-    int           h = vips_image_get_height(joined);
-    Di(vips_image_get_height(image));
-    Di(vips_image_get_height(resized));
-    Di(w);
-    Di(h);
-    Dn(len);
-    VipsImage *g = vips_image_new_from_memory(gif, len, w, h, 4, VIPS_FORMAT_UCHAR);
-    if (g) {
-      Dn(len);
-      Di(vips_image_get_width(g));
-      Di(vips_image_get_height(g));
-    }
 
-//    vips_rawsave_fd(joined,fileno(m->fd),"",NULL);
-//    fclose(m->fd);
-//    m->vips=vips_image_copy_memory(joined);
-//    m->buf=calloc(u->buf_len,sizeof(unsigned char *)+1);
-//    memcpy((m->buf),u->buf,u->buf_len);
-//    if(m->buf)
-//      m->buf_len=u->buf_len;
+    m->png.buf=NULL;
+    m->png.len=0;
+    m->png.width=m->width;
+    m->png.height=m->height;
+    m->png.fmt=VIPS_FORMAT_UCHAR;
+    m->png.bands=4;
     m->bit_depth   = 16;
     m->width       = (int)(u->orig_width);
     m->height      = (int)(u->orig_height);
@@ -309,15 +262,40 @@ int wu_receive_stream(void *L){
     m->y           = (int)(u->rect.origin.y);
     m->factor      = factor;
     m->cs          = u->last_received_stream_update_dur / 10;
+
+
+    if ((image = vips_image_new_from_memory(u->buf, u->buf_len, (int)(u->rect.size.width), (int)(u->rect.size.height), 4, VIPS_FORMAT_UCHAR))){
+        unsigned char *b;size_t b_len=0;
+        ((vips_resize(image, &resized, factor, NULL) == 0) && resized);
+        ((tracker = (tracker) ? tracker : vips_image_copy_memory(resized)) && tracker);
+        ((vips_insert(tracker, resized, &joined, ox, oy, NULL) == 0));
+        if(joined){
+          if(((m->vips.buf)=vips_image_copy_memory(joined))){
+              m->png.path=vips_image_get_filename(joined);
+              m->png.width=vips_image_get_width(joined);
+              m->png.height=vips_image_get_height(joined);
+              m->png.fmt=VIPS_FORMAT_UCHAR;
+              m->png.bands=vips_image_get_bands(joined);
+              Di(vips_image_get_width(m->vips.buf));
+              Di(vips_image_get_height(m->vips.buf));
+          }
+        }
+      }
+    while (vector_size(history) > 0 && (size_t)vector_get(history, vector_size(history) - 1) < timestamp() - HISTORY_MS + 1000)
+      vector_pop(history);
+    while (vector_size(history) >= vector_capacity(history))
+      vector_pop(history);
     asprintf(&stats_text, "{"
              "\"ts\":%lld"
              ",\"type\":\"%s\""
              ",\"id\":%lu"
+             ",\"raw_file\":\"%s\""
              ",\"vips_w\":%d"
              ",\"vips_h\":%d"
              ",\"file\":\"%s\""
              ",\"ts\":%lu"
              ",\"seed\":%lu"
+             ",\"png_len\":%lu"
              ",\"width\":%lu"
              ",\"height\":%lu"
              ",\"bytes\":%lu"
@@ -341,11 +319,13 @@ int wu_receive_stream(void *L){
              timestamp(),
              l->type,
              l->id,
+             raw_file,
              vips_image_get_height(joined),
              vips_image_get_width(joined),
              show_file,
              u->ts,
              u->seed,
+             m->png.len,
              u->width,
              u->height,
              (size_t)(u->buf_len), copied,
@@ -447,7 +427,6 @@ int wu_receive_stream(void *L){
         free(s);
       stringfn_release_strings_struct(split);
     }
-    pthread_mutex_lock(l->mutex);
     if (joined)
       g_object_unref(joined);
     if (resized)
